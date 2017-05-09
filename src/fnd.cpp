@@ -49,7 +49,8 @@ int main(int argc, char* argv[]) {
 
     // try to parse the argument as a regex
     try {
-        std::regex re(argument);
+        std::regex re(argument, std::regex_constants::ECMAScript
+                              | std::regex_constants::icase      );
 
         findFiles(re);
     }
