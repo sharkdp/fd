@@ -1,5 +1,5 @@
 # fnd
-A modern, convenient and fast replacement for 'find'.
+A modern, convenient and fast replacement for `find`.
 
 **Features:**
 * Easy syntax. `fnd PATTERN` instead of `find -iname '*PATTERN*'`.
