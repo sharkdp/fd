@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(fnd CXX)
 
-find_package(Boost 1.54 REQUIRED COMPONENTS system filesystem)
+find_package(Boost 1.60 REQUIRED COMPONENTS system filesystem)
 include_directories( ${Boost_INCLUDE_DIR} )
 
 file(GLOB SOURCES "src/*.cpp")

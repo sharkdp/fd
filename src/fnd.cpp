@@ -23,10 +23,8 @@ void printPath(const fs::path& path) {
 void findFiles(const std::regex& pattern) {
     const fs::path& currentPath = fs::current_path();
 
-    fs::recursive_directory_iterator entry;
-    for (entry = fs::recursive_directory_iterator(currentPath);
-         entry != fs::recursive_directory_iterator(); ++entry) {
-        const fs::path& path = entry->path();
+    for (auto& entry: fs::recursive_directory_iterator(currentPath)) {
+        const fs::path& path = entry.path().lexically_relative(currentPath);
 
         if (std::regex_search(path.string(), pattern)) {
             printPath(path);

@@ -27,7 +27,7 @@ CMakeLists.txt
 
 ## Dependencies
 * g++ `>=4.9`
-* boost `>=1.54`
+* boost `>=1.60`
 
 ## Build
 ```bash
