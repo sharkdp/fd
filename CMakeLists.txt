@@ -14,3 +14,5 @@ add_executable(fnd ${SOURCES})
 target_compile_features(fnd PRIVATE cxx_range_for)
 
 target_link_libraries(fnd ${Boost_LIBRARIES})
+
+install(TARGETS fnd DESTINATION bin)
