@@ -18,14 +18,15 @@ void printPath(const fs::path& path) {
     std::cout << path.string();
 
     std::cout << ANSI_RESET << std::endl;
-
 }
 
 void findFiles(const std::regex& pattern) {
     const fs::path& currentPath = fs::current_path();
 
-    for (auto& entry: fs::recursive_directory_iterator(currentPath)) {
-        const fs::path& path = entry.path().lexically_relative(currentPath);
+    fs::recursive_directory_iterator entry;
+    for (entry = fs::recursive_directory_iterator(currentPath);
+         entry != fs::recursive_directory_iterator(); ++entry) {
+        const fs::path& path = entry->path();
 
         if (std::regex_search(path.string(), pattern)) {
             printPath(path);
@@ -49,8 +50,9 @@ int main(int argc, char* argv[]) {
 
     // try to parse the argument as a regex
     try {
-        std::regex re(argument, std::regex_constants::ECMAScript
-                              | std::regex_constants::icase      );
+        std::regex::flag_type flags =   std::regex_constants::ECMAScript
+                                      | std::regex_constants::icase;
+        std::regex re(argument, flags);
 
         findFiles(re);
     }

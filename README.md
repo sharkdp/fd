@@ -25,6 +25,10 @@ LICENSE
 CMakeLists.txt
 ```
 
+## Dependencies
+* g++ `>=4.9`
+* boost `>=1.54`
+
 ## Build
 ```bash
 cmake .
