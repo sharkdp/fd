@@ -18,6 +18,7 @@ use ansi_term::Colour;
 struct FdOptions {
     case_sensitive: bool,
     search_full_path: bool,
+    search_hidden: bool,
     follow_links: bool,
     colored: bool
 }
@@ -50,7 +51,7 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
     let walker = WalkDir::new(root)
                      .follow_links(config.follow_links)
                      .into_iter()
-                     .filter_entry(|e| !is_hidden(e))
+                     .filter_entry(|e| config.search_hidden || !is_hidden(e))
                      .filter_map(|e| e.ok())
                      .filter(|e| e.path() != root);
 
@@ -65,6 +66,8 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
                 if config.search_full_path {
                     pattern.find(path_str)
                 } else {
+                    if !path_rel.is_file() { continue }
+
                     path_rel.file_name()
                             .and_then(OsStr::to_str)
                             .and_then(|s| pattern.find(s))
@@ -91,6 +94,8 @@ fn main() {
                       "case-sensitive search (default: smart case)");
     opts.optflag("f", "filename",
                       "search filenames only (default: full path)");
+    opts.optflag("", "hidden",
+                      "search hidden files/directories (default: off)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output");
 
@@ -118,11 +123,12 @@ fn main() {
     let config = FdOptions {
         // The search will be case-sensitive if the command line flag is set or
         // if the pattern has an uppercase character (smart case).
-        case_sensitive:    matches.opt_present("s") ||
+        case_sensitive:    matches.opt_present("sensitive") ||
                            pattern.chars().any(char::is_uppercase),
-        search_full_path: !matches.opt_present("f"),
-        colored:          !matches.opt_present("n"),
-        follow_links:      matches.opt_present("F")
+        search_full_path: !matches.opt_present("filename"),
+        search_hidden:     matches.opt_present("hidden"),
+        colored:          !matches.opt_present("no-color"),
+        follow_links:      matches.opt_present("follow")
     };
 
     match RegexBuilder::new(pattern)
