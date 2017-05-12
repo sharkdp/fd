@@ -1,6 +1,7 @@
 extern crate walkdir;
 extern crate regex;
 extern crate getopts;
+extern crate ansi_term;
 
 use std::env;
 use std::path::Path;
@@ -11,6 +12,17 @@ use std::error::Error;
 use walkdir::{WalkDir, DirEntry, WalkDirIterator};
 use regex::{Regex, RegexBuilder};
 use getopts::Options;
+use ansi_term::Colour;
+
+/// Print a search result to the console.
+fn print_entry(entry: &DirEntry, path_str: &str) {
+    let style = match entry {
+        e if e.path_is_symbolic_link() => Colour::Purple,
+        e if e.path().is_dir()         => Colour::Cyan,
+        _                              => Colour::White
+    };
+    println!("{}", style.paint(path_str));
+}
 
 /// Check if filename of entry starts with a dot.
 fn is_hidden(entry: &DirEntry) -> bool {
@@ -30,19 +42,19 @@ fn scan(root: &Path, pattern: &Regex) {
             continue;
         }
 
-        let path_str_r = entry
-                            .path()
-                            .strip_prefix(root) // create relative path
-                            .ok()
-                            .and_then(Path::to_str);
+        let path_relative =
+            match entry.path().strip_prefix(root) {
+                Ok(r) => r,
+                Err(_) => continue
+            };
 
-        let path_str = match path_str_r {
+        let path_str = match path_relative.to_str() {
             Some(p) => p,
             None => continue
         };
 
         pattern.find(path_str)
-               .map(|_| println!("{}", path_str));
+               .map(|_| print_entry(&entry, path_str));
     }
 }
 

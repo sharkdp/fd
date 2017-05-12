@@ -7,3 +7,4 @@ authors = ["David Peter <mail@david-peter.de>"]
 getopts = "0.2"
 regex = "0.2"
 walkdir = "1"
+ansi_term = "0.9"
