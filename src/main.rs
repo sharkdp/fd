@@ -26,6 +26,8 @@ struct FdOptions {
     max_depth: usize
 }
 
+const MAX_DEPTH_DEFAULT : usize = 25;
+
 /// Print a search result to the console.
 fn print_entry(entry: &DirEntry, path_rel: &Path, config: &FdOptions) {
     let path_str = match path_rel.to_str() {
@@ -104,8 +106,9 @@ fn main() {
     opts.optflag("", "hidden",
                       "search hidden files/directories (default: off)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
-    opts.optflag("n", "no-color", "do not colorize output");
-    opts.optopt("d", "max-depth", "maximum search depth", "DEPTH");
+    opts.optflag("n", "no-color", "do not colorize output (default: on)");
+    opts.optopt("d", "max-depth",
+                     "maximum search depth (default: 25)", "D");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
@@ -113,7 +116,7 @@ fn main() {
     };
 
     if matches.opt_present("h") {
-        let brief = "Usage: fd [PATTERN]";
+        let brief = "Usage: fd [options] [PATTERN]";
         print!("{}", opts.usage(&brief));
         process::exit(1);
     }
@@ -141,7 +144,7 @@ fn main() {
         max_depth:
             matches.opt_str("max-depth")
                    .and_then(|ds| usize::from_str_radix(&ds, 10).ok())
-                   .unwrap_or(25)
+                   .unwrap_or(MAX_DEPTH_DEFAULT)
     };
 
     match RegexBuilder::new(pattern)

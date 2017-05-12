@@ -1,11 +1,11 @@
 [package]
 name = "fd"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["David Peter <mail@david-peter.de>"]
 
 [dependencies]
+ansi_term = "0.9"
 getopts = "0.2"
+isatty = "0.1"
 regex = "0.2"
 walkdir = "1"
-ansi_term = "0.9"
-isatty = "0.1"
