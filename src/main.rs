@@ -30,23 +30,25 @@ fn scan(root: &Path, pattern: &Regex) {
             continue;
         }
 
-        let path_relative = entry.path().strip_prefix(root).unwrap();
-        let path_str = match path_relative.to_str() {
-            Some(s) => s,
+        let path_str_r = entry
+                            .path()
+                            .strip_prefix(root) // create relative path
+                            .ok()
+                            .and_then(Path::to_str);
+
+        let path_str = match path_str_r {
+            Some(p) => p,
             None => continue
         };
-        match pattern.find(path_str) {
-            Some(_) =>
-                println!("{}", path_str),
-            None =>
-                continue
-        }
+
+        pattern.find(path_str)
+               .map(|_| println!("{}", path_str));
     }
 }
 
 /// Print error message to stderr and exit with status `1`.
-fn error<T: Error>(err: &T) -> ! {
-    writeln!(&mut std::io::stderr(), "{}", err.description())
+fn error(message: &str) -> ! {
+    writeln!(&mut std::io::stderr(), "{}", message)
         .expect("Failed writing to stderr");
     process::exit(1);
 }
@@ -58,8 +60,8 @@ fn main() {
     opts.optflag("h", "help", "print this help message");
     opts.optflag("s", "sensitive", "case-sensitive search");
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => { m }
-        Err(f) => { error(&f) }
+        Ok(m) => m,
+        Err(e) => error(e.description())
     };
 
     if matches.opt_present("h") {
@@ -73,16 +75,16 @@ fn main() {
     let empty = String::new();
     let pattern = matches.free.get(0).unwrap_or(&empty);
 
-    let current_dir_buf = env::current_dir()
-            .expect("Could not get current directory!");
+    let current_dir_buf = match env::current_dir() {
+        Ok(cd) => cd,
+        Err(_) => error("Could not get current directory!")
+    };
     let current_dir = current_dir_buf.as_path();
 
-    match
-        RegexBuilder::new(pattern)
-            .case_insensitive(case_insensitive)
-            .build() {
-        Ok(re) =>
-            scan(current_dir, &re),
-        Err(err) => error(&err)
+    match RegexBuilder::new(pattern)
+              .case_insensitive(case_insensitive)
+              .build() {
+        Ok(re) => scan(current_dir, &re),
+        Err(err) => error(err.description())
     }
 }
