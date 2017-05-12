@@ -4,10 +4,11 @@ extern crate getopts;
 extern crate ansi_term;
 
 use std::env;
-use std::path::Path;
-use std::io::Write;
-use std::process;
 use std::error::Error;
+use std::ffi::OsStr;
+use std::io::Write;
+use std::path::Path;
+use std::process;
 
 use walkdir::{WalkDir, DirEntry, WalkDirIterator};
 use regex::{Regex, RegexBuilder};
@@ -43,32 +44,30 @@ fn is_hidden(entry: &DirEntry) -> bool {
          .unwrap_or(false)
 }
 
-/// Recursively scan the given root path and search for pathnames matching the
-/// pattern.
+/// Recursively scan the given root path and search for files / pathnames
+/// matching the pattern.
 fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
     let walker = WalkDir::new(root)
                      .follow_links(config.follow_links)
-                     .into_iter();
+                     .into_iter()
+                     .filter_entry(|e| !is_hidden(e))
+                     .filter_map(|e| e.ok())
+                     .filter(|e| e.path() != root);
 
-    for entry in walker.filter_entry(|e| !is_hidden(e))
-                       .filter_map(|e| e.ok()) {
-        if entry.path() == root {
-            continue;
+    for entry in walker {
+        if let Ok(path_relative) = entry.path().strip_prefix(root) {
+            if let Some(path_str) = path_relative.to_str() {
+                let haystack = if config.search_full_path {
+                                   path_str
+                               } else {
+                                   path_relative.file_name()
+                                                .and_then(OsStr::to_str)
+                                                .unwrap()
+                               };
+                pattern.find(haystack)
+                       .map(|_| print_entry(&entry, path_str, &config));
+            }
         }
-
-        let path_relative =
-            match entry.path().strip_prefix(root) {
-                Ok(r) => r,
-                Err(_) => continue
-            };
-
-        let path_str = match path_relative.to_str() {
-            Some(p) => p,
-            None => continue
-        };
-
-        pattern.find(path_str)
-               .map(|_| print_entry(&entry, path_str, &config));
     }
 }
 
@@ -88,6 +87,7 @@ fn main() {
     opts.optflag("f", "full-path", "search full path (default: only filename)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output");
+
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => error(e.description())
