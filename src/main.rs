@@ -9,9 +9,10 @@ use std::process;
 use std::error::Error;
 
 use walkdir::{WalkDir, DirEntry, WalkDirIterator};
-use regex::Regex;
+use regex::{Regex, RegexBuilder};
 use getopts::Options;
 
+/// Check if filename of entry starts with a dot.
 fn is_hidden(entry: &DirEntry) -> bool {
     entry.file_name()
          .to_str()
@@ -19,6 +20,8 @@ fn is_hidden(entry: &DirEntry) -> bool {
          .unwrap_or(false)
 }
 
+/// Recursively scan the given root path and search for pathnames matching the
+/// pattern.
 fn scan(root: &Path, pattern: &Regex) {
     let walker = WalkDir::new(root).into_iter();
     for entry in walker.filter_entry(|e| !is_hidden(e))
@@ -41,6 +44,7 @@ fn scan(root: &Path, pattern: &Regex) {
     }
 }
 
+/// Print error message to stderr and exit with status `1`.
 fn error<T: Error>(err: &T) -> ! {
     writeln!(&mut std::io::stderr(), "{}", err.description())
         .expect("Failed writing to stderr");
@@ -70,7 +74,10 @@ fn main() {
             .expect("Could not get current directory!");
     let current_dir = current_dir_buf.as_path();
 
-    match Regex::new(pattern) {
+    match
+        RegexBuilder::new(pattern)
+            .case_insensitive(true)
+            .build() {
         Ok(re) =>
             scan(current_dir, &re),
         Err(err) => error(&err)
