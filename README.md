@@ -14,21 +14,7 @@
 * The command name is *50%* shorter than `find` :-).
 
 ## Examples
-``` bash
-> fd
-README.md
-src
-src/main.rs
-Cargo.toml
-LICENSE
-Cargo.lock
-
-> fd rs
-src/main.rs
-
-> fd '^[A-Z]+$'
-LICENSE
-```
+<a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" /></a>
 
 ## Build
 ```bash
