@@ -1,7 +1,8 @@
-extern crate walkdir;
-extern crate regex;
-extern crate getopts;
 extern crate ansi_term;
+extern crate getopts;
+extern crate isatty;
+extern crate regex;
+extern crate walkdir;
 
 use std::env;
 use std::error::Error;
@@ -10,10 +11,11 @@ use std::io::Write;
 use std::path::Path;
 use std::process;
 
-use walkdir::{WalkDir, DirEntry, WalkDirIterator};
-use regex::{Regex, RegexBuilder};
-use getopts::Options;
 use ansi_term::Colour;
+use getopts::Options;
+use isatty::stdout_isatty;
+use regex::{Regex, RegexBuilder};
+use walkdir::{WalkDir, DirEntry, WalkDirIterator};
 
 struct FdOptions {
     case_sensitive: bool,
@@ -130,7 +132,8 @@ fn main() {
                            pattern.chars().any(char::is_uppercase),
         search_full_path: !matches.opt_present("filename"),
         search_hidden:     matches.opt_present("hidden"),
-        colored:          !matches.opt_present("no-color"),
+        colored:          !matches.opt_present("no-color") &&
+                           stdout_isatty(),
         follow_links:      matches.opt_present("follow"),
         max_depth:
             matches.opt_str("max-depth")
