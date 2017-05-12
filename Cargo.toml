@@ -1,0 +1,9 @@
+[package]
+name = "fd"
+version = "0.1.0"
+authors = ["David Peter <mail@david-peter.de>"]
+
+[dependencies]
+getopts = "0.2"
+regex = "0.2"
+walkdir = "1"

@@ -1,36 +1,30 @@
-# fnd
+# fd
 A modern, convenient and fast replacement for `find`.
 
 **Features:**
-* Easy syntax. `fnd PATTERN` instead of `find -iname '*PATTERN*'`.
+* Easy syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
 * Colored output.
 * Regular expressions.
-* The command name is *25%* shorter than `find` :-).
+* The command name is *50%* shorter than `find` :-).
 
 ## Examples
 ``` bash
-> fnd
+> fd
+README.md
 src
-src/fnd.cpp
-README.md
+src/main.rs
+Cargo.toml
 LICENSE
-CMakeLists.txt
+Cargo.lock
 
-> fnd cpp
-src/fnd.cpp
+> fd rs
+src/main.rs
 
-> fnd '[A-Z].*'
-README.md
+> fd '^[A-Z]+$'
 LICENSE
-CMakeLists.txt
 ```
-
-## Dependencies
-* g++ `>=4.9`
-* boost `>=1.60`
 
 ## Build
 ```bash
-cmake .
-make
+cargo build
 ```
