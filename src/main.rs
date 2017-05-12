@@ -55,18 +55,22 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
                      .filter(|e| e.path() != root);
 
     for entry in walker {
-        if let Ok(path_relative) = entry.path().strip_prefix(root) {
-            if let Some(path_str) = path_relative.to_str() {
-                let haystack = if config.search_full_path {
-                                   path_str
-                               } else {
-                                   path_relative.file_name()
-                                                .and_then(OsStr::to_str)
-                                                .unwrap()
-                               };
-                pattern.find(haystack)
-                       .map(|_| print_entry(&entry, path_str, &config));
-            }
+        let path_rel = match entry.path().strip_prefix(root) {
+            Ok(p) => p,
+            Err(_) => continue
+        };
+
+        if let Some(path_str) = path_rel.to_str() {
+            let res =
+                if config.search_full_path {
+                    pattern.find(path_str)
+                } else {
+                    path_rel.file_name()
+                            .and_then(OsStr::to_str)
+                            .and_then(|s| pattern.find(s))
+                };
+
+            res.map(|_| print_entry(&entry, path_str, &config));
         }
     }
 }
@@ -83,13 +87,15 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help message");
-    opts.optflag("s", "sensitive", "case-sensitive search (default: smart case)");
-    opts.optflag("f", "full-path", "search full path (default: only filename)");
+    opts.optflag("s", "sensitive",
+                      "case-sensitive search (default: smart case)");
+    opts.optflag("f", "filename",
+                      "search filenames only (default: full path)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output");
 
     let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
+        Ok(m)  => m,
         Err(e) => error(e.description())
     };
 
@@ -110,11 +116,11 @@ fn main() {
 
 
     let config = FdOptions {
-        // The search will be case-sensitive if the command line flag is set or if
-        // the pattern has an uppercase character (smart case).
+        // The search will be case-sensitive if the command line flag is set or
+        // if the pattern has an uppercase character (smart case).
         case_sensitive:    matches.opt_present("s") ||
                            pattern.chars().any(char::is_uppercase),
-        search_full_path:  matches.opt_present("f"),
+        search_full_path: !matches.opt_present("f"),
         colored:          !matches.opt_present("n"),
         follow_links:      matches.opt_present("F")
     };
@@ -122,7 +128,7 @@ fn main() {
     match RegexBuilder::new(pattern)
               .case_insensitive(!config.case_sensitive)
               .build() {
-        Ok(re) => scan(&current_dir, &re, &config),
+        Ok(re)   => scan(&current_dir, &re, &config),
         Err(err) => error(err.description())
     }
 }
