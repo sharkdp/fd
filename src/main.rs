@@ -82,8 +82,6 @@ fn main() {
         process::exit(1);
     }
 
-    let case_insensitive = !matches.opt_present("s");
-
     let empty = String::new();
     let pattern = matches.free.get(0).unwrap_or(&empty);
 
@@ -93,8 +91,14 @@ fn main() {
     };
     let current_dir = current_dir_buf.as_path();
 
+    // The search will be case-sensitive if the command line flag is set or if
+    // the pattern has an uppercase character (smart case).
+    let case_sensitive =
+        matches.opt_present("s") ||
+        pattern.chars().any(char::is_uppercase);
+
     match RegexBuilder::new(pattern)
-              .case_insensitive(case_insensitive)
+              .case_insensitive(!case_sensitive)
               .build() {
         Ok(re) => scan(current_dir, &re),
         Err(err) => error(err.description())
