@@ -27,7 +27,12 @@ struct FdOptions {
 }
 
 /// Print a search result to the console.
-fn print_entry(entry: &DirEntry, path_str: &str, config: &FdOptions) {
+fn print_entry(entry: &DirEntry, path_rel: &Path, config: &FdOptions) {
+    let path_str = match path_rel.to_str() {
+        Some(p) => p,
+        None    => return
+    };
+
     if config.colored {
         let style = match entry {
             e if e.path_is_symbolic_link() => Colour::Purple,
@@ -65,20 +70,18 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
             Err(_) => continue
         };
 
-        if let Some(path_str) = path_rel.to_str() {
-            let res =
-                if config.search_full_path {
-                    pattern.find(path_str)
-                } else {
-                    if !path_rel.is_file() { continue }
+        let search_str =
+            if config.search_full_path {
+                path_rel.to_str()
+            } else {
+                if !path_rel.is_file() { continue }
 
-                    path_rel.file_name()
-                            .and_then(OsStr::to_str)
-                            .and_then(|s| pattern.find(s))
-                };
+                path_rel.file_name()
+                        .and_then(OsStr::to_str)
+            };
 
-            res.map(|_| print_entry(&entry, path_str, &config));
-        }
+        search_str.and_then(|s| pattern.find(s))
+                  .map(|_| print_entry(&entry, path_rel, &config));
     }
 }
 
