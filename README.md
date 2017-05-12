@@ -15,7 +15,7 @@
 
 ## Demo
 
-<a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema-bb-eu.s3.amazonaws.com/uploads/png/120318/288aa6ca16c8863a6a723dd2cb9fbba17be6bb0c.png?Signature=PrEm7H2tlLQIDc5I17MB7siRyUU%3D&AWSAccessKeyId=AKIAI2DOCAQ34YNJM3GA&Expires=1494713189" width="600" align="center" /></a>
+<a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" align="center" /></a>
 
 ## Build
 ```bash
