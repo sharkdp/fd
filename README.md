@@ -13,10 +13,16 @@
 * Unicode-aware.
 * The command name is *50%* shorter than `find` :-).
 
-## Examples
-<a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" /></a>
+## Demo
+<a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" align="center" /></a>
 
 ## Build
 ```bash
 cargo build --release
 ```
+
+## Install
+```
+cargo install
+```
+The release page also includes precompiled binaries for Linux.
