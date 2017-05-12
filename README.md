@@ -1,12 +1,15 @@
 # fd
-A modern, convenient and fast replacement for `find`.
+[![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 
-**Features:**
-* Easy syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
-* Colored output.
+`fd` is a modern, convenient and fast replacement for `find`.
+
+## Features
+* Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
+* Colorized output.
 * Regular expressions.
 * Smart case: the search is case-insensitive by default, but will be
   case-sensitive if the pattern contains an uppercase character.
+* Ignore hidden directories / files by default.
 * The command name is *50%* shorter than `find` :-).
 
 ## Examples
@@ -27,7 +30,6 @@ LICENSE
 ```
 
 ## Build
-[![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 ```bash
-cargo build
+cargo build --release
 ```
