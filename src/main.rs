@@ -20,7 +20,8 @@ struct FdOptions {
     search_full_path: bool,
     search_hidden: bool,
     follow_links: bool,
-    colored: bool
+    colored: bool,
+    max_depth: usize
 }
 
 /// Print a search result to the console.
@@ -50,6 +51,7 @@ fn is_hidden(entry: &DirEntry) -> bool {
 fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
     let walker = WalkDir::new(root)
                      .follow_links(config.follow_links)
+                     .max_depth(config.max_depth)
                      .into_iter()
                      .filter_entry(|e| config.search_hidden || !is_hidden(e))
                      .filter_map(|e| e.ok())
@@ -98,6 +100,7 @@ fn main() {
                       "search hidden files/directories (default: off)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output");
+    opts.optopt("d", "max-depth", "maximum search depth", "DEPTH");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
@@ -128,7 +131,11 @@ fn main() {
         search_full_path: !matches.opt_present("filename"),
         search_hidden:     matches.opt_present("hidden"),
         colored:          !matches.opt_present("no-color"),
-        follow_links:      matches.opt_present("follow")
+        follow_links:      matches.opt_present("follow"),
+        max_depth:
+            matches.opt_str("max-depth")
+                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok())
+                   .unwrap_or(25)
     };
 
     match RegexBuilder::new(pattern)
