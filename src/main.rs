@@ -14,14 +14,25 @@ use regex::{Regex, RegexBuilder};
 use getopts::Options;
 use ansi_term::Colour;
 
+struct FdOptions {
+    case_sensitive: bool,
+    search_full_path: bool,
+    follow_links: bool,
+    colored: bool
+}
+
 /// Print a search result to the console.
-fn print_entry(entry: &DirEntry, path_str: &str) {
-    let style = match entry {
-        e if e.path_is_symbolic_link() => Colour::Purple,
-        e if e.path().is_dir()         => Colour::Cyan,
-        _                              => Colour::White
-    };
-    println!("{}", style.paint(path_str));
+fn print_entry(entry: &DirEntry, path_str: &str, config: &FdOptions) {
+    if config.colored {
+        let style = match entry {
+            e if e.path_is_symbolic_link() => Colour::Purple,
+            e if e.path().is_dir()         => Colour::Cyan,
+            _                              => Colour::White
+        };
+        println!("{}", style.paint(path_str));
+    } else {
+        println!("{}", path_str);
+    }
 }
 
 /// Check if filename of entry starts with a dot.
@@ -34,8 +45,11 @@ fn is_hidden(entry: &DirEntry) -> bool {
 
 /// Recursively scan the given root path and search for pathnames matching the
 /// pattern.
-fn scan(root: &Path, pattern: &Regex) {
-    let walker = WalkDir::new(root).into_iter();
+fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
+    let walker = WalkDir::new(root)
+                     .follow_links(config.follow_links)
+                     .into_iter();
+
     for entry in walker.filter_entry(|e| !is_hidden(e))
                        .filter_map(|e| e.ok()) {
         if entry.path() == root {
@@ -54,7 +68,7 @@ fn scan(root: &Path, pattern: &Regex) {
         };
 
         pattern.find(path_str)
-               .map(|_| print_entry(&entry, path_str));
+               .map(|_| print_entry(&entry, path_str, &config));
     }
 }
 
@@ -70,7 +84,10 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help message");
-    opts.optflag("s", "sensitive", "case-sensitive search");
+    opts.optflag("s", "sensitive", "case-sensitive search (default: smart case)");
+    opts.optflag("f", "full-path", "search full path (default: only filename)");
+    opts.optflag("F", "follow", "follow symlinks (default: off)");
+    opts.optflag("n", "no-color", "do not colorize output");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => error(e.description())
@@ -91,16 +108,21 @@ fn main() {
     };
     let current_dir = current_dir_buf.as_path();
 
-    // The search will be case-sensitive if the command line flag is set or if
-    // the pattern has an uppercase character (smart case).
-    let case_sensitive =
-        matches.opt_present("s") ||
-        pattern.chars().any(char::is_uppercase);
+
+    let config = FdOptions {
+        // The search will be case-sensitive if the command line flag is set or if
+        // the pattern has an uppercase character (smart case).
+        case_sensitive:    matches.opt_present("s") ||
+                           pattern.chars().any(char::is_uppercase),
+        search_full_path:  matches.opt_present("f"),
+        colored:          !matches.opt_present("n"),
+        follow_links:      matches.opt_present("F")
+    };
 
     match RegexBuilder::new(pattern)
-              .case_insensitive(!case_sensitive)
+              .case_insensitive(!config.case_sensitive)
               .build() {
-        Ok(re) => scan(current_dir, &re),
+        Ok(re) => scan(&current_dir, &re, &config),
         Err(err) => error(err.description())
     }
 }
