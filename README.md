@@ -10,6 +10,7 @@
 * Smart case: the search is case-insensitive by default, but will be
   case-sensitive if the pattern contains an uppercase character.
 * Ignore hidden directories / files by default.
+* Unicode-aware.
 * The command name is *50%* shorter than `find` :-).
 
 ## Examples
