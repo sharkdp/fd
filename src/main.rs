@@ -56,6 +56,7 @@ fn main() {
 
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help message");
+    opts.optflag("s", "sensitive", "case-sensitive search");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => { m }
         Err(f) => { error(&f) }
@@ -67,6 +68,8 @@ fn main() {
         process::exit(1);
     }
 
+    let case_insensitive = !matches.opt_present("s");
+
     let empty = String::new();
     let pattern = matches.free.get(0).unwrap_or(&empty);
 
@@ -76,7 +79,7 @@ fn main() {
 
     match
         RegexBuilder::new(pattern)
-            .case_insensitive(true)
+            .case_insensitive(case_insensitive)
             .build() {
         Ok(re) =>
             scan(current_dir, &re),
