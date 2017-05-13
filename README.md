@@ -21,6 +21,27 @@ defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use ca
 
 <a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" align="center" /></a>
 
+## Benchmark
+A search in my home folder with ~80.000 subdirectories
+and ~350.000 files. The `--hidden` for `fd` is needed
+for a fair comparison, as *find* does this by default:
+``` bash
+> time fd --hidden '\.jpg$' > /dev/null
+0,39s user 0,40s system 99% cpu 0,790 total
+
+> time find -iname '*.jpg' > /dev/null 
+0,36s user 0,42s system 98% cpu 0,789 total
+```
+Both tools found the exact same 5504 files and have
+a comparable performance (averaged over multiple runs),
+even though *fd* performs a regex search.
+If we do the same for *find*, it is significantly slower:
+``` bash
+> time find -iregex '.*\.jpg$' > /dev/null
+1,29s user 0,41s system 99% cpu 1,705 total
+```
+
+
 ## Build
 ```bash
 cargo build --release
