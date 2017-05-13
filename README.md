@@ -1,17 +1,21 @@
 # fd
 [![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 
-`fd` is a modern, convenient and fast replacement for `find`.
+*fd* is a simple, fast and user-friendly alternative to [*find*](https://www.gnu.org/software/findutils/).
+
+While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible (opinionated)
+defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
 
 ## Features
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
-* Colorized output.
-* Regular expressions.
-* Smart case: the search is case-insensitive by default, but will be
-  case-sensitive if the pattern contains an uppercase character.
-* Ignore hidden directories / files by default.
+* Smart case: the search is case-insensitive by default. It switches to
+  case-sensitive if the pattern contains an uppercase
+  character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
+* Ignores hidden directories and files by default.
+* Colorized terminal output (similar to *ls*).
+* Regular expressions by default.
 * Unicode-aware.
-* The command name is *50%* shorter than `find` :-).
+* The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than `find` :-).
 
 ## Demo
 
