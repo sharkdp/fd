@@ -41,14 +41,14 @@ If we do the same for *find*, it is significantly slower:
 1,29s user 0,41s system 99% cpu 1,705 total
 ```
 
+## Install
+With [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
+```
+cargo install --git https://github.com/sharkdp/fd
+```
+The release page of this repository also includes precompiled binaries for Linux.
 
-## Build
+## Development
 ```bash
 cargo build --release
 ```
-
-## Install
-```
-cargo install
-```
-The release page also includes precompiled binaries for Linux.
