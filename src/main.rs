@@ -13,7 +13,7 @@ use std::io::{Write, BufReader,BufRead};
 use std::path::{Path, Component};
 use std::process;
 
-use ansi_term::Colour;
+use ansi_term::{Style, Colour};
 use getopts::Options;
 use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
@@ -73,10 +73,10 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                                       .and_then(|e| e.to_str())
                                       .and_then(|e| ext_styles.get(e))
                                       .map(|r| r.clone())
-                                      .unwrap_or(Colour::White.normal())
+                                      .unwrap_or(Style::new())
                     }
                     else {
-                        Colour::White.normal()
+                        Style::new()
                     }
                 };
 
@@ -143,11 +143,17 @@ fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
     let file = File::open(path)?;
     let mut ext_styles = HashMap::new();
 
-    let pattern =
-        Regex::new(r"^\.([A-Za-z0-9]+)\s*38;5;([0-9]+)\b").unwrap();
+    let pattern_ansi_256 =
+        Regex::new(r"^\.([A-Za-z0-9]+)\s*(?:00;)?38;5;([0-9]+)\b")
+            .unwrap();
+
+    let pattern_ansi =
+        Regex::new(r"^\.([A-Za-z0-9]+)\s*([0-9][0-9]);([0-9][0-9])\b")
+            .unwrap();
 
     for line in BufReader::new(file).lines() {
-        if let Some(caps) = pattern.captures(line.unwrap().as_str()) {
+        let line_s = line.unwrap();
+        if let Some(caps) = pattern_ansi_256.captures(line_s.as_str()) {
             if let Some(ext) = caps.get(1).map(|m| m.as_str()) {
                 let fg = caps.get(2)
                              .map(|m| m.as_str())
@@ -155,6 +161,29 @@ fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
                              .unwrap_or(7); // white
                 ext_styles.insert(String::from(ext),
                                   Colour::Fixed(fg).normal());
+            }
+        } else if let Some(caps) = pattern_ansi.captures(line_s.as_str()) {
+            if let Some(ext) = caps.get(1).map(|m| m.as_str()) {
+                let color_s = caps.get(3)
+                                  .map_or("", |m| m.as_str());
+                let color = match color_s {
+                    "31" => Colour::Red,
+                    "32" => Colour::Green,
+                    "33" => Colour::Yellow,
+                    "34" => Colour::Blue,
+                    "35" => Colour::Purple,
+                    "36" => Colour::Cyan,
+                    _    => Colour::White
+                };
+                let style_s = caps.get(2)
+                                  .map_or("", |m| m.as_str());
+                let style = match style_s {
+                    "01" => color.bold(),
+                    "03" => color.italic(),
+                    "04" => color.underline(),
+                    _    => color.normal()
+                };
+                ext_styles.insert(String::from(ext), style);
             }
         }
     }
