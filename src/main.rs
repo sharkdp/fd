@@ -148,7 +148,7 @@ fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
             .unwrap();
 
     let pattern_ansi =
-        Regex::new(r"^\.([A-Za-z0-9]+)\s*(?:([0-9][0-9]);)?([0-9][0-9])\b")
+        Regex::new(r"^\.([A-Za-z0-9]+)\s*(?:([0-9]+);)?([0-9][0-9])\b")
             .unwrap();
 
     for line in BufReader::new(file).lines() {
@@ -178,8 +178,11 @@ fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
                 let style_s = caps.get(2)
                                   .map_or("", |m| m.as_str());
                 let style = match style_s {
+                    "1"  => color.bold(),
                     "01" => color.bold(),
+                    "3"  => color.italic(),
                     "03" => color.italic(),
+                    "4"  => color.underline(),
                     "04" => color.underline(),
                     _    => color.normal()
                 };
