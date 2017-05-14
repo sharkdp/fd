@@ -17,6 +17,7 @@ use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
 use walkdir::{WalkDir, DirEntry, WalkDirIterator};
 
+/// Configuration options for *fd*.
 struct FdOptions {
     case_sensitive: bool,
     search_full_path: bool,
@@ -26,6 +27,7 @@ struct FdOptions {
     max_depth: usize
 }
 
+/// The default maximum recursion depth.
 const MAX_DEPTH_DEFAULT : usize = 25;
 
 /// Print a search result to the console.
@@ -108,7 +110,9 @@ fn main() {
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output (default: on)");
     opts.optopt("d", "max-depth",
-                     "maximum search depth (default: 25)", "D");
+                     format!("maximum search depth (default: {})",
+                             MAX_DEPTH_DEFAULT).as_str(),
+                     "D");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
