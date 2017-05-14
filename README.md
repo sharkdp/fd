@@ -19,7 +19,7 @@ defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use ca
 
 ## Demo
 
-![Demo](http://i.imgur.com/XHFuJD5.gif)
+![Demo](http://i.imgur.com/iU6qkQj.gif)
 
 ## Colorized output
 *fd* can colorize files by extension, just like *ls*. In order for
