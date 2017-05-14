@@ -103,7 +103,7 @@ fn main() {
                       "case-sensitive search (default: smart case)");
     opts.optflag("f", "filename",
                       "search filenames only (default: full path)");
-    opts.optflag("", "hidden",
+    opts.optflag("H", "hidden",
                       "search hidden files/directories (default: off)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output (default: on)");
