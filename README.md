@@ -21,6 +21,17 @@ defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use ca
 
 <a href="https://asciinema.org/a/120318" target="_blank"><img src="https://asciinema.org/a/120318.png" width="600" align="center" /></a>
 
+## Colorized output
+*fd* can colorize files by extension, just like *ls*. In order for
+this to work, you need to set up a `~/.dir_colors` file. The easiest
+way is to call
+```
+dircolors --print-database > ~/.dir_colors
+```
+More complete (and more colorful) alternatives can be found
+[here](https://github.com/seebi/dircolors-solarized) or
+[here](https://github.com/trapd00r/LS_COLORS).
+
 ## Benchmark
 A search in my home folder with ~80.000 subdirectories
 and ~350.000 files. The `--hidden` for `fd` is needed
