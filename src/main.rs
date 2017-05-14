@@ -4,10 +4,12 @@ extern crate isatty;
 extern crate regex;
 extern crate walkdir;
 
+use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
-use std::io::Write;
+use std::fs::File;
+use std::io::{Write, BufReader,BufRead};
 use std::path::{Path, Component};
 use std::process;
 
@@ -17,6 +19,9 @@ use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
 use walkdir::{WalkDir, DirEntry, WalkDirIterator};
 
+/// Maps file extensions to ANSI colors / styles.
+type ExtensionStyles = HashMap<String, ansi_term::Style>;
+
 /// Configuration options for *fd*.
 struct FdOptions {
     case_sensitive: bool,
@@ -24,7 +29,8 @@ struct FdOptions {
     search_hidden: bool,
     follow_links: bool,
     colored: bool,
-    max_depth: usize
+    max_depth: usize,
+    extension_styles: Option<ExtensionStyles>
 }
 
 /// The default maximum recursion depth.
@@ -57,11 +63,21 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                 if component_path.symlink_metadata()
                                  .map(|md| md.file_type().is_symlink())
                                  .unwrap_or(false) {
-                    Colour::Purple
+                    Colour::Cyan.normal()
                 } else if component_path.is_dir() {
-                    Colour::Cyan
+                    Colour::Blue.bold()
                 } else {
-                    Colour::White
+                    // Loop up file extension
+                    if let Some(ref ext_styles) = config.extension_styles {
+                        component_path.extension()
+                                      .and_then(|e| e.to_str())
+                                      .and_then(|e| ext_styles.get(e))
+                                      .map(|r| r.clone())
+                                      .unwrap_or(Colour::White.normal())
+                    }
+                    else {
+                        Colour::White.normal()
+                    }
                 };
 
             print!("{}", style.paint(comp_str.to_str().unwrap()));
@@ -71,7 +87,7 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                 print!("{}", style.paint(sep));
             }
         }
-        print!("\n");
+        println!();
     }
 }
 
@@ -122,6 +138,29 @@ fn error(message: &str) -> ! {
     process::exit(1);
 }
 
+/// Parse `dircolors` file.
+fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
+    let file = File::open(path)?;
+    let mut ext_styles = HashMap::new();
+
+    let pattern =
+        Regex::new(r"^\.([A-Za-z0-9]+)\s*38;5;([0-9]+)\b").unwrap();
+
+    for line in BufReader::new(file).lines() {
+        if let Some(caps) = pattern.captures(line.unwrap().as_str()) {
+            if let Some(ext) = caps.get(1).map(|m| m.as_str()) {
+                let fg = caps.get(2)
+                             .map(|m| m.as_str())
+                             .and_then(|n| u8::from_str_radix(n, 10).ok())
+                             .unwrap_or(7); // white
+                ext_styles.insert(String::from(ext),
+                                  Colour::Fixed(fg).normal());
+            }
+        }
+    }
+    Ok(ext_styles)
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -160,6 +199,9 @@ fn main() {
     };
     let current_dir = current_dir_buf.as_path();
 
+    let ext_styles = env::home_dir()
+                         .map(|h| h.join(".dir_colors"))
+                         .and_then(|path| parse_dircolors(&path).ok());
 
     let config = FdOptions {
         // The search will be case-sensitive if the command line flag is set or
@@ -174,7 +216,8 @@ fn main() {
         max_depth:
             matches.opt_str("max-depth")
                    .and_then(|ds| usize::from_str_radix(&ds, 10).ok())
-                   .unwrap_or(MAX_DEPTH_DEFAULT)
+                   .unwrap_or(MAX_DEPTH_DEFAULT),
+        extension_styles:  ext_styles
     };
 
     match RegexBuilder::new(pattern)
