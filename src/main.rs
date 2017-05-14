@@ -106,7 +106,9 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
                      .follow_links(config.follow_links)
                      .max_depth(config.max_depth)
                      .into_iter()
-                     .filter_entry(|e| config.search_hidden || !is_hidden(e))
+                     .filter_entry(|e| config.search_hidden
+                                       || !is_hidden(e)
+                                       || e.path() == root)
                      .filter_map(|e| e.ok())
                      .filter(|e| e.path() != root);
 
