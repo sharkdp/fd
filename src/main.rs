@@ -8,7 +8,7 @@ use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, Component};
 use std::process;
 
 use ansi_term::Colour;
@@ -31,21 +31,47 @@ struct FdOptions {
 const MAX_DEPTH_DEFAULT : usize = 25;
 
 /// Print a search result to the console.
-fn print_entry(entry: &DirEntry, path_rel: &Path, config: &FdOptions) {
-    let path_str = match path_rel.to_str() {
+fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
+    let path_full = path_root.join(path_entry);
+
+    let path_str = match path_entry.to_str() {
         Some(p) => p,
         None    => return
     };
 
-    if config.colored {
-        let style = match entry {
-            e if e.path_is_symbolic_link() => Colour::Purple,
-            e if e.path().is_dir()         => Colour::Cyan,
-            _                              => Colour::White
-        };
-        println!("{}", style.paint(path_str));
-    } else {
+    if !config.colored {
         println!("{}", path_str);
+    } else {
+        let mut component_path = path_root.to_path_buf();
+
+        // Traverse the path and colorize each component
+        for component in path_entry.components() {
+            let comp_str = match component {
+                Component::Normal(p) => p,
+                _                    => error("Unexpected path component")
+            };
+
+            component_path.push(Path::new(comp_str));
+
+            let style =
+                if component_path.symlink_metadata()
+                                 .map(|md| md.file_type().is_symlink())
+                                 .unwrap_or(false) {
+                    Colour::Purple
+                } else if component_path.is_dir() {
+                    Colour::Cyan
+                } else {
+                    Colour::White
+                };
+
+            print!("{}", style.paint(comp_str.to_str().unwrap()));
+
+            if component_path.is_dir() && component_path != path_full {
+                let sep = std::path::MAIN_SEPARATOR.to_string();
+                print!("{}", style.paint(sep));
+            }
+        }
+        print!("\n");
     }
 }
 
@@ -85,7 +111,7 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
             };
 
         search_str.and_then(|s| pattern.find(s))
-                  .map(|_| print_entry(&entry, path_rel, &config));
+                  .map(|_| print_entry(&root, path_rel, &config));
     }
 }
 
