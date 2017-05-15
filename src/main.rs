@@ -233,9 +233,17 @@ fn main() {
     };
     let current_dir = current_dir_buf.as_path();
 
-    let ext_styles = env::home_dir()
-                         .map(|h| h.join(".dir_colors"))
-                         .and_then(|path| parse_dircolors(&path).ok());
+    let colored_output = !matches.opt_present("no-color") &&
+                         stdout_isatty();
+
+    let ext_styles =
+        if colored_output {
+            env::home_dir()
+                     .map(|h| h.join(".dir_colors"))
+                     .and_then(|path| parse_dircolors(&path).ok())
+        } else {
+            None
+        };
 
     let config = FdOptions {
         // The search will be case-sensitive if the command line flag is set or
@@ -244,8 +252,7 @@ fn main() {
                            pattern.chars().any(char::is_uppercase),
         search_full_path: !matches.opt_present("filename"),
         search_hidden:     matches.opt_present("hidden"),
-        colored:          !matches.opt_present("no-color") &&
-                           stdout_isatty(),
+        colored:           colored_output,
         follow_links:      matches.opt_present("follow"),
         max_depth:
             matches.opt_str("max-depth")
