@@ -2,7 +2,7 @@ extern crate ansi_term;
 extern crate getopts;
 extern crate isatty;
 extern crate regex;
-extern crate walkdir;
+extern crate ignore;
 
 use std::collections::HashMap;
 use std::env;
@@ -17,7 +17,7 @@ use ansi_term::{Style, Colour};
 use getopts::Options;
 use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
-use walkdir::{WalkDir, DirEntry, WalkDirIterator};
+use ignore::WalkBuilder;
 
 /// Maps file extensions to ANSI colors / styles.
 type ExtensionStyles = HashMap<String, ansi_term::Style>;
@@ -26,15 +26,13 @@ type ExtensionStyles = HashMap<String, ansi_term::Style>;
 struct FdOptions {
     case_sensitive: bool,
     search_full_path: bool,
-    search_hidden: bool,
+    ignore_hidden: bool,
+    read_ignore: bool,
     follow_links: bool,
+    max_depth: Option<usize>,
     colored: bool,
-    max_depth: usize,
     extension_styles: Option<ExtensionStyles>
 }
-
-/// The default maximum recursion depth.
-const MAX_DEPTH_DEFAULT : usize = 25;
 
 /// Print a search result to the console.
 fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
@@ -91,24 +89,20 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
     }
 }
 
-/// Check if filename of entry starts with a dot.
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-         .to_str()
-         .map(|s| s.starts_with("."))
-         .unwrap_or(false)
-}
-
 /// Recursively scan the given root path and search for files / pathnames
 /// matching the pattern.
 fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
-    let walker = WalkDir::new(root)
+    let walker = WalkBuilder::new(root)
+                     .hidden(config.ignore_hidden)
+                     .ignore(config.read_ignore)
+                     .git_ignore(config.read_ignore)
+                     .parents(config.read_ignore)
+                     .git_global(config.read_ignore)
+                     .git_exclude(config.read_ignore)
                      .follow_links(config.follow_links)
                      .max_depth(config.max_depth)
+                     .build()
                      .into_iter()
-                     .filter_entry(|e| config.search_hidden
-                                       || !is_hidden(e)
-                                       || e.path() == root)
                      .filter_map(|e| e.ok())
                      .filter(|e| e.path() != root);
 
@@ -206,15 +200,15 @@ fn main() {
     opts.optflag("p", "full-path",
                       "search full path (default: filename only)");
     opts.optflag("H", "hidden",
-                      "search hidden files/directories (default: off)");
+                      "search hidden files/directories");
+    opts.optflag("I", "no-ignore",
+                      "do not respect .(git)ignore files");
     opts.optflag("f", "follow",
-                      "follow symlinks (default: off)");
+                      "follow symlinks");
     opts.optflag("n", "no-color",
-                      "do not colorize output (default: on)");
+                      "do not colorize output");
     opts.optopt( "d", "max-depth",
-                      format!("maximum search depth (default: {})",
-                             MAX_DEPTH_DEFAULT).as_str(),
-                      "D");
+                      "maximum search depth (default: none)", "D");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
@@ -254,13 +248,13 @@ fn main() {
         case_sensitive:    matches.opt_present("sensitive") ||
                            pattern.chars().any(char::is_uppercase),
         search_full_path:  matches.opt_present("full-path"),
-        search_hidden:     matches.opt_present("hidden"),
-        colored:           colored_output,
+        ignore_hidden:     !matches.opt_present("hidden"),
+        read_ignore:       !matches.opt_present("no-ignore"),
         follow_links:      matches.opt_present("follow"),
         max_depth:
             matches.opt_str("max-depth")
-                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok())
-                   .unwrap_or(MAX_DEPTH_DEFAULT),
+                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
+        colored:           colored_output,
         extension_styles:  ext_styles
     };
 
