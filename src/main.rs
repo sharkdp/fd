@@ -199,19 +199,22 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let mut opts = Options::new();
-    opts.optflag("h", "help", "print this help message");
+    opts.optflag("h", "help",
+                      "print this help message");
     opts.optflag("s", "sensitive",
                       "case-sensitive search (default: smart case)");
     opts.optflag("p", "full-path",
                       "search full path (default: filename only)");
     opts.optflag("H", "hidden",
                       "search hidden files/directories (default: off)");
-    opts.optflag("F", "follow", "follow symlinks (default: off)");
-    opts.optflag("n", "no-color", "do not colorize output (default: on)");
+    opts.optflag("f", "follow",
+                      "follow symlinks (default: off)");
+    opts.optflag("n", "no-color",
+                      "do not colorize output (default: on)");
     opts.optopt( "d", "max-depth",
                       format!("maximum search depth (default: {})",
                              MAX_DEPTH_DEFAULT).as_str(),
-                     "D");
+                      "D");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
