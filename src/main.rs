@@ -202,14 +202,14 @@ fn main() {
     opts.optflag("h", "help", "print this help message");
     opts.optflag("s", "sensitive",
                       "case-sensitive search (default: smart case)");
-    opts.optflag("f", "filename",
-                      "search filenames only (default: full path)");
+    opts.optflag("p", "full-path",
+                      "search full path (default: filename only)");
     opts.optflag("H", "hidden",
                       "search hidden files/directories (default: off)");
     opts.optflag("F", "follow", "follow symlinks (default: off)");
     opts.optflag("n", "no-color", "do not colorize output (default: on)");
-    opts.optopt("d", "max-depth",
-                     format!("maximum search depth (default: {})",
+    opts.optopt( "d", "max-depth",
+                      format!("maximum search depth (default: {})",
                              MAX_DEPTH_DEFAULT).as_str(),
                      "D");
 
@@ -250,7 +250,7 @@ fn main() {
         // if the pattern has an uppercase character (smart case).
         case_sensitive:    matches.opt_present("sensitive") ||
                            pattern.chars().any(char::is_uppercase),
-        search_full_path: !matches.opt_present("filename"),
+        search_full_path:  matches.opt_present("full-path"),
         search_hidden:     matches.opt_present("hidden"),
         colored:           colored_output,
         follow_links:      matches.opt_present("follow"),
