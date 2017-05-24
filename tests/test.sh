@@ -40,7 +40,7 @@ expect() {
 
         diff -C3 --label expected --label actual --color \
             "$tmp_expected" "$tmp_output" || true
-        # exit 1
+        exit 1
     fi
 }
 
@@ -52,84 +52,125 @@ cd "$root"
 
 mkdir -p one/two/three
 
-touch a.cpp
-touch one/b.cpp
-touch one/two/c.cpp
-touch one/two/C.cpp
-touch one/two/three/d.cpp
-touch ignored.cpp
-
-touch .hidden.cpp
-
-echo "ignored.cpp" > .gitignore
-
+touch a.foo
+touch one/b.foo
+touch one/two/c.foo
+touch one/two/C.Foo
+touch one/two/three/d.foo
+mkdir one/two/three/directory_foo
+touch ignored.foo
+touch .hidden.foo
 ln -s one/two symlink
+
+echo "ignored.foo" > .gitignore
 
 
 # Run the tests
 
 suite "Simple tests"
-expect "a.cpp" a.cpp
-expect "one/b.cpp" b.cpp
-expect "one/two/three/d.cpp" d.cpp
-expect "a.cpp
-one/b.cpp
-one/two/c.cpp
-one/two/C.cpp
-one/two/three/d.cpp" cpp
+expect "a.foo" a.foo
+expect "one/b.foo" b.foo
+expect "one/two/three/d.foo" d.foo
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo
+one/two/three/d.foo
+one/two/three/directory_foo" foo
+expect "a.foo
+one
+one/b.foo
+one/two
+one/two/c.foo
+one/two/C.Foo
+one/two/three
+one/two/three/d.foo
+one/two/three/directory_foo
+symlink" # run 'fd' without arguments
+
+
+suite "Regex searches"
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo" '[a-c].foo'
+expect "a.foo
+one/b.foo
+one/two/c.foo" --sensitive '[a-c].foo'
+
 
 
 suite "Smart case"
-expect "one/two/c.cpp
-one/two/C.cpp" c.cpp
-expect "one/two/C.cpp" C.cpp
+expect "one/two/c.foo
+one/two/C.Foo" c.foo
+expect "one/two/C.Foo" C.Foo
+expect "one/two/C.Foo" Foo
 
 
 suite "Case-sensitivity (--sensitive)"
-expect "one/two/C.cpp" --sensitive C.cpp
+expect "one/two/c.foo" --sensitive c.foo
+expect "one/two/C.Foo" --sensitive C.Foo
+
+
+suite "Full path search (--full-path)"
+expect "one/two/three/d.foo
+one/two/three/directory_foo" --full-path 'three.*foo'
+expect "a.foo" --full-path '^a\.foo$'
 
 
 suite "Hidden files (--hidden)"
-expect "a.cpp
-.hidden.cpp
-one/b.cpp
-one/two/c.cpp
-one/two/C.cpp
-one/two/three/d.cpp" --hidden cpp
+expect "a.foo
+.hidden.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo
+one/two/three/d.foo
+one/two/three/directory_foo" --hidden foo
 
 
 suite "Ignored files (--no-ignore)"
-expect "a.cpp
-ignored.cpp
-one/b.cpp
-one/two/c.cpp
-one/two/C.cpp
-one/two/three/d.cpp" --no-ignore cpp
+expect "a.foo
+ignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo
+one/two/three/d.foo
+one/two/three/directory_foo" --no-ignore foo
 
-expect "a.cpp
-.hidden.cpp
-ignored.cpp
-one/b.cpp
-one/two/c.cpp
-one/two/C.cpp
-one/two/three/d.cpp" --hidden --no-ignore cpp
+expect "a.foo
+.hidden.foo
+ignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo
+one/two/three/d.foo
+one/two/three/directory_foo" --hidden --no-ignore foo
 
 
 suite "Symlinks (--follow)"
-expect "one/two/c.cpp
-one/two/C.cpp
-symlink/c.cpp
-symlink/C.cpp" --follow c.cpp
+expect "one/two/c.foo
+one/two/C.Foo
+symlink/c.foo
+symlink/C.Foo" --follow c.foo
 
 
 suite "Maximum depth (--max-depth)"
-expect "a.cpp
-one/b.cpp
-one/two/c.cpp
-one/two/C.cpp" --max-depth 3
-expect "a.cpp
-one/b.cpp" --max-depth 2
-expect "a.cpp" --max-depth 1
+expect "a.foo
+one
+one/b.foo
+one/two
+one/two/c.foo
+one/two/C.Foo
+one/two/three
+symlink" --max-depth 3
+expect "a.foo
+one
+one/b.foo
+one/two
+symlink" --max-depth 2
+expect "a.foo
+one
+symlink" --max-depth 1
 
 # All done
 echo

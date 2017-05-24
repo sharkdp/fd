@@ -116,8 +116,6 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
             if config.search_full_path {
                 path_rel.to_str()
             } else {
-                if !path_rel.is_file() { continue }
-
                 path_rel.file_name()
                         .and_then(OsStr::to_str)
             };
@@ -198,7 +196,7 @@ fn main() {
     opts.optflag("s", "sensitive",
                       "case-sensitive search (default: smart case)");
     opts.optflag("p", "full-path",
-                      "search full path (default: filename only)");
+                      "search full path (default: file-/dirname only)");
     opts.optflag("H", "hidden",
                       "search hidden files/directories");
     opts.optflag("I", "no-ignore",
