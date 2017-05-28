@@ -62,7 +62,7 @@ touch ignored.foo
 touch .hidden.foo
 ln -s one/two symlink
 
-echo "ignored.foo" > .gitignore
+echo "ignored.foo" > .ignore
 
 
 # Run the tests
