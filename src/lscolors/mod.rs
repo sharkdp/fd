@@ -109,7 +109,7 @@ impl LsColors {
                     }
                     else if pattern.starts_with("*") {
                         let filename = String::from(pattern).split_off(1);
-                        self.extensions.insert(filename, style);
+                        self.filenames.insert(filename, style);
                     } else {
                         // Unknown/corrupt pattern
                         return;
@@ -154,8 +154,10 @@ fn test_lscolors() {
     assert_eq!(LsColors::default(), LsColors::from_string(&String::new()));
 
     let result = LsColors::from_string(
-        &String::from("rs=0:di=03;34:ln=01;36:*.foo=01;31:"));
+        &String::from("rs=0:di=03;34:ln=01;36:*.foo=01;35:*README=33"));
 
     assert_eq!(Colour::Blue.italic(), result.directory);
     assert_eq!(Colour::Cyan.bold(), result.symlink);
+    assert_eq!(Some(&Colour::Purple.bold()), result.extensions.get("foo"));
+    assert_eq!(Some(&Colour::Yellow.normal()), result.filenames.get("README"));
 }

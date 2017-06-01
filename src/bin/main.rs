@@ -63,12 +63,22 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                 } else if component_path.is_dir() {
                     config.ls_colors.directory
                 } else {
-                    // Loop up file extension
-                    component_path.extension()
-                                  .and_then(|e| e.to_str())
-                                  .and_then(|e| config.ls_colors.extensions.get(e))
-                                  .map(|r| r.clone())
-                                  .unwrap_or(Style::new())
+                    // Look up file name
+                    let o_style =
+                        component_path.file_name()
+                                      .and_then(|n| n.to_str())
+                                      .and_then(|n| config.ls_colors.filenames.get(n));
+
+                    match o_style {
+                        Some(s) => s.clone(),
+                        None =>
+                            // Look up file extension
+                            component_path.extension()
+                                          .and_then(|e| e.to_str())
+                                          .and_then(|e| config.ls_colors.extensions.get(e))
+                                          .map(|r| r.clone())
+                                          .unwrap_or(Style::new())
+                    }
                 };
 
             print!("{}", style.paint(comp_str.to_str().unwrap()));
