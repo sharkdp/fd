@@ -3,24 +3,22 @@ extern crate getopts;
 extern crate isatty;
 extern crate regex;
 extern crate ignore;
+extern crate fd;
 
-use std::collections::HashMap;
 use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
-use std::fs::File;
-use std::io::{Write, BufReader,BufRead};
+use std::io::Write;
 use std::path::{Path, Component};
 use std::process;
 
-use ansi_term::{Style, Colour};
+use ansi_term::Style;
 use getopts::Options;
 use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
 use ignore::WalkBuilder;
 
-/// Maps file extensions to ANSI colors / styles.
-type ExtensionStyles = HashMap<String, ansi_term::Style>;
+use fd::lscolors::LsColors;
 
 /// Configuration options for *fd*.
 struct FdOptions {
@@ -31,7 +29,7 @@ struct FdOptions {
     follow_links: bool,
     max_depth: Option<usize>,
     colored: bool,
-    extension_styles: Option<ExtensionStyles>
+    ls_colors: LsColors
 }
 
 /// Print a search result to the console.
@@ -61,21 +59,16 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                 if component_path.symlink_metadata()
                                  .map(|md| md.file_type().is_symlink())
                                  .unwrap_or(false) {
-                    Colour::Cyan.normal()
+                    config.ls_colors.symlink
                 } else if component_path.is_dir() {
-                    Colour::Blue.bold()
+                    config.ls_colors.directory
                 } else {
                     // Loop up file extension
-                    if let Some(ref ext_styles) = config.extension_styles {
-                        component_path.extension()
-                                      .and_then(|e| e.to_str())
-                                      .and_then(|e| ext_styles.get(e))
-                                      .map(|r| r.clone())
-                                      .unwrap_or(Style::new())
-                    }
-                    else {
-                        Style::new()
-                    }
+                    component_path.extension()
+                                  .and_then(|e| e.to_str())
+                                  .and_then(|e| config.ls_colors.extensions.get(e))
+                                  .map(|r| r.clone())
+                                  .unwrap_or(Style::new())
                 };
 
             print!("{}", style.paint(comp_str.to_str().unwrap()));
@@ -132,61 +125,6 @@ fn error(message: &str) -> ! {
     process::exit(1);
 }
 
-/// Parse `dircolors` file.
-fn parse_dircolors(path: &Path) -> std::io::Result<ExtensionStyles> {
-    let file = File::open(path)?;
-    let mut ext_styles = HashMap::new();
-
-    let pattern_ansi_256 =
-        Regex::new(r"^\.([A-Za-z0-9]+)\s*(?:00;)?38;5;([0-9]+)\b")
-            .unwrap();
-
-    let pattern_ansi =
-        Regex::new(r"^\.([A-Za-z0-9]+)\s*(?:([0-9]+);)?([0-9][0-9])\b")
-            .unwrap();
-
-    for line in BufReader::new(file).lines() {
-        let line_s = line.unwrap();
-        if let Some(caps) = pattern_ansi_256.captures(line_s.as_str()) {
-            if let Some(ext) = caps.get(1).map(|m| m.as_str()) {
-                let fg = caps.get(2)
-                             .map(|m| m.as_str())
-                             .and_then(|n| u8::from_str_radix(n, 10).ok())
-                             .unwrap_or(7); // white
-                ext_styles.insert(String::from(ext),
-                                  Colour::Fixed(fg).normal());
-            }
-        } else if let Some(caps) = pattern_ansi.captures(line_s.as_str()) {
-            if let Some(ext) = caps.get(1).map(|m| m.as_str()) {
-                let color_s = caps.get(3)
-                                  .map_or("", |m| m.as_str());
-                let color = match color_s {
-                    "31" => Colour::Red,
-                    "32" => Colour::Green,
-                    "33" => Colour::Yellow,
-                    "34" => Colour::Blue,
-                    "35" => Colour::Purple,
-                    "36" => Colour::Cyan,
-                    _    => Colour::White
-                };
-                let style_s = caps.get(2)
-                                  .map_or("", |m| m.as_str());
-                let style = match style_s {
-                    "1"  => color.bold(),
-                    "01" => color.bold(),
-                    "3"  => color.italic(),
-                    "03" => color.italic(),
-                    "4"  => color.underline(),
-                    "04" => color.underline(),
-                    _    => color.normal()
-                };
-                ext_styles.insert(String::from(ext), style);
-            }
-        }
-    }
-    Ok(ext_styles)
-}
-
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -231,14 +169,11 @@ fn main() {
     let colored_output = !matches.opt_present("no-color") &&
                          stdout_isatty();
 
-    let ext_styles =
-        if colored_output {
-            env::home_dir()
-                     .map(|h| h.join(".dir_colors"))
-                     .and_then(|path| parse_dircolors(&path).ok())
-        } else {
-            None
-        };
+    let ls_colors =
+        env::var("LS_COLORS")
+            .ok()
+            .map(|val| LsColors::from_string(&val))
+            .unwrap_or(LsColors::default());
 
     let config = FdOptions {
         // The search will be case-sensitive if the command line flag is set or
@@ -253,7 +188,7 @@ fn main() {
             matches.opt_str("max-depth")
                    .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
         colored:           colored_output,
-        extension_styles:  ext_styles
+        ls_colors:         ls_colors
     };
 
     match RegexBuilder::new(pattern)
