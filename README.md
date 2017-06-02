@@ -13,9 +13,10 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
 * Colorized terminal output (similar to *ls*).
-* Ignores hidden directories and files by default.
-* Regular expressions by default.
-* Unicode-aware.
+* Ignores hidden directories and files, by default.
+* Ignores patterns from your `.gitignore`, by default.
+* Regular expressions.
+* Unicode-awareness.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 
