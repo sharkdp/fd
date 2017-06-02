@@ -33,51 +33,65 @@ impl LsColors {
         }
     }
 
-    /// Parse a single ANSI style like `38;5;10`.
+    fn parse_decoration(code: &str) -> Option<fn(Colour) -> Style> {
+        match code {
+            "0" | "00" => Some(Colour::normal),
+            "1" | "01" => Some(Colour::bold),
+            "3" | "03" => Some(Colour::italic),
+            "4" | "04" => Some(Colour::underline),
+            _ => None
+        }
+    }
+
+    /// Parse ANSI escape sequences like `38;5;10;1`.
     fn parse_style(code: &str) -> Option<Style> {
         let mut split = code.split(";");
 
         if let Some(first) = split.next() {
-            let second = split.next();
-            let third = split.next();
+            // Try to match the first part as a text-decoration argument
+            let mut decoration = LsColors::parse_decoration(first);
 
-            let style =
-                if first == "38" && second == Some("5") {
+            let c1 = if decoration.is_none() { Some(first) } else { split.next() };
+            let c2 = split.next();
+            let c3 = split.next();
+
+            let color =
+                if c1 == Some("38") && c2 == Some("5") {
                     let n_white = 7;
-                    let n = if let Some(num) = third {
+                    let n = if let Some(num) = c3 {
                         u8::from_str_radix(num, 10).unwrap_or(n_white)
                     } else {
                         n_white
                     };
 
-                    Colour::Fixed(n).normal()
+                    Colour::Fixed(n)
                 } else {
-                    let style_s = if second.is_some() { first } else { "" };
-                    let color_s = second.unwrap_or(first);
-
-                    let color = match color_s {
-                        "30" => Colour::Black,
-                        "31" => Colour::Red,
-                        "32" => Colour::Green,
-                        "33" => Colour::Yellow,
-                        "34" => Colour::Blue,
-                        "35" => Colour::Purple,
-                        "36" => Colour::Cyan,
-                        _    => Colour::White
-                    };
-
-                    match style_s {
-                        "1"  => color.bold(),
-                        "01" => color.bold(),
-                        "3"  => color.italic(),
-                        "03" => color.italic(),
-                        "4"  => color.underline(),
-                        "04" => color.underline(),
-                        _    => color.normal()
+                    if let Some(color_s) = c1 {
+                        match color_s {
+                            "30" => Colour::Black,
+                            "31" => Colour::Red,
+                            "32" => Colour::Green,
+                            "33" => Colour::Yellow,
+                            "34" => Colour::Blue,
+                            "35" => Colour::Purple,
+                            "36" => Colour::Cyan,
+                            _    => Colour::White
+                        }
+                    } else {
+                        Colour::White
                     }
                 };
 
-            Some(style)
+            if decoration.is_none() {
+                // Try to find a decoration somewhere in the sequence
+                decoration = code.split(";")
+                                 .flat_map(LsColors::parse_decoration)
+                                 .next();
+            }
+
+            let ansi_style = decoration.unwrap_or(Colour::normal)(color);
+
+            Some(ansi_style)
         } else {
             None
         }
@@ -132,10 +146,13 @@ impl LsColors {
 }
 
 #[test]
-fn test_parse_style() {
+fn test_parse_simple() {
     assert_eq!(Some(Colour::Red.normal()),
                LsColors::parse_style("31"));
+}
 
+#[test]
+fn test_parse_decoration() {
     assert_eq!(Some(Colour::Red.normal()),
                LsColors::parse_style("00;31"));
 
@@ -144,13 +161,37 @@ fn test_parse_style() {
 
     assert_eq!(Some(Colour::Cyan.bold()),
                LsColors::parse_style("01;36"));
-
-    assert_eq!(Some(Colour::Fixed(115).normal()),
-               LsColors::parse_style("38;5;115"));
 }
 
 #[test]
-fn test_lscolors() {
+fn test_parse_decoration_backwards() {
+    assert_eq!(Some(Colour::Blue.italic()),
+               LsColors::parse_style("34;03"));
+
+    assert_eq!(Some(Colour::Cyan.bold()),
+               LsColors::parse_style("36;01"));
+
+    assert_eq!(Some(Colour::Red.normal()),
+               LsColors::parse_style("31;00"));
+}
+
+#[test]
+fn test_parse_256() {
+    assert_eq!(Some(Colour::Fixed(115).normal()),
+               LsColors::parse_style("38;5;115"));
+
+    assert_eq!(Some(Colour::Fixed(115).normal()),
+               LsColors::parse_style("00;38;5;115"));
+
+    assert_eq!(Some(Colour::Fixed(119).bold()),
+               LsColors::parse_style("01;38;5;119"));
+
+    assert_eq!(Some(Colour::Fixed(119).bold()),
+               LsColors::parse_style("38;5;119;01"));
+}
+
+#[test]
+fn test_from_string() {
     assert_eq!(LsColors::default(), LsColors::from_string(&String::new()));
 
     let result = LsColors::from_string(
