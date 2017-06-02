@@ -35,24 +35,18 @@ complete (and more colorful) variants, see
 [here](https://github.com/trapd00r/LS_COLORS).
 
 ## Benchmark
-A search in my home folder with ~80.000 subdirectories
-and ~350.000 files. The `--hidden` for `fd` is needed
-for a fair comparison, as *find* does this by default:
+A search in my home folder with ~150.000 subdirectories and ~1M files. The given options for
+`fd` are needed for a fair comparison (otherwise `fd` is even faster by a factor of 4 because it
+does not have to search hidden and ignored paths):
 ``` bash
-> time fd --hidden '\.jpg$' > /dev/null
-0,39s user 0,40s system 99% cpu 0,790 total
+> time fd --hidden --no-ignore --full-path '.*[0-9]\.jpg$' > /dev/null
+1,03s user 0,92s system 99% cpu 1,961 total
 
-> time find -iname '*.jpg' > /dev/null
-0,36s user 0,42s system 98% cpu 0,789 total
+> time find -iregex '.*[0-9]\.jpg$' > /dev/null
+3,98s user 0,84s system 99% cpu 4,832 total
 ```
-Both tools found the exact same 5504 files and have
-a comparable performance (averaged over multiple runs),
-even though *fd* performs a regex search.
-If we do the same for *find*, it is significantly slower:
-``` bash
-> time find -iregex '.*\.jpg$' > /dev/null
-1,29s user 0,41s system 99% cpu 1,705 total
-```
+Both tools found the exact same 14030 files and the results are comparable when averaged over
+multiple runs.
 
 ## Install
 With [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
