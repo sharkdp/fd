@@ -1,34 +1,35 @@
 # fd
 [![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 
-*fd* is a simple, fast and user-friendly alternative to [*find*](https://www.gnu.org/software/findutils/).
+*fd* is a simple, fast and user-friendly alternative to
+[*find*](https://www.gnu.org/software/findutils/).
 
-While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible (opinionated)
-defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
+While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible
+(opinionated) defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
 
 ## Features
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
-* Ignores hidden directories and files by default.
 * Colorized terminal output (similar to *ls*).
+* Ignores hidden directories and files by default.
 * Regular expressions by default.
 * Unicode-aware.
-* The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than `find` :-).
+* The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
+  `find` :-).
 
 ## Demo
 
 ![Demo](http://i.imgur.com/iU6qkQj.gif)
 
 ## Colorized output
-*fd* can colorize files by extension, just like *ls*. In order for
-this to work, you need to set up a `~/.dir_colors` file. The easiest
-way is to call
-```
-dircolors --print-database > ~/.dir_colors
-```
-More complete (and more colorful) alternatives can be found
+`fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
+variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
+of this variable is set by the `dircolors` command which provides a convenient configuration format
+to define colors for different file formats.
+On most distributions, `LS_COLORS` should be set already. If you are looking for alternative, more
+complete (and more colorful) variants, see
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
 
@@ -40,7 +41,7 @@ for a fair comparison, as *find* does this by default:
 > time fd --hidden '\.jpg$' > /dev/null
 0,39s user 0,40s system 99% cpu 0,790 total
 
-> time find -iname '*.jpg' > /dev/null 
+> time find -iname '*.jpg' > /dev/null
 0,36s user 0,42s system 98% cpu 0,789 total
 ```
 Both tools found the exact same 5504 files and have
