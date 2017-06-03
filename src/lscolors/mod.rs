@@ -22,9 +22,9 @@ pub struct LsColors {
     pub filenames: FilenameStyles,
 }
 
-impl LsColors {
+impl Default for LsColors {
     /// Get a default LsColors structure.
-    pub fn default() -> LsColors {
+    fn default() -> LsColors {
         LsColors {
             directory: Colour::Blue.bold(),
             symlink: Colour::Cyan.normal(),
@@ -32,7 +32,9 @@ impl LsColors {
             filenames: HashMap::new()
         }
     }
+}
 
+impl LsColors {
     fn parse_decoration(code: &str) -> Option<fn(Colour) -> Style> {
         match code {
             "0" | "00" => Some(Colour::normal),
@@ -45,7 +47,7 @@ impl LsColors {
 
     /// Parse ANSI escape sequences like `38;5;10;1`.
     fn parse_style(code: &str) -> Option<Style> {
-        let mut split = code.split(";");
+        let mut split = code.split(';');
 
         if let Some(first) = split.next() {
             // Try to match the first part as a text-decoration argument
@@ -65,26 +67,24 @@ impl LsColors {
                     };
 
                     Colour::Fixed(n)
-                } else {
-                    if let Some(color_s) = c1 {
-                        match color_s {
-                            "30" => Colour::Black,
-                            "31" => Colour::Red,
-                            "32" => Colour::Green,
-                            "33" => Colour::Yellow,
-                            "34" => Colour::Blue,
-                            "35" => Colour::Purple,
-                            "36" => Colour::Cyan,
-                            _    => Colour::White
-                        }
-                    } else {
-                        Colour::White
+                } else if let Some(color_s) = c1 {
+                    match color_s {
+                        "30" => Colour::Black,
+                        "31" => Colour::Red,
+                        "32" => Colour::Green,
+                        "33" => Colour::Yellow,
+                        "34" => Colour::Blue,
+                        "35" => Colour::Purple,
+                        "36" => Colour::Cyan,
+                        _    => Colour::White
                     }
+                } else {
+                    Colour::White
                 };
 
             if decoration.is_none() {
                 // Try to find a decoration somewhere in the sequence
-                decoration = code.split(";")
+                decoration = code.split(';')
                                  .flat_map(LsColors::parse_decoration)
                                  .next();
             }
@@ -99,7 +99,7 @@ impl LsColors {
 
     /// Add a new LS_COLORS entry
     fn add_entry(&mut self, input: &str) {
-        let mut parts = input.trim().split("=");
+        let mut parts = input.trim().split('=');
         if let Some(pattern) = parts.next() {
             if let Some(style_code) = parts.next() {
                 // Ensure that the input was split into exactly two parts:
@@ -121,7 +121,7 @@ impl LsColors {
                         let extension = String::from(pattern).split_off(2);
                         self.extensions.insert(extension, style);
                     }
-                    else if pattern.starts_with("*") {
+                    else if pattern.starts_with('*') {
                         let filename = String::from(pattern).split_off(1);
                         self.filenames.insert(filename, style);
                     } else {
@@ -134,11 +134,11 @@ impl LsColors {
     }
 
     /// Generate a `LsColors` structure from a string.
-    pub fn from_string(input: &String) -> LsColors {
+    pub fn from_string(input: &str) -> LsColors {
         let mut lscolors = LsColors::default();
 
-        for s in input.split(":") {
-            lscolors.add_entry(&s);
+        for s in input.split(':') {
+            lscolors.add_entry(s);
         }
 
         lscolors

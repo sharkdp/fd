@@ -12,7 +12,6 @@ use std::io::Write;
 use std::path::{Path, Component};
 use std::process;
 
-use ansi_term::Style;
 use getopts::Options;
 use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
@@ -70,14 +69,14 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                                       .and_then(|n| config.ls_colors.filenames.get(n));
 
                     match o_style {
-                        Some(s) => s.clone(),
+                        Some(s) => *s,
                         None =>
                             // Look up file extension
                             component_path.extension()
                                           .and_then(|e| e.to_str())
                                           .and_then(|e| config.ls_colors.extensions.get(e))
-                                          .map(|r| r.clone())
-                                          .unwrap_or(Style::new())
+                                          .cloned()
+                                          .unwrap_or_default()
                     }
                 };
 
@@ -124,7 +123,7 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
             };
 
         search_str.and_then(|s| pattern.find(s))
-                  .map(|_| print_entry(&root, path_rel, &config));
+                  .map(|_| print_entry(root, path_rel, config));
     }
 }
 
@@ -163,7 +162,7 @@ fn main() {
 
     if matches.opt_present("h") {
         let brief = "Usage: fd [options] [PATTERN]";
-        print!("{}", opts.usage(&brief));
+        print!("{}", opts.usage(brief));
         process::exit(1);
     }
 
@@ -183,7 +182,7 @@ fn main() {
         env::var("LS_COLORS")
             .ok()
             .map(|val| LsColors::from_string(&val))
-            .unwrap_or(LsColors::default());
+            .unwrap_or_default();
 
     let config = FdOptions {
         // The search will be case-sensitive if the command line flag is set or
@@ -204,7 +203,7 @@ fn main() {
     match RegexBuilder::new(pattern)
               .case_insensitive(!config.case_sensitive)
               .build() {
-        Ok(re)   => scan(&current_dir, &re, &config),
+        Ok(re)   => scan(current_dir, &re, &config),
         Err(err) => error(err.description())
     }
 }
