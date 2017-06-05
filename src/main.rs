@@ -3,7 +3,8 @@ extern crate getopts;
 extern crate isatty;
 extern crate regex;
 extern crate ignore;
-extern crate fd;
+
+pub mod lscolors;
 
 use std::env;
 use std::error::Error;
@@ -17,7 +18,7 @@ use isatty::stdout_isatty;
 use regex::{Regex, RegexBuilder};
 use ignore::WalkBuilder;
 
-use fd::lscolors::LsColors;
+use lscolors::LsColors;
 
 /// Configuration options for *fd*.
 struct FdOptions {

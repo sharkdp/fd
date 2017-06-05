@@ -3,14 +3,6 @@ name = "fd"
 version = "0.3.0"
 authors = ["David Peter <mail@david-peter.de>"]
 
-[[bin]]
-name = "fd"
-path = "src/bin/main.rs"
-
-[lib]
-name = "fd"
-path = "src/fd.rs"
-
 [dependencies]
 ansi_term = "0.9"
 getopts = "0.2"
