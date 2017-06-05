@@ -22,14 +22,31 @@ use lscolors::LsColors;
 
 /// Configuration options for *fd*.
 struct FdOptions {
+    /// Determines whether the regex search is case-sensitive or case-insensitive.
     case_sensitive: bool,
+
+    /// Whether to search within the full file path or just the base name (filename or directory
+    /// name).
     search_full_path: bool,
+
+    /// Whether to ignore hidden files and directories (or not).
     ignore_hidden: bool,
+
+    /// Whether to respect VCS ignore files (`.gitignore`, `.ignore`, ..) or not.
     read_ignore: bool,
+
+    /// Whether to follow symlinks or not.
     follow_links: bool,
+
+    /// The maximum search depth, or `None` if no maximum search depth should be set.
+    ///
+    /// A depth of `1` includes all files under the current directory, a depth of `2` also includes
+    /// all files under subdirectories of the current directory, etc.
     max_depth: Option<usize>,
-    colored: bool,
-    ls_colors: LsColors
+
+    /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
+    /// how to style different filetypes.
+    ls_colors: Option<LsColors>
 }
 
 /// Print a search result to the console.
@@ -41,9 +58,7 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
         None    => return
     };
 
-    if !config.colored {
-        println!("{}", path_str);
-    } else {
+    if let Some(ref ls_colors) = config.ls_colors {
         let mut component_path = path_root.to_path_buf();
 
         // Traverse the path and colorize each component
@@ -59,15 +74,15 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                 if component_path.symlink_metadata()
                                  .map(|md| md.file_type().is_symlink())
                                  .unwrap_or(false) {
-                    config.ls_colors.symlink
+                    ls_colors.symlink
                 } else if component_path.is_dir() {
-                    config.ls_colors.directory
+                    ls_colors.directory
                 } else {
                     // Look up file name
                     let o_style =
                         component_path.file_name()
                                       .and_then(|n| n.to_str())
-                                      .and_then(|n| config.ls_colors.filenames.get(n));
+                                      .and_then(|n| ls_colors.filenames.get(n));
 
                     match o_style {
                         Some(s) => *s,
@@ -75,7 +90,7 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                             // Look up file extension
                             component_path.extension()
                                           .and_then(|e| e.to_str())
-                                          .and_then(|e| config.ls_colors.extensions.get(e))
+                                          .and_then(|e| ls_colors.extensions.get(e))
                                           .cloned()
                                           .unwrap_or_default()
                     }
@@ -89,11 +104,13 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
             }
         }
         println!();
+    } else {
+        // Uncolored output:
+        println!("{}", path_str);
     }
 }
 
-/// Recursively scan the given root path and search for files / pathnames
-/// matching the pattern.
+/// Recursively scan the given root path and search for files / pathnames matching the pattern.
 fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
     let walker = WalkBuilder::new(root)
                      .hidden(config.ignore_hidden)
@@ -176,28 +193,34 @@ fn main() {
     };
     let current_dir = current_dir_buf.as_path();
 
+    // The search will be case-sensitive if the command line flag is set or
+    // if the pattern has an uppercase character (smart case).
+    let case_sensitive = matches.opt_present("sensitive") ||
+                         pattern.chars().any(char::is_uppercase);
+
     let colored_output = !matches.opt_present("no-color") &&
                          stdout_isatty();
 
     let ls_colors =
-        env::var("LS_COLORS")
-            .ok()
-            .map(|val| LsColors::from_string(&val))
-            .unwrap_or_default();
+        if colored_output {
+            Some(
+                env::var("LS_COLORS")
+                    .ok()
+                    .map(|val| LsColors::from_string(&val))
+                    .unwrap_or_default()
+            )
+        } else {
+            None
+        };
 
     let config = FdOptions {
-        // The search will be case-sensitive if the command line flag is set or
-        // if the pattern has an uppercase character (smart case).
-        case_sensitive:    matches.opt_present("sensitive") ||
-                           pattern.chars().any(char::is_uppercase),
+        case_sensitive:    case_sensitive,
         search_full_path:  matches.opt_present("full-path"),
         ignore_hidden:     !matches.opt_present("hidden"),
         read_ignore:       !matches.opt_present("no-ignore"),
         follow_links:      matches.opt_present("follow"),
-        max_depth:
-            matches.opt_str("max-depth")
-                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
-        colored:           colored_output,
+        max_depth:         matches.opt_str("max-depth")
+                                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
         ls_colors:         ls_colors
     };
 

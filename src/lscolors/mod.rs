@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+/// A parser for the `LS_COLORS` environment variable.
 
+use std::collections::HashMap;
 use ansi_term::{Style, Colour};
 
 /// Maps file extensions to ANSI colors / styles.
@@ -14,11 +15,19 @@ const LS_CODES: &'static [&'static str] =
       "ec", "su", "su", "sg", "sg", "st", "ow", "ow", "tw", "tw", "ca", "mh",
       "cl"];
 
+/// Defines how different file system entries should be colorized / styled.
 #[derive(Debug, PartialEq)]
 pub struct LsColors {
+    /// ANSI Style for directories.
     pub directory: Style,
+
+    /// ANSI style for symbolic links.
     pub symlink: Style,
+
+    /// A map that defines ANSI styles for different file extensions.
     pub extensions: ExtensionStyles,
+
+    /// A map that defines ANSI styles for different specific filenames.
     pub filenames: FilenameStyles,
 }
 
@@ -35,6 +44,7 @@ impl Default for LsColors {
 }
 
 impl LsColors {
+    /// Parse a single text-decoration code (normal, bold, italic, ...).
     fn parse_decoration(code: &str) -> Option<fn(Colour) -> Style> {
         match code {
             "0" | "00" => Some(Colour::normal),
@@ -97,7 +107,7 @@ impl LsColors {
         }
     }
 
-    /// Add a new LS_COLORS entry
+    /// Add a new `LS_COLORS` entry.
     fn add_entry(&mut self, input: &str) {
         let mut parts = input.trim().split('=');
         if let Some(pattern) = parts.next() {
