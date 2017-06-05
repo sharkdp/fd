@@ -12,6 +12,7 @@ use std::error::Error;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, Component};
 use std::process;
 
@@ -76,6 +77,13 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
         None    => return
     };
 
+    let is_executable = |p: &std::path::PathBuf| {
+        p.metadata()
+         .ok()
+         .map(|f| f.permissions().mode() & 0o111 != 0)
+         .unwrap_or(false)
+    };
+
     if let Some(ref ls_colors) = config.ls_colors {
         let mut component_path = base.to_path_buf();
 
@@ -100,6 +108,8 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
                     ls_colors.symlink
                 } else if component_path.is_dir() {
                     ls_colors.directory
+                } else if is_executable(&component_path) {
+                    ls_colors.executable
                 } else {
                     // Look up file name
                     let o_style =

@@ -24,6 +24,9 @@ pub struct LsColors {
     /// ANSI style for symbolic links.
     pub symlink: Style,
 
+    /// ANSI style for executable files.
+    pub executable: Style,
+
     /// A map that defines ANSI styles for different file extensions.
     pub extensions: ExtensionStyles,
 
@@ -37,6 +40,7 @@ impl Default for LsColors {
         LsColors {
             directory: Colour::Blue.bold(),
             symlink: Colour::Cyan.normal(),
+            executable: Colour::Red.bold(),
             extensions: HashMap::new(),
             filenames: HashMap::new()
         }
@@ -125,6 +129,7 @@ impl LsColors {
                         match code.as_ref() {
                             "di" => self.directory = style,
                             "ln" => self.symlink = style,
+                            "ex" => self.executable = style,
                             _ => return
                         }
                     } else if pattern.starts_with("*.") {
