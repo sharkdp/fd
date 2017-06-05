@@ -22,6 +22,16 @@ use ignore::WalkBuilder;
 
 use lscolors::LsColors;
 
+/// Defines how to display search result paths.
+#[derive(PartialEq)]
+enum PathDisplay {
+    /// As an absolute path
+    Absolute,
+
+    /// As a relative path
+    Relative
+}
+
 /// Configuration options for *fd*.
 struct FdOptions {
     /// Determines whether the regex search is case-sensitive or case-insensitive.
@@ -46,25 +56,35 @@ struct FdOptions {
     /// all files under subdirectories of the current directory, etc.
     max_depth: Option<usize>,
 
+    /// Display results as relative or absolute path.
+    path_display: PathDisplay,
+
     /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
     /// how to style different filetypes.
     ls_colors: Option<LsColors>
 }
 
-/// Print a search result to the console.
-fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
-    let path_full = path_root.join(path_entry);
+/// Root directory
+static ROOT_DIR : &str = "/";
 
-    let path_str = match path_entry.to_str() {
+/// Print a search result to the console.
+fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
+    let path_full = base.join(entry);
+
+    let path_str = match entry.to_str() {
         Some(p) => p,
         None    => return
     };
 
     if let Some(ref ls_colors) = config.ls_colors {
-        let mut component_path = path_root.to_path_buf();
+        let mut component_path = base.to_path_buf();
+
+        if config.path_display == PathDisplay::Absolute {
+            print!("{}", ls_colors.directory.paint(ROOT_DIR));
+        }
 
         // Traverse the path and colorize each component
-        for component in path_entry.components() {
+        for component in entry.components() {
             let comp_str = match component {
                 Component::Normal(p) => p.to_str().unwrap(),
                 Component::ParentDir => "..",
@@ -108,13 +128,17 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
         }
         println!();
     } else {
-        // Uncolored output:
+        // Uncolorized output:
+
+        if config.path_display == PathDisplay::Absolute {
+            print!("{}", ROOT_DIR);
+        }
         println!("{}", path_str);
     }
 }
 
-/// Recursively scan the given root path and search for files / pathnames matching the pattern.
-fn scan(cwd: &Path, root: &Path, pattern: &Regex, config: &FdOptions) {
+/// Recursively scan the given search path and search for files / pathnames matching the pattern.
+fn scan(root: &Path, pattern: &Regex, base: &Path, config: &FdOptions) {
     let walker = WalkBuilder::new(root)
                      .hidden(config.ignore_hidden)
                      .ignore(config.read_ignore)
@@ -130,7 +154,7 @@ fn scan(cwd: &Path, root: &Path, pattern: &Regex, config: &FdOptions) {
                      .filter(|e| e.path() != root);
 
     for entry in walker {
-        let path_rel_buf = match fshelper::path_relative_from(entry.path(), cwd) {
+        let path_rel_buf = match fshelper::path_relative_from(entry.path(), base) {
             Some(p) => p,
             None => error("Could not get relative path for directory entry.")
         };
@@ -145,7 +169,7 @@ fn scan(cwd: &Path, root: &Path, pattern: &Regex, config: &FdOptions) {
             };
 
         search_str.and_then(|s| pattern.find(s))
-                  .map(|_| print_entry(cwd, path_rel, config));
+                  .map(|_| print_entry(base, path_rel, config));
     }
 }
 
@@ -176,6 +200,8 @@ fn main() {
                       "do not colorize output");
     opts.optopt("d", "max-depth",
                      "maximum search depth (default: none)", "D");
+    opts.optflag("a", "absolute",
+                      "show absolute instead of relative paths");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
@@ -233,13 +259,24 @@ fn main() {
         follow_links:      matches.opt_present("follow"),
         max_depth:         matches.opt_str("max-depth")
                                    .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
+        path_display:      if matches.opt_present("absolute") {
+                               PathDisplay::Absolute
+                           } else {
+                               PathDisplay::Relative
+                           },
         ls_colors:         ls_colors
+    };
+
+    let root = Path::new(ROOT_DIR);
+    let base = match config.path_display {
+        PathDisplay::Relative => current_dir,
+        PathDisplay::Absolute => root
     };
 
     match RegexBuilder::new(pattern)
               .case_insensitive(!config.case_sensitive)
               .build() {
-        Ok(re)   => scan(current_dir, root_dir, &re, &config),
+        Ok(re)   => scan(root_dir, &re, base, &config),
         Err(err) => error(err.description())
     }
 }

@@ -189,5 +189,14 @@ expect "a.foo
 one
 symlink" --max-depth 1
 
+
+suite "Absolute paths (--absolute)"
+expect "$root/a.foo
+$root/one/b.foo
+$root/one/two/c.foo
+$root/one/two/C.Foo
+$root/one/two/three/d.foo
+$root/one/two/three/directory_foo" --absolute foo
+
 # All done
 echo
