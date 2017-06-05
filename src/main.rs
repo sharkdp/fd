@@ -202,7 +202,7 @@ fn main() {
     // Get the root directory for the search
     let root_dir_buf = matches.free.get(1)
                                    .and_then(|r| fs::canonicalize(r).ok())
-                                   .unwrap_or(current_dir_buf.clone());
+                                   .unwrap_or_else(|| current_dir_buf.clone());
     let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
