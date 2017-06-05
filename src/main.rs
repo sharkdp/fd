@@ -5,10 +5,12 @@ extern crate regex;
 extern crate ignore;
 
 pub mod lscolors;
+pub mod fshelper;
 
 use std::env;
 use std::error::Error;
 use std::ffi::OsStr;
+use std::fs;
 use std::io::Write;
 use std::path::{Path, Component};
 use std::process;
@@ -64,7 +66,8 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
         // Traverse the path and colorize each component
         for component in path_entry.components() {
             let comp_str = match component {
-                Component::Normal(p) => p,
+                Component::Normal(p) => p.to_str().unwrap(),
+                Component::ParentDir => "..",
                 _                    => error("Unexpected path component")
             };
 
@@ -96,7 +99,7 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
                     }
                 };
 
-            print!("{}", style.paint(comp_str.to_str().unwrap()));
+            print!("{}", style.paint(comp_str));
 
             if component_path.is_dir() && component_path != path_full {
                 let sep = std::path::MAIN_SEPARATOR.to_string();
@@ -111,7 +114,7 @@ fn print_entry(path_root: &Path, path_entry: &Path, config: &FdOptions) {
 }
 
 /// Recursively scan the given root path and search for files / pathnames matching the pattern.
-fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
+fn scan(cwd: &Path, root: &Path, pattern: &Regex, config: &FdOptions) {
     let walker = WalkBuilder::new(root)
                      .hidden(config.ignore_hidden)
                      .ignore(config.read_ignore)
@@ -127,10 +130,11 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
                      .filter(|e| e.path() != root);
 
     for entry in walker {
-        let path_rel = match entry.path().strip_prefix(root) {
-            Ok(p) => p,
-            Err(_) => continue
+        let path_rel_buf = match fshelper::path_relative_from(entry.path(), cwd) {
+            Some(p) => p,
+            None => error("Could not get relative path for directory entry.")
         };
+        let path_rel = path_rel_buf.as_path();
 
         let search_str =
             if config.search_full_path {
@@ -141,7 +145,7 @@ fn scan(root: &Path, pattern: &Regex, config: &FdOptions) {
             };
 
         search_str.and_then(|s| pattern.find(s))
-                  .map(|_| print_entry(root, path_rel, config));
+                  .map(|_| print_entry(cwd, path_rel, config));
     }
 }
 
@@ -170,8 +174,8 @@ fn main() {
                       "follow symlinks");
     opts.optflag("n", "no-color",
                       "do not colorize output");
-    opts.optopt( "d", "max-depth",
-                      "maximum search depth (default: none)", "D");
+    opts.optopt("d", "max-depth",
+                     "maximum search depth (default: none)", "D");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m)  => m,
@@ -179,19 +183,27 @@ fn main() {
     };
 
     if matches.opt_present("h") {
-        let brief = "Usage: fd [options] [PATTERN]";
+        let brief = "Usage: fd [options] [PATTERN] [PATH]";
         print!("{}", opts.usage(brief));
         process::exit(1);
     }
 
-    let empty = String::new();
-    let pattern = matches.free.get(0).unwrap_or(&empty);
+    // Get the search pattern
+    let empty_pattern = String::new();
+    let pattern = matches.free.get(0).unwrap_or(&empty_pattern);
 
+    // Get the current working directory
     let current_dir_buf = match env::current_dir() {
         Ok(cd) => cd,
         Err(_) => error("Could not get current directory!")
     };
     let current_dir = current_dir_buf.as_path();
+
+    // Get the root directory for the search
+    let root_dir_buf = matches.free.get(1)
+                                   .and_then(|r| fs::canonicalize(r).ok())
+                                   .unwrap_or(current_dir_buf.clone());
+    let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
@@ -227,7 +239,7 @@ fn main() {
     match RegexBuilder::new(pattern)
               .case_insensitive(!config.case_sensitive)
               .build() {
-        Ok(re)   => scan(current_dir, &re, &config),
+        Ok(re)   => scan(current_dir, root_dir, &re, &config),
         Err(err) => error(err.description())
     }
 }

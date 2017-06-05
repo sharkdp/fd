@@ -88,6 +88,23 @@ one/two/three/d.foo
 one/two/three/directory_foo
 symlink" # run 'fd' without arguments
 
+suite "Explicit root path"
+expect "one/b.foo
+one/two/c.foo
+one/two/C.Foo
+one/two/three/d.foo
+one/two/three/directory_foo" foo one
+expect "one/two/three/d.foo
+one/two/three/directory_foo" foo one/two/three
+(
+cd one/two
+expect "../../a.foo
+../b.foo
+c.foo
+C.Foo
+three/d.foo
+three/directory_foo" foo ../../
+)
 
 suite "Regex searches"
 expect "a.foo
