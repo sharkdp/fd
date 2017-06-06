@@ -66,7 +66,7 @@ struct FdOptions {
 }
 
 /// Root directory
-static ROOT_DIR : &str = "/";
+static ROOT_DIR : &'static str = "/";
 
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
