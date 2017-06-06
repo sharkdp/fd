@@ -53,6 +53,7 @@ With [cargo](https://github.com/rust-lang/cargo), you can clone, build and insta
 ```
 cargo install --git https://github.com/sharkdp/fd
 ```
+Note that rust version *1.16.0* or later is required.
 The release page of this repository also includes precompiled binaries for Linux.
 
 ## Development
