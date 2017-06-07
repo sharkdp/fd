@@ -138,12 +138,16 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
         }
         println!();
     } else {
-        // Uncolorized output:
+        // Uncolorized output
 
-        if config.path_display == PathDisplay::Absolute {
-            print!("{}", ROOT_DIR);
+        let prefix = if config.path_display == PathDisplay::Absolute { ROOT_DIR } else { "" };
+
+        let r = writeln!(&mut std::io::stdout(), "{}{}", prefix, path_str);
+
+        if r.is_err() {
+            // Probably a broken pipe. Exit gracefully.
+            process::exit(0);
         }
-        println!("{}", path_str);
     }
 }
 
