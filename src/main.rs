@@ -12,7 +12,7 @@ use std::error::Error;
 use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, Component};
 use std::process;
@@ -78,7 +78,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
         None    => return
     };
 
-    #[cfg(target_os = "linux")]
+    #[cfg(target_os = "unix")]
     let is_executable = |p: &std::path::PathBuf| {
         p.metadata()
          .ok()
@@ -86,7 +86,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
          .unwrap_or(false)
     };
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(not(target_os = "unix"))]
     let is_executable =  |p: &std::path::PathBuf| {false};
 
     if let Some(ref ls_colors) = config.ls_colors {
