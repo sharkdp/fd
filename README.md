@@ -36,17 +36,28 @@ complete (and more colorful) variants, see
 
 ## Benchmark
 A search in my home folder with ~150.000 subdirectories and ~1M files. The given options for
-`fd` are needed for a fair comparison (otherwise `fd` is even faster by a factor of 4 because it
+`fd` are needed for a fair comparison (otherwise `fd` is even faster by a factor of 5 because it
 does not have to search hidden and ignored paths):
-``` bash
-> time fd --hidden --no-ignore --full-path '.*[0-9]\.jpg$' > /dev/null
-1,03s user 0,92s system 99% cpu 1,961 total
-
-> time find -iregex '.*[0-9]\.jpg$' > /dev/null
-3,98s user 0,84s system 99% cpu 4,832 total
 ```
-Both tools found the exact same 14030 files and the results are comparable when averaged over
-multiple runs.
+benchmarking bench/fd --hidden --no-ignore --full-path '.*[0-9]\.jpg$' ~
+time                 2.800 s    (2.722 s .. 2.895 s)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 2.821 s    (2.810 s .. 2.831 s)
+std dev              16.52 ms   (0.0 s .. 17.02 ms)
+variance introduced by outliers: 19% (moderately inflated)
+
+benchmarking bench/find ~ -iregex '.*[0-9]\.jpg$'
+time                 5.593 s    (5.412 s .. 5.798 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 5.542 s    (5.502 s .. 5.567 s)
+std dev              37.32 ms   (0.0 s .. 42.77 ms)
+variance introduced by outliers: 19% (moderately inflated)
+```
+(benchmarking tool: [bench](https://github.com/Gabriel439/bench))
+
+Both tools found the exact same 14030 files. Note that we have used the `-iregex` option for `find`
+in order for both tools to perform a regular expression search. Both tools are comparably fast if
+`-iname '*[0-9].jpg'` is used for `find`.
 
 ## Install
 With [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
