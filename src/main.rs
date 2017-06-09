@@ -78,7 +78,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
         None    => return
     };
 
-    #[cfg(target_os = "unix")]
+    #[cfg(target_family = "unix")]
     let is_executable = |p: &std::path::PathBuf| {
         p.metadata()
          .ok()
@@ -86,7 +86,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
          .unwrap_or(false)
     };
 
-    #[cfg(not(target_os = "unix"))]
+    #[cfg(not(target_family = "unix"))]
     let is_executable =  |p: &std::path::PathBuf| {false};
 
     if let Some(ref ls_colors) = config.ls_colors {
