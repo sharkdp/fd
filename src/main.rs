@@ -90,6 +90,8 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
     let is_executable =  |p: &std::path::PathBuf| {false};
 
     if let Some(ref ls_colors) = config.ls_colors {
+        let default_style = ansi_term::Style::default();
+
         let mut component_path = base.to_path_buf();
 
         if config.path_display == PathDisplay::Absolute {
@@ -110,11 +112,11 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
                 if component_path.symlink_metadata()
                                  .map(|md| md.file_type().is_symlink())
                                  .unwrap_or(false) {
-                    ls_colors.symlink
+                    &ls_colors.symlink
                 } else if component_path.is_dir() {
-                    ls_colors.directory
+                    &ls_colors.directory
                 } else if is_executable(&component_path) {
-                    ls_colors.executable
+                    &ls_colors.executable
                 } else {
                     // Look up file name
                     let o_style =
@@ -123,14 +125,13 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
                                       .and_then(|n| ls_colors.filenames.get(n));
 
                     match o_style {
-                        Some(s) => *s,
+                        Some(s) => s,
                         None =>
                             // Look up file extension
                             component_path.extension()
                                           .and_then(|e| e.to_str())
                                           .and_then(|e| ls_colors.extensions.get(e))
-                                          .cloned()
-                                          .unwrap_or_default()
+                                          .unwrap_or(&default_style)
                     }
                 };
 
