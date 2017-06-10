@@ -1,6 +1,6 @@
 extern crate ansi_term;
 extern crate getopts;
-extern crate isatty;
+extern crate atty;
 extern crate regex;
 extern crate ignore;
 
@@ -18,7 +18,7 @@ use std::path::{Path, Component};
 use std::process;
 
 use getopts::Options;
-use isatty::stdout_isatty;
+use atty::Stream;
 use regex::{Regex, RegexBuilder};
 use ignore::WalkBuilder;
 
@@ -257,7 +257,7 @@ fn main() {
                          pattern.chars().any(char::is_uppercase);
 
     let colored_output = !matches.opt_present("no-color") &&
-                         stdout_isatty();
+                         atty::is(Stream::Stdout);
 
     let ls_colors =
         if colored_output {

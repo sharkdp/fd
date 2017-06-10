@@ -6,6 +6,6 @@ authors = ["David Peter <mail@david-peter.de>"]
 [dependencies]
 ansi_term = "0.9"
 getopts = "0.2"
-isatty = "0.1"
+atty = "0.2"
 regex = "0.2"
 ignore = "0.2"
