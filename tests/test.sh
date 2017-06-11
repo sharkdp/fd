@@ -198,5 +198,10 @@ $root/one/two/C.Foo
 $root/one/two/three/d.foo
 $root/one/two/three/directory_foo" --absolute-path foo
 
+
+suite "Invalid UTF-8"
+touch "$(printf 'test-invalid-utf8-\xc3.txt')"
+expect "$(printf 'test-invalid-utf8-\ufffd.txt')" test-invalid-utf8
+
 # All done
 echo
