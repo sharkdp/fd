@@ -105,7 +105,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
             let comp_str = match component {
                 Component::Normal(p) => p.to_string_lossy(),
                 Component::ParentDir => Cow::from(PARENT_DIR),
-                _                    => error("Unexpected path component")
+                _                    => error("Error: unexpected path component")
             };
 
             component_path.push(Path::new(comp_str.deref()));
@@ -178,7 +178,7 @@ fn scan(root: &Path, pattern: &Regex, base: &Path, config: &FdOptions) {
     for entry in walker {
         let path_rel_buf = match fshelper::path_relative_from(entry.path(), base) {
             Some(p) => p,
-            None => error("Could not get relative path for directory entry.")
+            None => error("Error: could not get relative path for directory entry.")
         };
         let path_rel = path_rel_buf.as_path();
 
@@ -257,14 +257,23 @@ fn main() {
     // Get the current working directory
     let current_dir_buf = match env::current_dir() {
         Ok(cd) => cd,
-        Err(_) => error("Could not get current directory!")
+        Err(_) => error("Error: could not get current directory!")
     };
     let current_dir = current_dir_buf.as_path();
 
     // Get the root directory for the search
-    let root_dir_buf = matches.value_of("path")
-                                   .and_then(|r| fs::canonicalize(r).ok())
-                                   .unwrap_or_else(|| current_dir_buf.clone());
+    let root_dir_buf = if let Some(rd) = matches.value_of("path") {
+        fs::canonicalize(rd).unwrap_or_else(
+            |_| error(&format!("Error: could not find directory '{}'", rd))
+        )
+    } else {
+        current_dir_buf.clone()
+    };
+
+    if !root_dir_buf.is_dir() {
+        error(&format!("Error: '{}' is not a directory", root_dir_buf.to_string_lossy()));
+    }
+
     let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
@@ -294,7 +303,7 @@ fn main() {
         read_ignore:       !matches.is_present("no-ignore"),
         follow_links:      matches.is_present("follow"),
         max_depth:         matches.value_of("depth")
-                                   .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
+                                   .and_then(|ds| usize::from_str_radix(ds, 10).ok()),
         path_display:      if matches.is_present("absolute-path") {
                                PathDisplay::Absolute
                            } else {
