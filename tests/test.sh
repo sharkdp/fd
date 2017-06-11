@@ -113,7 +113,7 @@ one/two/c.foo
 one/two/C.Foo" '[a-c].foo'
 expect "a.foo
 one/b.foo
-one/two/c.foo" --sensitive '[a-c].foo'
+one/two/c.foo" --case-sensitive '[a-c].foo'
 
 
 
@@ -124,9 +124,9 @@ expect "one/two/C.Foo" C.Foo
 expect "one/two/C.Foo" Foo
 
 
-suite "Case-sensitivity (--sensitive)"
-expect "one/two/c.foo" --sensitive c.foo
-expect "one/two/C.Foo" --sensitive C.Foo
+suite "Case-sensitivity (--case-sensitive)"
+expect "one/two/c.foo" --case-sensitive c.foo
+expect "one/two/C.Foo" --case-sensitive C.Foo
 
 
 suite "Full path search (--full-path)"
@@ -190,13 +190,13 @@ one
 symlink" --max-depth 1
 
 
-suite "Absolute paths (--absolute)"
+suite "Absolute paths (--absolute-path)"
 expect "$root/a.foo
 $root/one/b.foo
 $root/one/two/c.foo
 $root/one/two/C.Foo
 $root/one/two/three/d.foo
-$root/one/two/three/directory_foo" --absolute foo
+$root/one/two/three/directory_foo" --absolute-path foo
 
 # All done
 echo

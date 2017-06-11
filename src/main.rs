@@ -1,5 +1,6 @@
+#[macro_use]
+extern crate clap;
 extern crate ansi_term;
-extern crate getopts;
 extern crate atty;
 extern crate regex;
 extern crate ignore;
@@ -17,7 +18,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, Component};
 use std::process;
 
-use getopts::Options;
+use clap::{App, AppSettings, Arg};
 use atty::Stream;
 use regex::{Regex, RegexBuilder};
 use ignore::WalkBuilder;
@@ -201,42 +202,54 @@ fn error(message: &str) -> ! {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    let mut opts = Options::new();
-    opts.optflag("h", "help",
-                      "print this help message");
-    opts.optflag("s", "sensitive",
-                      "case-sensitive search (default: smart case)");
-    opts.optflag("p", "full-path",
-                      "search full path (default: file-/dirname only)");
-    opts.optflag("H", "hidden",
-                      "search hidden files/directories");
-    opts.optflag("I", "no-ignore",
-                      "do not respect .(git)ignore files");
-    opts.optflag("f", "follow",
-                      "follow symlinks");
-    opts.optflag("n", "no-color",
-                      "do not colorize output");
-    opts.optopt("d", "max-depth",
-                     "maximum search depth (default: none)", "D");
-    opts.optflag("a", "absolute",
-                      "show absolute instead of relative paths");
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m)  => m,
-        Err(e) => error(e.description())
-    };
-
-    if matches.opt_present("h") {
-        let brief = "Usage: fd [options] [PATTERN] [PATH]";
-        print!("{}", opts.usage(brief));
-        process::exit(1);
-    }
+    let matches =
+        App::new("fd")
+            .version(crate_version!())
+            .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>]")
+            .setting(AppSettings::ColoredHelp)
+            .setting(AppSettings::DeriveDisplayOrder)
+            .arg(Arg::with_name("case-sensitive")
+                        .long("case-sensitive")
+                        .short("s")
+                        .help("Case-sensitive search (default: smart case)"))
+            .arg(Arg::with_name("full-path")
+                        .long("full-path")
+                        .short("p")
+                        .help("Search full path (default: file-/dirname only)"))
+            .arg(Arg::with_name("hidden")
+                        .long("hidden")
+                        .short("H")
+                        .help("Search hidden files and directories"))
+            .arg(Arg::with_name("no-ignore")
+                        .long("no-ignore")
+                        .short("I")
+                        .help("Do not respect .(git)ignore files"))
+            .arg(Arg::with_name("follow")
+                        .long("follow")
+                        .short("f")
+                        .help("Follow symlinks"))
+            .arg(Arg::with_name("absolute-path")
+                        .long("absolute-path")
+                        .short("a")
+                        .help("Show absolute instead of relative paths"))
+            .arg(Arg::with_name("no-color")
+                        .long("no-color")
+                        .short("n")
+                        .help("Do not colorize output"))
+            .arg(Arg::with_name("depth")
+                        .long("max-depth")
+                        .short("d")
+                        .takes_value(true)
+                        .help("Set maximum search depth (default: none)"))
+            .arg(Arg::with_name("pattern")
+                        .help("the search pattern, a regular expression (optional)"))
+            .arg(Arg::with_name("path")
+                        .help("the root directory for the filesystem search (optional)"))
+            .get_matches();
 
     // Get the search pattern
     let empty_pattern = String::new();
-    let pattern = matches.free.get(0).unwrap_or(&empty_pattern);
+    let pattern = matches.value_of("pattern").unwrap_or(&empty_pattern);
 
     // Get the current working directory
     let current_dir_buf = match env::current_dir() {
@@ -246,17 +259,17 @@ fn main() {
     let current_dir = current_dir_buf.as_path();
 
     // Get the root directory for the search
-    let root_dir_buf = matches.free.get(1)
+    let root_dir_buf = matches.value_of("path")
                                    .and_then(|r| fs::canonicalize(r).ok())
                                    .unwrap_or_else(|| current_dir_buf.clone());
     let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
-    let case_sensitive = matches.opt_present("sensitive") ||
+    let case_sensitive = matches.is_present("case-sensitive") ||
                          pattern.chars().any(char::is_uppercase);
 
-    let colored_output = !matches.opt_present("no-color") &&
+    let colored_output = !matches.is_present("no-color") &&
                          atty::is(Stream::Stdout);
 
     let ls_colors =
@@ -273,13 +286,13 @@ fn main() {
 
     let config = FdOptions {
         case_sensitive:    case_sensitive,
-        search_full_path:  matches.opt_present("full-path"),
-        ignore_hidden:     !matches.opt_present("hidden"),
-        read_ignore:       !matches.opt_present("no-ignore"),
-        follow_links:      matches.opt_present("follow"),
-        max_depth:         matches.opt_str("max-depth")
+        search_full_path:  matches.is_present("full-path"),
+        ignore_hidden:     !matches.is_present("hidden"),
+        read_ignore:       !matches.is_present("no-ignore"),
+        follow_links:      matches.is_present("follow"),
+        max_depth:         matches.value_of("depth")
                                    .and_then(|ds| usize::from_str_radix(&ds, 10).ok()),
-        path_display:      if matches.opt_present("absolute") {
+        path_display:      if matches.is_present("absolute-path") {
                                PathDisplay::Absolute
                            } else {
                                PathDisplay::Relative
