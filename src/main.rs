@@ -11,7 +11,6 @@ pub mod fshelper;
 use std::borrow::Cow;
 use std::env;
 use std::error::Error;
-use std::fs;
 use std::io::Write;
 use std::ops::Deref;
 #[cfg(target_family = "unix")]
@@ -105,7 +104,7 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
             let comp_str = match component {
                 Component::Normal(p) => p.to_string_lossy(),
                 Component::ParentDir => Cow::from(PARENT_DIR),
-                _                    => error("Error: unexpected path component")
+                _                    => error("Error: unexpected path component.")
             };
 
             component_path.push(Path::new(comp_str.deref()));
@@ -257,21 +256,26 @@ fn main() {
     // Get the current working directory
     let current_dir_buf = match env::current_dir() {
         Ok(cd) => cd,
-        Err(_) => error("Error: could not get current directory!")
+        Err(_) => error("Error: could not get current directory.")
     };
     let current_dir = current_dir_buf.as_path();
 
     // Get the root directory for the search
+    let mut root_dir_is_absolute = false;
     let root_dir_buf = if let Some(rd) = matches.value_of("path") {
-        fs::canonicalize(rd).unwrap_or_else(
-            |_| error(&format!("Error: could not find directory '{}'", rd))
+        let path = Path::new(rd);
+
+        root_dir_is_absolute = path.is_absolute();
+
+        path.canonicalize().unwrap_or_else(
+            |_| error(&format!("Error: could not find directory '{}'.", rd))
         )
     } else {
         current_dir_buf.clone()
     };
 
     if !root_dir_buf.is_dir() {
-        error(&format!("Error: '{}' is not a directory", root_dir_buf.to_string_lossy()));
+        error(&format!("Error: '{}' is not a directory.", root_dir_buf.to_string_lossy()));
     }
 
     let root_dir = root_dir_buf.as_path();
@@ -304,7 +308,7 @@ fn main() {
         follow_links:      matches.is_present("follow"),
         max_depth:         matches.value_of("depth")
                                    .and_then(|ds| usize::from_str_radix(ds, 10).ok()),
-        path_display:      if matches.is_present("absolute-path") {
+        path_display:      if matches.is_present("absolute-path") || root_dir_is_absolute {
                                PathDisplay::Absolute
                            } else {
                                PathDisplay::Relative
