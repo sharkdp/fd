@@ -8,11 +8,12 @@ extern crate ignore;
 pub mod lscolors;
 pub mod fshelper;
 
+use std::borrow::Cow;
 use std::env;
 use std::error::Error;
-use std::ffi::OsStr;
 use std::fs;
 use std::io::Write;
+use std::ops::Deref;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, Component};
@@ -70,14 +71,14 @@ struct FdOptions {
 /// Root directory
 static ROOT_DIR : &'static str = "/";
 
+/// Parent directory
+static PARENT_DIR : &'static str = "..";
+
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
     let path_full = base.join(entry);
 
-    let path_str = match entry.to_str() {
-        Some(p) => p,
-        None    => return
-    };
+    let path_str = entry.to_string_lossy();
 
     #[cfg(target_family = "unix")]
     let is_executable = |p: &std::path::PathBuf| {
@@ -102,12 +103,12 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
         // Traverse the path and colorize each component
         for component in entry.components() {
             let comp_str = match component {
-                Component::Normal(p) => p.to_str().unwrap(),
-                Component::ParentDir => "..",
+                Component::Normal(p) => p.to_string_lossy(),
+                Component::ParentDir => Cow::from(PARENT_DIR),
                 _                    => error("Unexpected path component")
             };
 
-            component_path.push(Path::new(comp_str));
+            component_path.push(Path::new(comp_str.deref()));
 
             let style =
                 if component_path.symlink_metadata()
@@ -181,16 +182,18 @@ fn scan(root: &Path, pattern: &Regex, base: &Path, config: &FdOptions) {
         };
         let path_rel = path_rel_buf.as_path();
 
-        let search_str =
+        let search_str_o =
             if config.search_full_path {
-                path_rel.to_str()
+                Some(path_rel.to_string_lossy())
             } else {
                 path_rel.file_name()
-                        .and_then(OsStr::to_str)
+                        .map(|f| f.to_string_lossy())
             };
 
-        search_str.and_then(|s| pattern.find(s))
-                  .map(|_| print_entry(base, path_rel, config));
+        if let Some(search_str) = search_str_o {
+            pattern.find(&*search_str)
+                      .map(|_| print_entry(base, path_rel, config));
+        }
     }
 }
 
