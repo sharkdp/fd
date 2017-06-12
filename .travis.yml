@@ -6,3 +6,35 @@ rust:
 matrix:
   allow_failures:
     - rust: nightly
+  include:
+    # Nightly channel.
+    - os: linux
+      rust: nightly
+      env: TARGET=i686-unknown-linux-musl
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-musl
+    - os: osx
+      rust: nightly
+      env: TARGET=x86_64-apple-darwin
+    # Beta channel.
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-musl
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+    # Minimum Rust supported channel.
+    - os: linux
+      rust: 1.16.0
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: 1.16.0
+      env: TARGET=x86_64-unknown-linux-musl
+
+after_success:
+  - bash tests/test.sh
+
+notifications:
+  email:
+    on_success: never
