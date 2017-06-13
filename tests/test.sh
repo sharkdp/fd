@@ -4,6 +4,8 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 fd="${SCRIPT_DIR}/../target/debug/fd"
 
+MKTEMP_TEMPLATE="fd-tests.XXXXXXXXXX"
+
 export reset='\x1b[0m'
 export bold='\x1b[01m'
 export green='\x1b[32;01m'
@@ -21,8 +23,8 @@ expect() {
     expected_output="$1"
     shift
 
-    tmp_expected="$(mktemp)"
-    tmp_output="$(mktemp)"
+    tmp_expected="$(mktemp -t "$MKTEMP_TEMPLATE")"
+    tmp_output="$(mktemp -t "$MKTEMP_TEMPLATE")"
 
     echo "$expected_output" > "$tmp_expected"
 
@@ -32,6 +34,8 @@ expect() {
 
     if diff -q "$tmp_expected" "$tmp_output" > /dev/null; then
         echo -e "${green}✓ okay${reset}"
+
+        rm -f "$tmp_expected" "$tmp_output"
     else
         echo -e "${red}❌FAILED${reset}"
 
@@ -40,11 +44,14 @@ expect() {
 
         diff -C3 --label expected --label actual --color \
             "$tmp_expected" "$tmp_output" || true
+
+        rm -f "$tmp_expected" "$tmp_output"
+
         exit 1
     fi
 }
 
-root=$(mktemp --directory)
+root=$(mktemp -d -t "$MKTEMP_TEMPLATE")
 
 cd "$root"
 
