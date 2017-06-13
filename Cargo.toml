@@ -1,6 +1,6 @@
 [package]
 name = "fd"
-version = "1.1.0"
+version = "2.0.0"
 authors = ["David Peter <mail@david-peter.de>"]
 
 [dependencies]
