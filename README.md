@@ -60,12 +60,17 @@ in order for both tools to perform a regular expression search. Both tools are c
 `-iname '*[0-9].jpg'` is used for `find`.
 
 ## Install
-With [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
+With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
 ```
 cargo install --git https://github.com/sharkdp/fd
 ```
 Note that rust version *1.16.0* or later is required.
 The release page of this repository also includes precompiled binaries for Linux.
+
+On **OS X**, you can use [homebrew](https://brew.sh/):
+```
+brew install fd
+```
 
 ## Development
 ```bash
