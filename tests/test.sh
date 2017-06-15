@@ -28,7 +28,7 @@ expect() {
 
     echo "$expected_output" > "$tmp_expected"
 
-    "$fd" "$@" | sort > "$tmp_output"
+    "$fd" "$@" | sort -f > "$tmp_output"
 
     echo -ne "  ${bold}▶${reset} Testing 'fd $*' ... "
 
@@ -42,7 +42,7 @@ expect() {
         echo -ne "\nShowing diff between ${red}expected${reset} and "
         echo -e "${green}actual${reset} output:\n"
 
-        diff -C3 --label expected --label actual --color \
+        diff -C3 --label expected --label actual \
             "$tmp_expected" "$tmp_output" || true
 
         rm -f "$tmp_expected" "$tmp_output"
@@ -62,7 +62,7 @@ mkdir -p one/two/three
 touch a.foo
 touch one/b.foo
 touch one/two/c.foo
-touch one/two/C.Foo
+touch one/two/C.Foo2
 touch one/two/three/d.foo
 mkdir one/two/three/directory_foo
 touch ignored.foo
@@ -81,7 +81,7 @@ expect "one/two/three/d.foo" d.foo
 expect "a.foo
 one/b.foo
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo" foo
 expect "a.foo
@@ -89,7 +89,7 @@ one
 one/b.foo
 one/two
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three
 one/two/three/d.foo
 one/two/three/directory_foo
@@ -98,7 +98,7 @@ symlink" # run 'fd' without arguments
 suite "Explicit root path"
 expect "one/b.foo
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo" foo one
 expect "one/two/three/d.foo
@@ -108,7 +108,7 @@ cd one/two
 expect "../../a.foo
 ../b.foo
 c.foo
-C.Foo
+C.Foo2
 three/d.foo
 three/directory_foo" foo ../../
 )
@@ -117,7 +117,7 @@ suite "Regex searches"
 expect "a.foo
 one/b.foo
 one/two/c.foo
-one/two/C.Foo" '[a-c].foo'
+one/two/C.Foo2" '[a-c].foo'
 expect "a.foo
 one/b.foo
 one/two/c.foo" --case-sensitive '[a-c].foo'
@@ -126,14 +126,14 @@ one/two/c.foo" --case-sensitive '[a-c].foo'
 
 suite "Smart case"
 expect "one/two/c.foo
-one/two/C.Foo" c.foo
-expect "one/two/C.Foo" C.Foo
-expect "one/two/C.Foo" Foo
+one/two/C.Foo2" c.foo
+expect "one/two/C.Foo2" C.Foo
+expect "one/two/C.Foo2" Foo
 
 
 suite "Case-sensitivity (--case-sensitive)"
 expect "one/two/c.foo" --case-sensitive c.foo
-expect "one/two/C.Foo" --case-sensitive C.Foo
+expect "one/two/C.Foo2" --case-sensitive C.Foo
 
 
 suite "Full path search (--full-path)"
@@ -143,11 +143,11 @@ expect "a.foo" --full-path '^a\.foo$'
 
 
 suite "Hidden files (--hidden)"
-expect "a.foo
-.hidden.foo
+expect ".hidden.foo
+a.foo
 one/b.foo
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo" --hidden foo
 
@@ -157,25 +157,25 @@ expect "a.foo
 ignored.foo
 one/b.foo
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo" --no-ignore foo
 
-expect "a.foo
-.hidden.foo
+expect ".hidden.foo
+a.foo
 ignored.foo
 one/b.foo
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo" --hidden --no-ignore foo
 
 
 suite "Symlinks (--follow)"
 expect "one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 symlink/c.foo
-symlink/C.Foo" --follow c.foo
+symlink/C.Foo2" --follow c.foo
 
 
 suite "Maximum depth (--max-depth)"
@@ -184,7 +184,7 @@ one
 one/b.foo
 one/two
 one/two/c.foo
-one/two/C.Foo
+one/two/C.Foo2
 one/two/three
 symlink" --max-depth 3
 expect "a.foo
@@ -196,25 +196,28 @@ expect "a.foo
 one
 symlink" --max-depth 1
 
+abs_path=$(python -c "import os; print(os.path.realpath('$root'))")
 
 suite "Absolute paths (--absolute-path)"
-expect "$root/a.foo
-$root/one/b.foo
-$root/one/two/c.foo
-$root/one/two/C.Foo
-$root/one/two/three/d.foo
-$root/one/two/three/directory_foo" --absolute-path foo
-expect "$root/a.foo
-$root/one/b.foo
-$root/one/two/c.foo
-$root/one/two/C.Foo
-$root/one/two/three/d.foo
-$root/one/two/three/directory_foo" foo "$root"
+expect "$abs_path/a.foo
+$abs_path/one/b.foo
+$abs_path/one/two/c.foo
+$abs_path/one/two/C.Foo2
+$abs_path/one/two/three/d.foo
+$abs_path/one/two/three/directory_foo" --absolute-path foo
+expect "$abs_path/a.foo
+$abs_path/one/b.foo
+$abs_path/one/two/c.foo
+$abs_path/one/two/C.Foo2
+$abs_path/one/two/three/d.foo
+$abs_path/one/two/three/directory_foo" foo "$abs_path"
 
 
-suite "Invalid UTF-8"
-touch "$(printf 'test-invalid-utf8-\xc3.txt')"
-expect "$(printf 'test-invalid-utf8-\ufffd.txt')" test-invalid-utf8
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    suite "Invalid UTF-8"
+    touch "$(printf 'test-invalid-utf8-\xc3.txt')"
+    expect "$(printf 'test-invalid-utf8-\ufffd.txt')" test-invalid-utf8
+fi
 
 # All done
 echo
