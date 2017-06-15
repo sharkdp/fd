@@ -6,6 +6,9 @@ fd="${SCRIPT_DIR}/../target/debug/fd"
 
 MKTEMP_TEMPLATE="fd-tests.XXXXXXXXXX"
 
+# Stabilize sort
+export LC_CTYPE="UTF-8"
+
 export reset='\x1b[0m'
 export bold='\x1b[01m'
 export green='\x1b[32;01m'
