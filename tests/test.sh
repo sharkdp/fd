@@ -7,6 +7,7 @@ fd="${SCRIPT_DIR}/../target/debug/fd"
 MKTEMP_TEMPLATE="fd-tests.XXXXXXXXXX"
 
 # Stabilize sort
+export LC_ALL="C.UTF-8"
 export LC_CTYPE="UTF-8"
 
 export reset='\x1b[0m'
