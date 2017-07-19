@@ -32,7 +32,7 @@ expect() {
 
     echo "$expected_output" > "$tmp_expected"
 
-    "$fd" "$@" | sort -f > "$tmp_output"
+    "$fd" "$@" | xargs -0 echo -n | sort -f > "$tmp_output"
 
     echo -ne "  ${bold}▶${reset} Testing 'fd $*' ... "
 
@@ -180,6 +180,9 @@ expect "one/two/c.foo
 one/two/C.Foo2
 symlink/c.foo
 symlink/C.Foo2" --follow c.foo
+
+suite "Null separator (--print0)"
+expect "one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo one/b.foo a.foo" --print0 foo
 
 
 suite "Maximum depth (--max-depth)"
