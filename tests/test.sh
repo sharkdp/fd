@@ -32,7 +32,7 @@ expect() {
 
     echo "$expected_output" > "$tmp_expected"
 
-    "$fd" "$@" | xargs -0 echo -n | sort -f > "$tmp_output"
+    "$fd" "$@" | sed -e 's/\x0/NULL\n/g' | sort -f > "$tmp_output"
 
     echo -ne "  ${bold}▶${reset} Testing 'fd $*' ... "
 
@@ -182,7 +182,12 @@ symlink/c.foo
 symlink/C.Foo2" --follow c.foo
 
 suite "Null separator (--print0)"
-expect "one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo one/b.foo a.foo" --print0 foo
+expect "a.fooNULL
+one/b.fooNULL
+one/two/C.Foo2NULL
+one/two/c.fooNULL
+one/two/three/d.fooNULL
+one/two/three/directory_fooNULL" --print0 foo
 
 
 suite "Maximum depth (--max-depth)"
