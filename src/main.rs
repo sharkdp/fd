@@ -53,6 +53,9 @@ struct FdOptions {
     /// Whether to follow symlinks or not.
     follow_links: bool,
 
+    /// Whether elements of output should be separated by a null character
+    zero: bool,
+
     /// The maximum search depth, or `None` if no maximum search depth should be set.
     ///
     /// A depth of `1` includes all files under the current directory, a depth of `2` also includes
@@ -143,13 +146,22 @@ fn print_entry(base: &Path, entry: &Path, config: &FdOptions) {
                 print!("{}", style.paint(sep));
             }
         }
-        println!();
+        if config.zero {
+          print!("{}", '\0');
+        } else {
+          println!();
+        }
     } else {
         // Uncolorized output
 
         let prefix = if config.path_display == PathDisplay::Absolute { ROOT_DIR } else { "" };
+        let separator = if config.zero {
+          "\0"
+        } else {
+          "\n"
+        };
 
-        let r = writeln!(&mut std::io::stdout(), "{}{}", prefix, path_str);
+        let r = write!(&mut std::io::stdout(), "{}{}{}", prefix, path_str, separator);
 
         if r.is_err() {
             // Probably a broken pipe. Exit gracefully.
@@ -230,6 +242,10 @@ fn main() {
                         .long("follow")
                         .short("f")
                         .help("Follow symlinks"))
+            .arg(Arg::with_name("zero")
+                        .long("print0")
+                        .short("0")
+                        .help("Separate each path by the null character"))
             .arg(Arg::with_name("absolute-path")
                         .long("absolute-path")
                         .short("a")
@@ -306,6 +322,7 @@ fn main() {
         ignore_hidden:     !matches.is_present("hidden"),
         read_ignore:       !matches.is_present("no-ignore"),
         follow_links:      matches.is_present("follow"),
+        zero:              matches.is_present("zero"),
         max_depth:         matches.value_of("depth")
                                    .and_then(|ds| usize::from_str_radix(ds, 10).ok()),
         path_display:      if matches.is_present("absolute-path") || root_dir_is_absolute {
