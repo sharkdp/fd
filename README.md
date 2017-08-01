@@ -72,7 +72,7 @@ On **OS X**, you can use [homebrew](https://brew.sh/):
 brew install fd
 ```
 
-On **Arch Linux**, you can use the AUR:
+On **Arch Linux**, you can install the AUR package [fd-rs-git](https://aur.archlinux.org/packages/fd-rs-git/) via yaourt, or manually:
 ```
 git clone https://aur.archlinux.org/fd-rs-git.git
 cd fd-rs-git
