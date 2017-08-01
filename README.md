@@ -72,6 +72,13 @@ On **OS X**, you can use [homebrew](https://brew.sh/):
 brew install fd
 ```
 
+On **Arch Linux**, you can use the AUR:
+```
+git clone https://aur.archlinux.org/fd-rs-git.git
+cd fd-rs-git
+makepkg -si
+```
+
 ## Development
 ```bash
 cargo build --release
