@@ -4,6 +4,7 @@ extern crate ansi_term;
 extern crate atty;
 extern crate regex;
 extern crate ignore;
+extern crate num_cpus;
 
 pub mod lscolors;
 pub mod fshelper;
@@ -67,7 +68,7 @@ struct FdOptions {
     max_depth: Option<usize>,
 
     /// The number of threads to use.
-    threads: Option<usize>,
+    threads: usize,
 
     /// Time to buffer results internally before streaming to the console. This is useful to
     /// provide a sorted output, in case the total execution time is shorter than
@@ -209,7 +210,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
                      .git_exclude(config.read_ignore)
                      .follow_links(config.follow_links)
                      .max_depth(config.max_depth)
-                     .threads(config.threads.unwrap_or(0))
+                     .threads(config.threads)
                      .build_parallel();
 
     // Spawn the thread that receives all results through the channel.
@@ -433,8 +434,12 @@ fn main() {
         null_separator:    matches.is_present("null_separator"),
         max_depth:         matches.value_of("depth")
                                    .and_then(|n| usize::from_str_radix(n, 10).ok()),
-        threads:           matches.value_of("threads")
-                                   .and_then(|n| usize::from_str_radix(n, 10).ok()),
+        threads:           std::cmp::max(
+                             matches.value_of("threads")
+                                    .and_then(|n| usize::from_str_radix(n, 10).ok())
+                                    .unwrap_or(num_cpus::get()),
+                             1
+                           ),
         max_buffer_time:   matches.value_of("max-buffer-time")
                                   .and_then(|n| u64::from_str_radix(n, 10).ok())
                                   .map(time::Duration::from_millis),
