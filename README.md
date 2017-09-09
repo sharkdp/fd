@@ -9,10 +9,11 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 
 ## Features
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
+* Colorized terminal output (similar to *ls*).
+* It's *fast* (see benchmarks below).
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
-* Colorized terminal output (similar to *ls*).
 * Ignores hidden directories and files, by default.
 * Ignores patterns from your `.gitignore`, by default.
 * Regular expressions.
@@ -35,31 +36,63 @@ complete (and more colorful) variants, see
 [here](https://github.com/trapd00r/LS_COLORS).
 
 ## Benchmark
-A search in my home folder with ~150.000 subdirectories and ~1M files. The given options for
-`fd` are needed for a fair comparison (otherwise `fd` is even faster by a factor of 5 because it
-does not have to search hidden and ignored paths):
+Let's search my home folder for files that end in `[0-9].jpg`. It contains ~150.000
+subdirectories and about a million files. For averaging and statistical analysis, I'm using
+[bench](https://github.com/Gabriel439/bench). All benchmarks are performed for a "warm
+cache". Results for a cold cache are similar.
+
+Let's start with `find`:
 ```
-benchmarking bench/fd --hidden --no-ignore --full-path '.*[0-9]\.jpg$' ~
-time                 2.800 s    (2.722 s .. 2.895 s)
+find ~ -iregex '.*[0-9]\.jpg$'
+
+time                 6.265 s    (6.127 s .. NaN s)
                      1.000 R²   (1.000 R² .. 1.000 R²)
-mean                 2.821 s    (2.810 s .. 2.831 s)
-std dev              16.52 ms   (0.0 s .. 17.02 ms)
-variance introduced by outliers: 19% (moderately inflated)
-
-benchmarking bench/find ~ -iregex '.*[0-9]\.jpg$'
-time                 5.593 s    (5.412 s .. 5.798 s)
-                     1.000 R²   (0.999 R² .. 1.000 R²)
-mean                 5.542 s    (5.502 s .. 5.567 s)
-std dev              37.32 ms   (0.0 s .. 42.77 ms)
-variance introduced by outliers: 19% (moderately inflated)
+mean                 6.162 s    (6.140 s .. 6.181 s)
+std dev              31.73 ms   (0.0 s .. 33.48 ms)
 ```
-(benchmarking tool: [bench](https://github.com/Gabriel439/bench))
 
-Both tools found the exact same 14030 files. Note that we have used the `-iregex` option for `find`
-in order for both tools to perform a regular expression search. Both tools are comparably fast if
-`-iname '*[0-9].jpg'` is used for `find`.
+`find` is much faster if it does not need to perform a regular-expression search:
+```
+find ~ -iname '*[0-9].jpg'
 
-Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
+time                 2.866 s    (2.754 s .. 2.964 s)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 2.860 s    (2.834 s .. 2.875 s)
+std dev              23.11 ms   (0.0 s .. 25.09 ms)
+```
+
+Now let's try the same for `fd`. Note that `fd` *always* performs a regular expression
+search. The options `--hidden` and `--no-ignore` are needed for a fair comparison,
+otherwise `fd` does not have to traverse hidden folders and ignored paths (see below):
+```
+fd --hidden --no-ignore '.*[0-9]\.jpg$' ~
+
+time                 892.6 ms   (839.0 ms .. 915.4 ms)
+                     0.999 R²   (0.997 R² .. 1.000 R²)
+mean                 871.2 ms   (857.9 ms .. 881.3 ms)
+std dev              15.50 ms   (0.0 s .. 17.49 ms)
+```
+For this particular example, `fd` is approximately seven times faster than `find -iregex`
+and about three times faster than `find -iname`. By the way, both tools found the exact
+same 14030 files :smile:.
+
+Finally, let's run `fd` without `--hidden` and `--no-ignore` (this can lead to different
+search results, of course):
+```
+fd '[0-9]\.jpg$' ~
+
+time                 159.5 ms   (155.8 ms .. 165.3 ms)
+                     0.999 R²   (0.996 R² .. 1.000 R²)
+mean                 158.7 ms   (156.5 ms .. 161.6 ms)
+std dev              3.263 ms   (2.401 ms .. 4.298 ms)
+```
+
+**Note**: This is *one particular* benchmark on *one particular* machine. While I have
+performed quite a lot of different tests (and found consistent results), things might
+be different for you! I encourage everyone to try it out on their own.
+
+Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
+in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
 
 ## Install
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
