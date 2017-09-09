@@ -5,7 +5,7 @@ authors = ["David Peter <mail@david-peter.de>"]
 
 [dependencies]
 ansi_term = "0.9"
-clap = "2.24.2"
+clap = "2.26.0"
 atty = "0.2"
 regex = "0.2"
 ignore = "0.2"
