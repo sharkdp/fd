@@ -32,7 +32,8 @@ expect() {
 
     echo "$expected_output" > "$tmp_expected"
 
-    "$fd" "$@" | sed -e 's/\x0/NULL\n/g' | sort -f > "$tmp_output"
+    # Use python instead of sed here (for this to work on macOS)
+    "$fd" "$@" | python -c 'import sys; sys.stdout.write(sys.stdin.read().replace("\0", "NULL\n"))' | sort -f > "$tmp_output"
 
     echo -ne "  ${bold}▶${reset} Testing 'fd $*' ... "
 
