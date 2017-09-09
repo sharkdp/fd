@@ -116,5 +116,19 @@ makepkg -si
 
 ## Development
 ```bash
-cargo build --release
+git clone https://github.com/sharkdp/fd
+
+# Build
+cd fd
+cargo build
+
+# Run unit tests
+cargo test
+
+# Run integration tests
+cd tests
+bash test.sh
+
+# Install
+cargo install
 ```
