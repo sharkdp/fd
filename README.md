@@ -59,6 +59,8 @@ Both tools found the exact same 14030 files. Note that we have used the `-iregex
 in order for both tools to perform a regular expression search. Both tools are comparably fast if
 `-iname '*[0-9].jpg'` is used for `find`.
 
+Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
+
 ## Install
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
 ```
