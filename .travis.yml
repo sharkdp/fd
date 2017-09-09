@@ -14,9 +14,10 @@ matrix:
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-musl
-    - os: osx
-      rust: nightly
-      env: TARGET=x86_64-apple-darwin
+# currently disabled
+#    - os: osx
+#      rust: nightly
+#      env: TARGET=x86_64-apple-darwin
     # Beta channel.
     - os: linux
       rust: beta
