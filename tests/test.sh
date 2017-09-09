@@ -7,7 +7,7 @@ fd="${SCRIPT_DIR}/../target/debug/fd"
 MKTEMP_TEMPLATE="fd-tests.XXXXXXXXXX"
 
 # Stabilize sort
-export LC_ALL="C.UTF-8"
+export LC_ALL="C"
 export LC_CTYPE="UTF-8"
 
 export reset='\x1b[0m'
@@ -223,13 +223,6 @@ $abs_path/one/two/c.foo
 $abs_path/one/two/C.Foo2
 $abs_path/one/two/three/d.foo
 $abs_path/one/two/three/directory_foo" foo "$abs_path"
-
-
-if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    suite "Invalid UTF-8"
-    touch "$(printf 'test-invalid-utf8-\xc3.txt')"
-    expect "$(printf 'test-invalid-utf8-\ufffd.txt')" test-invalid-utf8
-fi
 
 # All done
 echo
