@@ -132,3 +132,29 @@ bash test.sh
 # Install
 cargo install
 ```
+
+## Command-line options
+```
+USAGE:
+    fd [FLAGS/OPTIONS] [<pattern>] [<path>]
+
+FLAGS:
+    -s, --case-sensitive    Case-sensitive search (default: smart case)
+    -p, --full-path         Search full path (default: file-/dirname only)
+    -H, --hidden            Search hidden files and directories
+    -I, --no-ignore         Do not respect .(git)ignore files
+    -L, --follow            Follow symlinks
+    -0, --print0            Separate results by the null character
+    -a, --absolute-path     Show absolute instead of relative paths
+    -n, --no-color          Do not colorize output
+    -h, --help              Prints help information
+    -V, --version           Prints version information
+
+OPTIONS:
+    -d, --max-depth <depth>    Set maximum search depth (default: none)
+    -j, --threads <threads>    The number of threads used for searching
+
+ARGS:
+    <pattern>    the search pattern, a regular expression (optional)
+    <path>       the root directory for the filesystem search (optional)
+```
