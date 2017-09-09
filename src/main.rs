@@ -337,7 +337,7 @@ fn main() {
                         .help("Do not respect .(git)ignore files"))
             .arg(Arg::with_name("follow")
                         .long("follow")
-                        .short("f")
+                        .short("L")
                         .help("Follow symlinks"))
             .arg(Arg::with_name("null_separator")
                         .long("print0")
