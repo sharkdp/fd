@@ -95,9 +95,9 @@ Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates
 in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
 
 ## Install
-With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can clone, build and install *fd* with a single command:
+With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
 ```
-cargo install --git https://github.com/sharkdp/fd
+cargo install fd-find
 ```
 Note that rust version *1.16.0* or later is required.
 The release page of this repository also includes precompiled binaries for Linux.
