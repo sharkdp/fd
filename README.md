@@ -23,7 +23,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 
 ## Demo
 
-![Demo](http://i.imgur.com/iU6qkQj.gif)
+![Demo](http://i.imgur.com/kTMFSVU.gif)
 
 ## Colorized output
 `fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
