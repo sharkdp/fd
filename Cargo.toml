@@ -1,7 +1,19 @@
 [package]
-name = "fd"
+name = "fd-find"
 version = "3.0.0"
 authors = ["David Peter <mail@david-peter.de>"]
+description = "fd is a simple, fast and user-friendly alternative to find."
+homepage = "https://github.com/sharkdp/fd"
+repository = "https://github.com/sharkdp/fd"
+readme = "README.md"
+keywords = ["search", "find", "file", "filesystem", "tool"]
+categories = ["command-line-utilities"]
+license = "MIT"
+exclude = ["benchmarks"]
+
+[[bin]]
+name = "fd"
+path = "src/main.rs"
 
 [dependencies]
 ansi_term = "0.9"
