@@ -102,7 +102,7 @@ cargo install fd-find
 Note that rust version *1.16.0* or later is required.
 The release page of this repository also includes precompiled binaries for Linux.
 
-On **OS X**, you can use [homebrew](https://brew.sh/):
+On **macOS**, you can use [Homebrew](http://braumeister.org/formula/fd):
 ```
 brew install fd
 ```
