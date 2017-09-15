@@ -174,7 +174,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
         }
 
         let r = if config.null_separator {
-          write!(handle, "{}", '\0')
+          write!(handle, "\0")
         } else {
           writeln!(handle, "")
         };
@@ -264,8 +264,8 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
     // Spawn the sender threads.
     walker.run(|| {
         let base = base.to_owned();
-        let config = config.clone();
-        let pattern = pattern.clone();
+        let config = Arc::clone(&config);
+        let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
 
         Box::new(move |entry_o| {
@@ -437,7 +437,7 @@ fn main() {
         threads:           std::cmp::max(
                              matches.value_of("threads")
                                     .and_then(|n| usize::from_str_radix(n, 10).ok())
-                                    .unwrap_or(num_cpus::get()),
+                                    .unwrap_or_else(num_cpus::get),
                              1
                            ),
         max_buffer_time:   matches.value_of("max-buffer-time")
