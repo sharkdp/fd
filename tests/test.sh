@@ -225,5 +225,18 @@ $abs_path/one/two/C.Foo2
 $abs_path/one/two/three/d.foo
 $abs_path/one/two/three/directory_foo" foo "$abs_path"
 
+
+suite "File type filter (--type)"
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo" --type f
+expect "one
+one/two
+one/two/three
+one/two/three/directory_foo" --type d
+expect "symlink" --type s
+
 # All done
 echo

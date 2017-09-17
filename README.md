@@ -153,6 +153,7 @@ FLAGS:
 OPTIONS:
     -d, --max-depth <depth>    Set maximum search depth (default: none)
     -j, --threads <threads>    The number of threads used for searching
+    -t, --type <type>          The type of file to search for [values: f, file, d, directory, s, symlink]
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
