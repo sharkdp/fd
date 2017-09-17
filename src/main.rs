@@ -80,7 +80,18 @@ struct FdOptions {
 
     /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
     /// how to style different filetypes.
-    ls_colors: Option<LsColors>
+    ls_colors: Option<LsColors>,
+
+    file_type: FileType,
+}
+
+/// The type of file to search for. All files other than the specified type will be ignored.
+#[derive(Copy, Clone)]
+enum FileType {
+    Any,
+    RegularFile,
+    Directory,
+    SymLink,
 }
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -274,6 +285,20 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
                 Err(_) => return ignore::WalkState::Continue
             };
 
+            // Filter out unwanted file types.
+            match config.file_type {
+                FileType::Any => (),
+                FileType::RegularFile => if entry.file_type().map_or(false, |ft| !ft.is_file()) {
+                        return ignore::WalkState::Continue;
+                },
+                FileType::Directory => if entry.file_type().map_or(false, |ft| !ft.is_dir()) {
+                        return ignore::WalkState::Continue;
+                },
+                FileType::SymLink => if entry.file_type().map_or(false, |ft| !ft.is_symlink()) {
+                        return ignore::WalkState::Continue;
+                },
+            }
+
             let path_rel_buf = match fshelper::path_relative_from(entry.path(), &*base) {
                 Some(p) => p,
                 None => error("Error: could not get relative path for directory entry.")
@@ -372,6 +397,12 @@ fn main() {
                         .help("the search pattern, a regular expression (optional)"))
             .arg(Arg::with_name("path")
                         .help("the root directory for the filesystem search (optional)"))
+            .arg(Arg::with_name("file-type")
+                        .help("The type of file to search for")
+                        .long("type")
+                        .short("t")
+                        .takes_value(true)
+                        .possible_values(&["f", "file", "d", "directory", "s", "symlink"]))
             .get_matches();
 
     // Get the search pattern
@@ -448,7 +479,13 @@ fn main() {
                            } else {
                                PathDisplay::Relative
                            },
-        ls_colors:         ls_colors
+        ls_colors:         ls_colors,
+        file_type: match matches.value_of("file-type") {
+            Some("f") | Some("file") => FileType::RegularFile,
+            Some("d") | Some("directory") => FileType::Directory,
+            Some("s") | Some("symlink") => FileType::SymLink,
+            _  => FileType::Any,
+        },
     };
 
     let root = Path::new(ROOT_DIR);
