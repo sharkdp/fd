@@ -1,5 +1,6 @@
 # fd
 [![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
+[![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
 
 *fd* is a simple, fast and user-friendly alternative to
 [*find*](https://www.gnu.org/software/findutils/).
