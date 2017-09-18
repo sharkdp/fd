@@ -118,10 +118,8 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     let path_str = entry.to_string_lossy();
 
     #[cfg(target_family = "unix")]
-    let is_executable = |p: &std::path::PathBuf| {
-        p.metadata()
-         .ok()
-         .map(|f| f.permissions().mode() & 0o111 != 0)
+    let is_executable = |p: Option<&std::fs::Metadata>| {
+        p.map(|f| f.permissions().mode() & 0o111 != 0)
          .unwrap_or(false)
     };
 
@@ -150,14 +148,17 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
             component_path.push(Path::new(comp_str.deref()));
 
+            let metadata = component_path.metadata().ok();
+            let is_directory = metadata.as_ref().map(|md| md.is_dir()).unwrap_or(false);
+
             let style =
                 if component_path.symlink_metadata()
                                  .map(|md| md.file_type().is_symlink())
                                  .unwrap_or(false) {
                     &ls_colors.symlink
-                } else if component_path.is_dir() {
+                } else if is_directory {
                     &ls_colors.directory
-                } else if is_executable(&component_path) {
+                } else if is_executable(metadata.as_ref()) {
                     &ls_colors.executable
                 } else {
                     // Look up file name
@@ -179,7 +180,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
             write!(handle, "{}", style.paint(comp_str)).ok();
 
-            if component_path.is_dir() && component_path != path_full {
+            if is_directory && component_path != path_full {
                 let sep = std::path::MAIN_SEPARATOR.to_string();
                 write!(handle, "{}", style.paint(sep)).ok();
             }
