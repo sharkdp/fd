@@ -124,7 +124,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     };
 
     #[cfg(not(target_family = "unix"))]
-    let is_executable = |_: &std::path::PathBuf| { false };
+    let is_executable = |_: Option<&std::fs::Metadata>| { false };
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
