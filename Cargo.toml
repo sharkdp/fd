@@ -11,6 +11,10 @@ categories = ["command-line-utilities"]
 license = "MIT"
 exclude = ["benchmarks"]
 
+[badges]
+appveyor = { repository = "sharkdp/fd" }
+travis-ci = { repository = "sharkdp/fd" }
+
 [[bin]]
 name = "fd"
 path = "src/main.rs"

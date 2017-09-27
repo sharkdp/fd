@@ -1,3 +1,5 @@
+# Source: https://github.com/starkat99/appveyor-rust/
+
 environment:
   global:
     PROJECT_NAME: fd
