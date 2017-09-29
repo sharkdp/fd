@@ -153,10 +153,12 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -j, --threads <threads>    The number of threads used for searching
-    -t, --type <file-type>     The type of file to search for [values: f, file,
-                               d, directory, s, symlink]
+    -d, --max-depth <depth>        Set maximum search depth (default: none)
+    -j, --threads <threads>        The number of threads used for searching
+    -t, --type <file-type>
+            The type of file to search for [values: f, file,
+            d, directory, s, symlink]
+    -e, --extension <extension>    The file extension to search for
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)

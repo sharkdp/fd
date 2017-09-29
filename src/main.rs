@@ -93,6 +93,11 @@ struct FdOptions {
 
     /// The type of file to search for. All files other than the specified type will be ignored.
     file_type: FileType,
+
+    /// The extension to search for. Only entries matching the extension will be included.
+    ///
+    /// The value (if present) will be a lowercase string without leading dots.
+    extension: Option<String>,
 }
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -301,6 +306,17 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
                 },
             }
 
+            // Filter out unwanted extensions.
+            match (&config.extension, entry.path().extension()) {
+                (&None, _) => (),
+                (&Some(_), None) => return ignore::WalkState::Continue,
+                (&Some(ref e1), Some(e2)) => {
+                    if e1 != &e2.to_string_lossy().to_lowercase() {
+                        return ignore::WalkState::Continue;
+                    }
+                },
+            }
+
             let path_rel_buf = match fshelper::path_relative_from(entry.path(), &*base) {
                 Some(p) => p,
                 None => error("Error: could not get relative path for directory entry.")
@@ -405,6 +421,11 @@ fn main() {
                         .short("t")
                         .takes_value(true)
                         .possible_values(&["f", "file", "d", "directory", "s", "symlink"]))
+            .arg(Arg::with_name("extension")
+                        .help("The file extension to search for")
+                        .long("extension")
+                        .short("e")
+                        .takes_value(true))
             .get_matches();
 
     // Get the search pattern
@@ -488,6 +509,8 @@ fn main() {
                                Some("s") | Some("symlink") => FileType::SymLink,
                                _  => FileType::Any,
                            },
+        extension:         matches.value_of("extension")
+                                  .map(|e| e.trim_left_matches('.').to_lowercase()),
     };
 
     let root = Path::new(ROOT_DIR);

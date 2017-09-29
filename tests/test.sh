@@ -238,5 +238,17 @@ one/two/three
 one/two/three/directory_foo" --type d
 expect "symlink" --type s
 
+
+suite "File extension (--ext)"
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/three/d.foo" --extension foo
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/three/d.foo" --extension .foo
+expect "one/two/C.Foo2" --extension foo2
+
 # All done
 echo
