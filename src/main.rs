@@ -376,10 +376,12 @@ fn main() {
                         .long("absolute-path")
                         .short("a")
                         .help("Show absolute instead of relative paths"))
-            .arg(Arg::with_name("no-color")
-                        .long("no-color")
-                        .short("n")
-                        .help("Do not colorize output"))
+            .arg(Arg::with_name("color")
+                        .long("color")
+                        .short("c")
+                        .takes_value(true)
+                        .possible_values(&["never", "auto", "always"])
+                        .help("When to use color in the output. The default is auto."))
             .arg(Arg::with_name("depth")
                         .long("max-depth")
                         .short("d")
@@ -443,8 +445,11 @@ fn main() {
     let case_sensitive = matches.is_present("case-sensitive") ||
                          pattern.chars().any(char::is_uppercase);
 
-    let colored_output = !matches.is_present("no-color") &&
-                         atty::is(Stream::Stdout);
+    let colored_output = match matches.value_of("color") {
+        Some("always") => true,
+        Some("never") => false,
+        _ => atty::is(Stream::Stdout)
+    };
 
     let ls_colors =
         if colored_output {
