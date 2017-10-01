@@ -174,21 +174,26 @@ fd --help
 Let's assume we have some files we need to search through like so: 
 
 ```
-.
-└── fd_examples
-    ├── sub_dir
-    │   ├── .here_be_tests
-    │   ├── more_dir
-    │   │   ├── .not_here
-    │   │   ├── even_further_down
-    │   │   │   └── test_seven
-    │   │   └── test_file_six
-    │   ├── test_file_five
-    │   ├── test_file_three
-    │   └── test_four
-    ├── test_file_one
-    ├── test_file_two
-    └── test_one
+fd_examples
+├── .gitignore
+├── not_file
+├── sub_dir
+│   ├── .here_be_tests
+│   ├── more_dir
+│   │   ├── .not_here
+│   │   ├── even_further_down
+│   │   │   ├── not_me.sh
+│   │   │   ├── test_seven
+│   │   │   └── testing_eight
+│   │   ├── not_file -> /Users/fd_user/fd_examples/not_file
+│   │   └── test_file_six
+│   ├── test_file_five
+│   ├── test_file_four
+│   └── test_file_three
+├── test_file_one
+├── test_file_two
+├── test_one
+└── this_is_a_test
 ```
 
 Let's do a recursive search for anything that has the name test in it (fd will start in the current directory and follow symbolic links by default):
@@ -215,15 +220,17 @@ As you can see this matched every file that had 'test' as a substring in it. Who
 
 There they all are:
 ```
+sub_dir/.here_be_tests
 sub_dir/more_dir/even_further_down/test_seven
 sub_dir/more_dir/even_further_down/testing_eight
 sub_dir/more_dir/test_file_six
 sub_dir/test_file_five
+sub_dir/test_file_four
 sub_dir/test_file_three
-sub_dir/test_four
 test_file_one
 test_file_two
 test_one
+this_is_a_test
 ```
 
 What if we wanted to find only when the file began with test? Well `fd` does regex searches (by default) so using the regex indicator for beginning of line `^` will get us what we want: 
