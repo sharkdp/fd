@@ -196,7 +196,7 @@ fd_examples
 └── this_is_a_test
 ```
 
-Let's do a recursive search for anything that has the name test in it (fd will start in the current directory and follow symbolic links by default):
+Let's do a recursive search for anything that has the name test in it (`fd` will start in the current directory and follow symbolic links by default):
 
 `fd test`
 
@@ -214,7 +214,7 @@ test_one
 this_is_a_test
 ```
 
-As you can see this matched every file that had 'test' as a substring in it. Whoops! We forgot a hidden file (`.here_be_tests`) Let's get that by telling `fd` we want to see all files:
+As you can see this matched every file that had 'test' as a substring in it. Whoops! We forgot a hidden file (`.here_be_tests`) Lets get that by telling `fd` we want to see all files:
 
 `fd --hidden 'test'`
 
@@ -233,7 +233,7 @@ test_one
 this_is_a_test
 ```
 
-What if we wanted to find only when the file began with test? Well `fd` does regex searches (by default) so using the regex indicator for beginning of line `^` will get us what we want: 
+What if we wanted to find only when the file began with "test"? Well, `fd` does regex searches (by default) so using the regex indicator for beginning of line `^` will get us what we want: 
 
 `fd '^test'`
 
@@ -250,7 +250,7 @@ test_file_two
 test_one
 ```
 
-What if I only wanted to see the file with `test` in them only in the `fd_examples/sub_dir` folder? I Can do this from anywhere in the file structure by giving it the path I would like it to search. 
+What if I only wanted to see the file with `test` in them only in the `fd_examples/sub_dir` folder? I Can do this from anywhere in the file structure by giving it the path I would like it to search:
 
 `fd test ~/fd_examples/sub_dir/`
 
@@ -265,7 +265,7 @@ fd_user on Falcon in ~/Desktop
 /Users/fd_user/fd_examples/sub_dir/test_four
 ```
 
-If we don't give `fd` and argument it will recursively search the current directory for all files (like `ls -R` :smiles:): 
+If we don't give `fd` and argument it will recursively search the current directory for all files (like `ls -R`): 
 
 ```
 not_file
@@ -285,13 +285,12 @@ test_one
 this_is_a_test
 ```
 
-`fd` is magic in that it will look for a `.gitignore` file and teach the rules inside it as rules in the search pattern. So if we have a `.gitignore` file like: 
+`fd` is magic, it will look for a `.gitignore` file and treat the rules inside it as rules in the search pattern. So if we have a `.gitignore` file like: 
 
 ```
 *.sh
 ```
-
-Then we use `fd` to search for `fd me` we won't get anything! However using `-I` (or `--ignore`) we can temporarliy stop that from happening: 
+`fd` will then never look for any files that end in `.sh`. We can tell `fd` to ignore `.gitignore` files with `-I` (or `--ignore`) we can temporarliy stop that from happening: 
 
 `fd -I me`
 
@@ -299,7 +298,7 @@ Then we use `fd` to search for `fd me` we won't get anything! However using `-I`
 sub_dir/more_dir/even_further_down/not_me.sh
 ```
 
-Searching for a file extension is easy too, don't forget your regex rules (`$` is the end of a line :winky:): 
+Searching for a file extension is easy too, don't forget your regex rules (`$` is the end of a line): 
 
 `fd -I '\.sh$'`
 
@@ -311,10 +310,10 @@ What if we wanted to run some complicated bash follow on to the files? `xargs` c
 
 `fd -0 'test' | xargs -0 -I {} cp {} {}.new`
 
- - In the example there's a couple things to make note:
-  - First we are telling `fd` we want a null character to seperate the files, this is important when passing to `xargs`
-  - second we are piping the output to `xargs` and telling this program to expect input null terminated with `-0`
-  - Then for fun are are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}` to a file ending in `.new` 
+In the example there's a couple things to make note:
+  - First we are telling `fd` we want a null character to seperate the files `-0`, this is important when passing to `xargs`
+  - second we are piping the output to `xargs` and telling this program to expect input null terminated with `-0` (the same syntax that `fd` was built with).
+  - Then for fun are are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}` to a file ending in `{}.new` 
 
 That gives us: 
 
@@ -356,22 +355,22 @@ That gives us:
 `fd -a 'new'`
 
 ```
-/Users/rthosfelt/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
-/Users/rthosfelt/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
-/Users/rthosfelt/fd_examples/sub_dir/more_dir/test_file_six.new
-/Users/rthosfelt/fd_examples/sub_dir/test_file_five.new
-/Users/rthosfelt/fd_examples/sub_dir/test_file_four.new
-/Users/rthosfelt/fd_examples/sub_dir/test_file_three.new
-/Users/rthosfelt/fd_examples/test_file_one.new
-/Users/rthosfelt/fd_examples/test_file_two.new
-/Users/rthosfelt/fd_examples/test_one.new
-/Users/rthosfelt/fd_examples/this_is_a_test.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
+/Users/fd_user/fd_examples/sub_dir/test_file_five.new
+/Users/fd_user/fd_examples/sub_dir/test_file_four.new
+/Users/fd_user/fd_examples/sub_dir/test_file_three.new
+/Users/fd_user/fd_examples/test_file_one.new
+/Users/fd_user/fd_examples/test_file_two.new
+/Users/fd_user/fd_examples/test_one.new
+/Users/fd_user/fd_examples/this_is_a_test.new
 ```
 
 Be careful when using the full path flag (`--full-path`), as this searches the **path** of the file as well so regex like `^` won't work as intended: 
 
 ```
-rthosfelt on Falcon in ~/fd_examples
+fd_user on Falcon in ~/fd_examples
 > fd --full-path '^test' ~/fd_examples/
 
 ```
