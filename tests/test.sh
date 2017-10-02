@@ -118,6 +118,18 @@ three/d.foo
 three/directory_foo" foo ../../
 )
 
+suite "File extension searches"
+expect "a.foo
+one/b.foo
+one/two/c.foo
+one/two/three/d.foo" -e 'foo'
+expect ".hidden.foo
+a.foo
+ignored.foo
+one/b.foo
+one/two/c.foo
+one/two/three/d.foo" -HI -e 'foo'
+
 suite "Regex searches"
 expect "a.foo
 one/b.foo
