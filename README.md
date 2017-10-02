@@ -153,12 +153,233 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -j, --threads <threads>    The number of threads used for searching
-    -t, --type <file-type>     The type of file to search for [values: f, file,
-                               d, directory, s, symlink]
+    -d, --max-depth <depth>                  Set maximum search depth (default: none)
+    -j, --threads <threads>                  The number of threads used for searching
+    -t, --type <file-type>                   The type of file to search for [values: f, file, d, directory, s, symlink]
+    -e, --file-extension <file-extension>    Search for a file extension instead of a pattern (option)
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
     <path>       the root directory for the filesystem search (optional)
+
 ```
+
+## Examples
+
+First to get `fd`'s help run: 
+
+```
+fd --help
+```
+
+Let's assume we have some files we need to search through like so: 
+
+```
+fd_examples
+├── .gitignore
+├── not_file
+├── sub_dir
+│   ├── .here_be_tests
+│   ├── more_dir
+│   │   ├── .not_here
+│   │   ├── even_further_down
+│   │   │   ├── not_me.sh
+│   │   │   ├── test_seven
+│   │   │   └── testing_eight
+│   │   ├── not_file -> /Users/fd_user/fd_examples/not_file
+│   │   └── test_file_six
+│   ├── test_file_five
+│   ├── test_file_four
+│   └── test_file_three
+├── test_file_one
+├── test_file_two
+├── test_one
+└── this_is_a_test
+```
+
+Let's do a recursive search for anything that has the name test in it (`fd` will start in the current directory and follow symbolic links by default):
+
+`fd test`
+
+This will return us: 
+```
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+As you can see this matched every file that had 'test' as a substring in it. Whoops! We forgot a hidden file (`.here_be_tests`) Lets get that by telling `fd` we want to see all files:
+
+`fd --hidden 'test'`
+
+There they all are:
+```
+sub_dir/.here_be_tests
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_four
+sub_dir/test_file_three
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+What if we wanted to find only when the file began with "test"? Well, `fd` does regex searches (by default) so using the regex indicator for beginning of line `^` will get us what we want: 
+
+`fd '^test'`
+
+Giving us: 
+```
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+```
+
+What if I only wanted to see the file with `test` in them only in the `fd_examples/sub_dir` folder? I Can do this from anywhere in the file structure by giving it the path I would like it to search:
+
+`fd test ~/fd_examples/sub_dir/`
+
+```
+fd_user on Falcon in ~/Desktop
+> fd test ~/fd_examples/sub_dir/
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six
+/Users/fd_user/fd_examples/sub_dir/test_file_five
+/Users/fd_user/fd_examples/sub_dir/test_file_three
+/Users/fd_user/fd_examples/sub_dir/test_four
+```
+
+If we don't give `fd` and argument it will recursively search the current directory for all files (like `ls -R`): 
+
+```
+not_file
+sub_dir
+sub_dir/more_dir
+sub_dir/more_dir/even_further_down
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/not_file
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+`fd` is magic, it will look for a `.gitignore` file and treat the rules inside it as rules in the search pattern. So if we have a `.gitignore` file like: 
+
+```
+*.sh
+```
+`fd` will then never look for any files that end in `.sh`. We can tell `fd` to ignore `.gitignore` files with `-I` (or `--ignore`) we can temporarliy stop that from happening: 
+
+`fd -I me`
+
+```
+sub_dir/more_dir/even_further_down/not_me.sh
+```
+
+Searching for a file extension is easy too, don't forget your regex rules (`$` is the end of a line): 
+
+`fd -I '\.sh$'`
+
+```
+sub_dir/more_dir/even_further_down/not_me.sh
+```
+
+What if we wanted to run some complicated bash follow on to the files? `xargs` can help us with that: 
+
+`fd -0 'test' | xargs -0 -I {} cp {} {}.new`
+
+In the example there's a couple things to make note:
+  - First we are telling `fd` we want a null character to seperate the files `-0`, this is important when passing to `xargs`
+  - second we are piping the output to `xargs` and telling this program to expect input null terminated with `-0` (the same syntax that `fd` was built with).
+  - Then for fun are are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}` to a file ending in `{}.new` 
+
+That gives us: 
+
+```
+.
+├── .gitignore
+├── not_file
+├── sub_dir
+│   ├── .here_be_tests
+│   ├── more_dir
+│   │   ├── .not_here
+│   │   ├── even_further_down
+│   │   │   ├── not_me.sh
+│   │   │   ├── test_seven
+│   │   │   ├── test_seven.new
+│   │   │   ├── testing_eight
+│   │   │   └── testing_eight.new
+│   │   ├── not_file -> /Users/fd_user/fd_examples/not_file
+│   │   ├── test_file_six
+│   │   └── test_file_six.new
+│   ├── test_file_five
+│   ├── test_file_five.new
+│   ├── test_file_four
+│   ├── test_file_four.new
+│   ├── test_file_three
+│   └── test_file_three.new
+├── test_file_one
+├── test_file_one.new
+├── test_file_two
+├── test_file_two.new
+├── test_one
+├── test_one.new
+├── this_is_a_test
+└── this_is_a_test.new
+```
+
+`fd` can also show us the absolute path vs. the full path: 
+
+`fd -a 'new'`
+
+```
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
+/Users/fd_user/fd_examples/sub_dir/test_file_five.new
+/Users/fd_user/fd_examples/sub_dir/test_file_four.new
+/Users/fd_user/fd_examples/sub_dir/test_file_three.new
+/Users/fd_user/fd_examples/test_file_one.new
+/Users/fd_user/fd_examples/test_file_two.new
+/Users/fd_user/fd_examples/test_one.new
+/Users/fd_user/fd_examples/this_is_a_test.new
+```
+
+Be careful when using the full path flag (`--full-path`), as this searches the **path** of the file as well so regex like `^` won't work as intended: 
+
+```
+fd_user on Falcon in ~/fd_examples
+> fd --full-path '^test' ~/fd_examples/
+
+```
+
+The new feature `-e` for file extensions does the same as the regex `\.<extension>$` looking for the file `not_me.sh` would be done by:
+
+`fd -HI -e sh not_me`
+
+This will look for the pattern `not_me` with the ending extension `.sh`! You can always use the `-e` extension with an empty pattern to look for any file types like: 
+
+`fd -e rs` 
