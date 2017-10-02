@@ -405,6 +405,11 @@ fn main() {
                         .short("t")
                         .takes_value(true)
                         .possible_values(&["f", "file", "d", "directory", "s", "symlink"]))
+            .arg(Arg::with_name("file-extension")
+                        .help("Search for a file extension instead of a pattern (option)")
+                        .long("file-extension")
+                        .short("e")
+                        .takes_value(true))
             .get_matches();
 
     // Get the search pattern
@@ -458,6 +463,8 @@ fn main() {
             None
         };
 
+    let file_extension = matches.value_of("file-extension"); 
+
     let config = FdOptions {
         case_sensitive:    case_sensitive,
         search_full_path:  matches.is_present("full-path"),
@@ -496,10 +503,22 @@ fn main() {
         PathDisplay::Absolute => root
     };
 
-    match RegexBuilder::new(pattern)
-              .case_insensitive(!config.case_sensitive)
-              .build() {
-        Ok(re)   => scan(root_dir, Arc::new(re), base, Arc::new(config)),
-        Err(err) => error(err.description())
+    match file_extension {
+        Some(e) => {
+                    match RegexBuilder::new(&("\\.".to_string()+e+"$"))
+                        .case_insensitive(!config.case_sensitive)
+                        .build() {
+                            Ok(re)   => scan(root_dir, Arc::new(re), base, Arc::new(config)),
+                            Err(err) => error(err.description())
+                        }
+                    },
+        None => {
+                    match RegexBuilder::new(pattern)
+                        .case_insensitive(!config.case_sensitive)
+                        .build() {
+                            Ok(re)   => scan(root_dir, Arc::new(re), base, Arc::new(config)),
+                            Err(err) => error(err.description())
+                        }
+                }
     }
 }
