@@ -376,10 +376,10 @@ fd_user on Falcon in ~/fd_examples
 
 ```
 
-The new feature -e for file extensions does the same as the regex `\.<extension>$` looking for the file `not_me.sh` would be done by:
+The new feature `-e` for file extensions does the same as the regex `\.<extension>$` looking for the file `not_me.sh` would be done by:
 
 `fd -HI -e sh not_me`
 
-This will look for the pattern "not_me" with the ending extension `.sh`! You can always use the `-e` extension with an empty pattern to look for any file types like: 
+This will look for the pattern `not_me` with the ending extension `.sh`! You can always use the `-e` extension with an empty pattern to look for any file types like: 
 
 `fd -e rs` 
