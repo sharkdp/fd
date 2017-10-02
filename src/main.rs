@@ -505,7 +505,7 @@ fn main() {
 
     match file_extension {
         Some(e) => {
-                    match RegexBuilder::new(&("\\.".to_string()+e+"$"))
+                    match RegexBuilder::new(&(pattern.to_string()+"\\."+e+"$"))
                         .case_insensitive(!config.case_sensitive)
                         .build() {
                             Ok(re)   => scan(root_dir, Arc::new(re), base, Arc::new(config)),

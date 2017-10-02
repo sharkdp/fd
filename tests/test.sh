@@ -129,6 +129,7 @@ ignored.foo
 one/b.foo
 one/two/c.foo
 one/two/three/d.foo" -HI -e 'foo'
+expect "one/two/c.foo" -HI -e foo c
 
 suite "Regex searches"
 expect "a.foo

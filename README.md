@@ -153,14 +153,15 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -j, --threads <threads>    The number of threads used for searching
-    -t, --type <file-type>     The type of file to search for [values: f, file,
-                               d, directory, s, symlink]
+    -d, --max-depth <depth>                  Set maximum search depth (default: none)
+    -j, --threads <threads>                  The number of threads used for searching
+    -t, --type <file-type>                   The type of file to search for [values: f, file, d, directory, s, symlink]
+    -e, --file-extension <file-extension>    Search for a file extension instead of a pattern (option)
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
     <path>       the root directory for the filesystem search (optional)
+
 ```
 
 ## Examples
@@ -375,3 +376,10 @@ fd_user on Falcon in ~/fd_examples
 
 ```
 
+The new feature -e for file extensions does the same as the regex `\.<extension>$` looking for the file `not_me.sh` would be done by:
+
+`fd -HI -e sh not_me`
+
+This will look for the pattern "not_me" with the ending extension `.sh`! You can always use the `-e` extension with an empty pattern to look for any file types like: 
+
+`fd -e rs` 
