@@ -239,7 +239,7 @@ one/two/three/directory_foo" --type d
 expect "symlink" --type s
 
 
-suite "File extension (--ext)"
+suite "File extension (--extension)"
 expect "a.foo
 one/b.foo
 one/two/c.foo
