@@ -307,14 +307,11 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted extensions.
-            match (&config.extension, entry.path().extension()) {
-                (&None, _) => (),
-                (&Some(_), None) => return ignore::WalkState::Continue,
-                (&Some(ref e1), Some(e2)) => {
-                    if e1 != &e2.to_string_lossy().to_lowercase() {
-                        return ignore::WalkState::Continue;
-                    }
-                },
+            if let Some(ref filter_ext) = config.extension {
+                let entry_ext = entry.path().extension().map(|e| e.to_string_lossy().to_lowercase());
+                if entry_ext.map_or(false, |ext| ext != *filter_ext) {
+                    return ignore::WalkState::Continue;
+                }
             }
 
             let path_rel_buf = match fshelper::path_relative_from(entry.path(), &*base) {
