@@ -309,7 +309,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
             // Filter out unwanted extensions.
             if let Some(ref filter_ext) = config.extension {
                 let entry_ext = entry.path().extension().map(|e| e.to_string_lossy().to_lowercase());
-                if entry_ext.map_or(false, |ext| ext != *filter_ext) {
+                if entry_ext.map_or(true, |ext| ext != *filter_ext) {
                     return ignore::WalkState::Continue;
                 }
             }
