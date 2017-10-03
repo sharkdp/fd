@@ -419,7 +419,8 @@ fn main() {
                         .long("threads")
                         .short("j")
                         .takes_value(true)
-                        .help("Set number of threads to use for searching"))
+                        .help("Set number of threads to use for searching\n\
+                               (default: number of available CPU cores)"))
             .arg(Arg::with_name("max-buffer-time")
                         .long("max-buffer-time")
                         .takes_value(true)
