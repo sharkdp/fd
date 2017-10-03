@@ -141,24 +141,24 @@ USAGE:
     fd [FLAGS/OPTIONS] [<pattern>] [<path>]
 
 FLAGS:
-    -s, --case-sensitive    Case-sensitive search (default: smart case)
-    -p, --full-path         Search full path (default: file-/dirname only)
     -H, --hidden            Search hidden files and directories
     -I, --no-ignore         Do not respect .(git)ignore files
-    -L, --follow            Follow symlinks
-    -0, --print0            Separate results by the null character
+    -s, --case-sensitive    Case-sensitive search (default: smart case)
     -a, --absolute-path     Show absolute instead of relative paths
-    -n, --no-color          Do not colorize output
+    -L, --follow            Follow symbolic links
+    -p, --full-path         Search full path (default: file-/dirname only)
+    -0, --print0            Separate results by the null character
     -h, --help              Prints help information
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>        Set maximum search depth (default: none)
-    -j, --threads <threads>        The number of threads used for searching
-    -t, --type <file-type>
-            The type of file to search for [values: f, file,
-            d, directory, s, symlink]
-    -e, --extension <extension>    The file extension to search for
+    -d, --max-depth <depth>    Set maximum search depth (default: none)
+    -t, --type <file-type>     Filter by type: f(ile), d(irectory), s(ymlink)
+    -e, --extension <ext>      Filter by file extension
+    -c, --color <color>        When to use color in the output:
+                               never, auto, always (default: auto)
+    -j, --threads <threads>    Set number of threads to use for searching
+                               (default: number of available CPU cores)
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
