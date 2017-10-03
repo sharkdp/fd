@@ -93,6 +93,11 @@ struct FdOptions {
 
     /// The type of file to search for. All files other than the specified type will be ignored.
     file_type: FileType,
+
+    /// The extension to search for. Only entries matching the extension will be included.
+    ///
+    /// The value (if present) will be a lowercase string without leading dots.
+    extension: Option<String>,
 }
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -301,6 +306,14 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
                 },
             }
 
+            // Filter out unwanted extensions.
+            if let Some(ref filter_ext) = config.extension {
+                let entry_ext = entry.path().extension().map(|e| e.to_string_lossy().to_lowercase());
+                if entry_ext.map_or(true, |ext| ext != *filter_ext) {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
             let path_rel_buf = match fshelper::path_relative_from(entry.path(), &*base) {
                 Some(p) => p,
                 None => error("Error: could not get relative path for directory entry.")
@@ -347,14 +360,6 @@ fn main() {
             .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>]")
             .setting(AppSettings::ColoredHelp)
             .setting(AppSettings::DeriveDisplayOrder)
-            .arg(Arg::with_name("case-sensitive")
-                        .long("case-sensitive")
-                        .short("s")
-                        .help("Case-sensitive search (default: smart case)"))
-            .arg(Arg::with_name("full-path")
-                        .long("full-path")
-                        .short("p")
-                        .help("Search full path (default: file-/dirname only)"))
             .arg(Arg::with_name("hidden")
                         .long("hidden")
                         .short("H")
@@ -363,48 +368,68 @@ fn main() {
                         .long("no-ignore")
                         .short("I")
                         .help("Do not respect .(git)ignore files"))
-            .arg(Arg::with_name("follow")
-                        .long("follow")
-                        .short("L")
-                        .help("Follow symlinks")
-                        .alias("dereference"))
-            .arg(Arg::with_name("null_separator")
-                        .long("print0")
-                        .short("0")
-                        .help("Separate results by the null character"))
+            .arg(Arg::with_name("case-sensitive")
+                        .long("case-sensitive")
+                        .short("s")
+                        .help("Case-sensitive search (default: smart case)"))
             .arg(Arg::with_name("absolute-path")
                         .long("absolute-path")
                         .short("a")
                         .help("Show absolute instead of relative paths"))
-            .arg(Arg::with_name("no-color")
-                        .long("no-color")
-                        .short("n")
-                        .help("Do not colorize output"))
+            .arg(Arg::with_name("follow")
+                        .long("follow")
+                        .short("L")
+                        .alias("dereference")
+                        .help("Follow symbolic links"))
+            .arg(Arg::with_name("full-path")
+                        .long("full-path")
+                        .short("p")
+                        .help("Search full path (default: file-/dirname only)"))
+            .arg(Arg::with_name("null_separator")
+                        .long("print0")
+                        .short("0")
+                        .help("Separate results by the null character"))
             .arg(Arg::with_name("depth")
                         .long("max-depth")
                         .short("d")
                         .takes_value(true)
                         .help("Set maximum search depth (default: none)"))
+            .arg(Arg::with_name("file-type")
+                        .long("type")
+                        .short("t")
+                        .takes_value(true)
+                        .possible_values(&["f", "file", "d", "directory", "s", "symlink"])
+                        .hide_possible_values(true)
+                        .help("Filter by type: f(ile), d(irectory), s(ymlink)"))
+            .arg(Arg::with_name("extension")
+                        .long("extension")
+                        .short("e")
+                        .takes_value(true)
+                        .value_name("ext")
+                        .help("Filter by file extension"))
+            .arg(Arg::with_name("color")
+                        .long("color")
+                        .short("c")
+                        .takes_value(true)
+                        .possible_values(&["never", "auto", "always"])
+                        .hide_possible_values(true)
+                        .help("When to use color in the output:\n\
+                               never, auto, always (default: auto)"))
             .arg(Arg::with_name("threads")
                         .long("threads")
                         .short("j")
                         .takes_value(true)
-                        .help("The number of threads used for searching"))
+                        .help("Set number of threads to use for searching\n\
+                               (default: number of available CPU cores)"))
             .arg(Arg::with_name("max-buffer-time")
                         .long("max-buffer-time")
                         .takes_value(true)
-                        .help("the time (in ms) to buffer, before streaming to the console")
-                        .hidden(true))
+                        .hidden(true)
+                        .help("the time (in ms) to buffer, before streaming to the console"))
             .arg(Arg::with_name("pattern")
                         .help("the search pattern, a regular expression (optional)"))
             .arg(Arg::with_name("path")
                         .help("the root directory for the filesystem search (optional)"))
-            .arg(Arg::with_name("file-type")
-                        .help("The type of file to search for")
-                        .long("type")
-                        .short("t")
-                        .takes_value(true)
-                        .possible_values(&["f", "file", "d", "directory", "s", "symlink"]))
             .get_matches();
 
     // Get the search pattern
@@ -443,8 +468,11 @@ fn main() {
     let case_sensitive = matches.is_present("case-sensitive") ||
                          pattern.chars().any(char::is_uppercase);
 
-    let colored_output = !matches.is_present("no-color") &&
-                         atty::is(Stream::Stdout);
+    let colored_output = match matches.value_of("color") {
+        Some("always") => true,
+        Some("never") => false,
+        _ => atty::is(Stream::Stdout)
+    };
 
     let ls_colors =
         if colored_output {
@@ -488,6 +516,8 @@ fn main() {
                                Some("s") | Some("symlink") => FileType::SymLink,
                                _  => FileType::Any,
                            },
+        extension:         matches.value_of("extension")
+                                  .map(|e| e.trim_left_matches('.').to_lowercase()),
     };
 
     let root = Path::new(ROOT_DIR);
@@ -503,3 +533,4 @@ fn main() {
         Err(err) => error(err.description())
     }
 }
+

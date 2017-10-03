@@ -153,14 +153,14 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -j, --threads <threads>    The number of threads used for searching
-    -t, --type <file-type>     The type of file to search for [values: f, file,
-                               d, directory, s, symlink]
+    -d, --max-depth <depth>                  Set maximum search depth (default: none)
+    -j, --threads <threads>                  The number of threads used for searching
+    -t, --type <file-type>                   The type of file to search for [values: f, file, d, directory, s, symlink]
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
     <path>       the root directory for the filesystem search (optional)
+
 ```
 
 ## Examples
@@ -399,7 +399,17 @@ We can also limit a search by searching for files within a specific path using `
 
 Here we are looking for any substring of "dir" followed by "txt" in the root folder of "fd_examples". Giving us:
 
+<<<<<<< HEAD
 ```
 fd_examples/desub_dir/old_test.txt
 fd_examples/sub_dir/new_test.txt
 ```
+=======
+The new feature `-e` for file extensions does the same as the regex `\.<extension>$` looking for the file `not_me.sh` would be done by:
+
+`fd -HI -e sh not_me`
+
+This will look for the pattern `not_me` with the ending extension `.sh`! You can always use the `-e` extension with an empty pattern to look for any file types like: 
+
+`fd -e rs` 
+>>>>>>> 02b06d54489c1787acf4167bd31405c27d31621d
