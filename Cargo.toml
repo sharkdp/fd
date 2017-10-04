@@ -28,4 +28,5 @@ ignore = "0.2"
 num_cpus = "1.6.2"
 
 [dev-dependencies]
+diff = "0.1"
 tempdir = "0.3"

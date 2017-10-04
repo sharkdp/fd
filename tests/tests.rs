@@ -7,7 +7,7 @@ use std::fs;
 use std::io;
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::Command;
+use std::process;
 
 #[cfg(unix)]
 use std::os::unix;
@@ -15,6 +15,7 @@ use std::os::unix;
 #[cfg(windows)]
 use std::os::windows;
 
+extern crate diff;
 extern crate tempdir;
 
 use tempdir::TempDir;
@@ -41,24 +42,58 @@ impl TestEnv {
     }
 
     pub fn assert_output(&self, args: &[&str], expected: &str) {
-        let expected = TestEnv::normalize_output(expected, true);
-
-        let mut cmd = self.command();
+        // Setup fd command.
+        let mut cmd = process::Command::new(&self.fd);
+        cmd.current_dir(self.temp_dir.path());
         for arg in args {
             cmd.arg(arg);
         }
-        let output = cmd.output().expect("executing fd");
 
+        // Run fd.
+        let output = cmd.output().expect("fd output");
+
+        // Check for exit status.
         if !output.status.success() {
-            // TODO: Add arguments to error message.
-            panic!("fd returned non-zero status");
+            panic!(TestEnv::format_exit_error(args, &output));
         }
 
+        // Normalize both expected and actual output.
+        let expected = TestEnv::normalize_output(expected, true);
         let actual = TestEnv::normalize_output(&String::from_utf8_lossy(&output.stdout), false);
 
         // Compare actual output to expected output.
-        // TODO: Show diff if not equal.
-        assert_eq!(expected, actual);
+        if expected != actual {
+            panic!(TestEnv::format_output_error(args, &expected, &actual));
+        }
+    }
+
+    fn format_exit_error(args: &[&str], output: &process::Output) -> String {
+        format!(
+            "`fd {}` did not exit successfully.\nstdout:\n---\n{}---\nstderr:\n---\n{}---",
+            args.join(" "),
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr))
+    }
+
+    fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
+        // Generate diff text.
+        let diff_text =
+            diff::lines(expected, actual)
+                .into_iter()
+                .map(|diff| {
+                    match diff {
+                        diff::Result::Left(l)    => format!("-{}", l),
+                        diff::Result::Both(l, _) => format!(" {}", l),
+                        diff::Result::Right(r)   => format!("+{}", r),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+
+        format!(
+            "`fd {}` did not produce the expected output.\nShowing diff between expected and actual:\n{}\n",
+            args.join(" "),
+            diff_text)
     }
 
     fn normalize_output(s: &str, trim_left: bool) -> String {
@@ -76,12 +111,6 @@ impl TestEnv {
         lines.sort_by_key(|s| s.to_lowercase());
 
         lines.join("\n")
-    }
-
-    fn command(&self) -> Command {
-        let mut cmd = Command::new(&self.fd);
-        cmd.current_dir(self.temp_dir.path());
-        cmd
     }
 
     fn create_working_directory() -> Result<TempDir, io::Error> {
