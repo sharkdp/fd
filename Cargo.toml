@@ -26,3 +26,6 @@ atty = "0.2"
 regex = "0.2"
 ignore = "0.2"
 num_cpus = "1.6.2"
+
+[dev-dependencies]
+tempdir = "0.3"
