@@ -152,6 +152,10 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
+
+    -d, --max-depth <depth>                  Set maximum search depth (default: none)
+    -j, --threads <threads>                  The number of threads used for searching
+    -t, --type <file-type>                   The type of file to search for [values: f, file, d, directory, s, symlink]
     -d, --max-depth <depth>    Set maximum search depth (default: none)
     -t, --type <file-type>     Filter by type: f(ile), d(irectory), s(ymlink)
     -e, --extension <ext>      Filter by file extension
@@ -159,8 +163,249 @@ OPTIONS:
                                never, auto, always (default: auto)
     -j, --threads <threads>    Set number of threads to use for searching
                                (default: number of available CPU cores)
-
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
     <path>       the root directory for the filesystem search (optional)
+
+```
+
+## Examples
+
+First to get `fd`'s help run: 
+
+```
+fd --help
+```
+
+Let's assume we have some files we need to search through like so: 
+
+```
+fd_examples
+├── .gitignore
+├── desub_dir
+│   └── old_test.txt
+├── not_file
+├── sub_dir
+│   ├── .here_be_tests
+│   ├── more_dir
+│   │   ├── .not_here
+│   │   ├── even_further_down
+│   │   │   ├── not_me.sh
+│   │   │   ├── test_seven
+│   │   │   └── testing_eight
+│   │   ├── not_file -> /Users/fd_user/Desktop/fd_examples/not_file
+│   │   └── test_file_six
+│   ├── new_test.txt
+│   ├── test_file_five
+│   ├── test_file_four
+│   └── test_file_three
+├── test_file_one
+├── test_file_two
+├── test_one
+└── this_is_a_test
+```
+
+Let's do a recursive search for anything that has the name test in it (`fd` will start in the current directory by default).
+
+`fd test`
+
+This will return: 
+
+```
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+Note: that `fd` does not show hidden files (`.here_be_tests`) by default to change this we can use the `-H` (or `--hidden`) option.
+
+`fd -H'test'`
+
+There they all are:
+
+```
+sub_dir/.here_be_tests
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_four
+sub_dir/test_file_three
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+What if we wanted to find only when the file began with `test`? Well, `fd` does regex searches (by default) so using the regex indicator for beginning of line `^` will get us what we want. 
+
+`fd '^test'`
+
+Giving us: 
+
+```
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+```
+
+However, we really only wanted to see the filenames that contain `test` in the `fd_examples/sub_dir` folder? This can be done from anywhere in the file structure by giving it the path.
+
+`fd test ~/fd_examples/sub_dir/`
+
+```
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six
+/Users/fd_user/fd_examples/sub_dir/test_file_five
+/Users/fd_user/fd_examples/sub_dir/test_file_three
+/Users/fd_user/fd_examples/sub_dir/test_four
+```
+
+If we don't give `fd` an argument it will recursively search the current directory for all files (like `ls -R`): 
+
+```
+not_file
+sub_dir
+sub_dir/more_dir
+sub_dir/more_dir/even_further_down
+sub_dir/more_dir/even_further_down/test_seven
+sub_dir/more_dir/even_further_down/testing_eight
+sub_dir/more_dir/not_file
+sub_dir/more_dir/test_file_six
+sub_dir/test_file_five
+sub_dir/test_file_three
+sub_dir/test_four
+test_file_one
+test_file_two
+test_one
+this_is_a_test
+```
+
+`fd` is magic, it will look for a `.gitignore` file and treat the rules inside it as rules in the search pattern. So if we have a `.gitignore` file like:
+
+```
+*.sh
+```
+
+`fd` will then never look for any files that end in `.sh`. We can tell `fd` to ignore `.gitignore` files with `-I` (or `--ignore`) to temporarliy stop that from happening.
+
+`fd -I me`
+
+```
+sub_dir/more_dir/even_further_down/not_me.sh
+```
+
+Of course, we can combine the hidden and ignore features to show all files (`-HI`).
+
+`fd -HI ~/fd_examples 'not|here'`
+
+```
+/Users/fd_user/fd_examples/not_file
+/Users/fd_user/fd_examples/sub_dir/.here_be_tests
+/Users/fd_user/fd_examples/sub_dir/more_dir/.not_here
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/not_me.sh
+/Users/fd_user/fd_examples/sub_dir/more_dir/not_file
+```
+
+Searching for a file extension is easy too, using the `-e` (or `--file-extensions`) switch for file extensions. 
+
+`fd -e sh`
+
+```
+sub_dir/more_dir/even_further_down/not_me.sh
+```
+
+Next, we can even use a pattern in combination with `-e` to search for a regex pattern over the files that end in the specified extension.
+
+`fd -e txt test`
+
+```
+fd_examples/desub_dir/old_test.txt
+fd_examples/sub_dir/new_test.txt
+```
+
+What if we wanted to run some complicated bash follow on to the files? `xargs` can help us with that. 
+
+`fd -0 'test' | xargs -0 -I {} cp {} {}.new`
+
+In this example there are a couple things to take note:
+  - First we are telling `fd` we want a null character to seperate the files `-0`, this is important when passing to `xargs`.
+  - Second, we are piping the output to `xargs` and telling this program to expect input null terminated with `-0` (the same syntax that `fd` was built with).
+  - Then for fun we are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}` to a file ending in `{}.new`.
+
+That gives us: 
+
+```
+.
+├── .gitignore
+├── not_file
+├── sub_dir
+│   ├── .here_be_tests
+│   ├── more_dir
+│   │   ├── .not_here
+│   │   ├── even_further_down
+│   │   │   ├── not_me.sh
+│   │   │   ├── test_seven
+│   │   │   ├── test_seven.new
+│   │   │   ├── testing_eight
+│   │   │   └── testing_eight.new
+│   │   ├── not_file -> /Users/fd_user/fd_examples/not_file
+│   │   ├── test_file_six
+│   │   └── test_file_six.new
+│   ├── test_file_five
+│   ├── test_file_five.new
+│   ├── test_file_four
+│   ├── test_file_four.new
+│   ├── test_file_three
+│   └── test_file_three.new
+├── test_file_one
+├── test_file_one.new
+├── test_file_two
+├── test_file_two.new
+├── test_one
+├── test_one.new
+├── this_is_a_test
+└── this_is_a_test.new
+```
+
+`fd` can also show us the absolute path vs. the full path with `-a` (`--absolute-path`). 
+
+`fd -a 'new'`
+
+```
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
+/Users/fd_user/fd_examples/sub_dir/test_file_five.new
+/Users/fd_user/fd_examples/sub_dir/test_file_four.new
+/Users/fd_user/fd_examples/sub_dir/test_file_three.new
+/Users/fd_user/fd_examples/test_file_one.new
+/Users/fd_user/fd_examples/test_file_two.new
+/Users/fd_user/fd_examples/test_one.new
+/Users/fd_user/fd_examples/this_is_a_test.new
+```
+
+We can also limit a search by searching for files within a specific path using `-p` (`--full-path`).
+
+`fd -p 'dir.*txt' ./fd_examples/`
+
+Here we are looking for any substring of "dir" followed by "txt" in the root folder of "fd_examples". Giving us:
+
+```
+fd_examples/desub_dir/old_test.txt
+fd_examples/sub_dir/new_test.txt
 ```

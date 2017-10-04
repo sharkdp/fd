@@ -1,6 +1,6 @@
 [package]
 name = "fd-find"
-version = "3.1.0"
+version = "3.2.0"
 authors = ["David Peter <mail@david-peter.de>"]
 description = "fd is a simple, fast and user-friendly alternative to find."
 homepage = "https://github.com/sharkdp/fd"
