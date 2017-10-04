@@ -147,9 +147,7 @@ impl TestEnv {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
-        for arg in args {
-            cmd.arg(arg);
-        }
+        cmd.args(args);
 
         // Run *fd*.
         let output = cmd.output().expect("fd output");

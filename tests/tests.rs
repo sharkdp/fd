@@ -105,12 +105,6 @@ fn test_smart_case() {
     te.assert_output(
         &["Foo"],
         "one/two/C.Foo2");
-
-    te.assert_output(
-        &["--case-sensitive", "[a-c].foo"],
-        "a.foo
-        one/b.foo
-        one/two/c.foo");
 }
 
 /// Case sensitivity (--case-sensitive)
