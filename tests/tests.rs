@@ -57,6 +57,16 @@ fn test_explicit_root_path() {
         &["foo", "one/two/three"],
         "one/two/three/d.foo
         one/two/three/directory_foo");
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &["foo", "../../"],
+        "../../a.foo
+        ../b.foo
+        c.foo
+        C.Foo2
+        three/d.foo
+        three/directory_foo");
 }
 
 /// Regex searches

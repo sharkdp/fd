@@ -3,7 +3,7 @@ use std::env;
 use std::fs;
 use std::io;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 
 #[cfg(unix)]
@@ -138,9 +138,15 @@ impl TestEnv {
 
     /// Assert that calling *fd* with the specified arguments produces the expected output.
     pub fn assert_output(&self, args: &[&str], expected: &str) {
+        self.assert_output_subdirectory(".", args, expected)
+    }
+
+    /// Assert that calling *fd* in the specified path under the root working directory,
+    /// and with the specified arguments produces the expected output.
+    pub fn assert_output_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
-        cmd.current_dir(self.temp_dir.path());
+        cmd.current_dir(self.temp_dir.path().join(path));
         for arg in args {
             cmd.arg(arg);
         }
