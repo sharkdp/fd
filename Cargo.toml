@@ -30,3 +30,7 @@ num_cpus = "1.6.2"
 
 [build-dependencies]
 clap = "2.26.0"
+
+[dev-dependencies]
+diff = "0.1"
+tempdir = "0.3"

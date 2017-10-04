@@ -33,9 +33,6 @@ matrix:
       rust: 1.16.0
       env: TARGET=x86_64-unknown-linux-musl
 
-after_success:
-  - bash tests/test.sh
-
 notifications:
   email:
     on_success: never
