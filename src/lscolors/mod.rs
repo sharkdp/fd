@@ -1,7 +1,7 @@
 /// A parser for the `LS_COLORS` environment variable.
 
 use std::collections::HashMap;
-use ansi_term::{Style, Colour};
+use ansi_term::{Colour, Style};
 
 /// Maps file extensions to ANSI colors / styles.
 pub type ExtensionStyles = HashMap<String, Style>;
@@ -42,7 +42,7 @@ impl Default for LsColors {
             symlink: Colour::Cyan.normal(),
             executable: Colour::Red.bold(),
             extensions: HashMap::new(),
-            filenames: HashMap::new()
+            filenames: HashMap::new(),
         }
     }
 }
@@ -55,7 +55,7 @@ impl LsColors {
             "1" | "01" => Some(Colour::bold),
             "3" | "03" => Some(Colour::italic),
             "4" | "04" => Some(Colour::underline),
-            _ => None
+            _ => None,
         }
     }
 

@@ -17,7 +17,7 @@ use std::io::Write;
 use std::ops::Deref;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf, Component};
+use std::path::{Component, Path, PathBuf};
 use std::process;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -37,7 +37,7 @@ enum PathDisplay {
     Absolute,
 
     /// As a relative path
-    Relative
+    Relative,
 }
 
 /// The type of file to search for.
@@ -46,7 +46,7 @@ enum FileType {
     Any,
     RegularFile,
     Directory,
-    SymLink
+    SymLink,
 }
 
 /// Configuration options for *fd*.
@@ -107,14 +107,14 @@ enum ReceiverMode {
     Buffering,
 
     /// Receiver is directly printing results to the output.
-    Streaming
+    Streaming,
 }
 
 /// Root directory
-static ROOT_DIR : &'static str = "/";
+static ROOT_DIR: &'static str = "/";
 
 /// Parent directory
-static PARENT_DIR : &'static str = "..";
+static PARENT_DIR: &'static str = "..";
 
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
@@ -129,7 +129,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     };
 
     #[cfg(not(target_family = "unix"))]
-    let is_executable = |_: Option<&std::fs::Metadata>| { false };
+    let is_executable = |_: Option<&std::fs::Metadata>| false;
 
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
@@ -192,9 +192,9 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
         }
 
         let r = if config.null_separator {
-          write!(handle, "\0")
+            write!(handle, "\0")
         } else {
-          writeln!(handle, "")
+            writeln!(handle, "")
         };
         if r.is_err() {
             // Probably a broken pipe. Exit gracefully.
@@ -237,7 +237,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
     let receiver_thread = thread::spawn(move || {
         let start = time::Instant::now();
 
-        let mut buffer = vec!();
+        let mut buffer = vec![];
 
         // Start in buffering mode
         let mut mode = ReceiverMode::Buffering;
@@ -289,7 +289,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
         Box::new(move |entry_o| {
             let entry = match entry_o {
                 Ok(e) => e,
-                Err(_) => return ignore::WalkState::Continue
+                Err(_) => return ignore::WalkState::Continue,
             };
 
             // Filter out unwanted file types.
@@ -348,8 +348,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
 
 /// Print error message to stderr and exit with status `1`.
 fn error(message: &str) -> ! {
-    writeln!(&mut std::io::stderr(), "{}", message)
-        .expect("Failed writing to stderr");
+    writeln!(&mut std::io::stderr(), "{}", message).expect("Failed writing to stderr");
     process::exit(1);
 }
 
