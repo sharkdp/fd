@@ -61,6 +61,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("type")
                 .short("t")
                 .takes_value(true)
+                .value_name("filetype")
                 .possible_values(&["f", "file", "d", "directory", "s", "symlink"])
                 .hide_possible_values(true)
                 .help("Filter by type: f(ile), d(irectory), s(ymlink)"),
@@ -78,6 +79,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("color")
                 .short("c")
                 .takes_value(true)
+                .value_name("when")
                 .possible_values(&["never", "auto", "always"])
                 .hide_possible_values(true)
                 .help(
@@ -90,6 +92,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("threads")
                 .short("j")
                 .takes_value(true)
+                .value_name("num")
                 .help(
                     "Set number of threads to use for searching\n\
                      (default: number of available CPU cores)",
