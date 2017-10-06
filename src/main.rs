@@ -14,7 +14,7 @@ use std::env;
 use std::error::Error;
 use std::io::Write;
 use std::ops::Deref;
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::process;
@@ -110,7 +110,11 @@ enum ReceiverMode {
 }
 
 /// Root directory
+#[cfg(unix)]
 static ROOT_DIR: &'static str = "/";
+
+#[cfg(windows)]
+static ROOT_DIR: &'static str = "";
 
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
@@ -118,13 +122,13 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
     let path_str = entry.to_string_lossy();
 
-    #[cfg(target_family = "unix")]
+    #[cfg(unix)]
     let is_executable = |p: Option<&std::fs::Metadata>| {
         p.map(|f| f.permissions().mode() & 0o111 != 0)
          .unwrap_or(false)
     };
 
-    #[cfg(not(target_family = "unix"))]
+    #[cfg(windows)]
     let is_executable = |_: Option<&std::fs::Metadata>| false;
 
     let stdout = std::io::stdout();
@@ -365,7 +369,7 @@ fn main() {
 
         root_dir_is_absolute = path.is_absolute();
 
-        path.canonicalize().unwrap_or_else(
+        fshelper::absolute_path(path).unwrap_or_else(
             |_| error(&format!("Error: could not find directory '{}'.", rd))
         )
     } else {

@@ -1,7 +1,5 @@
 //! Integration tests for the CLI interface of fd.
 
-#![allow(dead_code, unused_imports)]
-
 mod testenv;
 
 use testenv::TestEnv;
@@ -245,6 +243,9 @@ fn test_absolute_path() {
         .canonicalize().expect("absolute path")
         .to_str().expect("string")
         .to_string();
+
+    #[cfg(windows)]
+    let abs_path = abs_path.trim_left_matches(r"\\?\");
 
     te.assert_output(
         &["--absolute-path", "foo"],

@@ -47,6 +47,8 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         #[cfg(unix)]
         unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
+        // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
+        // is by default only granted for administrators.
         #[cfg(windows)]
         windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
