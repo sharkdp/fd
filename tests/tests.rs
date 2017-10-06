@@ -39,8 +39,6 @@ fn test_simple() {
 }
 
 /// Explicit root path
-// TODO: Fails on windows
-#[cfg_attr(windows, ignore)]
 #[test]
 fn test_explicit_root_path() {
     let te = TestEnv::new();
@@ -239,8 +237,6 @@ fn test_max_depth() {
 }
 
 /// Absolute paths (--absolute-path)
-// TODO: fails on windows
-#[cfg_attr(windows, ignore)]
 #[test]
 fn test_absolute_path() {
     let te = TestEnv::new();
