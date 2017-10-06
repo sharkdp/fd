@@ -10,14 +10,13 @@ pub mod lscolors;
 pub mod fshelper;
 mod app;
 
-use std::borrow::Cow;
 use std::env;
 use std::error::Error;
 use std::io::Write;
 use std::ops::Deref;
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -113,9 +112,6 @@ enum ReceiverMode {
 /// Root directory
 static ROOT_DIR: &'static str = "/";
 
-/// Parent directory
-static PARENT_DIR: &'static str = "..";
-
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     let path_full = base.join(entry);
@@ -145,11 +141,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
         // Traverse the path and colorize each component
         for component in entry.components() {
-            let comp_str = match component {
-                Component::Normal(p) => p.to_string_lossy(),
-                Component::ParentDir => Cow::from(PARENT_DIR),
-                _                    => error("Error: unexpected path component.")
-            };
+            let comp_str = component.as_os_str().to_string_lossy();
 
             component_path.push(Path::new(comp_str.deref()));
 
