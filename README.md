@@ -126,12 +126,8 @@ git clone https://github.com/sharkdp/fd
 cd fd
 cargo build
 
-# Run unit tests
+# Run unit tests and integration tests
 cargo test
-
-# Run integration tests
-cd tests
-bash test.sh
 
 # Install
 cargo install
