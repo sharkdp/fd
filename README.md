@@ -153,11 +153,11 @@ FLAGS:
 
 OPTIONS:
     -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -t, --type <file-type>     Filter by type: f(ile), d(irectory), s(ymlink)
+    -t, --type <filetype>      Filter by type: f(ile), d(irectory), s(ymlink)
     -e, --extension <ext>      Filter by file extension
-    -c, --color <color>        When to use color in the output:
+    -c, --color <when>         When to use color in the output:
                                never, auto, always (default: auto)
-    -j, --threads <threads>    Set number of threads to use for searching
+    -j, --threads <num>        Set number of threads to use for searching:
                                (default: number of available CPU cores)
 
 ARGS:
