@@ -117,7 +117,11 @@ static ROOT_DIR: &'static str = "/";
 static ROOT_DIR: &'static str = "";
 
 /// Print a search result to the console.
-fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
+fn print_entry(base: &Path,
+               entry: &PathBuf,
+               match_start: usize,
+               match_end: usize,
+               config: &FdOptions) {
     let path_full = base.join(entry);
 
     let path_str = entry.to_string_lossy();
@@ -142,6 +146,9 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
         if config.path_display == PathDisplay::Absolute {
             print!("{}", ls_colors.directory.paint(ROOT_DIR));
         }
+
+        let mut output_length = 0;
+        let mut within_match = false;
 
         // Traverse the path and colorize each component
         for component in entry.components() {
@@ -179,11 +186,48 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
                     }
                 };
 
-            write!(handle, "{}", style.paint(comp_str)).ok();
+            let comp_len = comp_str.len();
+            if match_start >= output_length && match_start < output_length + comp_len {
+                let (first, second) = comp_str.split_at(match_start - output_length);
+                write!(handle, "{}", style.paint(first)).ok();
+                if match_end < output_length + comp_len {
+                    let (second_, third_) = second.split_at(match_end - match_start);
+                    write!(handle, "{}", style.underline().paint(second_)).ok();
+                    write!(handle, "{}", style.paint(third_)).ok();
+                }
+                else {
+                    write!(handle, "{}", style.underline().paint(second)).ok();
+                    within_match = true;
+                }
+            } else {
+
+                if within_match {
+                    if match_end >= output_length && match_end < output_length + comp_len {
+                        let (first, second) = comp_str.split_at(match_end - output_length);
+                        write!(handle, "{}", style.underline().paint(first)).ok();
+                        write!(handle, "{}", style.paint(second)).ok();
+                        within_match = false;
+                    } else {
+                        write!(handle, "{}", style.underline().paint(comp_str)).ok();
+                    }
+                } else {
+                    write!(handle, "{}", style.paint(comp_str)).ok();
+                };
+            }
+            output_length += comp_len;
+
+            if match_end == output_length {
+                within_match = false;
+            }
 
             if is_directory && component_path != path_full {
                 let sep = std::path::MAIN_SEPARATOR.to_string();
-                write!(handle, "{}", style.paint(sep)).ok();
+                output_length += sep.len();
+                if within_match {
+                    write!(handle, "{}", style.underline().paint(sep)).ok();
+                } else {
+                    write!(handle, "{}", style.paint(sep)).ok();
+                }
             }
         }
 
@@ -213,7 +257,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
 /// Recursively scan the given search path and search for files / pathnames matching the pattern.
 fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
-    let (tx, rx) = channel();
+    let (tx, rx) = channel::<(PathBuf, usize, usize)>();
 
     let walker = WalkBuilder::new(root)
                      .hidden(config.ignore_hidden)
@@ -242,16 +286,16 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
         let max_buffer_time = rx_config.max_buffer_time
                                        .unwrap_or_else(|| time::Duration::from_millis(100));
 
-        for value in rx {
+        for (path, match_start, match_end) in rx {
             match mode {
                 ReceiverMode::Buffering => {
-                    buffer.push(value);
+                    buffer.push((path, match_start, match_end));
 
                     // Have we reached the maximum time?
                     if time::Instant::now() - start > max_buffer_time {
                         // Flush the buffer
-                        for v in &buffer {
-                            print_entry(&rx_base, v, &rx_config);
+                        for &(ref p, m_s, m_e) in &buffer {
+                            print_entry(&rx_base, &p, m_s, m_e, &rx_config);
                         }
                         buffer.clear();
 
@@ -260,7 +304,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
                     }
                 },
                 ReceiverMode::Streaming => {
-                    print_entry(&rx_base, &value, &rx_config);
+                    print_entry(&rx_base, &path, match_start, match_end, &rx_config);
                 }
             }
         }
@@ -268,9 +312,9 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
         // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
         // anything to the console, yet. In this case, sort the results and print them:
         if !buffer.is_empty() {
-            buffer.sort();
-            for value in buffer {
-                print_entry(&rx_base, &value, &rx_config);
+            buffer.sort_unstable_by_key(|t| t.0.to_owned());
+            for (path, match_start, match_end) in buffer {
+                print_entry(&rx_base, &path, match_start, match_end, &rx_config);
             }
         }
     });
@@ -327,7 +371,7 @@ fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
             if let Some(search_str) = search_str_o {
                 // TODO: take care of the unwrap call
                 pattern.find(&*search_str)
-                       .map(|_| tx_thread.send(path_rel_buf.to_owned()).unwrap());
+                       .map(|m| tx_thread.send((path_rel_buf.to_owned(), m.start(), m.end())).unwrap());
             }
 
             ignore::WalkState::Continue
