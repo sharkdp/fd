@@ -10,14 +10,13 @@ pub mod lscolors;
 pub mod fshelper;
 mod app;
 
-use std::borrow::Cow;
 use std::env;
 use std::error::Error;
 use std::io::Write;
 use std::ops::Deref;
-#[cfg(target_family = "unix")]
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
 use std::sync::mpsc::channel;
@@ -111,10 +110,11 @@ enum ReceiverMode {
 }
 
 /// Root directory
+#[cfg(unix)]
 static ROOT_DIR: &'static str = "/";
 
-/// Parent directory
-static PARENT_DIR: &'static str = "..";
+#[cfg(windows)]
+static ROOT_DIR: &'static str = "";
 
 /// Print a search result to the console.
 fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
@@ -122,13 +122,13 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
     let path_str = entry.to_string_lossy();
 
-    #[cfg(target_family = "unix")]
+    #[cfg(unix)]
     let is_executable = |p: Option<&std::fs::Metadata>| {
         p.map(|f| f.permissions().mode() & 0o111 != 0)
          .unwrap_or(false)
     };
 
-    #[cfg(not(target_family = "unix"))]
+    #[cfg(windows)]
     let is_executable = |_: Option<&std::fs::Metadata>| false;
 
     let stdout = std::io::stdout();
@@ -145,11 +145,7 @@ fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
         // Traverse the path and colorize each component
         for component in entry.components() {
-            let comp_str = match component {
-                Component::Normal(p) => p.to_string_lossy(),
-                Component::ParentDir => Cow::from(PARENT_DIR),
-                _                    => error("Error: unexpected path component.")
-            };
+            let comp_str = component.as_os_str().to_string_lossy();
 
             component_path.push(Path::new(comp_str.deref()));
 
@@ -373,7 +369,7 @@ fn main() {
 
         root_dir_is_absolute = path.is_absolute();
 
-        path.canonicalize().unwrap_or_else(
+        fshelper::absolute_path(path).unwrap_or_else(
             |_| error(&format!("Error: could not find directory '{}'.", rd))
         )
     } else {

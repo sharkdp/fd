@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::io;
 
 /// Get a relative path with respect to a certain base path.
 /// See: https://stackoverflow.com/a/39343127/704831
@@ -40,4 +41,13 @@ pub fn path_relative_from(path: &Path, base: &Path) -> Option<PathBuf> {
         }
         Some(comps.iter().map(|c| c.as_os_str()).collect())
     }
+}
+
+pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
+    let path_buf = path.canonicalize()?;
+
+    #[cfg(windows)]
+    let path_buf = Path::new(path_buf.as_path().to_string_lossy().trim_left_matches(r"\\?\")).to_path_buf();
+
+    Ok(path_buf)
 }
