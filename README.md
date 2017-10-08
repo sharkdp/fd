@@ -12,7 +12,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 ## Features
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
 * Colorized terminal output (similar to *ls*).
-* It's *fast* (see benchmarks below).
+* It's *fast* (see [benchmarks](#benchmark) below).
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
@@ -26,16 +26,6 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 ## Demo
 
 ![Demo](http://i.imgur.com/kTMFSVU.gif)
-
-## Colorized output
-`fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
-variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
-of this variable is set by the `dircolors` command which provides a convenient configuration format
-to define colors for different file formats.
-On most distributions, `LS_COLORS` should be set already. If you are looking for alternative, more
-complete (and more colorful) variants, see
-[here](https://github.com/seebi/dircolors-solarized) or
-[here](https://github.com/trapd00r/LS_COLORS).
 
 ## Benchmark
 Let's search my home folder for files that end in `[0-9].jpg`. It contains ~150.000
@@ -95,6 +85,16 @@ be different for you! I encourage everyone to try it out on their own.
 
 Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
 in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
+
+## Colorized output
+`fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
+variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
+of this variable is set by the `dircolors` command which provides a convenient configuration format
+to define colors for different file formats.
+On most distributions, `LS_COLORS` should be set already. If you are looking for alternative, more
+complete (and more colorful) variants, see
+[here](https://github.com/seebi/dircolors-solarized) or
+[here](https://github.com/trapd00r/LS_COLORS).
 
 ## Install
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
