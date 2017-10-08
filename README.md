@@ -215,7 +215,7 @@ this_is_a_test
 ```
 
 The search pattern is treated as a regular expression. To show only entries that start with "test",
-we can simply run:
+we can call:
 ```
 > fd '^test'
 sub_dir/more_dir/even_further_down/test_seven
@@ -303,7 +303,7 @@ sub_dir/more_dir/even_further_down/not_me.sh
 sub_dir/more_dir/not_file
 ```
 
-Searching for a file extension is easy too, using the `-e` (or `--file-extensions`) switch for file
+Searching for a file extension is easy too, using the `-e` (or `--extension`) switch for file
 extensions:
 ```
 > fd -e sh
@@ -318,28 +318,8 @@ fd_examples/desub_dir/old_test.txt
 fd_examples/sub_dir/new_test.txt
 ```
 
-What if we wanted to run a command for each of the search results? We can use `xargs` to do that:
-`fd -0 'test' | xargs -0 -I {} cp {} {}.new`
-
-In this example there are a couple things to take note:
-  - First we are telling `fd` we want a null character to seperate the files `-0`, this is
-    important when passing to `xargs`.
-  - Second, we are piping the output to `xargs` and telling this program to expect input null
-    terminated with `-0` (the same syntax that `fd` was built with).
-  - Then for fun we are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}`
-    to a file ending in `{}.new`.
-
-`fd` can also show us the absolute path vs. the full path with `-a` (`--absolute-path`):
+If we want to run a command for each of the search results, we can use the `-0` option to pipe
+the output to `xargs`:
 ```
-> fd -a new
-/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
-/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
-/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
-/Users/fd_user/fd_examples/sub_dir/test_file_five.new
-/Users/fd_user/fd_examples/sub_dir/test_file_four.new
-/Users/fd_user/fd_examples/sub_dir/test_file_three.new
-/Users/fd_user/fd_examples/test_file_one.new
-/Users/fd_user/fd_examples/test_file_two.new
-/Users/fd_user/fd_examples/test_one.new
-/Users/fd_user/fd_examples/this_is_a_test.new
+> fd -0 'test' | xargs -0 wc -l
 ```
