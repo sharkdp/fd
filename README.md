@@ -116,7 +116,7 @@ cd fd-rs
 makepkg -si
 ```
 
-On **Windows**, you can pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
+On **Windows**, you can download the pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
 
 ## Development
 ```bash
