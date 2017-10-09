@@ -295,7 +295,7 @@ fn test_type() {
         one/two/three/directory_foo");
 
     te.assert_output(
-        &["--type", "s"],
+        &["--type", "l"],
         "symlink");
 }
 

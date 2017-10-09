@@ -151,7 +151,7 @@ FLAGS:
 
 OPTIONS:
     -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -t, --type <filetype>      Filter by type: f(ile), d(irectory), s(ymlink)
+    -t, --type <filetype>      Filter by type: f(ile), d(irectory), (sym)l(ink)
     -e, --extension <ext>      Filter by file extension
     -c, --color <when>         When to use color in the output:
                                never, auto, always (default: auto)
