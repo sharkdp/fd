@@ -432,7 +432,7 @@ fn main() {
         file_type:         match matches.value_of("file-type") {
                                Some("f") | Some("file") => FileType::RegularFile,
                                Some("d") | Some("directory") => FileType::Directory,
-                               Some("s") | Some("symlink") => FileType::SymLink,
+                               Some("l") | Some("symlink") => FileType::SymLink,
                                _  => FileType::Any,
                            },
         extension:         matches.value_of("extension")

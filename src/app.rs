@@ -46,7 +46,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("t")
                 .takes_value(true)
                 .value_name("filetype")
-                .possible_values(&["f", "file", "d", "directory", "s", "symlink"])
+                .possible_values(&["f", "file", "d", "directory", "l", "symlink"])
                 .hide_possible_values(true),
         )
         .arg(
@@ -117,11 +117,11 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit the directory traversal to a given depth. By default, there is no limit \
            on the search depth.");
     doc!(h, "file-type"
-        , "Filter by type: f(ile), d(irectory), s(ymlink)"
+        , "Filter by type: f(ile), d(irectory), (sym)l(ink)"
         , "Filter the search by type:\n  \
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
-             's' or 'symlink':      symbolic links");
+             'l' or 'symlink':      symbolic links");
     doc!(h, "extension"
         , "Filter by file extension"
         , "(Additionally) filter search results by their file extension.");
