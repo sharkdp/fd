@@ -1,13 +1,38 @@
 language: rust
-rust:
-  - stable
-  - beta
-  - nightly
+cache: cargo
 matrix:
   allow_failures:
     - rust: nightly
   include:
+    # Stable channel.
+    - os: linux
+      rust: stable
+      before_script:
+          - export PATH="$PATH:$HOME/.cargo/bin"
+          - which rustfmt || cargo install rustfmt
+      script:
+          - cargo fmt -- --write-mode=diff
+          - cargo build
+          - cargo test
+    # Beta channel.
+    - os: linux
+      rust: beta
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-musl
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
     # Nightly channel.
+    - os: linux
+      rust: nightly
+      before_script:
+          - export PATH="$PATH:$HOME/.cargo/bin"
+          - which rustfmt || cargo install rustfmt-nightly
+      script:
+          - cargo fmt -- --write-mode=diff
+          - cargo build
+          - cargo test
     - os: linux
       rust: nightly
       env: TARGET=i686-unknown-linux-musl
@@ -17,13 +42,6 @@ matrix:
     - os: osx
       rust: nightly
       env: TARGET=x86_64-apple-darwin
-    # Beta channel.
-    - os: linux
-      rust: beta
-      env: TARGET=x86_64-unknown-linux-musl
-    - os: linux
-      rust: beta
-      env: TARGET=x86_64-unknown-linux-gnu
     # Minimum Rust supported channel.
     - os: linux
       rust: 1.16.0
