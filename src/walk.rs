@@ -2,7 +2,7 @@ use internal::{error, FdOptions};
 use fshelper;
 use output;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::mpsc::channel;
 use std::thread;
@@ -101,12 +101,19 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
+        let root = root.to_owned();
 
         Box::new(move |entry_o| {
             let entry = match entry_o {
                 Ok(e) => e,
                 Err(_) => return ignore::WalkState::Continue,
             };
+
+            let entry_path = entry.path();
+
+            if entry_path == root {
+                return ignore::WalkState::Continue;
+            }
 
             // Filter out unwanted file types.
             match config.file_type {
@@ -130,29 +137,32 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
             // Filter out unwanted extensions.
             if let Some(ref filter_ext) = config.extension {
-                let entry_ext = entry.path().extension().map(|e| {
-                    e.to_string_lossy().to_lowercase()
-                });
+                let entry_ext = entry_path.extension().map(
+                    |e| e.to_string_lossy().to_lowercase(),
+                );
                 if entry_ext.map_or(true, |ext| ext != *filter_ext) {
                     return ignore::WalkState::Continue;
                 }
             }
 
-            let path_rel_buf = match fshelper::path_relative_from(entry.path(), &*base) {
-                Some(p) => p,
-                None => error("Error: could not get relative path for directory entry."),
-            };
-            let path_rel = path_rel_buf.as_path();
-
             let search_str_o = if config.search_full_path {
-                Some(path_rel.to_string_lossy())
+                Some(entry_path.to_string_lossy())
             } else {
-                path_rel.file_name().map(|f| f.to_string_lossy())
+                entry_path.file_name().map(|f| f.to_string_lossy())
             };
 
             if let Some(search_str) = search_str_o {
-                // TODO: take care of the unwrap call
                 pattern.find(&*search_str).map(|_| {
+                    let mut path_rel_buf = match fshelper::path_relative_from(entry_path, &*base) {
+                        Some(p) => p,
+                        None => error("Error: could not get relative path for directory entry."),
+                    };
+
+                    if path_rel_buf == PathBuf::new() {
+                        path_rel_buf.push(".");
+                    }
+
+                    // TODO: take care of the unwrap call
                     tx_thread.send(path_rel_buf.to_owned()).unwrap()
                 });
             }
