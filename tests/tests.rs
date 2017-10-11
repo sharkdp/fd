@@ -175,6 +175,33 @@ fn test_no_ignore() {
         one/two/three/directory_foo");
 }
 
+/// Ignored files with ripgrep aliases (-u / -uu)
+#[test]
+fn test_no_ignore_aliases() {
+    let te = TestEnv::new();
+
+    te.assert_output(
+        &["-u", "foo"],
+        "a.foo
+        ignored.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three/d.foo
+        one/two/three/directory_foo");
+
+    te.assert_output(
+        &["-uu", "foo"],
+        ".hidden.foo
+        a.foo
+        ignored.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three/d.foo
+        one/two/three/directory_foo");
+}
+
 /// Symlinks (--follow)
 #[test]
 fn test_follow() {
