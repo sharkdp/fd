@@ -62,8 +62,11 @@ fn main() {
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
-    let case_sensitive = matches.is_present("case-sensitive") ||
-                         pattern.chars().any(char::is_uppercase);
+    let case_sensitive = if !matches.is_present("ignore-case") {
+        matches.is_present("case-sensitive") || pattern.chars().any(char::is_uppercase)
+    } else {
+        false
+    };
 
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
