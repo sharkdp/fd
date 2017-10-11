@@ -34,6 +34,7 @@ pub fn build_app() -> App<'static, 'static> {
         .setting(AppSettings::DeriveDisplayOrder)
         .arg(arg("hidden").long("hidden").short("H"))
         .arg(arg("no-ignore").long("no-ignore").short("I"))
+        .arg(arg("rg-alias-hidden-ignore").short("u").multiple(true).hidden(true))
         .arg(arg("case-sensitive").long("case-sensitive").short("s"))
         .arg(arg("absolute-path").long("absolute-path").short("a"))
         .arg(arg("follow").long("follow").short("L").alias("dereference"))
@@ -144,6 +145,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "the root directory for the filesystem search (optional)"
         , "The directory where the filesystem search is rooted (optional). \
            If omitted, search the current working directory.");
+    doc!(h, "rg-alias-hidden-ignore"
+        , "Alias for no-ignore and/or hidden"
+        , "Alias for no-ignore ('u') and no-ignore and hidden ('uu')");
 
     h
 }
