@@ -24,7 +24,7 @@ pub enum PathDisplay {
 
 /// Configuration options for *fd*.
 pub struct FdOptions {
-    /// Determines whether the regex search is case-sensitive or case-insensitive.
+    /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 
     /// Whether to search within the full file path or just the base name (filename or directory

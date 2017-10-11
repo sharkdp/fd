@@ -115,6 +115,26 @@ fn test_case_sensitive() {
     te.assert_output(
         &["--case-sensitive", "C.Foo"],
         "one/two/C.Foo2");
+
+    te.assert_output(
+        &["--ignore-case", "--case-sensitive", "C.Foo"],
+        "one/two/C.Foo2");
+}
+
+/// Case insensitivity (--ignore-case)
+#[test]
+fn test_case_insensitive() {
+    let te = TestEnv::new();
+
+    te.assert_output(
+        &["--ignore-case", "C.Foo"],
+        "one/two/c.foo
+        one/two/C.Foo2");
+
+    te.assert_output(
+        &["--case-sensitive", "--ignore-case", "C.Foo"],
+        "one/two/c.foo
+        one/two/C.Foo2");
 }
 
 /// Full path search (--full-path)
