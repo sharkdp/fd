@@ -20,7 +20,8 @@ fn test_simple() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
     te.assert_output(
         &[],
@@ -33,7 +34,8 @@ fn test_simple() {
         one/two/three
         one/two/three/d.foo
         one/two/three/directory_foo
-        symlink");
+        symlink",
+    );
 }
 
 /// Explicit root path
@@ -47,12 +49,14 @@ fn test_explicit_root_path() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
     te.assert_output(
         &["foo", "one/two/three"],
         "one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
     te.assert_output_subdirectory(
         "one/two",
@@ -62,7 +66,8 @@ fn test_explicit_root_path() {
         c.foo
         C.Foo2
         three/d.foo
-        three/directory_foo");
+        three/directory_foo",
+    );
 }
 
 /// Regex searches
@@ -75,13 +80,15 @@ fn test_regex_searches() {
         "a.foo
         one/b.foo
         one/two/c.foo
-        one/two/C.Foo2");
+        one/two/C.Foo2",
+    );
 
     te.assert_output(
         &["--case-sensitive", "[a-c].foo"],
         "a.foo
         one/b.foo
-        one/two/c.foo");
+        one/two/c.foo",
+    );
 }
 
 /// Smart case
@@ -92,15 +99,12 @@ fn test_smart_case() {
     te.assert_output(
         &["c.foo"],
         "one/two/c.foo
-        one/two/C.Foo2");
+        one/two/C.Foo2",
+    );
 
-    te.assert_output(
-        &["C.Foo"],
-        "one/two/C.Foo2");
+    te.assert_output(&["C.Foo"], "one/two/C.Foo2");
 
-    te.assert_output(
-        &["Foo"],
-        "one/two/C.Foo2");
+    te.assert_output(&["Foo"], "one/two/C.Foo2");
 }
 
 /// Case sensitivity (--case-sensitive)
@@ -108,17 +112,14 @@ fn test_smart_case() {
 fn test_case_sensitive() {
     let te = TestEnv::new();
 
-    te.assert_output(
-        &["--case-sensitive", "c.foo"],
-        "one/two/c.foo");
+    te.assert_output(&["--case-sensitive", "c.foo"], "one/two/c.foo");
 
-    te.assert_output(
-        &["--case-sensitive", "C.Foo"],
-        "one/two/C.Foo2");
+    te.assert_output(&["--case-sensitive", "C.Foo"], "one/two/C.Foo2");
 
     te.assert_output(
         &["--ignore-case", "--case-sensitive", "C.Foo"],
-        "one/two/C.Foo2");
+        "one/two/C.Foo2",
+    );
 }
 
 /// Case insensitivity (--ignore-case)
@@ -129,12 +130,14 @@ fn test_case_insensitive() {
     te.assert_output(
         &["--ignore-case", "C.Foo"],
         "one/two/c.foo
-        one/two/C.Foo2");
+        one/two/C.Foo2",
+    );
 
     te.assert_output(
         &["--case-sensitive", "--ignore-case", "C.Foo"],
         "one/two/c.foo
-        one/two/C.Foo2");
+        one/two/C.Foo2",
+    );
 }
 
 /// Full path search (--full-path)
@@ -145,11 +148,10 @@ fn test_full_path() {
     te.assert_output(
         &["--full-path", "three.*foo"],
         "one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
-    te.assert_output(
-        &["--full-path", "^a\\.foo"],
-        "a.foo");
+    te.assert_output(&["--full-path", "^a\\.foo"], "a.foo");
 }
 
 /// Hidden files (--hidden)
@@ -165,7 +167,8 @@ fn test_hidden() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 }
 
 /// Ignored files (--no-ignore)
@@ -181,7 +184,8 @@ fn test_no_ignore() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
     te.assert_output(
         &["--hidden", "--no-ignore", "foo"],
@@ -192,7 +196,8 @@ fn test_no_ignore() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 }
 
 /// Ignored files with ripgrep aliases (-u / -uu)
@@ -208,7 +213,8 @@ fn test_no_ignore_aliases() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
     te.assert_output(
         &["-uu", "foo"],
@@ -219,7 +225,8 @@ fn test_no_ignore_aliases() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 }
 
 /// Symlinks (--follow)
@@ -232,7 +239,8 @@ fn test_follow() {
         "one/two/c.foo
         one/two/C.Foo2
         symlink/c.foo
-        symlink/C.Foo2");
+        symlink/C.Foo2",
+    );
 }
 
 /// Null separator (--print0)
@@ -247,7 +255,8 @@ fn test_print0() {
         one/two/C.Foo2NULL
         one/two/c.fooNULL
         one/two/three/d.fooNULL
-        one/two/three/directory_fooNULL");
+        one/two/three/directory_fooNULL",
+    );
 }
 
 /// Maximum depth (--max-depth)
@@ -264,7 +273,8 @@ fn test_max_depth() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three
-        symlink");
+        symlink",
+    );
 
     te.assert_output(
         &["--max-depth", "2"],
@@ -272,13 +282,15 @@ fn test_max_depth() {
         one
         one/b.foo
         one/two
-        symlink");
+        symlink",
+    );
 
     te.assert_output(
         &["--max-depth", "1"],
         "a.foo
         one
-        symlink");
+        symlink",
+    );
 }
 
 /// Absolute paths (--absolute-path)
@@ -287,8 +299,10 @@ fn test_absolute_path() {
     let te = TestEnv::new();
 
     let abs_path = te.root()
-        .canonicalize().expect("absolute path")
-        .to_str().expect("string")
+        .canonicalize()
+        .expect("absolute path")
+        .to_str()
+        .expect("string")
         .to_string();
 
     #[cfg(windows)]
@@ -303,8 +317,8 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path=abs_path
-        )
+            abs_path = abs_path
+        ),
     );
 
     te.assert_output(
@@ -316,8 +330,8 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path=abs_path
-        )
+            abs_path = abs_path
+        ),
     );
 }
 
@@ -332,18 +346,18 @@ fn test_type() {
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2
-        one/two/three/d.foo");
+        one/two/three/d.foo",
+    );
 
     te.assert_output(
         &["--type", "d"],
         "one
         one/two
         one/two/three
-        one/two/three/directory_foo");
+        one/two/three/directory_foo",
+    );
 
-    te.assert_output(
-        &["--type", "l"],
-        "symlink");
+    te.assert_output(&["--type", "l"], "symlink");
 }
 
 /// File extension (--extension)
@@ -356,16 +370,16 @@ fn test_extension() {
         "a.foo
         one/b.foo
         one/two/c.foo
-        one/two/three/d.foo");
+        one/two/three/d.foo",
+    );
 
     te.assert_output(
         &["--extension", ".foo"],
         "a.foo
         one/b.foo
         one/two/c.foo
-        one/two/three/d.foo");
+        one/two/three/d.foo",
+    );
 
-    te.assert_output(
-        &["--extension", "foo2"],
-        "one/two/C.Foo2");
+    te.assert_output(&["--extension", "foo2"], "one/two/C.Foo2");
 }
