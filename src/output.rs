@@ -16,8 +16,9 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
 
     #[cfg(unix)]
     let is_executable = |p: Option<&fs::Metadata>| {
-        p.map(|f| f.permissions().mode() & 0o111 != 0)
-         .unwrap_or(false)
+        p.map(|f| f.permissions().mode() & 0o111 != 0).unwrap_or(
+            false,
+        )
     };
 
     #[cfg(windows)]
@@ -44,23 +45,24 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
             let metadata = component_path.metadata().ok();
             let is_directory = metadata.as_ref().map(|md| md.is_dir()).unwrap_or(false);
 
-            let style =
-                if component_path.symlink_metadata()
-                                 .map(|md| md.file_type().is_symlink())
-                                 .unwrap_or(false) {
-                    &ls_colors.symlink
-                } else if is_directory {
-                    &ls_colors.directory
-                } else if is_executable(metadata.as_ref()) {
-                    &ls_colors.executable
-                } else {
-                    // Look up file name
-                    let o_style =
-                        component_path.file_name()
-                                      .and_then(|n| n.to_str())
-                                      .and_then(|n| ls_colors.filenames.get(n));
+            let style = if component_path
+                .symlink_metadata()
+                .map(|md| md.file_type().is_symlink())
+                .unwrap_or(false)
+            {
+                &ls_colors.symlink
+            } else if is_directory {
+                &ls_colors.directory
+            } else if is_executable(metadata.as_ref()) {
+                &ls_colors.executable
+            } else {
+                // Look up file name
+                let o_style = component_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .and_then(|n| ls_colors.filenames.get(n));
 
-                    match o_style {
+                match o_style {
                         Some(s) => s,
                         None =>
                             // Look up file extension
@@ -69,7 +71,7 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
                                           .and_then(|e| ls_colors.extensions.get(e))
                                           .unwrap_or(&default_style)
                     }
-                };
+            };
 
             write!(handle, "{}", style.paint(comp_str)).ok();
 
@@ -91,7 +93,11 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     } else {
         // Uncolorized output
 
-        let prefix = if config.path_display == PathDisplay::Absolute { ROOT_DIR } else { "" };
+        let prefix = if config.path_display == PathDisplay::Absolute {
+            ROOT_DIR
+        } else {
+            ""
+        };
         let separator = if config.null_separator { "\0" } else { "\n" };
 
         let r = write!(&mut io::stdout(), "{}{}{}", prefix, path_str, separator);

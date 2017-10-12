@@ -34,9 +34,24 @@ pub fn build_app() -> App<'static, 'static> {
         .setting(AppSettings::DeriveDisplayOrder)
         .arg(arg("hidden").long("hidden").short("H"))
         .arg(arg("no-ignore").long("no-ignore").short("I"))
-        .arg(arg("rg-alias-hidden-ignore").short("u").multiple(true).hidden(true))
-        .arg(arg("case-sensitive").long("case-sensitive").short("s").overrides_with("ignore-case"))
-        .arg(arg("ignore-case").long("ignore-case").short("i").overrides_with("case-sensitive"))
+        .arg(
+            arg("rg-alias-hidden-ignore")
+                .short("u")
+                .multiple(true)
+                .hidden(true),
+        )
+        .arg(
+            arg("case-sensitive")
+                .long("case-sensitive")
+                .short("s")
+                .overrides_with("ignore-case"),
+        )
+        .arg(
+            arg("ignore-case")
+                .long("ignore-case")
+                .short("i")
+                .overrides_with("case-sensitive"),
+        )
         .arg(arg("absolute-path").long("absolute-path").short("a"))
         .arg(arg("follow").long("follow").short("L").alias("dereference"))
         .arg(arg("full-path").long("full-path").short("p"))

@@ -44,15 +44,15 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         fs::File::create(root.join("ignored.foo"))?;
         fs::File::create(root.join(".hidden.foo"))?;
 
-        #[cfg(unix)]
-        unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
+        #[cfg(unix)] unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
         // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
         // is by default only granted for administrators.
-        #[cfg(windows)]
-        windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+        #[cfg(windows)] windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
-        fs::File::create(root.join(".ignore"))?.write_all(b"ignored.foo")?;
+        fs::File::create(root.join(".ignore"))?.write_all(
+            b"ignored.foo",
+        )?;
     }
 
     Ok(temp_dir)
@@ -61,9 +61,12 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
 /// Find the *fd* executable.
 fn find_fd_exe() -> PathBuf {
     // Tests exe is in target/debug/deps, the *fd* exe is in target/debug
-    let root = env::current_exe().expect("tests executable")
-        .parent().expect("tests executable directory")
-        .parent().expect("fd executable directory")
+    let root = env::current_exe()
+        .expect("tests executable")
+        .parent()
+        .expect("tests executable directory")
+        .parent()
+        .expect("fd executable directory")
         .to_path_buf();
 
     let exe_name = if cfg!(windows) { "fd.exe" } else { "fd" };
@@ -77,38 +80,37 @@ fn format_exit_error(args: &[&str], output: &process::Output) -> String {
         "`fd {}` did not exit successfully.\nstdout:\n---\n{}---\nstderr:\n---\n{}---",
         args.join(" "),
         String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr))
+        String::from_utf8_lossy(&output.stderr)
+    )
 }
 
 /// Format an error message for when the output of *fd* did not match the expected output.
 fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
     // Generate diff text.
-    let diff_text =
-        diff::lines(expected, actual)
-            .into_iter()
-            .map(|diff| {
-                match diff {
-                    diff::Result::Left(l)    => format!("-{}", l),
-                    diff::Result::Both(l, _) => format!(" {}", l),
-                    diff::Result::Right(r)   => format!("+{}", r),
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+    let diff_text = diff::lines(expected, actual)
+        .into_iter()
+        .map(|diff| match diff {
+            diff::Result::Left(l) => format!("-{}", l),
+            diff::Result::Both(l, _) => format!(" {}", l),
+            diff::Result::Right(r) => format!("+{}", r),
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     format!(
         concat!(
             "`fd {}` did not produce the expected output.\n",
-            "Showing diff between expected and actual:\n{}\n"),
+            "Showing diff between expected and actual:\n{}\n"
+        ),
         args.join(" "),
-        diff_text)
+        diff_text
+    )
 }
 
 /// Normalize the output for comparison.
 fn normalize_output(s: &str, trim_left: bool) -> String {
     // Split into lines and normalize separators.
-    let mut lines = s
-        .replace('\0', "NULL\n")
+    let mut lines = s.replace('\0', "NULL\n")
         .lines()
         .map(|line| {
             let line = if trim_left { line.trim_left() } else { line };
@@ -145,7 +147,12 @@ impl TestEnv {
 
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces the expected output.
-    pub fn assert_output_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) {
+    pub fn assert_output_subdirectory<P: AsRef<Path>>(
+        &self,
+        path: P,
+        args: &[&str],
+        expected: &str,
+    ) {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
