@@ -21,7 +21,7 @@ name = "fd"
 path = "src/main.rs"
 
 [dependencies]
-ansi_term = "0.9"
+ansi_term = "0.10"
 clap = "2.26.0"
 atty = "0.2"
 regex = "0.2"
