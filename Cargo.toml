@@ -25,6 +25,7 @@ ansi_term = "0.9"
 clap = "2.26.0"
 atty = "0.2"
 regex = "0.2"
+regex-syntax = "0.4"
 ignore = "0.2"
 num_cpus = "1.6.2"
 

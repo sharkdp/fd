@@ -3,6 +3,7 @@ extern crate clap;
 extern crate ansi_term;
 extern crate atty;
 extern crate regex;
+extern crate regex_syntax;
 extern crate ignore;
 extern crate num_cpus;
 
@@ -22,7 +23,7 @@ use std::time;
 use atty::Stream;
 use regex::RegexBuilder;
 
-use internal::{error, FdOptions, PathDisplay, ROOT_DIR};
+use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay, ROOT_DIR};
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -65,11 +66,8 @@ fn main() {
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
-    let case_sensitive = if !matches.is_present("ignore-case") {
-        matches.is_present("case-sensitive") || pattern.chars().any(char::is_uppercase)
-    } else {
-        false
-    };
+    let case_sensitive = !matches.is_present("ignore-case") &&
+        (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
 
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
