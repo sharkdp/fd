@@ -115,6 +115,14 @@ fn test_smart_case() {
     te.assert_output(&["C.Foo"], "one/two/C.Foo2");
 
     te.assert_output(&["Foo"], "one/two/C.Foo2");
+
+    // Only literal uppercase chars should trigger case sensitivity.
+    te.assert_output(
+        &["\\Ac"],
+        "one/two/c.foo
+        one/two/C.Foo2",
+    );
+    te.assert_output(&["\\AC"], "one/two/C.Foo2");
 }
 
 /// Case sensitivity (--case-sensitive)
