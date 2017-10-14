@@ -60,6 +60,9 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
             let shared_rx = Arc::new(Mutex::new(rx));
+
+            let out_perm = Arc::new(Mutex::new(()));
+
             let base = Arc::new(if is_absolute { Some(rx_base) } else { None });
 
             // This is safe because `cmd` will exist beyond the end of this scope.
@@ -72,9 +75,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                 let rx = shared_rx.clone();
                 let cmd = cmd.clone();
                 let base = base.clone();
+                let out_perm = out_perm.clone();
 
                 // Spawn a job thread that will listen for and execute inputs.
-                let handle = thread::spawn(move || exec::job(rx, base, cmd));
+                let handle = thread::spawn(move || exec::job(rx, base, cmd, out_perm));
 
                 // Push the handle of the spawned thread into the vector for later joining.
                 handles.push(handle);

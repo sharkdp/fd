@@ -1,5 +1,7 @@
 use std::env;
-use std::process::Command;
+use std::process::{Command, Stdio};
+use std::sync::{Arc, Mutex};
+use std::io::{self, Write};
 
 lazy_static! {
     /// On non-Windows systems, the `SHELL` environment variable will be used to determine the
@@ -18,11 +20,12 @@ lazy_static! {
 /// cleared so that a new command can be written to the string in the future.
 pub struct CommandTicket<'a> {
     command: &'a mut String,
+    out_perm: Arc<Mutex<()>>,
 }
 
 impl<'a> CommandTicket<'a> {
-    pub fn new(command: &'a mut String) -> CommandTicket<'a> {
-        CommandTicket { command }
+    pub fn new(command: &'a mut String, out_perm: Arc<Mutex<()>>) -> CommandTicket<'a> {
+        CommandTicket { command, out_perm }
     }
 
     /// Executes the command stored within the ticket, and
@@ -32,12 +35,22 @@ impl<'a> CommandTicket<'a> {
         let cmd = Command::new(COMMAND.0.as_str())
             .arg(COMMAND.1)
             .arg(&self.command)
-            .spawn();
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output();
 
         // Then wait for the command to exit, if it was spawned.
         match cmd {
-            Ok(mut child) => {
-                let _ = child.wait();
+            Ok(output) => {
+                // While this lock is active, this thread will be the only thread allowed
+                // to write it's outputs.
+                let _lock = self.out_perm.lock().unwrap();
+
+                let stdout = io::stdout();
+                let stderr = io::stderr();
+
+                let _ = stdout.lock().write_all(&output.stdout);
+                let _ = stderr.lock().write_all(&output.stderr);
             }
             Err(why) => eprintln!("fd: exec error: {}", why),
         }

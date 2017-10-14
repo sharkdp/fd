@@ -11,6 +11,7 @@ pub fn job(
     rx: Arc<Mutex<Receiver<PathBuf>>>,
     base: Arc<Option<PathBuf>>,
     cmd: Arc<TokenizedCommand>,
+    out_perm: Arc<Mutex<()>>,
 ) {
     // A string buffer that will be re-used in each iteration.
     let buffer = &mut String::with_capacity(256);
@@ -35,6 +36,7 @@ pub fn job(
         drop(lock);
         // Generate a command to store within the buffer, and execute the command.
         // Note that the `then_execute()` method will clear the buffer for us.
-        cmd.generate(buffer, &value).then_execute();
+        cmd.generate(buffer, &value, out_perm.clone())
+            .then_execute();
     }
 }

@@ -5,6 +5,7 @@ mod job;
 mod paths;
 
 use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use self::paths::{basename, dirname, remove_extension};
 use self::ticket::CommandTicket;
@@ -102,7 +103,12 @@ impl TokenizedCommand {
     /// written into the `command` buffer. Once all tokens have been processed, the mutable
     /// reference of the `command` will be wrapped within a `CommandTicket`, which will be
     /// responsible for executing the command and clearing the buffer.
-    pub fn generate<'a>(&self, command: &'a mut String, input: &Path) -> CommandTicket<'a> {
+    pub fn generate<'a>(
+        &self,
+        command: &'a mut String,
+        input: &Path,
+        out_perm: Arc<Mutex<()>>,
+    ) -> CommandTicket<'a> {
         for token in &self.tokens {
             match *token {
                 Token::Basename => *command += basename(&input.to_string_lossy()),
@@ -116,7 +122,7 @@ impl TokenizedCommand {
             }
         }
 
-        CommandTicket::new(command)
+        CommandTicket::new(command, out_perm)
     }
 }
 
