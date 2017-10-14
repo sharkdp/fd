@@ -87,3 +87,7 @@ branches:
     # IMPORTANT Regex to match tags. Required, or appveyor may not trigger deploys when a new tag
     # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
     - /^v\d+\.\d+\.\d+.*$/
+
+cache:
+  - target\debug\deps -> Cargo.lock
+  - C:\Users\appveyor\.cargo\registry
