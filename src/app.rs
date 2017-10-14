@@ -118,11 +118,11 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "case-sensitive"
         , "Case-sensitive search (default: smart case)"
         , "Perform a case-sensitive search. By default, fd uses case-insensitive searches, \
-           unless the pattern contains both upper- and lowercase characters (smart case).");
+           unless the pattern contains an uppercase character (smart case).");
     doc!(h, "ignore-case"
         , "Case-insensitive search (default: smart case)"
         , "Perform a case-insensitive search. By default, fd uses case-insensitive searches, \
-           unless the pattern contains both upper- and lowercase characters (smart case).");
+           unless the pattern contains an uppercase character (smart case).");
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");

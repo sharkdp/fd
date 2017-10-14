@@ -3,7 +3,7 @@ authors = ["David Peter <mail@david-peter.de>"]
 build = "build.rs"
 categories = ["command-line-utilities"]
 description = "fd is a simple, fast and user-friendly alternative to find."
-exclude = ["benchmarks"]
+exclude = ["/benchmarks/*"]
 homepage = "https://github.com/sharkdp/fd"
 keywords = [
     "search",
@@ -38,6 +38,7 @@ ignore = "0.2"
 lazy_static = "0.2.9"
 num_cpus = "1.6.2"
 regex = "0.2"
+regex-syntax = "0.4"
 
 [dev-dependencies]
 diff = "0.1"
