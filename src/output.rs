@@ -3,7 +3,7 @@ use internal::{FdOptions, PathDisplay, ROOT_DIR};
 use std::{fs, process};
 use std::io::{self, Write};
 use std::ops::Deref;
-use std::path::{self, Path, PathBuf};
+use std::path::{self, Path, PathBuf, Component};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
@@ -41,6 +41,13 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
             let comp_str = component.as_os_str().to_string_lossy();
 
             component_path.push(Path::new(comp_str.deref()));
+
+            if let Component::RootDir = component {
+                // Printing the root dir would result in too many path separators on Windows.
+                // Note that a root dir component won't occur on Unix, because `entry` is never an
+                // absolute path in that case.
+                continue;
+            }
 
             let metadata = component_path.metadata().ok();
             let is_directory = metadata.as_ref().map(|md| md.is_dir()).unwrap_or(false);
