@@ -135,6 +135,7 @@ fn main() {
 
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
+        .dot_matches_new_line(true)
         .build() {
         Ok(re) => walk::scan(root_dir, Arc::new(re), base, Arc::new(config)),
         Err(err) => error(err.description()),
