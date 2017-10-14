@@ -1,28 +1,15 @@
 // TODO: Possible optimization could avoid pushing characters on a buffer.
-mod command;
+mod ticket;
+mod token;
 mod job;
 mod paths;
 
-use std::fmt::{self, Display, Formatter};
 use std::path::Path;
 
 use self::paths::{basename, dirname, remove_extension};
-use self::command::CommandTicket;
+use self::ticket::CommandTicket;
+use self::token::Token;
 pub use self::job::job;
-
-/// Designates what should be written to a buffer
-///
-/// Each `Token` contains either text, or a placeholder variant, which will be used to generate
-/// commands after all tokens for a given command template have been collected.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Token {
-    Placeholder,
-    Basename,
-    Parent,
-    NoExt,
-    BasenameNoExt,
-    Text(String),
-}
 
 /// Signifies that a placeholder token was found
 const PLACE: u8 = 1;
@@ -147,22 +134,6 @@ fn append(tokens: &mut Vec<Token>, elem: &str) {
     // Otherwise, we will need to add a new `Text` token that contains the `elem`
     if append_text {
         tokens.push(Token::Text(String::from(elem)));
-    }
-}
-
-impl Display for TokenizedCommand {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        for token in &self.tokens {
-            match *token {
-                Token::Placeholder => f.write_str("{}")?,
-                Token::Basename => f.write_str("{/}")?,
-                Token::Parent => f.write_str("{//}")?,
-                Token::NoExt => f.write_str("{.}")?,
-                Token::BasenameNoExt => f.write_str("{/.}")?,
-                Token::Text(ref string) => f.write_str(string)?,
-            }
-        }
-        Ok(())
     }
 }
 

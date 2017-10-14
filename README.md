@@ -35,7 +35,7 @@ subdirectories and about a million files. For averaging and statistical analysis
 cache". Results for a cold cache are similar.
 
 Let's start with `find`:
-```sh
+```
 find ~ -iregex '.*[0-9]\.jpg$'
 
 time                 6.265 s    (6.127 s .. NaN s)
@@ -45,7 +45,7 @@ std dev              31.73 ms   (0.0 s .. 33.48 ms)
 ```
 
 `find` is much faster if it does not need to perform a regular-expression search:
-```sh
+```
 find ~ -iname '*[0-9].jpg'
 
 time                 2.866 s    (2.754 s .. 2.964 s)
@@ -57,7 +57,7 @@ std dev              23.11 ms   (0.0 s .. 25.09 ms)
 Now let's try the same for `fd`. Note that `fd` *always* performs a regular expression
 search. The options `--hidden` and `--no-ignore` are needed for a fair comparison,
 otherwise `fd` does not have to traverse hidden folders and ignored paths (see below):
-```sh
+```
 fd --hidden --no-ignore '.*[0-9]\.jpg$' ~
 
 time                 892.6 ms   (839.0 ms .. 915.4 ms)
@@ -71,7 +71,7 @@ same 14030 files :smile:.
 
 Finally, let's run `fd` without `--hidden` and `--no-ignore` (this can lead to different
 search results, of course):
-```sh
+```
 fd '[0-9]\.jpg$' ~
 
 time                 159.5 ms   (155.8 ms .. 165.3 ms)

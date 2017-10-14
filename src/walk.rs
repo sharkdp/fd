@@ -1,6 +1,6 @@
 use exec::{self, TokenizedCommand};
 use fshelper;
-use internal::{error, FdOptions};
+use internal::{error, FdOptions, PathDisplay};
 use output;
 
 use std::path::{Path, PathBuf};
@@ -55,10 +55,12 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
     let rx_base = base.to_owned();
+    let is_absolute = config.path_display == PathDisplay::Absolute;
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
             let shared_rx = Arc::new(Mutex::new(rx));
+            let base = Arc::new(if is_absolute { Some(rx_base) } else { None });
 
             // This is safe because `cmd` will exist beyond the end of this scope.
             // It's required to tell Rust that it's safe to share across threads.
@@ -69,9 +71,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             for _ in 0..threads {
                 let rx = shared_rx.clone();
                 let cmd = cmd.clone();
+                let base = base.clone();
 
                 // Spawn a job thread that will listen for and execute inputs.
-                let handle = thread::spawn(move || exec::job(rx, cmd));
+                let handle = thread::spawn(move || exec::job(rx, base, cmd));
 
                 // Push the handle of the spawned thread into the vector for later joining.
                 handles.push(handle);
