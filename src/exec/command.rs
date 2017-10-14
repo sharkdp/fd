@@ -1,5 +1,5 @@
-use std::process::Command;
 use std::env;
+use std::process::Command;
 
 lazy_static! {
     /// On non-Windows systems, the `SHELL` environment variable will be used to determine the

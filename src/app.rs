@@ -98,6 +98,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             arg("exec")
                 .long("exec")
+                .short("x")
                 .takes_value(true)
         )
         .arg(arg("pattern"))

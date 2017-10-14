@@ -110,13 +110,16 @@ for generating commands is similar to that of GNU Parallel:
 
 ```sh
 # Demonstration of parallel job execution
-fd '*.flac' --exec 'sleep 1; echo $\{SHELL}: {}'
+fd -e flac --exec 'sleep 1; echo $\{SHELL}: {}'
 
 # This also works, because `SHELL` is not a valid token
-fd '*.flac' --exec 'sleep 1; echo ${SHELL}: {}'
+fd -e flac --exec 'sleep 1; echo ${SHELL}: {}'
+
+# The token is optional -- it gets added at the end by default.
+fd -e flac --exec 'echo'
 
 # Real world example of converting flac files into opus files.
-fd '*.flac' --type f --exec 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
+fd -e flac --type f --exec 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
 ```
 
 ## Install

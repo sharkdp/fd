@@ -60,7 +60,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         if let Some(ref cmd) = rx_config.command {
             let shared_rx = Arc::new(Mutex::new(rx));
 
-            // This is safe because the `cmd` will exist beyond the end of this scope.
+            // This is safe because `cmd` will exist beyond the end of this scope.
             // It's required to tell Rust that it's safe to share across threads.
             let cmd = unsafe { Arc::from_raw(cmd as *const TokenizedCommand) };
 
@@ -78,7 +78,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             }
 
             // Wait for all threads to exit before exiting the program.
-            handles.into_iter().for_each(|h| h.join().unwrap());
+            for h in handles { h.join().unwrap(); }
         } else {
             let start = time::Instant::now();
 

@@ -57,7 +57,7 @@ impl TokenizedCommand {
                         text.push(character);
                     }
                     text.push(nchar);
-                }
+                },
                 // When a raw '{' is discovered, we will note it's position, and use that for a
                 // later comparison against valid placeholder tokens.
                 '{' if flags & OPEN == 0 => {
@@ -67,24 +67,25 @@ impl TokenizedCommand {
                         append(&mut tokens, &text);
                         text.clear();
                     }
-                }
+                },
                 // If the `OPEN` bit is set, we will compare the contents between the discovered
                 // '{' and '}' characters against a list of valid tokens, then pushing the
                 // corresponding token onto the `tokens` vector.
                 '}' if flags & OPEN != 0 => {
                     flags ^= OPEN;
                     match &input[start+1..id] {
-                        "" => {
-                            tokens.push(Token::Placeholder);
-                            flags |= PLACE;
-                        }
+                        ""   => tokens.push(Token::Placeholder),
                         "."  => tokens.push(Token::NoExt),
                         "/"  => tokens.push(Token::Basename),
                         "//" => tokens.push(Token::Parent),
                         "/." => tokens.push(Token::BasenameNoExt),
-                        _ => append(&mut tokens, &input[start..id+1]),
+                        _ => {
+                            append(&mut tokens, &input[start..id+1]);
+                            continue
+                        },
                     }
-                }
+                    flags |= PLACE;
+                },
                 // We aren't collecting characters for a text string if the `OPEN` bit is set.
                 _ if flags & OPEN != 0 => (),
                 // Push the character onto the text buffer
@@ -101,7 +102,7 @@ impl TokenizedCommand {
             tokens.push(Token::Placeholder)
         }
 
-        TokenizedCommand { tokens }
+        TokenizedCommand { tokens: tokens }
     }
 
     /// Generates a ticket that is required to execute the generated command.
@@ -174,5 +175,11 @@ mod tests {
 
         assert_eq!(TokenizedCommand::new("echo $\\{SHELL}: {}"), expected);
         assert_eq!(TokenizedCommand::new("echo ${SHELL}:"), expected);
+        assert_eq!(TokenizedCommand::new("echo {.}"), TokenizedCommand {
+            tokens: vec![
+                Token::Text("echo ".into()),
+                Token::NoExt,
+            ],
+        });
     }
 }
