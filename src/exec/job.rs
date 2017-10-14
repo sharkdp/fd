@@ -19,7 +19,7 @@ pub fn job(rx: Arc<Mutex<Receiver<PathBuf>>>, cmd: Arc<TokenizedCommand>) {
         // has closed, exit from the loop
         let value = match lock.recv() {
             Ok(value) => value,
-            Err(_) => break
+            Err(_) => break,
         };
 
         // Drop the lock so that other threads can read from the the receiver.

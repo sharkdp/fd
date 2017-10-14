@@ -75,7 +75,7 @@ pub struct FdOptions {
     pub extension: Option<String>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
-    pub command: Option<TokenizedCommand>
+    pub command: Option<TokenizedCommand>,
 }
 
 /// Print error message to stderr and exit with status `1`.

@@ -1,9 +1,15 @@
 pub fn basename(input: &str) -> &str {
     let mut index = 0;
     for (id, character) in input.bytes().enumerate() {
-        if character == b'/' { index = id; }
+        if character == b'/' {
+            index = id;
+        }
     }
-    if index == 0 { input } else { &input[index+1..] }
+    if index == 0 {
+        input
+    } else {
+        &input[index + 1..]
+    }
 }
 
 /// Removes the extension of a given input
@@ -12,18 +18,28 @@ pub fn remove_extension(input: &str) -> &str {
     let mut ext_index = 0;
 
     for (id, character) in input.bytes().enumerate() {
-        if character == b'/' { dir_index = id; }
-        if character == b'.' { ext_index = id; }
+        if character == b'/' {
+            dir_index = id;
+        }
+        if character == b'.' {
+            ext_index = id;
+        }
     }
 
     // Account for hidden files and directories
-    if ext_index == 0 || dir_index + 2 > ext_index { input } else { &input[0..ext_index] }
+    if ext_index == 0 || dir_index + 2 > ext_index {
+        input
+    } else {
+        &input[0..ext_index]
+    }
 }
 
 pub fn dirname(input: &str) -> &str {
     let mut index = 0;
     for (id, character) in input.bytes().enumerate() {
-        if character == b'/' { index = id; }
+        if character == b'/' {
+            index = id;
+        }
     }
     if index == 0 { "." } else { &input[0..index] }
 }

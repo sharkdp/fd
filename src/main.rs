@@ -90,8 +90,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec")
-        .map(|x| TokenizedCommand::new(&x));
+    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
 
     let config = FdOptions {
         case_sensitive,
@@ -132,7 +131,7 @@ fn main() {
         extension: matches.value_of("extension").map(|e| {
             e.trim_left_matches('.').to_lowercase()
         }),
-        command
+        command,
     };
 
     let root = Path::new(ROOT_DIR);

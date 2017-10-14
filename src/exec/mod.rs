@@ -52,12 +52,14 @@ impl TokenizedCommand {
             match character {
                 // Backslashes are useful in cases where we want to use the '{' character
                 // without having all occurrences of it to collect placeholder tokens.
-                '\\' => if let Some((_, nchar)) = chars.next() {
-                    if nchar != '{' {
-                        text.push(character);
+                '\\' => {
+                    if let Some((_, nchar)) = chars.next() {
+                        if nchar != '{' {
+                            text.push(character);
+                        }
+                        text.push(nchar);
                     }
-                    text.push(nchar);
-                },
+                }
                 // When a raw '{' is discovered, we will note it's position, and use that for a
                 // later comparison against valid placeholder tokens.
                 '{' if flags & OPEN == 0 => {
@@ -67,34 +69,36 @@ impl TokenizedCommand {
                         append(&mut tokens, &text);
                         text.clear();
                     }
-                },
+                }
                 // If the `OPEN` bit is set, we will compare the contents between the discovered
                 // '{' and '}' characters against a list of valid tokens, then pushing the
                 // corresponding token onto the `tokens` vector.
                 '}' if flags & OPEN != 0 => {
                     flags ^= OPEN;
-                    match &input[start+1..id] {
-                        ""   => tokens.push(Token::Placeholder),
-                        "."  => tokens.push(Token::NoExt),
-                        "/"  => tokens.push(Token::Basename),
+                    match &input[start + 1..id] {
+                        "" => tokens.push(Token::Placeholder),
+                        "." => tokens.push(Token::NoExt),
+                        "/" => tokens.push(Token::Basename),
                         "//" => tokens.push(Token::Parent),
                         "/." => tokens.push(Token::BasenameNoExt),
                         _ => {
-                            append(&mut tokens, &input[start..id+1]);
-                            continue
-                        },
+                            append(&mut tokens, &input[start..id + 1]);
+                            continue;
+                        }
                     }
                     flags |= PLACE;
-                },
+                }
                 // We aren't collecting characters for a text string if the `OPEN` bit is set.
                 _ if flags & OPEN != 0 => (),
                 // Push the character onto the text buffer
-                _ => text.push(character)
+                _ => text.push(character),
             }
         }
 
         // Take care of any stragglers left behind.
-        if !text.is_empty() { append(&mut tokens, &text); }
+        if !text.is_empty() {
+            append(&mut tokens, &text);
+        }
 
         // If a placeholder token was not supplied, append one at the end of the command.
         if flags & PLACE == 0 {
@@ -115,7 +119,9 @@ impl TokenizedCommand {
         for token in &self.tokens {
             match *token {
                 Token::Basename => *command += basename(&input.to_string_lossy()),
-                Token::BasenameNoExt => *command += remove_extension(basename(&input.to_string_lossy())),
+                Token::BasenameNoExt => {
+                    *command += remove_extension(basename(&input.to_string_lossy()))
+                }
                 Token::NoExt => *command += remove_extension(&input.to_string_lossy()),
                 Token::Parent => *command += dirname(&input.to_string_lossy()),
                 Token::Placeholder => *command += &input.to_string_lossy(),
@@ -148,11 +154,11 @@ impl Display for TokenizedCommand {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         for token in &self.tokens {
             match *token {
-                Token::Placeholder      => f.write_str("{}")?,
-                Token::Basename         => f.write_str("{/}")?,
-                Token::Parent           => f.write_str("{//}")?,
-                Token::NoExt            => f.write_str("{.}")?,
-                Token::BasenameNoExt    => f.write_str("{/.}")?,
+                Token::Placeholder => f.write_str("{}")?,
+                Token::Basename => f.write_str("{/}")?,
+                Token::Parent => f.write_str("{//}")?,
+                Token::NoExt => f.write_str("{.}")?,
+                Token::BasenameNoExt => f.write_str("{/.}")?,
                 Token::Text(ref string) => f.write_str(string)?,
             }
         }
@@ -167,19 +173,14 @@ mod tests {
     #[test]
     fn tokens() {
         let expected = TokenizedCommand {
-            tokens: vec![
-                Token::Text("echo ${SHELL}: ".into()),
-                Token::Placeholder,
-            ],
+            tokens: vec![Token::Text("echo ${SHELL}: ".into()), Token::Placeholder],
         };
 
         assert_eq!(TokenizedCommand::new("echo $\\{SHELL}: {}"), expected);
         assert_eq!(TokenizedCommand::new("echo ${SHELL}:"), expected);
-        assert_eq!(TokenizedCommand::new("echo {.}"), TokenizedCommand {
-            tokens: vec![
-                Token::Text("echo ".into()),
-                Token::NoExt,
-            ],
-        });
+        assert_eq!(
+            TokenizedCommand::new("echo {.}"),
+            TokenizedCommand { tokens: vec![Token::Text("echo ".into()), Token::NoExt] }
+        );
     }
 }

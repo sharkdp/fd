@@ -95,12 +95,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .hidden(true),
         )
-        .arg(
-            arg("exec")
-                .long("exec")
-                .short("x")
-                .takes_value(true)
-        )
+        .arg(arg("exec").long("exec").short("x").takes_value(true))
         .arg(arg("pattern"))
         .arg(arg("path"))
 }
@@ -151,8 +146,10 @@ fn usage() -> HashMap<&'static str, Help> {
              'l' or 'symlink':      symbolic links");
     doc!(h, "exec"
         , "Execute each discovered path using the argument that follows as the command expression."
-        , "Execute each discovered path using the argument that follows as the command expression.\n \
-           The following are valid tokens that can be used within the expression for generating commands:\n \
+        , "Execute each discovered path using the argument that follows as the command \
+           expression.\n \
+           The following are valid tokens that can be used within the expression for generating \
+           commands:\n \
              '{}':   places the input in the location of this token\n \
              '{.}':  removes the extension from the input\n \
              '{/}':  places the basename of the input\n \
@@ -169,7 +166,8 @@ fn usage() -> HashMap<&'static str, Help> {
              'always':    always use colorized output");
     doc!(h, "threads"
         , "Set number of threads to use for searching & executing"
-        , "Set number of threads to use for searching & executing (default: number of available CPU cores)");
+        , "Set number of threads to use for searching & executing (default: number of available \
+           CPU cores)");
     doc!(h, "max-buffer-time"
         , "the time (in ms) to buffer, before streaming to the console"
         , "Amount of time in milliseconds to buffer, before streaming the search results to\

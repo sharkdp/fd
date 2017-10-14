@@ -70,7 +70,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                 let rx = shared_rx.clone();
                 let cmd = cmd.clone();
 
-                // Spawn a job thread that will listen for and execute inputs. 
+                // Spawn a job thread that will listen for and execute inputs.
                 let handle = thread::spawn(move || exec::job(rx, cmd));
 
                 // Push the handle of the spawned thread into the vector for later joining.
@@ -78,7 +78,9 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             }
 
             // Wait for all threads to exit before exiting the program.
-            for h in handles { h.join().unwrap(); }
+            for h in handles {
+                h.join().unwrap();
+            }
         } else {
             let start = time::Instant::now();
 

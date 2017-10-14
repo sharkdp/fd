@@ -36,7 +36,9 @@ impl<'a> CommandTicket<'a> {
 
         // Then wait for the command to exit, if it was spawned.
         match cmd {
-            Ok(mut child) => { let _ = child.wait(); },
+            Ok(mut child) => {
+                let _ = child.wait();
+            }
             Err(why) => eprintln!("fd: exec error: {}", why),
         }
 
