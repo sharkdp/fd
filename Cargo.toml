@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["search", "find", "file", "filesystem", "tool"]
 categories = ["command-line-utilities"]
 license = "MIT"
-exclude = ["benchmarks"]
+exclude = ["/benchmarks/*"]
 build = "build.rs"
 
 [badges]
