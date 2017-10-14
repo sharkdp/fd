@@ -1,15 +1,16 @@
-use internal::{error, FdOptions};
+use exec::{self, TokenizedCommand};
 use fshelper;
+use internal::{error, FdOptions};
 use output;
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
 
-use regex::Regex;
 use ignore::{self, WalkBuilder};
+use regex::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -30,9 +31,14 @@ pub enum FileType {
     SymLink,
 }
 
-/// Recursively scan the given search path and search for files / pathnames matching the pattern.
+/// Recursively scan the given search path for files / pathnames matching the pattern.
+///
+/// If the `--exec` argument was supplied, this will create a thread pool for executing
+/// jobs in parallel from a given command line and the discovered paths. Otherwise, each
+/// path will simply be written to standard output.
 pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
     let (tx, rx) = channel();
+    let threads = config.threads;
 
     let walker = WalkBuilder::new(root)
         .hidden(config.ignore_hidden)
@@ -43,54 +49,79 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         .git_exclude(config.read_ignore)
         .follow_links(config.follow_links)
         .max_depth(config.max_depth)
-        .threads(config.threads)
+        .threads(threads)
         .build_parallel();
 
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
     let rx_base = base.to_owned();
     let receiver_thread = thread::spawn(move || {
-        let start = time::Instant::now();
+        // This will be set to `Some` if the `--exec` argument was supplied.
+        if let Some(ref cmd) = rx_config.command {
+            let shared_rx = Arc::new(Mutex::new(rx));
 
-        let mut buffer = vec![];
+            // This is safe because the `cmd` will exist beyond the end of this scope.
+            // It's required to tell Rust that it's safe to share across threads.
+            let cmd = unsafe { Arc::from_raw(cmd as *const TokenizedCommand) };
 
-        // Start in buffering mode
-        let mut mode = ReceiverMode::Buffering;
+            // Each spawned job will store it's thread handle in here.
+            let mut handles = Vec::with_capacity(threads);
+            for _ in 0..threads {
+                let rx = shared_rx.clone();
+                let cmd = cmd.clone();
 
-        // Maximum time to wait before we start streaming to the console.
-        let max_buffer_time = rx_config.max_buffer_time.unwrap_or_else(
-            || time::Duration::from_millis(100),
-        );
+                // Spawn a job thread that will listen for and execute inputs. 
+                let handle = thread::spawn(move || exec::job(rx, cmd));
 
-        for value in rx {
-            match mode {
-                ReceiverMode::Buffering => {
-                    buffer.push(value);
+                // Push the handle of the spawned thread into the vector for later joining.
+                handles.push(handle);
+            }
 
-                    // Have we reached the maximum time?
-                    if time::Instant::now() - start > max_buffer_time {
-                        // Flush the buffer
-                        for v in &buffer {
-                            output::print_entry(&rx_base, v, &rx_config);
+            // Wait for all threads to exit before exiting the program.
+            handles.into_iter().for_each(|h| h.join().unwrap());
+        } else {
+            let start = time::Instant::now();
+
+            let mut buffer = vec![];
+
+            // Start in buffering mode
+            let mut mode = ReceiverMode::Buffering;
+
+            // Maximum time to wait before we start streaming to the console.
+            let max_buffer_time = rx_config.max_buffer_time.unwrap_or_else(
+                || time::Duration::from_millis(100),
+            );
+
+            for value in rx {
+                match mode {
+                    ReceiverMode::Buffering => {
+                        buffer.push(value);
+
+                        // Have we reached the maximum time?
+                        if time::Instant::now() - start > max_buffer_time {
+                            // Flush the buffer
+                            for v in &buffer {
+                                output::print_entry(&rx_base, v, &rx_config);
+                            }
+                            buffer.clear();
+
+                            // Start streaming
+                            mode = ReceiverMode::Streaming;
                         }
-                        buffer.clear();
-
-                        // Start streaming
-                        mode = ReceiverMode::Streaming;
+                    }
+                    ReceiverMode::Streaming => {
+                        output::print_entry(&rx_base, &value, &rx_config);
                     }
                 }
-                ReceiverMode::Streaming => {
+            }
+
+            // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
+            // anything to the console, yet. In this case, sort the results and print them:
+            if !buffer.is_empty() {
+                buffer.sort();
+                for value in buffer {
                     output::print_entry(&rx_base, &value, &rx_config);
                 }
-            }
-        }
-
-        // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
-        // anything to the console, yet. In this case, sort the results and print them:
-        if !buffer.is_empty() {
-            buffer.sort();
-            for value in buffer {
-                output::print_entry(&rx_base, &value, &rx_config);
             }
         }
     });

@@ -1,14 +1,17 @@
-#[macro_use]
-extern crate clap;
 extern crate ansi_term;
 extern crate atty;
-extern crate regex;
+#[macro_use]
+extern crate clap;
 extern crate ignore;
+#[macro_use]
+extern crate lazy_static;
 extern crate num_cpus;
+extern crate regex;
 
-pub mod lscolors;
 pub mod fshelper;
+pub mod lscolors;
 mod app;
+mod exec;
 mod internal;
 mod output;
 mod walk;
@@ -23,6 +26,7 @@ use atty::Stream;
 use regex::RegexBuilder;
 
 use internal::{error, FdOptions, PathDisplay, ROOT_DIR};
+use exec::TokenizedCommand;
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -88,8 +92,11 @@ fn main() {
         None
     };
 
+    let command = matches.value_of("exec")
+        .map(|x| TokenizedCommand::new(&x));
+
     let config = FdOptions {
-        case_sensitive: case_sensitive,
+        case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden") ||
                              matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
@@ -116,7 +123,7 @@ fn main() {
         } else {
             PathDisplay::Relative
         },
-        ls_colors: ls_colors,
+        ls_colors,
         file_type: match matches.value_of("file-type") {
             Some("f") | Some("file") => FileType::RegularFile,
             Some("d") |
@@ -127,6 +134,7 @@ fn main() {
         extension: matches.value_of("extension").map(|e| {
             e.trim_left_matches('.').to_lowercase()
         }),
+        command
     };
 
     let root = Path::new(ROOT_DIR);
