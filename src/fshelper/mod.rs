@@ -10,7 +10,7 @@ pub fn path_relative_from(path: &Path, base: &Path) -> Option<PathBuf> {
         if path.is_absolute() {
             Some(PathBuf::from(path))
         } else {
-            None
+            Some(PathBuf::from(base.join(path)))
         }
     } else {
         let mut ita = path.components();

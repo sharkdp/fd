@@ -11,7 +11,11 @@ use std::os::unix::fs::PermissionsExt;
 use ansi_term;
 
 pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
-    let path_full = base.join(entry);
+    let path_full = if !entry.as_os_str().is_empty() {
+        base.join(entry)
+    } else {
+        base.to_path_buf()
+    };
 
     let path_to_print = if config.path_display == PathDisplay::Absolute {
         &path_full
