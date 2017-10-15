@@ -44,13 +44,13 @@ matrix:
       env: TARGET=x86_64-apple-darwin
     # Minimum Rust supported channel.
     - os: linux
-      rust: 1.16.0
+      rust: 1.19.0
       env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
-      rust: 1.16.0
+      rust: 1.19.0
       env: TARGET=x86_64-unknown-linux-musl
     - os: osx
-      rust: 1.16.0
+      rust: 1.19.0
       env: TARGET=x86_64-apple-darwin
 
 notifications:

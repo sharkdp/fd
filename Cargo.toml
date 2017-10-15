@@ -1,36 +1,47 @@
 [package]
-name = "fd-find"
-version = "4.0.0"
 authors = ["David Peter <mail@david-peter.de>"]
-description = "fd is a simple, fast and user-friendly alternative to find."
-homepage = "https://github.com/sharkdp/fd"
-repository = "https://github.com/sharkdp/fd"
-readme = "README.md"
-keywords = ["search", "find", "file", "filesystem", "tool"]
-categories = ["command-line-utilities"]
-license = "MIT"
-exclude = ["/benchmarks/*"]
 build = "build.rs"
-
-[badges]
-appveyor = { repository = "sharkdp/fd" }
-travis-ci = { repository = "sharkdp/fd" }
+categories = ["command-line-utilities"]
+description = "fd is a simple, fast and user-friendly alternative to find."
+exclude = ["/benchmarks/*"]
+homepage = "https://github.com/sharkdp/fd"
+keywords = [
+    "search",
+    "find",
+    "file",
+    "filesystem",
+    "tool",
+]
+license = "MIT"
+name = "fd-find"
+readme = "README.md"
+repository = "https://github.com/sharkdp/fd"
+version = "4.0.0"
 
 [[bin]]
 name = "fd"
 path = "src/main.rs"
+[badges.appveyor]
+repository = "sharkdp/fd"
 
-[dependencies]
-ansi_term = "0.9"
-clap = "2.26.0"
-atty = "0.2"
-regex = "0.2"
-regex-syntax = "0.4"
-ignore = "0.2"
-num_cpus = "1.6.2"
+[badges.travis-ci]
+repository = "sharkdp/fd"
 
 [build-dependencies]
 clap = "2.26.0"
+
+[dependencies]
+ansi_term = "0.9"
+atty = "0.2"
+clap = "2.26.0"
+ignore = "0.2"
+lazy_static = "0.2.9"
+num_cpus = "1.6.2"
+regex = "0.2"
+regex-syntax = "0.4"
+
+[target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 diff = "0.1"

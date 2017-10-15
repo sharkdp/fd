@@ -22,6 +22,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 * Unicode-awareness.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
+* Parallel command execution with a syntax similar to GNU Parallel.
 
 ## Demo
 
@@ -95,6 +96,31 @@ On most distributions, `LS_COLORS` should be set already. If you are looking for
 complete (and more colorful) variants, see
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
+
+## Parallel Command Execution
+If the `--exec` flag is specified alongside a command template, a job pool will be created for
+generating and executing commands in parallel with each discovered path as the inputs. The syntax
+for generating commands is similar to that of GNU Parallel:
+
+- **{}**: A placeholder token that will be replaced with the discovered path.
+- **{.}**: Removes the extension from the path.
+- **{/}**: Uses the basename of the discovered path.
+- **{//}**: Uses the parent of the discovered path.
+- **{/.}**: Uses the basename, with the extension removed.
+
+```sh
+# Demonstration of parallel job execution
+fd -e flac --exec 'sleep 1; echo $\{SHELL}: {}'
+
+# This also works, because `SHELL` is not a valid token
+fd -e flac --exec 'sleep 1; echo ${SHELL}: {}'
+
+# The token is optional -- it gets added at the end by default.
+fd -e flac --exec 'echo'
+
+# Real world example of converting flac files into opus files.
+fd -e flac --type f --exec 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
+```
 
 ## Install
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:

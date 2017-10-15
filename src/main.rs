@@ -1,15 +1,20 @@
-#[macro_use]
-extern crate clap;
 extern crate ansi_term;
 extern crate atty;
+#[macro_use]
+extern crate clap;
+extern crate ignore;
+#[macro_use]
+extern crate lazy_static;
+#[cfg(all(unix, not(target_os = "redox")))]
+extern crate libc;
+extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-extern crate ignore;
-extern crate num_cpus;
 
-pub mod lscolors;
 pub mod fshelper;
+pub mod lscolors;
 mod app;
+mod exec;
 mod internal;
 mod output;
 mod walk;
@@ -23,6 +28,7 @@ use std::time;
 use atty::Stream;
 use regex::RegexBuilder;
 
+use exec::TokenizedCommand;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay, ROOT_DIR};
 use lscolors::LsColors;
 use walk::FileType;
@@ -86,8 +92,10 @@ fn main() {
         None
     };
 
+    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
+
     let config = FdOptions {
-        case_sensitive: case_sensitive,
+        case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden") ||
                              matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
@@ -109,8 +117,8 @@ fn main() {
             .value_of("max-buffer-time")
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
-        path_display: path_display,
-        ls_colors: ls_colors,
+        path_display,
+        ls_colors,
         file_type: match matches.value_of("file-type") {
             Some("f") | Some("file") => FileType::RegularFile,
             Some("d") |
@@ -121,6 +129,7 @@ fn main() {
         extension: matches.value_of("extension").map(|e| {
             e.trim_left_matches('.').to_lowercase()
         }),
+        command,
     };
 
     // If base_dir is ROOT_DIR, then root_dir must be absolute.
