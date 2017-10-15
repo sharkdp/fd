@@ -89,5 +89,5 @@ branches:
     - /^v\d+\.\d+\.\d+.*$/
 
 cache:
-  - target\debug\deps -> Cargo.lock
+  - target -> Cargo.lock
   - C:\Users\appveyor\.cargo\registry
