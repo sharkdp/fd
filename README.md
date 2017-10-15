@@ -199,113 +199,126 @@ First, to see all command line options, you can get `fd`'s help text by running:
 fd --help
 ```
 
-For the sake of this tutorial, let's assume we have a directory with the following file structure:
+`fd` can be called with no arguments, it'll then show the content of the actual directory
+recursively (like `ls -R`):
 ```
-fd_examples
-├── .gitignore
-├── desub_dir
-│   └── old_test.txt
-├── not_file
-├── sub_dir
-│   ├── .here_be_tests
-│   ├── more_dir
-│   │   ├── .not_here
-│   │   ├── even_further_down
-│   │   │   ├── not_me.sh
-│   │   │   ├── test_seven
-│   │   │   └── testing_eight
-│   │   ├── not_file -> /Users/fd_user/Desktop/fd_examples/not_file
-│   │   └── test_file_six
-│   ├── new_test.txt
-│   ├── test_file_five
-│   ├── test_file_four
-│   └── test_file_three
-├── test_file_one
-├── test_file_two
-├── test_one
-└── this_is_a_test
+> cd fd
+> fd
+appveyor.yml
+build.rs
+Cargo.lock
+Cargo.toml
+LICENSE
+README.md
+src
+src/app.rs
+src/fshelper
+src/fshelper/mod.rs
+src/lscolors
+src/lscolors/mod.rs
+src/main.rs
+tests
+tests/testenv
+tests/testenv/mod.rs
+tests/tests.rs
+```
+
+If we work in a directory that is a Git repository (or includes several Git repositories), `fd`
+does not search folders (and does not show files) that match the `.gitignore` pattern. For instance,
+see above example, and note that .gitignore is the following:
+```
+target/
+**/*.rs.bk
+```
+
+To disable this behavior, we can use the `-I` (or `--ignore`) option:
+```
+> fd -I
+Cargo.lock
+Cargo.toml
+LICENSE
+README.md
+appveyor.yml
+build.rs
+src
+src\app.rs
+src\fshelper
+src\fshelper\mod.rs
+src\lscolors
+src\lscolors\mod.rs
+src\main.rs
+target
+target\debug
+target\debug\build
+target\debug\build\fd-find-11fb469ceafee9ce
+target\debug\build\fd-find-11fb469ceafee9ce\out
+target\debug\build\fd-find-11fb469ceafee9ce\out\_fd
+target\debug\build\fd-find-11fb469ceafee9ce\out\_fd.ps1
+target\debug\build\fd-find-11fb469ceafee9ce\out\fd.bash-completion
+target\debug\build\fd-find-11fb469ceafee9ce\out\fd.fish
+target\debug\build\fd-find-11fb469ceafee9ce\output
+target\debug\build\fd-find-8682b98943903a5b
+target\debug\build\fd-find-8682b98943903a5b\build-script-build.exe
+target\debug\build\fd-find-8682b98943903a5b\build_script_build-8682b98943903a5b.exe
+target\debug\build\fd-find-8682b98943903a5b\build_script_build-8682b98943903a5b.pdb
+target\debug\build\kernel32-sys-7568a971f6718c45
+target\debug\build\kernel32-sys-7568a971f6718c45\out
+target\debug\build\kernel32-sys-7568a971f6718c45\output
+target\debug\build\kernel32-sys-d715e52d58016295
+target\debug\build\kernel32-sys-d715e52d58016295\build-script-build.exe
+target\debug\build\kernel32-sys-d715e52d58016295\build_script_build-d715e52d58016295.exe
+target\debug\build\kernel32-sys-d715e52d58016295\build_script_build-d715e52d58016295.pdb
+target\debug\deps
+(some content omitted...)
+target\debug\examples
+target\debug\fd.exe
+target\debug\incremental
+target\debug\native
+tests
+tests\testenv
+tests\testenv\mod.rs
+tests\tests.rs
 ```
 
 If `fd` is called with a single argument (the search pattern), it will perform a recursive search
-through the current directory. To search for all files that include the string "test", we can
-simply run:
+through the current directory. To search for all files that include the string "access" in the
+/var/log directory, we can simply run:
 ```
-> fd test
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
-this_is_a_test
+> cd /var/log
+> fd access
+cups/access_log
+cups/access_log.1
+cups/access_log.2
+some_program/user_access
 ```
 
-The search pattern is treated as a regular expression. To show only entries that start with "test",
-we can call:
+The search pattern is treated as a regular expression. To show only entries that start with "access",
+we can simply run:
 ```
-> fd '^test'
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
+> fd '^access'
+cups/access_log
+cups/access_log.1
+cups/access_log.2
 ```
 
-Note that `fd` does not show hidden files (`.here_be_tests`) by default. To change this, we can use
+Note that `fd` does not show hidden files (like `.access_control`) by default. To change this, we can use
 the `-H` (or `--hidden`) option:
 ```
-> fd -H test
-sub_dir/.here_be_tests
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_four
-sub_dir/test_file_three
-test_file_one
-test_file_two
-test_one
-this_is_a_test
+> fd -H access
+cups/access_log
+cups/access_log.1
+cups/access_log.2
+some_program/user_access
+.access_control
 ```
 
 If we are interested in showing the results from a particular directory, we can specify the root of
 the search as a second argument:
 ```
-> fd test sub_dir
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-```
-
-If we don't give *any* arguments to `fd`, it simply shows all entries in the current directory,
-recursively (like `ls -R`):
-```
-> fd
-not_file
-sub_dir
-sub_dir/more_dir
-sub_dir/more_dir/even_further_down
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/not_file
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
-this_is_a_test
+> cd /etc
+> fd firewall iptables
+simple_firewall.rules
+// TODO: review this with router content
 ```
 
 If we work in a directory that is a Git repository (or includes several Git repositories), `fd`
@@ -332,7 +345,7 @@ sub_dir/more_dir/even_further_down/not_me.sh
 sub_dir/more_dir/not_file
 ```
 
-Searching for a file extension is easy too, using the `-e` (or `--extension`) switch for file
+Searching for a file extension is easy too, using the `-e` (or `--file-extensions`) switch for file
 extensions:
 ```
 > fd -e sh
@@ -347,8 +360,28 @@ fd_examples/desub_dir/old_test.txt
 fd_examples/sub_dir/new_test.txt
 ```
 
-If we want to run a command for each of the search results, we can use the `-0` option to pipe
-the output to `xargs`:
+What if we wanted to run a command for each of the search results? We can use `xargs` to do that:
+`fd -0 'test' | xargs -0 -I {} cp {} {}.new`
+
+In this example there are a couple things to take note:
+  - First we are telling `fd` we want a null character to seperate the files `-0`, this is
+    important when passing to `xargs`.
+  - Second, we are piping the output to `xargs` and telling this program to expect input null
+    terminated with `-0` (the same syntax that `fd` was built with).
+  - Then for fun we are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}`
+    to a file ending in `{}.new`.
+
+`fd` can also show us the absolute path vs. the full path with `-a` (`--absolute-path`):
 ```
-> fd -0 'test' | xargs -0 wc -l
+> fd -a new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
+/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
+/Users/fd_user/fd_examples/sub_dir/test_file_five.new
+/Users/fd_user/fd_examples/sub_dir/test_file_four.new
+/Users/fd_user/fd_examples/sub_dir/test_file_three.new
+/Users/fd_user/fd_examples/test_file_one.new
+/Users/fd_user/fd_examples/test_file_two.new
+/Users/fd_user/fd_examples/test_one.new
+/Users/fd_user/fd_examples/this_is_a_test.new
 ```
