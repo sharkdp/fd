@@ -36,7 +36,8 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    if !current_dir.is_dir() {
+    // .is_dir() is not guarandteed to be intuitively correct for "." and ".."
+    if let Err(_) = current_dir.canonicalize() {
         error("Error: could not get current directory.");
     }
 
@@ -45,7 +46,7 @@ fn main() {
         Some(path) => PathBuf::from(path),
         None => current_dir.to_path_buf(),
     };
-    if !root_dir_buf.is_dir() {
+    if let Err(_) = root_dir_buf.canonicalize() {
         error(&format!(
             "Error: '{}' is not a directory.",
             root_dir_buf.to_string_lossy()
@@ -125,7 +126,7 @@ fn main() {
     // If base_dir is ROOT_DIR, then root_dir must be absolute.
     // Otherwise root_dir/entry cannot be turned into an existing relative path from base_dir.
     //
-    // We utilize ROOT_DIR to avoid resolving parent directories the root_dir.
+    // We utilize ROOT_DIR to avoid resolving the components of root_dir.
     let base_dir_buf = match config.path_display {
         PathDisplay::Relative => current_dir.to_path_buf(),
         PathDisplay::Absolute => PathBuf::from(ROOT_DIR),
