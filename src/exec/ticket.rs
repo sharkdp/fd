@@ -84,10 +84,13 @@ impl<'a> CommandTicket<'a> {
         let cmd = Command::new(COMMAND.0.as_str())
             .arg(COMMAND.1)
             .arg(&self.command)
+            // Configure the pipes accordingly in the child.
             .before_exec(move || unsafe {
-                // Configure the pipes accordingly in the child.
+                // Redirect the child's std{out,err} to the write ends of our pipe.
                 dup2(stdout_fds[1], STDOUT_FILENO);
                 dup2(stderr_fds[1], STDERR_FILENO);
+
+                // Close all the fds we created here, so EOF will be sent when the program exits.
                 close(stdout_fds[0]);
                 close(stdout_fds[1]);
                 close(stderr_fds[0]);
@@ -98,9 +101,11 @@ impl<'a> CommandTicket<'a> {
 
         // Open the read end of the pipes as `File`s.
         let (mut pout, mut perr) = unsafe {
+            // Close the write ends of the pipes in the parent
             close(stdout_fds[1]);
             close(stderr_fds[1]);
             (
+                // But create files from the read ends.
                 File::from_raw_fd(stdout_fds[0]),
                 File::from_raw_fd(stderr_fds[0]),
             )

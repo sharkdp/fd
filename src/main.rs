@@ -21,7 +21,7 @@ mod walk;
 
 use std::env;
 use std::error::Error;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time;
 
@@ -41,33 +41,33 @@ fn main() {
     let pattern = matches.value_of("pattern").unwrap_or(&empty_pattern);
 
     // Get the current working directory
-    let current_dir_buf = match env::current_dir() {
-        Ok(cd) => cd,
-        Err(_) => error("Error: could not get current directory."),
-    };
-    let current_dir = current_dir_buf.as_path();
+    let current_dir = Path::new(".");
+    // .is_dir() is not guarandteed to be intuitively correct for "." and ".."
+    if let Err(_) = current_dir.canonicalize() {
+        error("Error: could not get current directory.");
+    }
 
     // Get the root directory for the search
-    let mut root_dir_is_absolute = false;
-    let root_dir_buf = if let Some(rd) = matches.value_of("path") {
-        let path = Path::new(rd);
-
-        root_dir_is_absolute = path.is_absolute();
-
-        fshelper::absolute_path(path).unwrap_or_else(|_| {
-            error(&format!("Error: could not find directory '{}'.", rd))
-        })
-    } else {
-        current_dir_buf.clone()
+    let mut root_dir_buf = match matches.value_of("path") {
+        Some(path) => PathBuf::from(path),
+        None => current_dir.to_path_buf(),
     };
-
-    if !root_dir_buf.is_dir() {
+    if let Err(_) = root_dir_buf.canonicalize() {
         error(&format!(
             "Error: '{}' is not a directory.",
             root_dir_buf.to_string_lossy()
         ));
     }
 
+    let path_display = if matches.is_present("absolute-path") || root_dir_buf.is_absolute() {
+        PathDisplay::Absolute
+    } else {
+        PathDisplay::Relative
+    };
+
+    if path_display == PathDisplay::Absolute && root_dir_buf.is_relative() {
+        root_dir_buf = fshelper::absolute_path(root_dir_buf.as_path()).unwrap();
+    }
     let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
@@ -117,11 +117,7 @@ fn main() {
             .value_of("max-buffer-time")
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
-        path_display: if matches.is_present("absolute-path") || root_dir_is_absolute {
-            PathDisplay::Absolute
-        } else {
-            PathDisplay::Relative
-        },
+        path_display,
         ls_colors,
         file_type: match matches.value_of("file-type") {
             Some("f") | Some("file") => FileType::RegularFile,
@@ -136,17 +132,21 @@ fn main() {
         command,
     };
 
-    let root = Path::new(ROOT_DIR);
-    let base = match config.path_display {
-        PathDisplay::Relative => current_dir,
-        PathDisplay::Absolute => root,
+    // If base_dir is ROOT_DIR, then root_dir must be absolute.
+    // Otherwise root_dir/entry cannot be turned into an existing relative path from base_dir.
+    //
+    // We utilize ROOT_DIR to avoid resolving the components of root_dir.
+    let base_dir_buf = match config.path_display {
+        PathDisplay::Relative => current_dir.to_path_buf(),
+        PathDisplay::Absolute => PathBuf::from(ROOT_DIR),
     };
+    let base_dir = base_dir_buf.as_path();
 
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(root_dir, Arc::new(re), base, Arc::new(config)),
+        Ok(re) => walk::scan(root_dir, Arc::new(re), base_dir, Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }

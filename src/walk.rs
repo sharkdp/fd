@@ -3,7 +3,7 @@ use fshelper;
 use internal::{error, FdOptions, PathDisplay};
 use output;
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
@@ -193,14 +193,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
             if let Some(search_str) = search_str_o {
                 pattern.find(&*search_str).map(|_| {
-                    let mut path_rel_buf = match fshelper::path_relative_from(entry_path, &*base) {
+                    let path_rel_buf = match fshelper::path_relative_from(entry_path, &*base) {
                         Some(p) => p,
                         None => error("Error: could not get relative path for directory entry."),
                     };
-
-                    if path_rel_buf == PathBuf::new() {
-                        path_rel_buf.push(".");
-                    }
 
                     // TODO: take care of the unwrap call
                     tx_thread.send(path_rel_buf.to_owned()).unwrap()

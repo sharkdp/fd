@@ -142,6 +142,11 @@ cd fd-rs
 makepkg -si
 ```
 
+On **NixOS**, or any Linux distro you can use [Nix](https://nixos.org/nix/):
+```
+nix-env -i fd
+```
+
 On **Windows**, you can download the pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
 
 ## Development
