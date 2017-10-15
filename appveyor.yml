@@ -13,24 +13,24 @@ environment:
       CHANNEL: stable
     - TARGET: x86_64-pc-windows-msvc
       CHANNEL: stable
-    # Beta channel
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: beta
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: beta
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: beta
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: beta
-    # Nightly channel
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: nightly
-    - TARGET: i686-pc-windows-msvc
-      CHANNEL: nightly
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: nightly
-    - TARGET: x86_64-pc-windows-msvc
-      CHANNEL: nightly
+    # Beta channel (disabled for speed reasons)
+    #- TARGET: i686-pc-windows-gnu
+    #  CHANNEL: beta
+    #- TARGET: i686-pc-windows-msvc
+    #  CHANNEL: beta
+    #- TARGET: x86_64-pc-windows-gnu
+    #  CHANNEL: beta
+    #- TARGET: x86_64-pc-windows-msvc
+    #  CHANNEL: beta
+    # Nightly channel (disabled for speed reasons)
+    #- TARGET: i686-pc-windows-gnu
+    #  CHANNEL: nightly
+    #- TARGET: i686-pc-windows-msvc
+    #  CHANNEL: nightly
+    #- TARGET: x86_64-pc-windows-gnu
+    #  CHANNEL: nightly
+    #- TARGET: x86_64-pc-windows-msvc
+    #  CHANNEL: nightly
 
 # Install Rust and Cargo
 # (Based on from https://github.com/rust-lang/libc/blob/master/appveyor.yml)
@@ -88,6 +88,7 @@ branches:
     # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
     - /^v\d+\.\d+\.\d+.*$/
 
-cache:
-  - target -> Cargo.lock
-  - C:\Users\appveyor\.cargo\registry
+# Disable caching, for now
+#cache:
+#  - '%USERPROFILE%\.cargo'
+#  - 'target -> Cargo.lock'
