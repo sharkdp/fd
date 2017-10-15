@@ -1,7 +1,9 @@
+use std::path::MAIN_SEPARATOR;
+
 pub fn basename(input: &str) -> &str {
     let mut index = 0;
-    for (id, character) in input.bytes().enumerate() {
-        if character == b'/' {
+    for (id, character) in input.char_indices() {
+        if character == MAIN_SEPARATOR {
             index = id;
         }
     }
@@ -17,11 +19,11 @@ pub fn remove_extension(input: &str) -> &str {
     let mut dir_index = 0;
     let mut ext_index = 0;
 
-    for (id, character) in input.bytes().enumerate() {
-        if character == b'/' {
+    for (id, character) in input.char_indices() {
+        if character == MAIN_SEPARATOR {
             dir_index = id;
         }
-        if character == b'.' {
+        if character == '.' {
             ext_index = id;
         }
     }
@@ -36,8 +38,8 @@ pub fn remove_extension(input: &str) -> &str {
 
 pub fn dirname(input: &str) -> &str {
     let mut index = 0;
-    for (id, character) in input.bytes().enumerate() {
-        if character == b'/' {
+    for (id, character) in input.char_indices() {
+        if character == MAIN_SEPARATOR {
             index = id;
         }
     }
@@ -48,6 +50,12 @@ pub fn dirname(input: &str) -> &str {
 mod tests {
     use super::*;
 
+    fn correct(input: &str) -> String {
+        let mut sep = String::new();
+        sep.push(MAIN_SEPARATOR);
+        input.replace('/', &sep)
+    }
+
     #[test]
     fn path_remove_ext_simple() {
         assert_eq!(remove_extension("foo.txt"), "foo");
@@ -55,7 +63,10 @@ mod tests {
 
     #[test]
     fn path_remove_ext_dir() {
-        assert_eq!(remove_extension("dir/foo.txt"), "dir/foo");
+        assert_eq!(
+            remove_extension(&correct("dir/foo.txt")),
+            &correct("dir/foo")
+        );
     }
 
     #[test]
@@ -80,7 +91,7 @@ mod tests {
 
     #[test]
     fn path_basename_dir() {
-        assert_eq!(basename("dir/foo.txt"), "foo.txt");
+        assert_eq!(basename(&correct("dir/foo.txt")), "foo.txt");
     }
 
     #[test]
@@ -90,8 +101,8 @@ mod tests {
 
     #[test]
     fn path_basename_utf8() {
-        assert_eq!(basename("💖/foo.txt"), "foo.txt");
-        assert_eq!(basename("dir/💖.txt"), "💖.txt");
+        assert_eq!(basename(&correct("💖/foo.txt")), "foo.txt");
+        assert_eq!(basename(&correct("dir/💖.txt")), "💖.txt");
     }
 
     #[test]
@@ -101,13 +112,13 @@ mod tests {
 
     #[test]
     fn path_dirname_dir() {
-        assert_eq!(dirname("dir/foo.txt"), "dir");
+        assert_eq!(dirname(&correct("dir/foo.txt")), "dir");
     }
 
     #[test]
     fn path_dirname_utf8() {
-        assert_eq!(dirname("💖/foo.txt"), "💖");
-        assert_eq!(dirname("dir/💖.txt"), "dir");
+        assert_eq!(dirname(&correct("💖/foo.txt")), "💖");
+        assert_eq!(dirname(&correct("dir/💖.txt")), "dir");
     }
 
     #[test]
