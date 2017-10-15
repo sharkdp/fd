@@ -40,6 +40,9 @@ num_cpus = "1.6.2"
 regex = "0.2"
 regex-syntax = "0.4"
 
+[target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 diff = "0.1"
 tempdir = "0.3"

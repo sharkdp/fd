@@ -5,6 +5,8 @@ extern crate clap;
 extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
+#[cfg(all(unix, not(target_os = "redox")))]
+extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
