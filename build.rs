@@ -6,7 +6,8 @@ use clap::Shell;
 include!("src/app.rs");
 
 fn main() {
-    let outdir = match std::env::var_os("OUT_DIR") {
+    let var = std::env::var_os("OVRD_OUT_DIR").or_else(|| std::env::var_os("OUT_DIR"));
+    let outdir = match var {
         None => return,
         Some(outdir) => outdir,
     };
