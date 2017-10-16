@@ -136,11 +136,10 @@ fn main() {
     // Otherwise root_dir/entry cannot be turned into an existing relative path from base_dir.
     //
     // We utilize ROOT_DIR to avoid resolving the components of root_dir.
-    let base_dir_buf = match config.path_display {
-        PathDisplay::Relative => current_dir.to_path_buf(),
-        PathDisplay::Absolute => PathBuf::from(ROOT_DIR),
+    let base_dir = match config.path_display {
+        PathDisplay::Relative => current_dir.clone(),
+        PathDisplay::Absolute => Path::new(ROOT_DIR),
     };
-    let base_dir = base_dir_buf.as_path();
 
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)

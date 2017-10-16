@@ -195,7 +195,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             };
 
             if let Some(search_str) = search_str_o {
-                pattern.find(&*search_str).map(|_| {
+                if pattern.is_match(&*search_str) {
                     let path_rel_buf = match fshelper::path_relative_from(entry_path, &*base) {
                         Some(p) => p,
                         None => error("Error: could not get relative path for directory entry."),
@@ -203,7 +203,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
                     // TODO: take care of the unwrap call
                     tx_thread.send(path_rel_buf.to_owned()).unwrap()
-                });
+                }
             }
 
             ignore::WalkState::Continue
