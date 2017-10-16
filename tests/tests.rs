@@ -1,11 +1,14 @@
 //! Integration tests for the CLI interface of fd.
 
+extern crate regex;
+
 mod testenv;
 
 use testenv::TestEnv;
+use regex::escape;
 
 fn get_absolute_root_path(env: &TestEnv) -> String {
-    let path = env.root()
+    let path = env.test_root()
         .canonicalize()
         .expect("absolute path")
         .to_str()
@@ -177,7 +180,8 @@ fn test_case_insensitive() {
 fn test_full_path() {
     let te = TestEnv::new();
 
-    let prefix = if cfg!(windows) { "c:" } else { "/" };
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
 
     te.assert_output(
         &[
@@ -435,8 +439,6 @@ fn test_symlink() {
 
     let abs_path = get_absolute_root_path(&te);
 
-    let prefix = if cfg!(windows) { "c:" } else { "/" };
-
     // From: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getcwd.html
     // The getcwd() function shall place an absolute pathname of the current working directory in
     // the array pointed to by buf, and return buf. The pathname shall contain no components that
@@ -489,6 +491,9 @@ fn test_symlink() {
             abs_path = abs_path
         ),
     );
+
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
 
     te.assert_output_subdirectory(
         "symlink",
