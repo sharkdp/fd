@@ -186,7 +186,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             }
 
             let search_str_o = if config.search_full_path {
-                Some(entry_path.to_string_lossy())
+                match fshelper::path_absolute_form(&entry_path, &*base) {
+                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                    Err(_) => error("Error: unable to get full path."),
+                }
             } else {
                 entry_path.file_name().map(|f| f.to_string_lossy())
             };

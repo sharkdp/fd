@@ -8,9 +8,9 @@ pub fn path_relative_from(path: &Path, base: &Path) -> Option<PathBuf> {
 
     if path.is_absolute() != base.is_absolute() {
         if path.is_absolute() {
-            Some(PathBuf::from(path))
+            Some(path.to_path_buf())
         } else {
-            Some(PathBuf::from(base.join(path)))
+            Some(base.join(path))
         }
     } else {
         let mut ita = path.components();
@@ -40,6 +40,19 @@ pub fn path_relative_from(path: &Path, base: &Path) -> Option<PathBuf> {
             }
         }
         Some(comps.iter().map(|c| c.as_os_str()).collect())
+    }
+}
+
+pub fn path_absolute_form(path: &Path, base: &Path) -> io::Result<PathBuf> {
+    if path.is_absolute() {
+        Ok(path.to_path_buf())
+    } else {
+        let path = path.strip_prefix(".").unwrap_or(path);
+        if base.is_absolute() {
+            Ok(base.join(path))
+        } else {
+            absolute_path(base).map(|path_buf| path_buf.join(path))
+        }
     }
 }
 

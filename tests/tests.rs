@@ -177,8 +177,13 @@ fn test_case_insensitive() {
 fn test_full_path() {
     let te = TestEnv::new();
 
+    let prefix = if cfg!(windows) { "c:" } else { "/" };
+
     te.assert_output(
-        &["--full-path", "three.*foo"],
+        &[
+            "--full-path",
+            &format!("^{prefix}.*three.*foo$", prefix = prefix),
+        ],
         "one/two/three/d.foo
         one/two/three/directory_foo",
     );
@@ -430,6 +435,8 @@ fn test_symlink() {
 
     let abs_path = get_absolute_root_path(&te);
 
+    let prefix = if cfg!(windows) { "c:" } else { "/" };
+
     // From: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getcwd.html
     // The getcwd() function shall place an absolute pathname of the current working directory in
     // the array pointed to by buf, and return buf. The pathname shall contain no components that
@@ -477,6 +484,35 @@ fn test_symlink() {
             "{abs_path}/symlink/c.foo
             {abs_path}/symlink/C.Foo2
             {abs_path}/symlink/three
+            {abs_path}/symlink/three/d.foo
+            {abs_path}/symlink/three/directory_foo",
+            abs_path = abs_path
+        ),
+    );
+
+    te.assert_output_subdirectory(
+        "symlink",
+        &[
+            "--absolute-path",
+            "--full-path",
+            &format!("^{prefix}.*three", prefix = prefix),
+        ],
+        &format!(
+            "{abs_path}/one/two/three
+            {abs_path}/one/two/three/d.foo
+            {abs_path}/one/two/three/directory_foo",
+            abs_path = abs_path
+        ),
+    );
+
+    te.assert_output(
+        &[
+            "--full-path",
+            &format!("^{prefix}.*symlink.*three", prefix = prefix),
+            &format!("{abs_path}/symlink", abs_path = abs_path),
+        ],
+        &format!(
+            "{abs_path}/symlink/three
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo",
             abs_path = abs_path
