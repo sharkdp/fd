@@ -43,7 +43,7 @@ fn main() {
     // Get the current working directory
     let current_dir = Path::new(".");
     // .is_dir() is not guarandteed to be intuitively correct for "." and ".."
-    if let Err(_) = current_dir.canonicalize() {
+    if !current_dir.is_dir() || current_dir.canonicalize().is_err() {
         error("Error: could not get current directory.");
     }
 
@@ -52,7 +52,7 @@ fn main() {
         Some(path) => PathBuf::from(path),
         None => current_dir.to_path_buf(),
     };
-    if let Err(_) = root_dir_buf.canonicalize() {
+    if !root_dir_buf.is_dir() || root_dir_buf.canonicalize().is_err() {
         error(&format!(
             "Error: '{}' is not a directory.",
             root_dir_buf.to_string_lossy()
