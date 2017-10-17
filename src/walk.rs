@@ -51,10 +51,15 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
 
-    let r = Arc::clone(&wants_to_quit);
-    ctrlc::set_handler(move || {
-        r.store(true, Ordering::Relaxed);
-    }).unwrap();
+    // Only set ctrl-c handler if output is colorized.
+    // When ctr-c is recieved enter a quitng state where
+    // output will finish printing but will exit right after
+    if let Some(ref ls_colors) = config.ls_colors {
+        let r = Arc::clone(&wants_to_quit);
+        ctrlc::set_handler(move || {
+            r.store(true, Ordering::Relaxed);
+        }).unwrap();
+    }
 
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
