@@ -27,6 +27,7 @@ atty = "0.2"
 regex = "0.2"
 ignore = "0.2"
 num_cpus = "1.6.2"
+ctrlc = "3.0"
 
 [build-dependencies]
 clap = "2.26.0"
