@@ -7,13 +7,6 @@ use lscolors::LsColors;
 use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
 
-/// Root directory
-#[cfg(unix)]
-pub static ROOT_DIR: &'static str = "/";
-
-#[cfg(windows)]
-pub static ROOT_DIR: &'static str = "";
-
 /// Defines how to display search result paths.
 #[derive(PartialEq)]
 pub enum PathDisplay {

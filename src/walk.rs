@@ -1,6 +1,6 @@
 use exec::{self, TokenizedCommand};
 use fshelper;
-use internal::{error, FdOptions, PathDisplay};
+use internal::{error, FdOptions};
 use output;
 
 use std::path::Path;
@@ -36,7 +36,7 @@ pub enum FileType {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions>) {
+pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let (tx, rx) = channel();
     let threads = config.threads;
 
@@ -54,16 +54,12 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
-    let rx_base = base.to_owned();
-    let is_absolute = config.path_display == PathDisplay::Absolute;
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
             let shared_rx = Arc::new(Mutex::new(rx));
 
             let out_perm = Arc::new(Mutex::new(()));
-
-            let base = Arc::new(if is_absolute { Some(rx_base) } else { None });
 
             // This is safe because `cmd` will exist beyond the end of this scope.
             // It's required to tell Rust that it's safe to share across threads.
@@ -74,11 +70,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             for _ in 0..threads {
                 let rx = shared_rx.clone();
                 let cmd = cmd.clone();
-                let base = base.clone();
                 let out_perm = out_perm.clone();
 
                 // Spawn a job thread that will listen for and execute inputs.
-                let handle = thread::spawn(move || exec::job(rx, base, cmd, out_perm));
+                let handle = thread::spawn(move || exec::job(rx, cmd, out_perm));
 
                 // Push the handle of the spawned thread into the vector for later joining.
                 handles.push(handle);
@@ -110,7 +105,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                         if time::Instant::now() - start > max_buffer_time {
                             // Flush the buffer
                             for v in &buffer {
-                                output::print_entry(&rx_base, v, &rx_config);
+                                output::print_entry(&v, &rx_config);
                             }
                             buffer.clear();
 
@@ -119,7 +114,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                         }
                     }
                     ReceiverMode::Streaming => {
-                        output::print_entry(&rx_base, &value, &rx_config);
+                        output::print_entry(&value, &rx_config);
                     }
                 }
             }
@@ -129,7 +124,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&rx_base, &value, &rx_config);
+                    output::print_entry(&value, &rx_config);
                 }
             }
         }
@@ -137,7 +132,6 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
     // Spawn the sender threads.
     walker.run(|| {
-        let base = base.to_owned();
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
@@ -186,7 +180,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
             }
 
             let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(&entry_path, &*base) {
+                match fshelper::path_absolute_form(&entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
                     Err(_) => error("Error: unable to get full path."),
                 }
@@ -196,13 +190,8 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
 
             if let Some(search_str) = search_str_o {
                 if pattern.is_match(&*search_str) {
-                    let path_rel_buf = match fshelper::path_relative_from(entry_path, &*base) {
-                        Some(p) => p,
-                        None => error("Error: could not get relative path for directory entry."),
-                    };
-
                     // TODO: take care of the unwrap call
-                    tx_thread.send(path_rel_buf.to_owned()).unwrap()
+                    tx_thread.send(entry_path.to_owned()).unwrap()
                 }
             }
 

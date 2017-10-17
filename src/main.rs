@@ -29,7 +29,7 @@ use atty::Stream;
 use regex::RegexBuilder;
 
 use exec::TokenizedCommand;
-use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay, ROOT_DIR};
+use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -131,20 +131,11 @@ fn main() {
         command,
     };
 
-    // If base_dir is ROOT_DIR, then root_dir must be absolute.
-    // Otherwise root_dir/entry cannot be turned into an existing relative path from base_dir.
-    //
-    // We utilize ROOT_DIR to avoid resolving the components of root_dir.
-    let base_dir = match config.path_display {
-        PathDisplay::Relative => current_dir.clone(),
-        PathDisplay::Absolute => Path::new(ROOT_DIR),
-    };
-
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(root_dir, Arc::new(re), base_dir, Arc::new(config)),
+        Ok(re) => walk::scan(root_dir, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }
