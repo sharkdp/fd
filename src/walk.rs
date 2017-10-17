@@ -54,11 +54,14 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
     // Only set ctrl-c handler if output is colorized.
     // When ctr-c is recieved enter a quitng state where
     // output will finish printing but will exit right after
-    if let Some(ref ls_colors) = config.ls_colors {
-        let r = Arc::clone(&wants_to_quit);
-        ctrlc::set_handler(move || {
-            r.store(true, Ordering::Relaxed);
-        }).unwrap();
+    match config.ls_colors {
+        Some(_) => {
+            let r = Arc::clone(&wants_to_quit);
+            ctrlc::set_handler(move || {
+                r.store(true, Ordering::Relaxed);
+            }).unwrap();
+        },
+        None => (),
     }
 
     // Spawn the thread that receives all results through the channel.
