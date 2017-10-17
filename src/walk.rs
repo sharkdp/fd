@@ -1,9 +1,12 @@
+extern crate ctrlc;
+
 use internal::{error, FdOptions};
 use fshelper;
 use output;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{Ordering, AtomicBool};
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
@@ -46,6 +49,13 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         .threads(config.threads)
         .build_parallel();
 
+    let wants_to_quit = Arc::new(AtomicBool::new(false));
+
+    let r = Arc::clone(&wants_to_quit);
+    ctrlc::set_handler(move || {
+        r.store(true, Ordering::Relaxed);
+    }).unwrap();
+
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
     let rx_base = base.to_owned();
@@ -71,7 +81,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                     if time::Instant::now() - start > max_buffer_time {
                         // Flush the buffer
                         for v in &buffer {
-                            output::print_entry(&rx_base, v, &rx_config);
+                            output::print_entry(&rx_base, v, &rx_config, &wants_to_quit);
                         }
                         buffer.clear();
 
@@ -80,7 +90,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
                     }
                 }
                 ReceiverMode::Streaming => {
-                    output::print_entry(&rx_base, &value, &rx_config);
+                    output::print_entry(&rx_base, &value, &rx_config, &wants_to_quit);
                 }
             }
         }
@@ -90,7 +100,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, base: &Path, config: Arc<FdOptions
         if !buffer.is_empty() {
             buffer.sort();
             for value in buffer {
-                output::print_entry(&rx_base, &value, &rx_config);
+                output::print_entry(&rx_base, &value, &rx_config, &wants_to_quit);
             }
         }
     });

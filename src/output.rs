@@ -6,10 +6,12 @@ use std::ops::Deref;
 use std::path::{self, Path, PathBuf};
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+use std::sync::Arc;
+use std::sync::atomic::{Ordering, AtomicBool};
 
 use ansi_term;
 
-pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
+pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<AtomicBool>) {
     let path_full = base.join(entry);
 
     let path_str = entry.to_string_lossy();
@@ -78,6 +80,10 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
             if is_directory && component_path != path_full {
                 let sep = path::MAIN_SEPARATOR.to_string();
                 write!(handle, "{}", style.paint(sep)).ok();
+            }
+
+            if wants_to_quit.load(Ordering::Relaxed) {
+                process::exit(0);
             }
         }
 
