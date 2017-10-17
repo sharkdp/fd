@@ -66,3 +66,13 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
 
     Ok(path_buf)
 }
+
+// Path::is_dir() is not guarandteed to be intuitively correct for "." and ".."
+// See: https://github.com/rust-lang/rust/issues/45302
+pub fn is_dir(path: &Path) -> bool {
+    if path.file_name().is_some() {
+        path.is_dir()
+    } else {
+        path.is_dir() && path.canonicalize().is_ok()
+    }
+}
