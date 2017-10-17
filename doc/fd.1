@@ -1,0 +1,106 @@
+.TH FD 1 fd-4.0.0
+.SH NAME
+fd \- find files
+.BR find (1)
+.SH SYNOPSIS
+.B spt
+.RB [ \-HIsaLp0hV ]
+.RB [ \- d
+.IR depth ]
+.RB [ \-t
+.IR filetype ]
+.RB [ \-e
+.IR ext ]
+.RB [ \-c
+.IR when ]
+.RB [ \-j
+.IR num ]
+.RI [ pattern ]
+.RI [ path ]
+.SH DESCRIPTION
+.B fd
+is a simple, fast and user-friendly alternative to
+.BR find (1).
+.SH OPTIONS
+.TP
+.B \-H, \-\-hidden
+Search hidden files and directories.
+.TP
+.B \-I, \-\-no\-gitignore
+Do not respect any
+.BR gitignore (5)
+files.
+.TP
+.B \-s, \-\-case\-insensitive
+Perform a case-sensitive search (default: smart case).
+.TP
+.B \-a, \-\-absolute\-path
+Show absolute instead of relative paths.
+.TP
+.B \-L, \-\-follow
+Dereference all symbolic links encountered.
+.TP
+.B \-p, \-\-full\-path
+Match
+.I pattern
+against full path.
+.TP
+.B \-0, \-\-print0
+Print results followed by a null character (instead of newlines).
+.TP
+.B \-h, \-\-help
+Prints help information.
+.TP
+.B \-v, \-\-version
+Prints version information.
+.TP
+.BI "\-d, \-\-max\-depth " levels
+Limit directory traversal to at most
+.I levels
+of depth.
+.TP
+.BI "\-t, \-\-type " c
+Filter search by type:
+.RS
+.IP "f, file"
+regular files
+.IP "d, directories"
+directories
+.IP "s, symlink"
+symbolic links
+.RE
+.TP
+.BI "\-e, \-\-extension " ext
+Filter search results by file extension
+.IR ext .
+.TP
+.BI "\-c, \-\-color " when
+Declare
+.I when
+to use color for the pattern match output:
+.RS
+.IP auto
+Show colors only when standard output is connected to a terminal. (default)
+.IP never
+Do not use colorized output.
+.IP always
+Always use colorized output.
+.RE
+.TP
+.BI "\-j, \-\-threads " num
+Specifies number of threads to use for searching. (default: number of available
+CPU cores)
+.SH ENVIRONMENT
+.TP
+LS_COLORS
+.BR "fd"'s
+color codes for search results.
+.SH EXAMPLES
+.TP
+.RI "Find the specific log files in " /var/log .
+$ fd nginx.log /var/log
+.TP
+Find all Python files that ends with \(dq.py\(dq in the current directory.
+$ fd -e py
+.SH SEE ALSO
+.BR find (1)
