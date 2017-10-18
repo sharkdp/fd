@@ -352,7 +352,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo
             {abs_path}/symlink",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 
@@ -365,7 +365,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 
@@ -378,7 +378,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 }
@@ -471,12 +471,13 @@ fn test_symlink() {
         "symlink",
         &["--absolute-path"],
         &format!(
-            "{abs_path}/one/two/c.foo
-            {abs_path}/one/two/C.Foo2
-            {abs_path}/one/two/three
-            {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            "{abs_path}/{dir}/c.foo
+            {abs_path}/{dir}/C.Foo2
+            {abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            abs_path = &abs_path
         ),
     );
 
@@ -488,7 +489,7 @@ fn test_symlink() {
             {abs_path}/symlink/three
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 
@@ -503,10 +504,11 @@ fn test_symlink() {
             &format!("^{prefix}.*three", prefix = prefix),
         ],
         &format!(
-            "{abs_path}/one/two/three
-            {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            "{abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            abs_path = &abs_path
         ),
     );
 
@@ -520,7 +522,7 @@ fn test_symlink() {
             "{abs_path}/symlink/three
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 }
