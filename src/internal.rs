@@ -8,7 +8,7 @@ use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
 
 /// Root directory
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "redox"))]
 pub static ROOT_DIR: &'static str = "/";
 
 #[cfg(windows)]

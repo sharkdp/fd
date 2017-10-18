@@ -5,7 +5,7 @@ use std::{fs, process};
 use std::io::{self, Write};
 use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
@@ -117,7 +117,7 @@ fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_t
     }
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, target_os = "redox"))]
 fn is_executable(md: &fs::Metadata) -> bool {
     md.permissions().mode() & 0o111 != 0
 }
