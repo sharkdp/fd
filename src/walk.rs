@@ -3,7 +3,7 @@ use fshelper;
 use internal::{error, FdOptions};
 use output;
 
-use std::path::Path;
+use std::path::{Path, MAIN_SEPARATOR};
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::thread;
@@ -181,7 +181,14 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             let search_str_o = if config.search_full_path {
                 match fshelper::path_absolute_form(&entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                    Ok(path_abs_buf) => {
+                        let path_str = path_abs_buf.to_string_lossy();
+                        if cfg!(windows) && config.use_glob && MAIN_SEPARATOR == '\\' {
+                            Some(path_str.replace('\\', "/").into())
+                        } else {
+                            Some(path_str.into_owned().into())
+                        }
+                    }
                     Err(_) => error("Error: unable to get full path."),
                 }
             } else {

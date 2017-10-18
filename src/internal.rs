@@ -19,6 +19,9 @@ pub enum PathDisplay {
 
 /// Configuration options for *fd*.
 pub struct FdOptions {
+    /// Whether to search with a glob pattern.
+    pub use_glob: bool,
+
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 

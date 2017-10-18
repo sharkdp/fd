@@ -32,6 +32,8 @@ pub fn build_app() -> App<'static, 'static> {
         .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>]")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::DeriveDisplayOrder)
+        .arg(arg("use-glob").long("glob").overrides_with("use-regex"))
+        .arg(arg("use-regex").long("regex").overrides_with("use-glob"))
         .arg(arg("hidden").long("hidden").short("H"))
         .arg(arg("no-ignore").long("no-ignore").short("I"))
         .arg(
@@ -103,6 +105,11 @@ pub fn build_app() -> App<'static, 'static> {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 fn usage() -> HashMap<&'static str, Help> {
     let mut h = HashMap::new();
+    doc!(h, "use-glob"
+        , "Search with a glob pattern (default: use regex pattern)"
+        , "The pattern is a glob pattern, which will be converted to a regex pattern.");
+    doc!(h, "use-regex"
+        , "Search with a regex pattern. This is the default behavior.");
     doc!(h, "hidden"
         , "Search hidden files and directories"
         , "Include hidden directories and files in the search results (default: hidden files \

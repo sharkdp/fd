@@ -2,6 +2,7 @@ extern crate ansi_term;
 extern crate atty;
 #[macro_use]
 extern crate clap;
+extern crate globset;
 extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
@@ -15,6 +16,7 @@ pub mod fshelper;
 pub mod lscolors;
 mod app;
 mod exec;
+mod glob;
 mod internal;
 mod output;
 mod walk;
@@ -30,6 +32,7 @@ use regex::RegexBuilder;
 
 use exec::TokenizedCommand;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
+use glob::GlobBuilder;
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -94,6 +97,7 @@ fn main() {
     let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
 
     let config = FdOptions {
+        use_glob: matches.is_present("use-glob"),
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden") ||
@@ -131,7 +135,12 @@ fn main() {
         command,
     };
 
-    match RegexBuilder::new(pattern)
+    let mut builder = if !config.use_glob {
+        RegexBuilder::new(pattern)
+    } else {
+        GlobBuilder::new(pattern, config.search_full_path)
+    };
+    match builder
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
