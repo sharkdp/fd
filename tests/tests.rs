@@ -444,9 +444,13 @@ fn test_symlink() {
     // the array pointed to by buf, and return buf. The pathname shall contain no components that
     // are dot or dot-dot, or are symbolic links.
     //
-    // Symlinks on Unix are aliases to real paths, only has one redirection.
+    // Key points:
+    // 1. The path of the current working directory of a Unix process cannot contain symlinks.
+    // 2. The path of the current working directory of a Windows process can contain symlinks.
     //
-    // Symlinks on Windows can refer to symlinks, and are resolved after logical step "..".
+    // More:
+    // 1. On Windows, symlinks are resolved after the ".." component.
+    // 2. On Unix, symlinks are resolved immediately as encountered.
 
     let parent_parent = if cfg!(windows) { ".." } else { "../.." };
     te.assert_output_subdirectory(
