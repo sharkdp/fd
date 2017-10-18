@@ -1,11 +1,14 @@
 //! Integration tests for the CLI interface of fd.
 
+extern crate regex;
+
 mod testenv;
 
 use testenv::TestEnv;
+use regex::escape;
 
 fn get_absolute_root_path(env: &TestEnv) -> String {
-    let path = env.root()
+    let path = env.test_root()
         .canonicalize()
         .expect("absolute path")
         .to_str()
@@ -177,8 +180,14 @@ fn test_case_insensitive() {
 fn test_full_path() {
     let te = TestEnv::new();
 
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
+
     te.assert_output(
-        &["--full-path", "three.*foo"],
+        &[
+            "--full-path",
+            &format!("^{prefix}.*three.*foo$", prefix = prefix),
+        ],
         "one/two/three/d.foo
         one/two/three/directory_foo",
     );
@@ -343,7 +352,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo
             {abs_path}/symlink",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 
@@ -356,7 +365,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 
@@ -369,7 +378,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
         ),
     );
 }
@@ -435,9 +444,13 @@ fn test_symlink() {
     // the array pointed to by buf, and return buf. The pathname shall contain no components that
     // are dot or dot-dot, or are symbolic links.
     //
-    // Symlinks on Unix are aliases to real paths, only has one redirection.
+    // Key points:
+    // 1. The path of the current working directory of a Unix process cannot contain symlinks.
+    // 2. The path of the current working directory of a Windows process can contain symlinks.
     //
-    // Symlinks on Windows can refer to symlinks, and are resolved after logical step "..".
+    // More:
+    // 1. On Windows, symlinks are resolved after the ".." component.
+    // 2. On Unix, symlinks are resolved immediately as encountered.
 
     let parent_parent = if cfg!(windows) { ".." } else { "../.." };
     te.assert_output_subdirectory(
@@ -462,12 +475,13 @@ fn test_symlink() {
         "symlink",
         &["--absolute-path"],
         &format!(
-            "{abs_path}/one/two/c.foo
-            {abs_path}/one/two/C.Foo2
-            {abs_path}/one/two/three
-            {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
-            abs_path = abs_path
+            "{abs_path}/{dir}/c.foo
+            {abs_path}/{dir}/C.Foo2
+            {abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            abs_path = &abs_path
         ),
     );
 
@@ -479,7 +493,40 @@ fn test_symlink() {
             {abs_path}/symlink/three
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo",
-            abs_path = abs_path
+            abs_path = &abs_path
+        ),
+    );
+
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
+
+    te.assert_output_subdirectory(
+        "symlink",
+        &[
+            "--absolute-path",
+            "--full-path",
+            &format!("^{prefix}.*three", prefix = prefix),
+        ],
+        &format!(
+            "{abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            abs_path = &abs_path
+        ),
+    );
+
+    te.assert_output(
+        &[
+            "--full-path",
+            &format!("^{prefix}.*symlink.*three", prefix = prefix),
+            &format!("{abs_path}/symlink", abs_path = abs_path),
+        ],
+        &format!(
+            "{abs_path}/symlink/three
+            {abs_path}/symlink/three/d.foo
+            {abs_path}/symlink/three/directory_foo",
+            abs_path = &abs_path
         ),
     );
 }

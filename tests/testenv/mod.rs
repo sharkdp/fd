@@ -136,8 +136,14 @@ impl TestEnv {
     }
 
     /// Get the root directory for the tests.
-    pub fn root(&self) -> PathBuf {
+    pub fn test_root(&self) -> PathBuf {
         self.temp_dir.path().to_path_buf()
+    }
+
+    /// Get the root directory of the file system.
+    pub fn system_root(&self) -> PathBuf {
+        let mut components = self.temp_dir.path().components();
+        PathBuf::from(components.next().expect("root directory").as_os_str())
     }
 
     /// Assert that calling *fd* with the specified arguments produces the expected output.

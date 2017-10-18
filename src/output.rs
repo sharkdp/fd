@@ -1,4 +1,4 @@
-use internal::{FdOptions, PathDisplay};
+use internal::FdOptions;
 use lscolors::LsColors;
 
 use std::{fs, process};
@@ -10,23 +10,13 @@ use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
 
-pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
-    let path_full = if !entry.as_os_str().is_empty() {
-        base.join(entry)
-    } else {
-        base.to_path_buf()
-    };
-
-    let path_to_print = if config.path_display == PathDisplay::Absolute {
-        &path_full
-    } else {
-        entry
-    };
+pub fn print_entry(entry: &PathBuf, config: &FdOptions) {
+    let path = entry.strip_prefix(".").unwrap_or(entry);
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(base, path_to_print, config, ls_colors)
+        print_entry_colorized(path, config, ls_colors)
     } else {
-        print_entry_uncolorized(path_to_print, config)
+        print_entry_uncolorized(path, config)
     };
 
     if r.is_err() {
@@ -35,12 +25,7 @@ pub fn print_entry(base: &Path, entry: &PathBuf, config: &FdOptions) {
     }
 }
 
-fn print_entry_colorized(
-    base: &Path,
-    path: &Path,
-    config: &FdOptions,
-    ls_colors: &LsColors,
-) -> io::Result<()> {
+fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) -> io::Result<()> {
     let default_style = ansi_term::Style::default();
 
     let stdout = io::stdout();
@@ -50,7 +35,7 @@ fn print_entry_colorized(
     let mut separator = String::new();
 
     // Full path to the current component.
-    let mut component_path = base.to_path_buf();
+    let mut component_path = PathBuf::new();
 
     // Traverse the path and colorize each component
     for component in path.components() {

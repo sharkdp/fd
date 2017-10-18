@@ -9,7 +9,6 @@ use super::TokenizedCommand;
 /// be executed, and this process will continue until the receiver's sender has closed.
 pub fn job(
     rx: Arc<Mutex<Receiver<PathBuf>>>,
-    base: Arc<Option<PathBuf>>,
     cmd: Arc<TokenizedCommand>,
     out_perm: Arc<Mutex<()>>,
 ) {
@@ -23,12 +22,7 @@ pub fn job(
         // Obtain the next path from the receiver, else if the channel
         // has closed, exit from the loop
         let value: PathBuf = match lock.recv() {
-            Ok(value) => {
-                match *base {
-                    Some(ref base) => base.join(&value),
-                    None => value,
-                }
-            }
+            Ok(value) => value,
             Err(_) => break,
         };
 

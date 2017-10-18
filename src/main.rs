@@ -29,7 +29,7 @@ use atty::Stream;
 use regex::RegexBuilder;
 
 use exec::TokenizedCommand;
-use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay, ROOT_DIR};
+use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -42,8 +42,7 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    // .is_dir() is not guarandteed to be intuitively correct for "." and ".."
-    if let Err(_) = current_dir.canonicalize() {
+    if !fshelper::is_dir(&current_dir) {
         error("Error: could not get current directory.");
     }
 
@@ -52,7 +51,7 @@ fn main() {
         Some(path) => PathBuf::from(path),
         None => current_dir.to_path_buf(),
     };
-    if let Err(_) = root_dir_buf.canonicalize() {
+    if !fshelper::is_dir(&root_dir_buf) {
         error(&format!(
             "Error: '{}' is not a directory.",
             root_dir_buf.to_string_lossy()
@@ -132,21 +131,11 @@ fn main() {
         command,
     };
 
-    // If base_dir is ROOT_DIR, then root_dir must be absolute.
-    // Otherwise root_dir/entry cannot be turned into an existing relative path from base_dir.
-    //
-    // We utilize ROOT_DIR to avoid resolving the components of root_dir.
-    let base_dir_buf = match config.path_display {
-        PathDisplay::Relative => current_dir.to_path_buf(),
-        PathDisplay::Absolute => PathBuf::from(ROOT_DIR),
-    };
-    let base_dir = base_dir_buf.as_path();
-
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(root_dir, Arc::new(re), base_dir, Arc::new(config)),
+        Ok(re) => walk::scan(root_dir, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }

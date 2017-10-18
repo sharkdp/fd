@@ -109,6 +109,8 @@ impl TokenizedCommand {
         input: &Path,
         out_perm: Arc<Mutex<()>>,
     ) -> CommandTicket<'a> {
+        let input = input.strip_prefix(".").unwrap_or(input);
+
         for token in &self.tokens {
             match *token {
                 Token::Basename => *command += basename(&input.to_string_lossy()),
