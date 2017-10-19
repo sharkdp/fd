@@ -39,6 +39,7 @@ lazy_static = "0.2.9"
 num_cpus = "1.6.2"
 regex = "0.2"
 regex-syntax = "0.4"
+ctrlc = "3.0"
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
