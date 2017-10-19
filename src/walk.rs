@@ -61,7 +61,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         Some(_) => {
             let wq = Arc::clone(&wants_to_quit);
             ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
-        },
+        }
         None => (),
     }
 

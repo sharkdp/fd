@@ -27,7 +27,12 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
     }
 }
 
-fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors, wants_to_quit: &Arc<AtomicBool>) -> io::Result<()> {
+fn print_entry_colorized(
+    path: &Path,
+    config: &FdOptions,
+    ls_colors: &LsColors,
+    wants_to_quit: &Arc<AtomicBool>,
+) -> io::Result<()> {
     let default_style = ansi_term::Style::default();
 
     let stdout = io::stdout();
