@@ -3,7 +3,7 @@
 fd \- find files
 .BR find (1)
 .SH SYNOPSIS
-.B spt
+.B fd
 .RB [ \-HIsaLp0hV ]
 .RB [ \- d
 .IR depth ]
@@ -15,6 +15,8 @@ fd \- find files
 .IR when ]
 .RB [ \-j
 .IR num ]
+.RB [ \-x
+.IR exec ]
 .RI [ pattern ]
 .RI [ path ]
 .SH DESCRIPTION
@@ -26,12 +28,12 @@ is a simple, fast and user-friendly alternative to
 .B \-H, \-\-hidden
 Search hidden files and directories.
 .TP
-.B \-I, \-\-no\-gitignore
+.B \-I, \-\-no\-ignore
 Do not respect any
 .BR gitignore (5)
 files.
 .TP
-.B \-s, \-\-case\-insensitive
+.B \-s, \-\-case\-sensitive
 Perform a case-sensitive search (default: smart case).
 .TP
 .B \-a, \-\-absolute\-path
@@ -43,15 +45,16 @@ Dereference all symbolic links encountered.
 .B \-p, \-\-full\-path
 Match
 .I pattern
-against full path.
+against full
+.IR path .
 .TP
 .B \-0, \-\-print0
-Print results followed by a null character (instead of newlines).
+Print results followed by null character instead of newlines.
 .TP
 .B \-h, \-\-help
 Prints help information.
 .TP
-.B \-v, \-\-version
+.B \-V, \-\-version
 Prints version information.
 .TP
 .BI "\-d, \-\-max\-depth " levels
@@ -77,28 +80,45 @@ Filter search results by file extension
 .BI "\-c, \-\-color " when
 Declare
 .I when
-to use color for the pattern match output:
+to colorize search results:
 .RS
 .IP auto
-Show colors only when standard output is connected to a terminal. (default)
+Colorize output when standard output is connected to terminal. (default)
 .IP never
-Do not use colorized output.
+Do not colorize output.
 .IP always
-Always use colorized output.
+Always colorize output.
 .RE
 .TP
 .BI "\-j, \-\-threads " num
-Specifies number of threads to use for searching. (default: number of available
-CPU cores)
+Number of threads to use for searching. (default: number of processing units
+available)
+.TP
+.BI "\-x, \-\-exec " command
+Execute
+.I command
+on each of the discovered path with the following tokens substituted:
+.RS
+.IP {}
+path
+.IP {.}
+path without extension
+.IP {/}
+basename of path
+.IP {//}
+parent of path
+.IP {/.}
+basename of path without extension
+.RE
 .SH ENVIRONMENT
 .TP
-LS_COLORS
-.BR "fd"'s
-color codes for search results.
+.B LS_COLORS
+Determines how to colorize search results, see
+.BR dircolors (1) .
 .SH EXAMPLES
 .TP
 .RI "Find the specific log files in " /var/log .
-$ fd nginx.log /var/log
+$ fd nginx /var/log
 .TP
 Find all Python files that ends with \(dq.py\(dq in the current directory.
 $ fd -e py
