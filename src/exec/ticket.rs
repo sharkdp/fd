@@ -30,7 +30,7 @@ impl<'a> CommandTicket<'a> {
 
     /// Executes the command stored within the ticket, and
     /// clearing the command's buffer when finished.'
-    #[cfg(not(all(unix, not(target_os = "redox"))))]
+    #[cfg(not(unix))]
     pub fn then_execute(self) {
         use std::process::Stdio;
         use std::io::Write;
@@ -63,9 +63,9 @@ impl<'a> CommandTicket<'a> {
         self.command.clear();
     }
 
-    #[cfg(all(unix, not(target_os = "redox")))]
+    #[cfg(all(unix))]
     pub fn then_execute(self) {
-        use libc::*;
+        use libc::{close, dup2, pipe, STDERR_FILENO, STDOUT_FILENO};
         use std::fs::File;
         use std::os::unix::process::CommandExt;
         use std::os::unix::io::FromRawFd;
