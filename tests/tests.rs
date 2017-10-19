@@ -530,3 +530,26 @@ fn test_symlink() {
         ),
     );
 }
+
+/// Execute command (--exec)
+#[test]
+fn test_exec() {
+    let te = TestEnv::new();
+
+    // Test a simple echo before each result
+    te.assert_output(
+        &["--exec", "echo found", "foo"],
+        "found a.foo
+        found one/b.foo
+        found one/two/c.foo
+        found one/two/C.Foo2
+        found one/two/three/d.foo
+        found one/two/three/directory_foo",
+    );
+
+    // Test executing 'diff' with the found result and itself. No expected output.
+    te.assert_output(
+        &["--exec", "diff {} {}", "a.foo"],
+        "",
+    );
+}
