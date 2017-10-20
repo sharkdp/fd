@@ -25,35 +25,37 @@ matrix:
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
-    - os: linux
-      rust: beta
-      env: TARGET=x86_64-unknown-linux-musl
-    - os: linux
-      rust: beta
-      env: TARGET=i686-unknown-linux-gnu
-    - os: linux
-      rust: beta
-      env: TARGET=i686-unknown-linux-musl
-    - os: osx
-      rust: beta
-      env: TARGET=x86_64-apple-darwin
+    # Disabled to reduce total CI time
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=x86_64-unknown-linux-musl
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=i686-unknown-linux-gnu
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=i686-unknown-linux-musl
+    # - os: osx
+    #   rust: beta
+    #   env: TARGET=x86_64-apple-darwin
 
     # Nightly channel.
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
-    - os: linux
-      rust: nightly
-      env: TARGET=x86_64-unknown-linux-musl
-    - os: linux
-      rust: nightly
-      env: TARGET=i686-unknown-linux-gnu
-    - os: linux
-      rust: nightly
-      env: TARGET=i686-unknown-linux-musl
-    - os: osx
-      rust: nightly
-      env: TARGET=x86_64-apple-darwin
+    # Disabled to reduce total CI time
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=x86_64-unknown-linux-musl
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=i686-unknown-linux-gnu
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=i686-unknown-linux-musl
+    # - os: osx
+    #   rust: nightly
+    #   env: TARGET=x86_64-apple-darwin
 
     # Minimum Rust supported channel.
     - os: linux
