@@ -77,10 +77,12 @@ fn find_fd_exe() -> PathBuf {
 /// Format an error message for when *fd* did not exit successfully.
 fn format_exit_error(args: &[&str], output: &process::Output) -> String {
     format!(
-        "`fd {}` did not exit successfully.\nstdout:\n---\n{}---\nstderr:\n---\n{}---",
+        "`fd {}` did not exit successfully.\nstdout:\n---\n{}---\nstderr:\n---\n{}---\n
+        code:\n---\n{:?}---\n",
         args.join(" "),
         String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        String::from_utf8_lossy(&output.stderr),
+        output.status.code()
     )
 }
 

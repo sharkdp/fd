@@ -550,7 +550,7 @@ fn test_exec() {
         Comparing files a.foo and A.FOO
         FC: no differences encountered",
     );
-    
+
     // Test executing 'diff' with the found result and itself.
-    #[cfg(unix)] te.assert_output(&["--exec", "diff {} {}", "a.foo"],"");
+    #[cfg(unix)] te.assert_output(&["--exec", "diff {} {}", "a.foo"], "");
 }
