@@ -7,41 +7,56 @@ matrix:
     # Stable channel.
     - os: linux
       rust: stable
-      before_script:
-          - export PATH="$PATH:$HOME/.cargo/bin"
-          - which rustfmt || cargo install rustfmt
-      script:
-          - cargo fmt -- --write-mode=diff
-          - cargo build
-          - cargo test
+      env: TARGET=x86_64-unknown-linux-gnu
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-musl
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-gnu
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-musl
+    - os: osx
+      rust: stable
+      env: TARGET=x86_64-apple-darwin
+
     # Beta channel.
     - os: linux
       rust: beta
-    - os: linux
-      rust: beta
-      env: TARGET=x86_64-unknown-linux-musl
-    - os: linux
-      rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
+    # Disabled to reduce total CI time
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=x86_64-unknown-linux-musl
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=i686-unknown-linux-gnu
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=i686-unknown-linux-musl
+    # - os: osx
+    #   rust: beta
+    #   env: TARGET=x86_64-apple-darwin
+
     # Nightly channel.
     - os: linux
       rust: nightly
-      before_script:
-          - export PATH="$PATH:$HOME/.cargo/bin"
-          - which rustfmt || cargo install rustfmt-nightly
-      script:
-          - cargo fmt -- --write-mode=diff
-          - cargo build
-          - cargo test
-    - os: linux
-      rust: nightly
-      env: TARGET=i686-unknown-linux-musl
-    - os: linux
-      rust: nightly
-      env: TARGET=x86_64-unknown-linux-musl
-    - os: osx
-      rust: nightly
-      env: TARGET=x86_64-apple-darwin
+      env: TARGET=x86_64-unknown-linux-gnu
+    # Disabled to reduce total CI time
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=x86_64-unknown-linux-musl
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=i686-unknown-linux-gnu
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=i686-unknown-linux-musl
+    # - os: osx
+    #   rust: nightly
+    #   env: TARGET=x86_64-apple-darwin
+
     # Minimum Rust supported channel.
     - os: linux
       rust: 1.19.0
@@ -49,9 +64,48 @@ matrix:
     - os: linux
       rust: 1.19.0
       env: TARGET=x86_64-unknown-linux-musl
+    - os: linux
+      rust: 1.19.0
+      env: TARGET=i686-unknown-linux-gnu
+    - os: linux
+      rust: 1.19.0
+      env: TARGET=i686-unknown-linux-musl
     - os: osx
       rust: 1.19.0
       env: TARGET=x86_64-apple-darwin
+
+    # Code formatting check
+    - os: linux
+      rust: stable
+      # skip the global install step
+      install: which rustfmt || cargo install rustfmt
+      script: cargo fmt -- --write-mode=diff
+    - os: linux
+      rust: nightly
+      # skip the global install step
+      install: which rustfmt || cargo install rustfmt-nightly
+      script: cargo fmt -- --write-mode=diff
+
+addons:
+  apt:
+    packages:
+      # needed for i686-unknown-linux-gnu target
+      - gcc-multilib
+
+env:
+  global:
+    # Default target on travis-ci.
+    # Used as conditional check in the install stage
+    - HOST=x86_64-unknown-linux-gnu
+
+install:
+  # prevent target re-add error from rustup
+  - if [[ $TRAVIS_OS_NAME = linux && $HOST != $TARGET ]]; then rustup target add $TARGET; fi
+
+script:
+  # Incorporate TARGET env var to the build and test process
+  - cargo build --target $TARGET --verbose
+  - cargo test --target $TARGET --verbose
 
 notifications:
   email:
