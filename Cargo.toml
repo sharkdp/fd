@@ -31,7 +31,7 @@ repository = "sharkdp/fd"
 clap = "2.26.0"
 
 [dependencies]
-ansi_term = "0.10"
+ansi_term = "0.9"
 atty = "0.2"
 clap = "2.26.0"
 ignore = "0.2"
@@ -42,6 +42,9 @@ regex-syntax = "0.4"
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows = { path = "win" }
 
 [dev-dependencies]
 diff = "0.1"
