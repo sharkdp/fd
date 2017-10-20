@@ -10,6 +10,8 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+#[cfg(windows)]
+extern crate windows;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -80,7 +82,7 @@ fn main() {
         _ => atty::is(Stream::Stdout),
     };
     #[cfg(windows)]
-    let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
+    let colored_output = colored_output && windows::enable_colored_output();
 
     let ls_colors = if colored_output {
         Some(
