@@ -547,9 +547,11 @@ fn test_exec() {
         found one/two/three/directory_foo",
     );
 
-    // Test executing 'diff' with the found result and itself. No expected output.
+    // Test executing 'fc' (File Compare) with the found result and itself.
     te.assert_output(
-        &["--exec", "diff \'{}\' \'{}\'", "a.foo"],
-        "",
+        &["--exec", "fc {} {}", "a.foo"],
+        "
+        Comparing files a.foo and A.FOO
+        FC: no differences encountered"
     );
 }
