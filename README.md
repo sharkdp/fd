@@ -135,11 +135,9 @@ On **macOS**, you can use [Homebrew](http://braumeister.org/formula/fd):
 brew install fd
 ```
 
-On **Arch Linux**, you can install the AUR package [fd-rs](https://aur.archlinux.org/packages/fd-rs/) via yaourt, or manually:
+On **Arch Linux**, you can install the package from the official repos:
 ```
-git clone https://aur.archlinux.org/fd-rs.git
-cd fd-rs
-makepkg -si
+pacman -S fd-rs
 ```
 
 On **NixOS**, or any Linux distro you can use [Nix](https://nixos.org/nix/):
