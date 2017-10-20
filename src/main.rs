@@ -79,6 +79,8 @@ fn main() {
         Some("never") => false,
         _ => atty::is(Stream::Stdout),
     };
+    #[cfg(windows)]
+    let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
 
     let ls_colors = if colored_output {
         Some(

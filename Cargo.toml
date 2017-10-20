@@ -31,7 +31,7 @@ repository = "sharkdp/fd"
 clap = "2.26.0"
 
 [dependencies]
-ansi_term = "0.9"
+ansi_term = "0.10"
 atty = "0.2"
 clap = "2.26.0"
 ignore = "0.2"
