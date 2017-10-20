@@ -537,18 +537,20 @@ fn test_exec() {
     let te = TestEnv::new();
 
     // Test a simple echo before result
-    te.assert_output(&["--exec", "echo found", "d.foo"], "found one/two/three/d.foo");
+    te.assert_output(
+        &["--exec", "echo found {}", "d.foo"],
+        "found one/two/three/d.foo",
+    );
 
-    #[cfg(windows)]
     // Test executing 'fc' (File Compare) with the found result and itself.
+    #[cfg(windows)]
     te.assert_output(
         &["--exec", "fc {} {}", "a.foo"],
         "
         Comparing files a.foo and A.FOO
         FC: no differences encountered",
     );
-
-    #[cfg(unix)]
+    
     // Test executing 'diff' with the found result and itself.
-    te.assert_output(&["--exec", "diff {} {}", "a.foo"],"");
+    #[cfg(unix)] te.assert_output(&["--exec", "diff {} {}", "a.foo"],"");
 }
