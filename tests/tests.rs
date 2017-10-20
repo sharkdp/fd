@@ -549,7 +549,7 @@ fn test_exec() {
 
     // Test executing 'diff' with the found result and itself. No expected output.
     te.assert_output(
-        &["--exec", "diff {} {}", "a.foo"],
+        &["--exec", "diff \'{}\' \'{}\'", "a.foo"],
         "",
     );
 }
