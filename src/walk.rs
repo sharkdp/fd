@@ -18,6 +18,7 @@ use std::thread;
 use std::time;
 
 use ignore::{self, WalkBuilder};
+use ignore::overrides::OverrideBuilder;
 use regex::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -48,6 +49,18 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let (tx, rx) = channel();
     let threads = config.threads;
 
+    let mut override_builder = OverrideBuilder::new(root);
+
+    for pattern in config.exclude_patterns.iter() {
+        let res = override_builder.add(pattern);
+        if res.is_err() {
+            error(&format!("Error: malformed exclude pattern '{}'", pattern));
+        }
+    }
+    let overrides = override_builder.build().unwrap_or_else(|_| {
+        error("Mismatch in exclude patterns");
+    });
+
     let walker = WalkBuilder::new(root)
         .hidden(config.ignore_hidden)
         .ignore(config.read_ignore)
@@ -55,6 +68,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .parents(config.read_ignore)
         .git_global(config.read_ignore)
         .git_exclude(config.read_ignore)
+        .overrides(overrides)
         .follow_links(config.follow_links)
         .max_depth(config.max_depth)
         .threads(threads)

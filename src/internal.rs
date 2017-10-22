@@ -77,6 +77,9 @@ pub struct FdOptions {
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<TokenizedCommand>,
+
+    /// A list of glob patterns that should be excluded from the search.
+    pub exclude_patterns: Vec<String>,
 }
 
 /// Print error message to stderr and exit with status `1`.

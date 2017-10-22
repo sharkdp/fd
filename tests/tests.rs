@@ -538,3 +538,50 @@ fn test_symlink() {
         ),
     );
 }
+
+/// Exclude patterns (--exclude)
+#[test]
+fn test_excludes() {
+    let te = TestEnv::new();
+
+    te.assert_output(
+        &["--exclude", "*.foo"],
+        "one
+        one/two
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["--exclude", "*.foo", "--exclude", "*.Foo2"],
+        "one
+        one/two
+        one/two/three
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["--exclude", "*.foo", "--exclude", "*.Foo2", "foo"],
+        "one/two/three/directory_foo",
+    );
+
+    te.assert_output(
+        &["--exclude", "one/two", "foo"],
+        "a.foo
+        one/b.foo",
+    );
+
+    te.assert_output(
+        &["--exclude", "one/**/*.foo"],
+        "a.foo
+        one
+        one/two
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/directory_foo
+        symlink",
+    );
+}

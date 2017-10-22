@@ -141,6 +141,10 @@ fn main() {
             e.trim_left_matches('.').to_lowercase()
         }),
         command,
+        exclude_patterns: matches
+            .values_of("exclude")
+            .map(|v| v.map(|p| String::from("!") + p).collect())
+            .unwrap_or(vec![]),
     };
 
     match RegexBuilder::new(pattern)
