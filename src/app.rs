@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::collections::HashMap;
 
 use clap::{App, AppSettings, Arg};
@@ -95,7 +103,13 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .hidden(true),
         )
-        .arg(arg("exec").long("exec").short("x").takes_value(true))
+        .arg(
+            arg("exec")
+                .long("exec")
+                .short("x")
+                .takes_value(true)
+                .value_name("cmd"),
+        )
         .arg(arg("pattern"))
         .arg(arg("path"))
 }
@@ -145,9 +159,8 @@ fn usage() -> HashMap<&'static str, Help> {
              'd' or 'directory':    directories\n  \
              'l' or 'symlink':      symbolic links");
     doc!(h, "exec"
-        , "Execute each discovered path using the argument that follows as the command expression."
-        , "Execute each discovered path using the argument that follows as the command \
-           expression.\n \
+        , "Execute the given command for each search result"
+        , "Execute the given command for each search result.\n\
            The following are valid tokens that can be used within the expression for generating \
            commands:\n \
              '{}':   places the input in the location of this token\n \

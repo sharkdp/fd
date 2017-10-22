@@ -78,12 +78,16 @@ matrix:
     - os: linux
       rust: stable
       # skip the global install step
-      install: which rustfmt || cargo install rustfmt
+      install:
+        - which cargo-install-update || cargo install cargo-update
+        - cargo install-update rustfmt
       script: cargo fmt -- --write-mode=diff
     - os: linux
       rust: nightly
       # skip the global install step
-      install: which rustfmt || cargo install rustfmt-nightly
+      install:
+        - which cargo-install-update || cargo install cargo-update
+        - cargo install-update rustfmt-nightly
       script: cargo fmt -- --write-mode=diff
 
 addons:

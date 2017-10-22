@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::process;
 use std::time;
 use std::io::Write;
@@ -94,7 +102,7 @@ fn expr_has_uppercase_char(expr: &Expr) -> bool {
                 r.start.is_uppercase() || r.end.is_uppercase()
             })
         }
-        Expr::Group { ref e, .. } => expr_has_uppercase_char(e),
+        Expr::Group { ref e, .. } |
         Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
         Expr::Concat(ref es) => es.iter().any(expr_has_uppercase_char),
         Expr::Alternate(ref es) => es.iter().any(expr_has_uppercase_char),

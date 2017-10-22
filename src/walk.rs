@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 extern crate ctrlc;
 
 use exec::{self, TokenizedCommand};
@@ -81,9 +89,9 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             // Each spawned job will store it's thread handle in here.
             let mut handles = Vec::with_capacity(threads);
             for _ in 0..threads {
-                let rx = shared_rx.clone();
-                let cmd = cmd.clone();
-                let out_perm = out_perm.clone();
+                let rx = Arc::clone(&shared_rx);
+                let cmd = Arc::clone(&cmd);
+                let out_perm = Arc::clone(&out_perm);
 
                 // Spawn a job thread that will listen for and execute inputs.
                 let handle = thread::spawn(move || exec::job(rx, cmd, out_perm));
@@ -119,6 +127,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
                             // Flush the buffer
                             for v in &buffer {
                                 output::print_entry(&v, &rx_config, &wants_to_quit);
+                                output::print_entry(v, &rx_config, &wants_to_quit);
                             }
                             buffer.clear();
 
@@ -193,7 +202,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(&entry_path) {
+                match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
                     Err(_) => error("Error: unable to get full path."),
                 }

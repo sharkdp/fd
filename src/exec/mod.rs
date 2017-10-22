@@ -1,13 +1,22 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 // TODO: Possible optimization could avoid pushing characters on a buffer.
 mod ticket;
 mod token;
 mod job;
-mod paths;
+mod input;
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-use self::paths::{basename, dirname, remove_extension};
+// use self::paths::{basename, dirname, remove_extension};
+use self::input::Input;
 use self::ticket::CommandTicket;
 use self::token::Token;
 pub use self::job::job;
@@ -109,18 +118,18 @@ impl TokenizedCommand {
         input: &Path,
         out_perm: Arc<Mutex<()>>,
     ) -> CommandTicket<'a> {
-        let input = input.strip_prefix(".").unwrap_or(input);
-
+        use self::Token::*;
+        let input = input.strip_prefix(".").unwrap_or(input).to_string_lossy();
         for token in &self.tokens {
             match *token {
-                Token::Basename => *command += basename(&input.to_string_lossy()),
-                Token::BasenameNoExt => {
-                    *command += remove_extension(basename(&input.to_string_lossy()))
+                Basename => *command += &Input::new(&input).basename().get(),
+                BasenameNoExt => {
+                    *command += &Input::new(&input).basename().remove_extension().get()
                 }
-                Token::NoExt => *command += remove_extension(&input.to_string_lossy()),
-                Token::Parent => *command += dirname(&input.to_string_lossy()),
-                Token::Placeholder => *command += &input.to_string_lossy(),
-                Token::Text(ref string) => *command += string,
+                NoExt => *command += &Input::new(&input).remove_extension().get(),
+                Parent => *command += &Input::new(&input).dirname().get(),
+                Placeholder => *command += &Input::new(&input).get(),
+                Text(ref string) => *command += string,
             }
         }
 

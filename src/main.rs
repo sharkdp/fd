@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 extern crate ansi_term;
 extern crate atty;
 #[macro_use]
@@ -10,6 +18,8 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+#[cfg(windows)]
+extern crate windows;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -42,7 +52,7 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    if !fshelper::is_dir(&current_dir) {
+    if !fshelper::is_dir(current_dir) {
         error("Error: could not get current directory.");
     }
 
@@ -79,6 +89,8 @@ fn main() {
         Some("never") => false,
         _ => atty::is(Stream::Stdout),
     };
+    #[cfg(windows)]
+    let colored_output = colored_output && windows::enable_colored_output();
 
     let ls_colors = if colored_output {
         Some(
@@ -91,7 +103,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
+    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(x));
 
     let config = FdOptions {
         case_sensitive,
