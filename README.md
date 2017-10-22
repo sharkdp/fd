@@ -97,29 +97,27 @@ complete (and more colorful) variants, see
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
 
-## Parallel Command Execution
-If the `--exec` flag is specified alongside a command template, a job pool will be created for
-generating and executing commands in parallel with each discovered path as the inputs. The syntax
-for generating commands is similar to that of GNU Parallel:
+## Parallel command execution
+If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
+for executing commands in parallel for each discovered path as the input. The syntax for generating
+commands is similar to that of GNU Parallel:
 
-- **{}**: A placeholder token that will be replaced with the discovered path.
-- **{.}**: Removes the extension from the path.
-- **{/}**: Uses the basename of the discovered path.
-- **{//}**: Uses the parent of the discovered path.
-- **{/.}**: Uses the basename, with the extension removed.
+- `{}`: A placeholder token that will be replaced with the path of the search result
+  (`documents/images/party.jpg`).
+- `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
+- `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
+- `{//}`: Uses the parent of the discovered path (`documents/images`).
+- `{/.}`: Uses the basename, with the extension removed (`party`).
 
-```sh
-# Demonstration of parallel job execution
-fd -e flac --exec 'sleep 1; echo $\{SHELL}: {}'
+``` bash
+# Convert all jpg files to png files
+fd -e jpg -x 'convert "{}" "{.}.png"'
 
-# This also works, because `SHELL` is not a valid token
-fd -e flac --exec 'sleep 1; echo ${SHELL}: {}'
+# Unpack all zip files (if no placeholder is given, the path is appended):
+fd -e zip -x unzip
 
-# The token is optional -- it gets added at the end by default.
-fd -e flac --exec 'echo'
-
-# Real world example of converting flac files into opus files.
-fd -e flac --type f --exec 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
+# Convert all flac files into opus files:
+fd -e flac -x 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
 ```
 
 ## Install
