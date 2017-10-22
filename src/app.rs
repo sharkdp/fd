@@ -82,6 +82,22 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("ext"),
         )
         .arg(
+            arg("exec")
+                .long("exec")
+                .short("x")
+                .takes_value(true)
+                .value_name("cmd"),
+        )
+        .arg(
+            arg("exclude")
+                .long("exclude")
+                .short("E")
+                .takes_value(true)
+                .value_name("pattern")
+                .number_of_values(1)
+                .multiple(true),
+        )
+        .arg(
             arg("color")
                 .long("color")
                 .short("c")
@@ -102,13 +118,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("max-buffer-time")
                 .takes_value(true)
                 .hidden(true),
-        )
-        .arg(
-            arg("exec")
-                .long("exec")
-                .short("x")
-                .takes_value(true)
-                .value_name("cmd"),
         )
         .arg(arg("pattern"))
         .arg(arg("path"))
@@ -158,6 +167,9 @@ fn usage() -> HashMap<&'static str, Help> {
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
              'l' or 'symlink':      symbolic links");
+    doc!(h, "extension"
+        , "Filter by file extension"
+        , "(Additionally) filter search results by their file extension.");
     doc!(h, "exec"
         , "Execute the given command for each search result"
         , "Execute the given command for each search result.\n\
@@ -167,10 +179,11 @@ fn usage() -> HashMap<&'static str, Help> {
              '{.}':  removes the extension from the input\n \
              '{/}':  places the basename of the input\n \
              '{//}': places the parent of the input\n \
-             '{/.}': places the basename of the input, without the extension\n");
-    doc!(h, "extension"
-        , "Filter by file extension"
-        , "(Additionally) filter search results by their file extension.");
+             '{/.}': places the basename of the input, without the extension");
+    doc!(h, "exclude"
+        , "Exclude entries that match the given glob pattern."
+        , "Exclude files/directories that match the given glob pattern. This overrides any \
+           other ignore logic. Multiple exclude patterns can be specified.");
     doc!(h, "color"
         , "When to use colors: never, *auto*, always"
         , "Declare when to use color for the pattern match output:\n  \
