@@ -150,6 +150,75 @@ fn test_smart_case() {
     te.assert_output(&["\\AC"], "one/two/C.Foo2");
 }
 
+/// Glob searches (--glob)
+#[test]
+fn test_glob_searches() {
+    let te = TestEnv::new();
+
+    te.assert_output(
+        &["--glob", "*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--glob", "--regex", "[a-c].foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2",
+    );
+
+    te.assert_output(
+        &["--regex", "--glob", "[a-c].foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo",
+    );
+
+    te.assert_output(&["--full-path", "--glob", "*"], "");
+
+    te.assert_output(
+        &["--full-path", "--glob", "**"],
+        "a.foo
+        one
+        one/b.foo
+        one/two
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/d.foo
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["--full-path", "--glob", "**/*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--full-path", "--glob", "*/**/*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--full-path", "--glob", "**/**/*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+}
+
 /// Case sensitivity (--case-sensitive)
 #[test]
 fn test_case_sensitive() {
