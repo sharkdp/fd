@@ -17,7 +17,7 @@ use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
 
-use ignore::{self, WalkBuilder};
+use ignore::{self, WalkBuilder, DirEntry};
 use regex::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -39,6 +39,34 @@ pub enum FileType {
     SymLink,
 }
 
+trait Filter {
+    fn filter_by_type(&self, item: &DirEntry) -> bool;
+    fn filter_by_ext(&self, item: &DirEntry) -> bool;
+}
+
+impl Filter for FdOptions {
+    fn filter_by_type(&self, entry: &DirEntry) -> bool {
+        match self.file_type {
+            FileType::RegularFile => entry.file_type().map_or(true, |ft| !ft.is_file()),
+            FileType::Directory => entry.file_type().map_or(true, |ft| !ft.is_dir()),
+            FileType::SymLink => entry.file_type().map_or(true, |ft| !ft.is_symlink()),
+            FileType::Any => false,
+        }
+    }
+
+    fn filter_by_ext(&self, entry: &DirEntry) -> bool {
+        if let Some(ref filter_ext) = self.extension {
+            let entry_ext = entry.path().extension().map(|e| {
+                e.to_string_lossy().to_lowercase()
+            });
+            if entry_ext.map_or(true, |ext| ext != *filter_ext) {
+                return true;
+            }
+        }
+
+        false
+    }
+}
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -158,33 +186,12 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted file types.
-            match config.file_type {
-                FileType::Any => (),
-                FileType::RegularFile => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_file()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
-                FileType::Directory => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_dir()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
-                FileType::SymLink => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_symlink()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
+            if config.filter_by_type(&entry) {
+                return ignore::WalkState::Continue;
             }
 
-            // Filter out unwanted extensions.
-            if let Some(ref filter_ext) = config.extension {
-                let entry_ext = entry_path.extension().map(
-                    |e| e.to_string_lossy().to_lowercase(),
-                );
-                if entry_ext.map_or(true, |ext| ext != *filter_ext) {
-                    return ignore::WalkState::Continue;
-                }
+            if config.filter_by_ext(&entry) {
+                return ignore::WalkState::Continue;
             }
 
             let search_str_o = if config.search_full_path {
