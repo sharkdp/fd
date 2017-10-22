@@ -17,7 +17,7 @@ pub type ExtensionStyles = HashMap<String, Style>;
 /// Maps filenames to ANSI colors / styles.
 pub type FilenameStyles = HashMap<String, Style>;
 
-const LS_CODES: &'static [&'static str] = &[
+const LS_CODES: &[&str] = &[
     "no",
     "no",
     "fi",

@@ -76,9 +76,9 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             // Each spawned job will store it's thread handle in here.
             let mut handles = Vec::with_capacity(threads);
             for _ in 0..threads {
-                let rx = shared_rx.clone();
-                let cmd = cmd.clone();
-                let out_perm = out_perm.clone();
+                let rx = Arc::clone(&shared_rx);
+                let cmd = Arc::clone(&cmd);
+                let out_perm = Arc::clone(&out_perm);
 
                 // Spawn a job thread that will listen for and execute inputs.
                 let handle = thread::spawn(move || exec::job(rx, cmd, out_perm));
@@ -113,7 +113,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         if time::Instant::now() - start > max_buffer_time {
                             // Flush the buffer
                             for v in &buffer {
-                                output::print_entry(&v, &rx_config);
+                                output::print_entry(v, &rx_config);
                             }
                             buffer.clear();
 
@@ -188,7 +188,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(&entry_path) {
+                match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
                     Err(_) => error("Error: unable to get full path."),
                 }

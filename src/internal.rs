@@ -102,7 +102,7 @@ fn expr_has_uppercase_char(expr: &Expr) -> bool {
                 r.start.is_uppercase() || r.end.is_uppercase()
             })
         }
-        Expr::Group { ref e, .. } => expr_has_uppercase_char(e),
+        Expr::Group { ref e, .. } |
         Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
         Expr::Concat(ref es) => es.iter().any(expr_has_uppercase_char),
         Expr::Alternate(ref es) => es.iter().any(expr_has_uppercase_char),

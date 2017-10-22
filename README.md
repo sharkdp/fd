@@ -171,6 +171,7 @@ FLAGS:
     -H, --hidden            Search hidden files and directories
     -I, --no-ignore         Do not respect .(git)ignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
+    -i, --ignore-case       Case-insensitive search (default: smart case)
     -a, --absolute-path     Show absolute instead of relative paths
     -L, --follow            Follow symbolic links
     -p, --full-path         Search full path (default: file-/dirname only)
@@ -182,10 +183,9 @@ OPTIONS:
     -d, --max-depth <depth>    Set maximum search depth (default: none)
     -t, --type <filetype>      Filter by type: f(ile), d(irectory), (sym)l(ink)
     -e, --extension <ext>      Filter by file extension
-    -c, --color <when>         When to use color in the output:
-                               never, auto, always (default: auto)
-    -j, --threads <num>        Set number of threads to use for searching:
-                               (default: number of available CPU cores)
+    -c, --color <when>         When to use colors: never, *auto*, always
+    -j, --threads <num>        Set number of threads to use for searching & executing
+    -x, --exec <cmd>           Execute the given command for each search result
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)

@@ -17,7 +17,7 @@ lazy_static! {
     static ref COMMAND: (String, &'static str) = if cfg!(target_os = "windows") {
         ("cmd".into(), "/C")
     } else {
-        (env::var("SHELL").unwrap_or("/bin/sh".into()), "-c")
+        (env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into()), "-c")
     };
 }
 
