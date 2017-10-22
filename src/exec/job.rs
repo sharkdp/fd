@@ -38,7 +38,7 @@ pub fn job(
         drop(lock);
         // Generate a command to store within the buffer, and execute the command.
         // Note that the `then_execute()` method will clear the buffer for us.
-        cmd.generate(buffer, &value, out_perm.clone())
+        cmd.generate(buffer, &value, Arc::clone(&out_perm))
             .then_execute();
     }
 }

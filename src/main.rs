@@ -52,7 +52,7 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    if !fshelper::is_dir(&current_dir) {
+    if !fshelper::is_dir(current_dir) {
         error("Error: could not get current directory.");
     }
 
@@ -103,7 +103,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
+    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(x));
 
     let config = FdOptions {
         case_sensitive,
