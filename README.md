@@ -194,194 +194,100 @@ ARGS:
 
 ## Tutorial
 
-First, to see all command line options, you can get `fd`'s help text by running:
-```
-fd --help
-```
+First, to get an overview of all available command line options, you can either run
+`fd -h` for a concise help message (see above) or `fd --help` for a more detailed
+version.
 
-`fd` can be called with no arguments, it'll then show the content of the actual directory
-recursively (like `ls -R`):
-```
-> cd fd
-> fd
-appveyor.yml
-build.rs
-Cargo.lock
-Cargo.toml
-LICENSE
-README.md
-src
-src/app.rs
-src/fshelper
-src/fshelper/mod.rs
-src/lscolors
-src/lscolors/mod.rs
-src/main.rs
-tests
-tests/testenv
-tests/testenv/mod.rs
-tests/tests.rs
-```
+### Simple search
 
-If we work in a directory that is a Git repository (or includes several Git repositories), `fd`
-does not search folders (and does not show files) that match the `.gitignore` pattern. For instance,
-see above example, and note that .gitignore is the following:
+*fd* is designed to find entries in your filesystem. The most basic search you can perform is to
+run *fd* with a single argument: the search pattern. For example, assume that you want to find an
+old script of yours (the name included `netflix`):
+``` bash
+> fd netfl
+Software/python/imdb-ratings/netflix-details.py
 ```
-target/
-**/*.rs.bk
-```
+If called with just a single argument like this, *fd* searches the current directory recursively
+for any entries that *contain* the pattern `netfl`.
 
-To disable this behavior, we can use the `-I` (or `--ignore`) option:
-```
-> fd -I
-Cargo.lock
-Cargo.toml
-LICENSE
-README.md
-appveyor.yml
-build.rs
-src
-src\app.rs
-src\fshelper
-src\fshelper\mod.rs
-src\lscolors
-src\lscolors\mod.rs
-src\main.rs
-target
-target\debug
-target\debug\build
-target\debug\build\fd-find-11fb469ceafee9ce
-target\debug\build\fd-find-11fb469ceafee9ce\out
-target\debug\build\fd-find-11fb469ceafee9ce\out\_fd
-target\debug\build\fd-find-11fb469ceafee9ce\out\_fd.ps1
-target\debug\build\fd-find-11fb469ceafee9ce\out\fd.bash-completion
-target\debug\build\fd-find-11fb469ceafee9ce\out\fd.fish
-target\debug\build\fd-find-11fb469ceafee9ce\output
-target\debug\build\fd-find-8682b98943903a5b
-target\debug\build\fd-find-8682b98943903a5b\build-script-build.exe
-target\debug\build\fd-find-8682b98943903a5b\build_script_build-8682b98943903a5b.exe
-target\debug\build\fd-find-8682b98943903a5b\build_script_build-8682b98943903a5b.pdb
-target\debug\build\kernel32-sys-7568a971f6718c45
-target\debug\build\kernel32-sys-7568a971f6718c45\out
-target\debug\build\kernel32-sys-7568a971f6718c45\output
-target\debug\build\kernel32-sys-d715e52d58016295
-target\debug\build\kernel32-sys-d715e52d58016295\build-script-build.exe
-target\debug\build\kernel32-sys-d715e52d58016295\build_script_build-d715e52d58016295.exe
-target\debug\build\kernel32-sys-d715e52d58016295\build_script_build-d715e52d58016295.pdb
-target\debug\deps
-(some content omitted...)
-target\debug\examples
-target\debug\fd.exe
-target\debug\incremental
-target\debug\native
-tests
-tests\testenv
-tests\testenv\mod.rs
-tests\tests.rs
-```
+### Regular expression search
 
-If `fd` is called with a single argument (the search pattern), it will perform a recursive search
-through the current directory. To search for all files that include the string "access" in the
-/var/log directory, we can simply run:
-```
-> cd /var/log
-> fd access
-cups/access_log
-cups/access_log.1
-cups/access_log.2
-some_program/user_access
-```
-
-The search pattern is treated as a regular expression. To show only entries that start with "access",
-we can simply run:
-```
-> fd '^access'
-cups/access_log
-cups/access_log.1
-cups/access_log.2
-```
-
-Note that `fd` does not show hidden files (like `.access_control`) by default. To change this, we can use
-the `-H` (or `--hidden`) option:
-```
-> fd -H access
-cups/access_log
-cups/access_log.1
-cups/access_log.2
-some_program/user_access
-.access_control
-```
-
-If we are interested in showing the results from a particular directory, we can specify the root of
-the search as a second argument:
-```
+The search pattern is treated as a regular expression. Here, we search for entries that start
+with `x` and end with `rc`:
+``` bash
 > cd /etc
-> fd firewall iptables
-simple_firewall.rules
-// TODO: review this with router content
+> fd '^x.*rc$'
+X11/xinit/xinitrc
+X11/xinit/xserverrc
 ```
 
-If we work in a directory that is a Git repository (or includes several Git repositories), `fd`
-does not search folders (and does not show files) that match the `.gitignore` pattern. For example,
-imagine we had a `.gitignore` file with the following content:
-```
-*.sh
-```
-In this case, `fd` would not show any files that end in `.sh`. To disable this behavior, we can
-use the `-I` (or `--ignore`) option:
-```
-> fd -I me
-sub_dir/more_dir/even_further_down/not_me.sh
+### Specifying the root directory
+
+If we want so search a specific directory, it can be given as a second argument to *fd*:
+``` bash
+> fd passwd /etc
+/etc/default/passwd
+/etc/pam.d/passwd
+/etc/passwd
 ```
 
-To really search *all* files and directories, we can combine the hidden and ignore features to show
-everything (`-HI`):
-```
-fd -HI 'not|here'
-not_file
-sub_dir/.here_be_tests
-sub_dir/more_dir/.not_here
-sub_dir/more_dir/even_further_down/not_me.sh
-sub_dir/more_dir/not_file
+### Running *fd* without any arguments
+
+*fd* can be called with no arguments. This is very useful to get a quick overview of all entries
+in the current directory, recursively (similar to `ls -R`):
+``` bash
+> cd fd/tests
+> fd
+testenv
+testenv/mod.rs
+tests.rs
 ```
 
-Searching for a file extension is easy too, using the `-e` (or `--file-extensions`) switch for file
-extensions:
-```
-> fd -e sh
-sub_dir/more_dir/even_further_down/not_me.sh
+### Searching for a particular file extension
+
+Often, we are interested in all files of a particular type. This can be done with the `-e` (or
+`--extension`) option. Here, we search for all Markdown files in the fd repository:
+``` bash
+> cd fd
+> fd -e md
+CONTRIBUTING.md
+README.md
 ```
 
-Next, we can even use a pattern in combination with `-e` to search for a regex pattern over the
-files that end in the specified extension.
-```
-> fd -e txt test
-fd_examples/desub_dir/old_test.txt
-fd_examples/sub_dir/new_test.txt
+The `-e` option can be used in combination with a search pattern:
+``` bash
+> fd -e rs mod
+src/fshelper/mod.rs
+src/lscolors/mod.rs
+tests/testenv/mod.rs
 ```
 
-What if we wanted to run a command for each of the search results? We can use `xargs` to do that:
-`fd -0 'test' | xargs -0 -I {} cp {} {}.new`
-
-In this example there are a couple things to take note:
-  - First we are telling `fd` we want a null character to seperate the files `-0`, this is
-    important when passing to `xargs`.
-  - Second, we are piping the output to `xargs` and telling this program to expect input null
-    terminated with `-0` (the same syntax that `fd` was built with).
-  - Then for fun we are using `-I` to replace a string `{}` and lauching `cp` to copy the file `{}`
-    to a file ending in `{}.new`.
-
-`fd` can also show us the absolute path vs. the full path with `-a` (`--absolute-path`):
+### Hidden and ignored files
+By default, *fd* does not search hidden directories and does not show hidden files in the
+search results. To disable this behavior, we can use the `-H` (or `--hidden`) option:
+``` bash
+> fd pre-commit
+> fd -H pre-commit
+.git/hooks/pre-commit.sample
 ```
-> fd -a new
-/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/test_seven.new
-/Users/fd_user/fd_examples/sub_dir/more_dir/even_further_down/testing_eight.new
-/Users/fd_user/fd_examples/sub_dir/more_dir/test_file_six.new
-/Users/fd_user/fd_examples/sub_dir/test_file_five.new
-/Users/fd_user/fd_examples/sub_dir/test_file_four.new
-/Users/fd_user/fd_examples/sub_dir/test_file_three.new
-/Users/fd_user/fd_examples/test_file_one.new
-/Users/fd_user/fd_examples/test_file_two.new
-/Users/fd_user/fd_examples/test_one.new
-/Users/fd_user/fd_examples/this_is_a_test.new
+
+If we work in a directory that is a Git repository (or includes Git repositories), *fd* does not
+search folders (and does not show files) that match one of the `.gitignore` patterns. To disable
+this behavior, we can use the `-I` (or `--ignore`) option:
+``` bash
+> fd num_cpu
+> fd -I num_cpu
+target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
+
+To really search *all* files and directories, simply combine the hidden and ignore features to show
+everything (`-HI`).
+
+### Using fd with `xargs` or `parallel`
+
+If we want to run a command on all search results, we can pipe the output to `xargs`:
+``` bash
+> fd -0 -e rs | xargs -0 wc -l
+```
+Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of     .
+newlines) In the same way, the `-0` option of `xargs` tells it to read the input in this way      .
