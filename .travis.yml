@@ -101,6 +101,8 @@ env:
     # Default target on travis-ci.
     # Used as conditional check in the install stage
     - HOST=x86_64-unknown-linux-gnu
+    # Used on the deployment script
+    - PROJECT_NAME=fd
 
 install:
   # prevent target re-add error from rustup
@@ -110,6 +112,33 @@ script:
   # Incorporate TARGET env var to the build and test process
   - cargo build --target $TARGET --verbose
   - cargo test --target $TARGET --verbose
+
+before_deploy:
+  - bash ci/before_deploy.bash
+
+deploy:
+  provider: releases
+  # NOTE updating the `api_key.secure`
+  # - go to: https://github.com/settings/tokens/new
+  # - generate new token using `public_repo` scope
+  # - encrypt it using: `travis encrypt API_KEY_HERE`
+  # - paste the output below
+  api_key:
+    secure: "KG1FCRt4ZbKM1LatEje3cI6hsADBaHhwibcahvHbYiZI0Pvj7Wnz4+rMt4su1F7XKe06BewUqAcW+6QqhXDvDvK1PaRgjAIysVxaUhyM/BncbK1MPK/pUnB1Bhk420vmuI/A/ikunqNg0mn2ZFWyD6K1SGakMRmvHncCgeHIKFpgpsnS9g9z+q6zPj02HvkrujlnqBlCcgQIHbHlnTIk0H++skE09exUNACj63TSGdru4j01m7GQqZikRE6u7oYfESpZl68v1BS0SDgj8YVmkvJ6G441YvPFsluh+lrF3W4ruArQH8Eew1V4IRtmWFSqKwnQSiMSTlRfcLmb3VI7n22vOpDb2UK7NGamkeDTk89hSxvMM5fVtZGHSaziRPgRixAoJ2hmOxuwh0hXMGcQ+cSWuXS2yCLXGw2lp7yh4Dys2MlDJyC3dgJKIErUQWGPjNqPjMqRf2rctrLZgUCec35DCqlnPE0MBFvzkt2fputiVFyeqYf8h1froafb5xx5UGDvFpBFpAwU8QiaQa79CPEGMFj/QL3boWuCQBd9obUgjke4PFnXHQOC8J4YBzGoIJPcfxNuRWpK43uASMZpLjZvS+FZg2xDw/7K6HB/f/Bmql1VT8Hcj2cLfu5RlfLSk2HBtNr1tM+YOGxMGYtWsgRoDyFt0UIkvAHIl42nfb0="
+  # for uploading multiple files
+  file_glob: true
+  # NOTE explanation on each env variable
+  # - PROJECT_NAME: name of the project, set on the `env.global` above
+  # - TRAVIS_TAG: tag name that the build is being deployed for, usually the version number
+  # - TARGET: target triple of the build
+  file: $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
+  # don't delete artifacts from previous stage
+  skip_cleanup: true
+  on:
+    # deploy only if we push a tag
+    tags: true
+    # deploy only on stable channel that has TARGET env variable sets
+    condition: $TRAVIS_RUST_VERSION = stable && $TARGET != ""
 
 notifications:
   email:
