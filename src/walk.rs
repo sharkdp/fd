@@ -161,17 +161,17 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             match config.file_type {
                 FileType::Any => (),
                 FileType::RegularFile => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_file()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_file()) {
                         return ignore::WalkState::Continue;
                     }
                 }
                 FileType::Directory => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_dir()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_dir()) {
                         return ignore::WalkState::Continue;
                     }
                 }
                 FileType::SymLink => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_symlink()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_symlink()) {
                         return ignore::WalkState::Continue;
                     }
                 }
