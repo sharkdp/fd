@@ -138,7 +138,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Shows the full path starting from the root as opposed to relative paths.");
     doc!(h, "follow"
         , "Follow symbolic links"
-        , "By default, fd does not descent into symlinked directories. Using this flag, symbolic \
+        , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \
            links are also traversed.");
     doc!(h, "full-path"
         , "Search full path (default: file-/dirname only)"
