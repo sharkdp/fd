@@ -125,7 +125,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.16.0* or later is required.
+Note that rust version *1.19.0* or later is required.
 The release page of this repository also includes precompiled binaries for Linux.
 
 On **macOS**, you can use [Homebrew](http://braumeister.org/formula/fd):
@@ -178,12 +178,14 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -t, --type <filetype>      Filter by type: f(ile), d(irectory), (sym)l(ink)
-    -e, --extension <ext>      Filter by file extension
-    -c, --color <when>         When to use colors: never, *auto*, always
-    -j, --threads <num>        Set number of threads to use for searching & executing
-    -x, --exec <cmd>           Execute the given command for each search result
+    -d, --max-depth <depth>       Set maximum search depth (default: none)
+    -t, --type <filetype>         Filter by type: f(ile), d(irectory), (sym)l(ink)
+    -e, --extension <ext>         Filter by file extension
+    -x, --exec <cmd>              Execute the given command for each search result
+    -E, --exclude <pattern>...    Exclude entries that match the given glob pattern.
+    -c, --color <when>            When to use colors: never, *auto*, always
+    -j, --threads <num>           Set number of threads to use for searching &
+                                  executing
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)

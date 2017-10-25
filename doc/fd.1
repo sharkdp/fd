@@ -3,13 +3,15 @@
 fd \- find entries in the filesystem
 .SH SYNOPSIS
 .B fd
-.RB [ \-HIsiaLp0hV ]
+.RB [ \-HIEsiaLp0hV ]
 .RB [ \-d
 .IR depth ]
 .RB [ \-t
 .IR filetype ]
 .RB [ \-e
 .IR ext ]
+.RB [ \-E
+.IR exclude ]
 .RB [ \-c
 .IR when ]
 .RB [ \-j
@@ -77,6 +79,11 @@ symbolic links
 .BI "\-e, \-\-extension " ext
 Filter search results by file extension
 .IR ext .
+.TP
+.BI "\-E, \-\-exclude " pattern
+Exclude files/directories that match the given glob pattern.
+This overrides any other ignore logic.
+Multiple exclude patterns can be specified.
 .TP
 .BI "\-c, \-\-color " when
 Declare
