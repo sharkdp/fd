@@ -6,7 +6,7 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use exec::{self, TokenizedCommand};
+use exec;
 use fshelper;
 use internal::{error, FdOptions};
 use output;
@@ -71,7 +71,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             // This is safe because `cmd` will exist beyond the end of this scope.
             // It's required to tell Rust that it's safe to share across threads.
-            let cmd = unsafe { Arc::from_raw(cmd as *const TokenizedCommand) };
+            let cmd = Arc::new(cmd.clone());
 
             // Each spawned job will store it's thread handle in here.
             let mut handles = Vec::with_capacity(threads);
