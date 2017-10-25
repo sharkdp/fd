@@ -538,3 +538,27 @@ fn test_symlink() {
         ),
     );
 }
+
+/// Execute command (--exec)
+#[test]
+fn test_exec() {
+    let te = TestEnv::new();
+
+    // Test a simple echo before result
+    te.assert_output(
+        &["--exec", "echo found {}", "d.foo"],
+        "found one/two/three/d.foo",
+    );
+
+    // Test executing 'fc' (File Compare) with the found result and itself.
+    #[cfg(windows)]
+    te.assert_output(
+        &["--exec", "fc {} {}", "a.foo"],
+        "
+        Comparing files a.foo and A.FOO
+        FC: no differences encountered",
+    );
+
+    // Test executing 'diff' with the found result and itself.
+    #[cfg(unix)] te.assert_output(&["--exec", "diff {} {}", "a.foo"], "");
+}
