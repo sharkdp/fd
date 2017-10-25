@@ -111,13 +111,13 @@ commands is similar to that of GNU Parallel:
 
 ``` bash
 # Convert all jpg files to png files
-fd -e jpg -x 'convert "{}" "{.}.png"'
+fd -e jpg -x 'convert {} {.}.png'
 
 # Unpack all zip files (if no placeholder is given, the path is appended):
 fd -e zip -x unzip
 
 # Convert all flac files into opus files:
-fd -e flac -x 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
+fd -e flac -x 'ffmpeg -i {} -c:a libopus {.}.opus'
 ```
 
 ## Install
