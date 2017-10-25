@@ -6,7 +6,7 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use exec::{self, TokenizedCommand};
+use exec;
 use fshelper;
 use internal::{error, FdOptions};
 use output;
@@ -69,9 +69,11 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             let out_perm = Arc::new(Mutex::new(()));
 
-            // This is safe because `cmd` will exist beyond the end of this scope.
-            // It's required to tell Rust that it's safe to share across threads.
-            let cmd = unsafe { Arc::from_raw(cmd as *const TokenizedCommand) };
+            // TODO: the following line is a workaround to replace the `unsafe` block that was
+            // previously used here to avoid the (unnecessary?) cloning of the command. The
+            // `unsafe` block caused problems on some platforms (SIGILL instructions on Linux) and
+            // therefore had to be removed.
+            let cmd = Arc::new(cmd.clone());
 
             // Each spawned job will store it's thread handle in here.
             let mut handles = Vec::with_capacity(threads);
