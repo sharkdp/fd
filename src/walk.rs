@@ -51,7 +51,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
     let mut override_builder = OverrideBuilder::new(root);
 
-    for pattern in config.exclude_patterns.iter() {
+    for pattern in &config.exclude_patterns {
         let res = override_builder.add(pattern);
         if res.is_err() {
             error(&format!("Error: malformed exclude pattern '{}'", pattern));

@@ -469,7 +469,7 @@ fn test_symlink() {
     let parent_parent = if cfg!(windows) { ".." } else { "../.." };
     te.assert_output_subdirectory(
         "symlink",
-        &["", &parent_parent],
+        &["", parent_parent],
         &format!(
             "{dir}/a.foo
             {dir}/e1 e2

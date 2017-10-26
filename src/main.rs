@@ -150,7 +150,7 @@ fn main() {
         exclude_patterns: matches
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())
-            .unwrap_or(vec![]),
+            .unwrap_or_else(|| vec![]),
     };
 
     match RegexBuilder::new(pattern)
