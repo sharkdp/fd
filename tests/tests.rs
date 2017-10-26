@@ -51,6 +51,7 @@ fn test_simple() {
     te.assert_output(
         &[],
         "a.foo
+        e1 e2
         one
         one/b.foo
         one/two
@@ -314,6 +315,7 @@ fn test_max_depth() {
     te.assert_output(
         &["--max-depth", "3"],
         "a.foo
+        e1 e2
         one
         one/b.foo
         one/two
@@ -326,6 +328,7 @@ fn test_max_depth() {
     te.assert_output(
         &["--max-depth", "2"],
         "a.foo
+        e1 e2
         one
         one/b.foo
         one/two
@@ -335,6 +338,7 @@ fn test_max_depth() {
     te.assert_output(
         &["--max-depth", "1"],
         "a.foo
+        e1 e2
         one
         symlink",
     );
@@ -351,6 +355,7 @@ fn test_absolute_path() {
         &["--absolute-path"],
         &format!(
             "{abs_path}/a.foo
+            {abs_path}/e1 e2
             {abs_path}/one
             {abs_path}/one/b.foo
             {abs_path}/one/two
@@ -399,6 +404,7 @@ fn test_type() {
     te.assert_output(
         &["--type", "f"],
         "a.foo
+        e1 e2
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2
@@ -466,6 +472,7 @@ fn test_symlink() {
         &["", &parent_parent],
         &format!(
             "{dir}/a.foo
+            {dir}/e1 e2
             {dir}/one
             {dir}/one/b.foo
             {dir}/one/two
@@ -551,6 +558,7 @@ fn test_excludes() {
         one/two/C.Foo2
         one/two/three
         one/two/three/directory_foo
+        e1 e2
         symlink",
     );
 
@@ -560,6 +568,7 @@ fn test_excludes() {
         one/two
         one/two/three
         one/two/three/directory_foo
+        e1 e2
         symlink",
     );
 
@@ -577,6 +586,7 @@ fn test_excludes() {
     te.assert_output(
         &["--exclude", "one/**/*.foo"],
         "a.foo
+        e1 e2
         one
         one/two
         one/two/C.Foo2
@@ -584,4 +594,82 @@ fn test_excludes() {
         one/two/three/directory_foo
         symlink",
     );
+}
+
+/// Shell script execution (--exec)
+#[test]
+fn test_exec() {
+    let te = TestEnv::new();
+
+    let abs_path = get_absolute_root_path(&te);
+
+    if !cfg!(windows) {
+        te.assert_output(
+            &["--absolute-path", "foo", "--exec", "echo"],
+            &format!(
+                "{abs_path}/a.foo
+                {abs_path}/one/b.foo
+                {abs_path}/one/two/C.Foo2
+                {abs_path}/one/two/c.foo
+                {abs_path}/one/two/three/d.foo
+                {abs_path}/one/two/three/directory_foo",
+                abs_path = &abs_path
+            ),
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo {}"],
+            "a.foo
+            one/b.foo
+            one/two/C.Foo2
+            one/two/c.foo
+            one/two/three/d.foo
+            one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo {.}"],
+            "a
+            one/b
+            one/two/C
+            one/two/c
+            one/two/three/d
+            one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo {/}"],
+            "a.foo
+            b.foo
+            C.Foo2
+            c.foo
+            d.foo
+            directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo {/.}"],
+            "a
+            b
+            C
+            c
+            d
+            directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo {//}"],
+            ".
+            one
+            one/two
+            one/two
+            one/two/three
+            one/two/three",
+        );
+
+        te.assert_output(
+            &["e1", "--exec", "printf '%s.%s\\n'"],
+            "e1 e2."
+        );
+    }
 }

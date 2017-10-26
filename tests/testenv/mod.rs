@@ -51,6 +51,7 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         fs::create_dir(root.join("one/two/three/directory_foo"))?;
         fs::File::create(root.join("ignored.foo"))?;
         fs::File::create(root.join(".hidden.foo"))?;
+        fs::File::create(root.join("e1 e2"))?;
 
         #[cfg(unix)] unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
@@ -126,8 +127,7 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
         })
         .collect::<Vec<_>>();
 
-    // Sort ignoring case.
-    lines.sort_by_key(|s| s.to_lowercase());
+    lines.sort_by_key(|s| s.clone());
 
     lines.join("\n")
 }
