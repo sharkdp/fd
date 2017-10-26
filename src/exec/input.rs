@@ -9,11 +9,7 @@
 use std::path::MAIN_SEPARATOR;
 use std::borrow::Cow;
 
-#[cfg(windows)]
-const ESCAPE: char = '^';
-
-#[cfg(not(windows))]
-const ESCAPE: char = '\\';
+use shell_escape::escape;
 
 /// A builder for efficiently generating input strings.
 ///
@@ -88,61 +84,12 @@ impl<'a> Input<'a> {
     }
 
     pub fn get(&'a self) -> Cow<'a, str> {
-        fn char_is_quotable(x: char) -> bool {
-            [
-                ' ',
-                '(',
-                ')',
-                '[',
-                ']',
-                '&',
-                '$',
-                '@',
-                '{',
-                '}',
-                '<',
-                '>',
-                '|',
-                ';',
-                '"',
-                '\'',
-                '#',
-                '*',
-                '%',
-                '?',
-                '`',
-            ].contains(&x)
-        };
+        escape(Cow::Borrowed(self.data))
+    }
 
-        // If a quotable character is found, we will use that position for allocating.
-        let pos = match self.data.find(char_is_quotable) {
-            Some(pos) => pos,
-            // Otherwise, we will return the contents of `data` without allocating.
-            None => return Cow::Borrowed(self.data),
-        };
-
-        // When building the input string, we will start by adding the characters that
-        // we've already verified to be free of special characters.
-        let mut owned = String::with_capacity(self.data.len());
-        owned.push_str(&self.data[..pos]);
-        owned.push(ESCAPE);
-
-        // This slice contains the data that is left to be scanned for special characters.
-        // If multiple characters are found, this slice will be sliced and updated multiple times.
-        let mut slice = &self.data[pos..];
-
-        // Repeatedly search for special characters until all special characters have been found,
-        // appending and inserting the escape character each time, as well as updating our
-        // starting position.
-        while let Some(pos) = slice[1..].find(char_is_quotable) {
-            owned.push_str(&slice[..pos + 1]);
-            owned.push(ESCAPE);
-            slice = &slice[pos + 1..];
-        }
-
-        // Finally, we return our newly-allocated input string.
-        owned.push_str(slice);
-        Cow::Owned(owned)
+    #[cfg(test)]
+    fn get_private(&'a self) -> Cow<'a, str> {
+        Cow::Borrowed(self.data)
     }
 }
 
@@ -158,101 +105,101 @@ mod tests {
 
     #[test]
     fn path_remove_ext_simple() {
-        assert_eq!(&Input::new("foo.txt").remove_extension().get(), "foo");
+        assert_eq!(
+            &Input::new("foo.txt").remove_extension().get_private(),
+            "foo"
+        );
     }
 
     #[test]
     fn path_remove_ext_dir() {
         assert_eq!(
-            &Input::new(&correct("dir/foo.txt")).remove_extension().get(),
+            &Input::new(&correct("dir/foo.txt"))
+                .remove_extension()
+                .get_private(),
             &correct("dir/foo")
         );
     }
 
     #[test]
     fn path_hidden() {
-        assert_eq!(&Input::new(".foo").remove_extension().get(), ".foo")
+        assert_eq!(&Input::new(".foo").remove_extension().get_private(), ".foo")
     }
 
     #[test]
     fn path_remove_ext_utf8() {
-        assert_eq!(&Input::new("💖.txt").remove_extension().get(), "💖");
+        assert_eq!(
+            &Input::new("💖.txt").remove_extension().get_private(),
+            "💖"
+        );
     }
 
     #[test]
     fn path_remove_ext_empty() {
-        assert_eq!(&Input::new("").remove_extension().get(), "");
+        assert_eq!(&Input::new("").remove_extension().get_private(), "");
     }
 
     #[test]
     fn path_basename_simple() {
-        assert_eq!(&Input::new("foo.txt").basename().get(), "foo.txt");
+        assert_eq!(&Input::new("foo.txt").basename().get_private(), "foo.txt");
     }
 
     #[test]
     fn path_basename_dir() {
         assert_eq!(
-            &Input::new(&correct("dir/foo.txt")).basename().get(),
+            &Input::new(&correct("dir/foo.txt")).basename().get_private(),
             "foo.txt"
         );
     }
 
     #[test]
     fn path_basename_empty() {
-        assert_eq!(&Input::new("").basename().get(), "");
+        assert_eq!(&Input::new("").basename().get_private(), "");
     }
 
     #[test]
     fn path_basename_utf8() {
         assert_eq!(
-            &Input::new(&correct("💖/foo.txt")).basename().get(),
+            &Input::new(&correct("💖/foo.txt"))
+                .basename()
+                .get_private(),
             "foo.txt"
         );
         assert_eq!(
-            &Input::new(&correct("dir/💖.txt")).basename().get(),
+            &Input::new(&correct("dir/💖.txt"))
+                .basename()
+                .get_private(),
             "💖.txt"
         );
     }
 
     #[test]
     fn path_dirname_simple() {
-        assert_eq!(&Input::new("foo.txt").dirname().get(), ".");
+        assert_eq!(&Input::new("foo.txt").dirname().get_private(), ".");
     }
 
     #[test]
     fn path_dirname_dir() {
-        assert_eq!(&Input::new(&correct("dir/foo.txt")).dirname().get(), "dir");
+        assert_eq!(
+            &Input::new(&correct("dir/foo.txt")).dirname().get_private(),
+            "dir"
+        );
     }
 
     #[test]
     fn path_dirname_utf8() {
         assert_eq!(
-            &Input::new(&correct("💖/foo.txt")).dirname().get(),
+            &Input::new(&correct("💖/foo.txt")).dirname().get_private(),
             "💖"
         );
-        assert_eq!(&Input::new(&correct("dir/💖.txt")).dirname().get(), "dir");
+        assert_eq!(
+            &Input::new(&correct("dir/💖.txt")).dirname().get_private(),
+            "dir"
+        );
     }
 
     #[test]
     fn path_dirname_empty() {
-        assert_eq!(&Input::new("").dirname().get(), ".");
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn path_special_chars() {
-        assert_eq!(
-            &Input::new("A Directory\\And A File").get(),
-            "A^ Directory\\And^ A^ File"
-        );
-    }
-
-    #[cfg(not(windows))]
-    #[test]
-    fn path_special_chars() {
-        assert_eq!(
-            &Input::new("A Directory/And A File").get(),
-            "A\\ Directory/And\\ A\\ File"
-        );
+        assert_eq!(&Input::new("").dirname().get_private(), ".");
     }
 }
