@@ -667,9 +667,6 @@ fn test_exec() {
             one/two/three",
         );
 
-        te.assert_output(
-            &["e1", "--exec", "printf '%s.%s\\n'"],
-            "e1 e2."
-        );
+        te.assert_output(&["e1", "--exec", "printf '%s.%s\\n'"], "e1 e2.");
     }
 }
