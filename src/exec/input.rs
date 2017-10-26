@@ -45,11 +45,13 @@ impl<'a> Input<'a> {
 
     /// Removes the extension from the path
     pub fn remove_extension(&'a mut self) -> &'a mut Self {
+        let mut has_dir = false;
         let mut dir_index = 0;
         let mut ext_index = 0;
 
         for (id, character) in self.data.char_indices() {
             if character == MAIN_SEPARATOR {
+                has_dir = true;
                 dir_index = id;
             }
             if character == '.' {
@@ -58,7 +60,7 @@ impl<'a> Input<'a> {
         }
 
         // Account for hidden files and directories
-        if ext_index != 0 && dir_index + 2 <= ext_index {
+        if ext_index != 0 && (!has_dir || dir_index + 2 <= ext_index) {
             self.data = &self.data[0..ext_index];
         }
 
@@ -67,15 +69,19 @@ impl<'a> Input<'a> {
 
     /// Removes the basename from the path.
     pub fn dirname(&'a mut self) -> &'a mut Self {
+        let mut has_dir = false;
         let mut index = 0;
         for (id, character) in self.data.char_indices() {
             if character == MAIN_SEPARATOR {
+                has_dir = true;
                 index = id;
             }
         }
 
-        self.data = if index == 0 {
+        self.data = if !has_dir {
             "."
+        } else if index == 0 {
+            &self.data[..1]
         } else {
             &self.data[0..index]
         };
@@ -145,6 +151,17 @@ mod tests {
     }
 
     #[test]
+    fn path_basename_no_ext() {
+        assert_eq!(
+            &Input::new("foo.txt")
+                .basename()
+                .remove_extension()
+                .get_private(),
+            "foo"
+        );
+    }
+
+    #[test]
     fn path_basename_dir() {
         assert_eq!(
             &Input::new(&correct("dir/foo.txt")).basename().get_private(),
@@ -201,5 +218,15 @@ mod tests {
     #[test]
     fn path_dirname_empty() {
         assert_eq!(&Input::new("").dirname().get_private(), ".");
+    }
+
+    #[test]
+    fn path_dirname_root() {
+        #[cfg(windows)]
+        assert_eq!(&Input::new("C:\\").dirname().get_private(), "C:");
+        #[cfg(windows)]
+        assert_eq!(&Input::new("\\").dirname().get_private(), "\\");
+        #[cfg(not(windows))]
+        assert_eq!(&Input::new("/").dirname().get_private(), "/");
     }
 }
