@@ -36,6 +36,7 @@ impl<'a> Input<'a> {
             }
         }
 
+        // FIXME: On Windows, should return what for C:file.txt D:file.txt and \\server\share ?
         if index != 0 {
             self.data = &self.data[index + 1..]
         }
@@ -78,6 +79,7 @@ impl<'a> Input<'a> {
             }
         }
 
+        // FIXME: On Windows, return what for C:file.txt D:file.txt and \\server\share ?
         self.data = if !has_dir {
             "."
         } else if index == 0 {

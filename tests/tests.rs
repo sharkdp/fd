@@ -603,6 +603,7 @@ fn test_exec() {
 
     let abs_path = get_absolute_root_path(&te);
 
+    // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
     if !cfg!(windows) {
         te.assert_output(
             &["--absolute-path", "foo", "--exec", "echo"],
