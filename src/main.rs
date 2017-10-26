@@ -18,6 +18,7 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+extern crate shell_escape;
 #[cfg(windows)]
 extern crate windows;
 
