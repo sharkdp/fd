@@ -1,7 +1,0 @@
-[package]
-name = "windows"
-version = "0.0.0"
-
-[dependencies]
-kernel32-sys = "0.2"
-winapi = "0.2"

@@ -19,8 +19,6 @@ extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
 extern crate shell_escape;
-#[cfg(windows)]
-extern crate windows;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -29,6 +27,9 @@ mod exec;
 mod internal;
 mod output;
 mod walk;
+
+#[cfg(windows)]
+mod windows;
 
 use std::env;
 use std::error::Error;
@@ -95,6 +96,7 @@ fn main() {
         Some("never") => false,
         _ => atty::is(Stream::Stdout),
     };
+
     #[cfg(windows)]
     let colored_output = colored_output && windows::enable_colored_output();
 
