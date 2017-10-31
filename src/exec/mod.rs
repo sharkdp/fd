@@ -7,6 +7,7 @@
 // according to those terms.
 
 // TODO: Possible optimization could avoid pushing characters on a buffer.
+mod escape;
 mod ticket;
 mod token;
 mod job;
@@ -20,6 +21,7 @@ use self::input::Input;
 use self::ticket::CommandTicket;
 use self::token::Token;
 pub use self::job::job;
+pub use self::escape::escape;
 
 /// Signifies that a placeholder token was found
 const PLACE: u8 = 1;
