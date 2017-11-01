@@ -15,7 +15,6 @@ use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-#[cfg(unix)]
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
 
