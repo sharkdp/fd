@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 #[cfg(windows)]
-const ESCAPE_CHAR: u8 = b'^';
+const ESCAPE_CHAR: u8 = b'`';
 
 #[cfg(not(windows))]
 const ESCAPE_CHAR: u8 = b'\\';
