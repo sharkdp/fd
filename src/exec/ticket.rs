@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::env;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -9,7 +17,7 @@ lazy_static! {
     static ref COMMAND: (String, &'static str) = if cfg!(target_os = "windows") {
         ("cmd".into(), "/C")
     } else {
-        (env::var("SHELL").unwrap_or("/bin/sh".into()), "-c")
+        (env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into()), "-c")
     };
 }
 
@@ -30,7 +38,7 @@ impl<'a> CommandTicket<'a> {
 
     /// Executes the command stored within the ticket, and
     /// clearing the command's buffer when finished.'
-    #[cfg(not(all(unix, not(target_os = "redox"))))]
+    #[cfg(not(unix))]
     pub fn then_execute(self) {
         use std::process::Stdio;
         use std::io::Write;
@@ -63,9 +71,9 @@ impl<'a> CommandTicket<'a> {
         self.command.clear();
     }
 
-    #[cfg(all(unix, not(target_os = "redox")))]
+    #[cfg(all(unix))]
     pub fn then_execute(self) {
-        use libc::*;
+        use libc::{close, dup2, pipe, STDERR_FILENO, STDOUT_FILENO};
         use std::fs::File;
         use std::os::unix::process::CommandExt;
         use std::os::unix::io::FromRawFd;

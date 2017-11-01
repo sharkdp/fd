@@ -1,0 +1,136 @@
+.TH FD 1
+.SH NAME
+fd \- find entries in the filesystem
+.SH SYNOPSIS
+.B fd
+.RB [ \-HIEsiaLp0hV ]
+.RB [ \-d
+.IR depth ]
+.RB [ \-t
+.IR filetype ]
+.RB [ \-e
+.IR ext ]
+.RB [ \-E
+.IR exclude ]
+.RB [ \-c
+.IR when ]
+.RB [ \-j
+.IR num ]
+.RB [ \-x
+.IR exec ]
+.RI [ pattern ]
+.RI [ path ]
+.SH DESCRIPTION
+.B fd
+is a simple, fast and user-friendly alternative to
+.BR find (1).
+.SH OPTIONS
+.TP
+.B \-H, \-\-hidden
+Search hidden files and directories.
+.TP
+.B \-I, \-\-no\-ignore
+Do not respect any
+.BR gitignore (5)
+files.
+.TP
+.B \-s, \-\-case\-sensitive
+Perform a case-sensitive search (default: smart case).
+.TP
+.B \-i, \-\-ignore\-case
+Perform a case-insensitive search (default: smart case).
+.TP
+.B \-a, \-\-absolute\-path
+Show absolute instead of relative paths.
+.TP
+.B \-L, \-\-follow
+Dereference all symbolic links encountered.
+.TP
+.B \-p, \-\-full\-path
+Match
+.I pattern
+against the full path
+.TP
+.B \-0, \-\-print0
+Print results followed by null character instead of newlines.
+.TP
+.B \-h, \-\-help
+Prints help information.
+.TP
+.B \-V, \-\-version
+Prints version information.
+.TP
+.BI "\-d, \-\-max\-depth " levels
+Limit directory traversal to at most
+.I levels
+of depth.
+.TP
+.BI "\-t, \-\-type " filetype
+Filter search by type:
+.RS
+.IP "f, file"
+regular files
+.IP "d, directories"
+directories
+.IP "s, symlink"
+symbolic links
+.RE
+.TP
+.BI "\-e, \-\-extension " ext
+Filter search results by file extension
+.IR ext .
+.TP
+.BI "\-E, \-\-exclude " pattern
+Exclude files/directories that match the given glob pattern.
+This overrides any other ignore logic.
+Multiple exclude patterns can be specified.
+.TP
+.BI "\-c, \-\-color " when
+Declare
+.I when
+to colorize search results:
+.RS
+.IP auto
+Colorize output when standard output is connected to terminal (default).
+.IP never
+Do not colorize output.
+.IP always
+Always colorize output.
+.RE
+.TP
+.BI "\-j, \-\-threads " num
+Number of threads to use for searching (default: number of available CPUs).
+.TP
+.BI "\-x, \-\-exec " command
+Execute
+.I command
+on each of the discovered path with the following tokens substituted:
+.RS
+.IP {}
+path
+.IP {.}
+path without extension
+.IP {/}
+basename of path
+.IP {//}
+parent of path
+.IP {/.}
+basename of path without extension
+.RE
+.SH ENVIRONMENT
+.TP
+.B LS_COLORS
+Determines how to colorize search results, see
+.BR dircolors (1) .
+.SH EXAMPLES
+.TP
+.RI "Find files and directories that match the pattern '" needle "':"
+$ fd needle
+.TP
+.RI "Start a search in a given directory (" /var/log "):"
+$ fd nginx /var/log
+.TP
+.RI "Find all Python files (all files with the extention " .py ") in the current directory:"
+$ fd -e py
+.SH SEE ALSO
+.BR find (1)

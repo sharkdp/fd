@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
@@ -30,7 +38,7 @@ pub fn job(
         drop(lock);
         // Generate a command to store within the buffer, and execute the command.
         // Note that the `then_execute()` method will clear the buffer for us.
-        cmd.generate(buffer, &value, out_perm.clone())
+        cmd.generate(buffer, &value, Arc::clone(&out_perm))
             .then_execute();
     }
 }
