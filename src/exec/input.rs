@@ -8,8 +8,7 @@
 
 use std::path::MAIN_SEPARATOR;
 use std::borrow::Cow;
-
-use shell_escape::escape;
+use super::escape;
 
 /// A builder for efficiently generating input strings.
 ///
@@ -92,7 +91,7 @@ impl<'a> Input<'a> {
     }
 
     pub fn get(&'a self) -> Cow<'a, str> {
-        escape(Cow::Borrowed(self.data))
+        escape(self.data)
     }
 
     #[cfg(test)]

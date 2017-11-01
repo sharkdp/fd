@@ -14,10 +14,10 @@ use std::io;
 lazy_static! {
     /// On non-Windows systems, the `SHELL` environment variable will be used to determine the
     /// preferred shell of choice for execution. Windows will simply use `cmd`.
-    static ref COMMAND: (String, &'static str) = if cfg!(target_os = "windows") {
-        ("cmd".into(), "/C")
+    static ref COMMAND: (String, &'static [&'static str]) = if cfg!(target_os = "windows") {
+        ("powershell".into(), &["-NoProfile", "-Command"])
     } else {
-        (env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into()), "-c")
+        (env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into()), &["-c"])
     };
 }
 
@@ -45,7 +45,7 @@ impl<'a> CommandTicket<'a> {
 
         // Spawn a shell with the supplied command.
         let cmd = Command::new(COMMAND.0.as_str())
-            .arg(COMMAND.1)
+            .args(COMMAND.1)
             .arg(&self.command)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -90,7 +90,7 @@ impl<'a> CommandTicket<'a> {
 
         // Spawn a shell with the supplied command.
         let cmd = Command::new(COMMAND.0.as_str())
-            .arg(COMMAND.1)
+            .args(COMMAND.1)
             .arg(&self.command)
             // Configure the pipes accordingly in the child.
             .before_exec(move || unsafe {

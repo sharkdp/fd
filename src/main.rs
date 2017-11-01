@@ -18,7 +18,6 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-extern crate shell_escape;
 
 pub mod fshelper;
 pub mod lscolors;
