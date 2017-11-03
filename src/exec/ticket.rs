@@ -6,47 +6,39 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use std::env;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::io;
 
-lazy_static! {
-    /// On non-Windows systems, the `SHELL` environment variable will be used to determine the
-    /// preferred shell of choice for execution. Windows will simply use `cmd`.
-    static ref COMMAND: (String, &'static str) = if cfg!(target_os = "windows") {
-        ("cmd".into(), "/C")
-    } else {
-        (env::var("SHELL").unwrap_or_else(|_| "/bin/sh".into()), "-c")
-    };
-}
-
 /// A state that offers access to executing a generated command.
 ///
-/// The ticket holds a mutable reference to a string that contains the command to be executed.
-/// After execution of the the command via the `then_execute()` method, the string will be
-/// cleared so that a new command can be written to the string in the future.
-pub struct CommandTicket<'a> {
-    command: &'a mut String,
+/// The ticket holds the collection of arguments of a command to be executed.
+pub struct CommandTicket {
+    args: Vec<String>,
     out_perm: Arc<Mutex<()>>,
 }
 
-impl<'a> CommandTicket<'a> {
-    pub fn new(command: &'a mut String, out_perm: Arc<Mutex<()>>) -> CommandTicket<'a> {
-        CommandTicket { command, out_perm }
+impl CommandTicket {
+    pub fn new<I, S>(args: I, out_perm: Arc<Mutex<()>>) -> CommandTicket
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        CommandTicket {
+            args: args.into_iter().map(|x| x.as_ref().to_owned()).collect(),
+            out_perm: out_perm,
+        }
     }
 
-    /// Executes the command stored within the ticket, and
-    /// clearing the command's buffer when finished.'
+    /// Executes the command stored within the ticket.
     #[cfg(not(unix))]
     pub fn then_execute(self) {
         use std::process::Stdio;
         use std::io::Write;
 
-        // Spawn a shell with the supplied command.
-        let cmd = Command::new(COMMAND.0.as_str())
-            .arg(COMMAND.1)
-            .arg(&self.command)
+        // Spawn the supplied command.
+        let cmd = Command::new(&self.args[0])
+            .args(&self.args[1..])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .output();
@@ -66,9 +58,6 @@ impl<'a> CommandTicket<'a> {
             }
             Err(why) => eprintln!("fd: exec error: {}", why),
         }
-
-        // Clear the buffer for later re-use.
-        self.command.clear();
     }
 
     #[cfg(all(unix))]
@@ -88,10 +77,9 @@ impl<'a> CommandTicket<'a> {
             pipe(stderr_fds.as_mut_ptr());
         }
 
-        // Spawn a shell with the supplied command.
-        let cmd = Command::new(COMMAND.0.as_str())
-            .arg(COMMAND.1)
-            .arg(&self.command)
+        // Spawn the supplied command.
+        let cmd = Command::new(&self.args[0])
+            .args(&self.args[1..])
             // Configure the pipes accordingly in the child.
             .before_exec(move || unsafe {
                 // Redirect the child's std{out,err} to the write ends of our pipe.
@@ -134,8 +122,5 @@ impl<'a> CommandTicket<'a> {
             }
             Err(why) => eprintln!("fd: exec error: {}", why),
         }
-
-        // Clear the command string's buffer for later re-use.
-        self.command.clear();
     }
 }

@@ -18,7 +18,6 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-extern crate shell_escape;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -106,7 +105,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(x));
+    let command = matches.values_of("exec").map(TokenizedCommand::new);
 
     let config = FdOptions {
         case_sensitive,
