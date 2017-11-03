@@ -85,7 +85,9 @@ pub fn build_app() -> App<'static, 'static> {
             arg("exec")
                 .long("exec")
                 .short("x")
-                .takes_value(true)
+                .multiple(true)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
                 .value_name("cmd"),
         )
         .arg(

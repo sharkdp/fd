@@ -20,9 +20,6 @@ pub fn job(
     cmd: Arc<TokenizedCommand>,
     out_perm: Arc<Mutex<()>>,
 ) {
-    // A string buffer that will be re-used in each iteration.
-    let buffer = &mut String::with_capacity(256);
-
     loop {
         // Create a lock on the shared receiver for this thread.
         let lock = rx.lock().unwrap();
@@ -36,9 +33,7 @@ pub fn job(
 
         // Drop the lock so that other threads can read from the the receiver.
         drop(lock);
-        // Generate a command to store within the buffer, and execute the command.
-        // Note that the `then_execute()` method will clear the buffer for us.
-        cmd.generate(buffer, &value, Arc::clone(&out_perm))
-            .then_execute();
+        // Generate a command and execute it.
+        cmd.generate(&value, Arc::clone(&out_perm)).then_execute();
     }
 }
