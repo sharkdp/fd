@@ -79,14 +79,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
 
-    match config.ls_colors {
-        Some(_) => {
-            let wq = Arc::clone(&wants_to_quit);
-            ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
-        }
-        None => (),
+    if let Some(_) = config.ls_colors {
+        let wq = Arc::clone(&wants_to_quit);
+        ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
     }
-
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
     let receiver_thread = thread::spawn(move || {
