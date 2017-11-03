@@ -619,7 +619,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo {}"],
+            &["foo", "--exec", "echo", "{}"],
             "a.foo
             one/b.foo
             one/two/C.Foo2
@@ -629,7 +629,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo {.}"],
+            &["foo", "--exec", "echo", "{.}"],
             "a
             one/b
             one/two/C
@@ -639,7 +639,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo {/}"],
+            &["foo", "--exec", "echo", "{/}"],
             "a.foo
             b.foo
             C.Foo2
@@ -649,7 +649,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo {/.}"],
+            &["foo", "--exec", "echo", "{/.}"],
             "a
             b
             C
@@ -659,7 +659,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo {//}"],
+            &["foo", "--exec", "echo", "{//}"],
             ".
             one
             one/two
@@ -668,6 +668,6 @@ fn test_exec() {
             one/two/three",
         );
 
-        te.assert_output(&["e1", "--exec", "printf '%s.%s\\n'"], "e1 e2.");
+        te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "e1 e2.");
     }
 }
