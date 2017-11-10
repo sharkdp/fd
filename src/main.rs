@@ -60,12 +60,7 @@ fn main() {
 
     // Get the root directory for the search
     let mut root_dir_buf = match matches.value_of("path") {
-        Some(path) => {
-            #[cfg(windows)]
-            let path = path.replace('/', "\\");
-
-            PathBuf::from(path)
-        }
+        Some(path) => PathBuf::from(path),
         None => current_dir.to_path_buf(),
     };
     if !fshelper::is_dir(&root_dir_buf) {
