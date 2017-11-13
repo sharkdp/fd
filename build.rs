@@ -8,12 +8,25 @@
 
 #[macro_use]
 extern crate clap;
+extern crate version_check;
 
 use clap::Shell;
+use std::io::{self, Write};
+use std::process::exit;
 
 include!("src/app.rs");
 
 fn main() {
+    match version_check::is_min_version("1.19") {
+        // rustc >= 1.19
+        Some((true, _)) => {}
+        // rustc < 1.19 or can't figure it out
+        _ => {
+            writeln!(&mut io::stderr(), "This crate requires rustc >= 1.19").unwrap();
+            exit(1);
+        }
+    }
+
     let var = std::env::var_os("SHELL_COMPLETIONS_DIR").or(std::env::var_os("OUT_DIR"));
     let outdir = match var {
         None => return,
