@@ -101,21 +101,21 @@ Always colorize output.
 .BI "\-j, \-\-threads " num
 Number of threads to use for searching (default: number of available CPUs).
 .TP
-.BI "\-x, \-\-exec " command
+.BI "\-x, \-\-exec " command [args...] ;
 Execute
 .I command
-on each of the discovered path with the following tokens substituted:
+for each search result. The following placeholders are substituted by a path derived from the current search result:
 .RS
 .IP {}
 path
-.IP {.}
-path without extension
 .IP {/}
-basename of path
+basename
 .IP {//}
-parent of path
+parent directory
+.IP {.}
+path without file extension
 .IP {/.}
-basename of path without extension
+basename without file extension
 .RE
 .SH ENVIRONMENT
 .TP
