@@ -86,6 +86,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("exec")
                 .short("x")
                 .multiple(true)
+                .min_values(1)
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd"),
@@ -173,15 +174,17 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Filter by file extension"
         , "(Additionally) filter search results by their file extension.");
     doc!(h, "exec"
-        , "Execute the given command for each search result"
-        , "Execute the given command for each search result.\n\
-           The following are valid tokens that can be used within the expression for generating \
-           commands:\n \
-             '{}':   places the input in the location of this token\n \
-             '{.}':  removes the extension from the input\n \
-             '{/}':  places the basename of the input\n \
-             '{//}': places the parent of the input\n \
-             '{/.}': places the basename of the input, without the extension");
+        , "Execute a command for each search result"
+        , "Execute a command for each search result.\n\
+           All arguments following -exec are are taken to be arguments to the command until the \
+           argument ';' is encountered.\n\
+           Each occurrence of the following placeholders is substituted by a path derived from the \
+           current search result before the command is executed:\n  \
+             '{}':   path\n  \
+             '{/}':  basename\n  \
+             '{//}': parent directory\n  \
+             '{.}':  path without file extension\n  \
+             '{/.}': basename without file extension");
     doc!(h, "exclude"
         , "Exclude entries that match the given glob pattern."
         , "Exclude files/directories that match the given glob pattern. This overrides any \
