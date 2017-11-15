@@ -189,7 +189,7 @@ OPTIONS:
     -d, --max-depth <depth>       Set maximum search depth (default: none)
     -t, --type <filetype>         Filter by type: f(ile), d(irectory), (sym)l(ink)
     -e, --extension <ext>         Filter by file extension
-    -x, --exec <cmd>              Execute the given command for each search result
+    -x, --exec <cmd>...           Execute a command for each search result
     -E, --exclude <pattern>...    Exclude entries that match the given glob pattern.
     -c, --color <when>            When to use colors: never, *auto*, always
     -j, --threads <num>           Set number of threads to use for searching &
