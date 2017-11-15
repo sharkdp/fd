@@ -176,7 +176,7 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "exec"
         , "Execute a command for each search result"
         , "Execute a command for each search result.\n\
-           All arguments following -exec are are taken to be arguments to the command until the \
+           All arguments following --exec are taken to be arguments to the command until the \
            argument ';' is encountered.\n\
            Each occurrence of the following placeholders is substituted by a path derived from the \
            current search result before the command is executed:\n  \
