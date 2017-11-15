@@ -10,7 +10,7 @@ use std::process;
 use std::time;
 use std::io::Write;
 
-use exec::TokenizedCommand;
+use exec::CommandTemplate;
 use lscolors::LsColors;
 use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
@@ -76,7 +76,7 @@ pub struct FdOptions {
     pub extension: Option<String>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
-    pub command: Option<TokenizedCommand>,
+    pub command: Option<CommandTemplate>,
 
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,

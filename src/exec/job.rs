@@ -10,16 +10,12 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
 
-use super::TokenizedCommand;
+use super::CommandTemplate;
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then
 /// be executed, and this process will continue until the receiver's sender has closed.
-pub fn job(
-    rx: Arc<Mutex<Receiver<PathBuf>>>,
-    cmd: Arc<TokenizedCommand>,
-    out_perm: Arc<Mutex<()>>,
-) {
+pub fn job(rx: Arc<Mutex<Receiver<PathBuf>>>, cmd: Arc<CommandTemplate>, out_perm: Arc<Mutex<()>>) {
     loop {
         // Create a lock on the shared receiver for this thread.
         let lock = rx.lock().unwrap();
