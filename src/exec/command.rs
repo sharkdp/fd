@@ -85,7 +85,7 @@ pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
             let _ = child.wait();
 
             // Create a lock to ensure that this thread has exclusive access to writing.
-            let _lock = self.out_perm.lock().unwrap();
+            let _lock = out_perm.lock().unwrap();
 
             // And then write the outputs of the process until EOF is sent to each file.
             let stdout = io::stdout();
