@@ -145,6 +145,11 @@ nix-env -i fd
 
 On **Windows**, you can download the pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
 
+On **FreeBSD**, you can install from ports, it's located in `sysutils/fd`: 
+```
+portmaster sysutils/fd
+```
+
 ## Development
 ```bash
 git clone https://github.com/sharkdp/fd
