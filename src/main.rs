@@ -39,7 +39,7 @@ use std::time;
 use atty::Stream;
 use regex::RegexBuilder;
 
-use exec::TokenizedCommand;
+use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
@@ -110,7 +110,7 @@ fn main() {
         None
     };
 
-    let command = matches.values_of("exec").map(TokenizedCommand::new);
+    let command = matches.values_of("exec").map(CommandTemplate::new);
 
     let config = FdOptions {
         case_sensitive,

@@ -24,52 +24,17 @@ use self::command::execute_command;
 use self::token::Token;
 pub use self::job::job;
 
-/// Contains a collection of `TokenizedArgument`s that are utilized to generate command strings.
+/// Represents a template that is utilized to generate command strings.
 ///
-/// The arguments are a representation of the supplied command template, and are meant to be coupled
-/// with an input in order to generate a command. The `generate_and_execute()` method will be used
-/// to generate a command and execute it.
+/// The template is meant to be coupled with an input in order to generate a command. The
+/// `generate_and_execute()` method will be used to generate a command and execute it.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TokenizedCommand {
-    args: Vec<TokenizedArgument>,
+pub struct CommandTemplate {
+    args: Vec<ArgumentTemplate>,
 }
 
-/// Represents a single command argument.
-///
-/// The argument is either a collection of `Token`s including at least one placeholder variant,
-/// or a fixed text.
-#[derive(Clone, Debug, PartialEq)]
-enum TokenizedArgument {
-    Tokens(Vec<Token>),
-    Text(String),
-}
-
-impl TokenizedArgument {
-    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
-        use self::Token::*;
-
-        match *self {
-            TokenizedArgument::Tokens(ref tokens) => {
-                let mut s = String::new();
-                for token in tokens {
-                    match *token {
-                        Basename => s += basename(path),
-                        BasenameNoExt => s += remove_extension(basename(path)),
-                        NoExt => s += remove_extension(path),
-                        Parent => s += dirname(path),
-                        Placeholder => s += path,
-                        Text(ref string) => s += string,
-                    }
-                }
-                Cow::Owned(s)
-            }
-            TokenizedArgument::Text(ref text) => Cow::Borrowed(text),
-        }
-    }
-}
-
-impl TokenizedCommand {
-    pub fn new<I, S>(input: I) -> TokenizedCommand
+impl CommandTemplate {
+    pub fn new<I, S>(input: I) -> CommandTemplate
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -109,7 +74,7 @@ impl TokenizedCommand {
 
             // Without a placeholder, the argument is just fixed text.
             if tokens.is_empty() {
-                args.push(TokenizedArgument::Text(arg.to_owned()));
+                args.push(ArgumentTemplate::Text(arg.to_owned()));
                 continue;
             }
 
@@ -118,15 +83,15 @@ impl TokenizedCommand {
                 tokens.push(Token::Text(arg[start..].to_owned()));
             }
 
-            args.push(TokenizedArgument::Tokens(tokens));
+            args.push(ArgumentTemplate::Tokens(tokens));
         }
 
         // If a placeholder token was not supplied, append one at the end of the command.
         if !has_placeholder {
-            args.push(TokenizedArgument::Tokens(vec![Token::Placeholder]));
+            args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        TokenizedCommand { args: args }
+        CommandTemplate { args: args }
     }
 
     /// Generates and executes a command.
@@ -149,28 +114,62 @@ impl TokenizedCommand {
     }
 }
 
+/// Represents a template for a single command argument.
+///
+/// The argument is either a collection of `Token`s including at least one placeholder variant, or
+/// a fixed text.
+#[derive(Clone, Debug, PartialEq)]
+enum ArgumentTemplate {
+    Tokens(Vec<Token>),
+    Text(String),
+}
+
+impl ArgumentTemplate {
+    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
+        use self::Token::*;
+
+        match *self {
+            ArgumentTemplate::Tokens(ref tokens) => {
+                let mut s = String::new();
+                for token in tokens {
+                    match *token {
+                        Basename => s += basename(path),
+                        BasenameNoExt => s += remove_extension(basename(path)),
+                        NoExt => s += remove_extension(path),
+                        Parent => s += dirname(path),
+                        Placeholder => s += path,
+                        Text(ref string) => s += string,
+                    }
+                }
+                Cow::Owned(s)
+            }
+            ArgumentTemplate::Text(ref text) => Cow::Borrowed(text),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{TokenizedCommand, TokenizedArgument, Token};
+    use super::{CommandTemplate, ArgumentTemplate, Token};
 
     #[test]
     fn tokens() {
-        let expected = TokenizedCommand {
+        let expected = CommandTemplate {
             args: vec![
-                TokenizedArgument::Text("echo".into()),
-                TokenizedArgument::Text("${SHELL}:".into()),
-                TokenizedArgument::Tokens(vec![Token::Placeholder]),
+                ArgumentTemplate::Text("echo".into()),
+                ArgumentTemplate::Text("${SHELL}:".into()),
+                ArgumentTemplate::Tokens(vec![Token::Placeholder]),
             ],
         };
 
-        assert_eq!(TokenizedCommand::new(&[&"echo", &"${SHELL}:"]), expected);
+        assert_eq!(CommandTemplate::new(&[&"echo", &"${SHELL}:"]), expected);
 
         assert_eq!(
-            TokenizedCommand::new(&["echo", "{.}"]),
-            TokenizedCommand {
+            CommandTemplate::new(&["echo", "{.}"]),
+            CommandTemplate {
                 args: vec![
-                    TokenizedArgument::Text("echo".into()),
-                    TokenizedArgument::Tokens(vec![Token::NoExt]),
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Tokens(vec![Token::NoExt]),
                 ],
             }
         );
