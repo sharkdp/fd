@@ -34,6 +34,6 @@ pub fn job(
         // Drop the lock so that other threads can read from the the receiver.
         drop(lock);
         // Generate a command and execute it.
-        cmd.generate(&value, Arc::clone(&out_perm)).then_execute();
+        cmd.generate_and_execute(&value, Arc::clone(&out_perm));
     }
 }

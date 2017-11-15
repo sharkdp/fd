@@ -7,27 +7,28 @@
 // according to those terms.
 
 // TODO: Possible optimization could avoid pushing characters on a buffer.
-mod ticket;
+mod command;
 mod token;
 mod job;
 mod input;
 
 use std::borrow::Cow;
 use std::path::Path;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
 use regex::Regex;
 
 use self::input::{basename, dirname, remove_extension};
-use self::ticket::CommandTicket;
+use self::command::execute_command;
 use self::token::Token;
 pub use self::job::job;
 
 /// Contains a collection of `TokenizedArgument`s that are utilized to generate command strings.
 ///
 /// The arguments are a representation of the supplied command template, and are meant to be coupled
-/// with an input in order to generate a command. The `generate()` method will be used to generate
-/// a command and obtain a ticket for executing that command.
+/// with an input in order to generate a command. The `generate_and_execute()` method will be used
+/// to generate a command and execute it.
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenizedCommand {
     args: Vec<TokenizedArgument>,
@@ -74,7 +75,7 @@ impl TokenizedCommand {
         S: AsRef<str>,
     {
         lazy_static! {
-            static ref PLACEHOLDER: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
+            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
         }
 
         let mut args = Vec::new();
@@ -86,7 +87,7 @@ impl TokenizedCommand {
             let mut tokens = Vec::new();
             let mut start = 0;
 
-            for placeholder in PLACEHOLDER.find_iter(arg) {
+            for placeholder in PLACEHOLDER_PATTERN.find_iter(arg) {
                 // Leading text before the placeholder.
                 if placeholder.start() > start {
                     tokens.push(Token::Text(arg[start..placeholder.start()].to_owned()));
@@ -128,24 +129,23 @@ impl TokenizedCommand {
         TokenizedCommand { args: args }
     }
 
-    /// Generates a ticket that is required to execute the generated command.
+    /// Generates and executes a command.
     ///
-    /// Using the internal `args` field, and a supplied `input` variable, arguments will be
-    /// collected in a Vec. Once all arguments have been processed, the Vec will be wrapped
-    /// within a `CommandTicket`, which will be responsible for executing the command.
-    pub fn generate(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> CommandTicket {
+    /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
+    /// build. Once all arguments have been processed, the command is executed.
+    pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) {
         let input = input
             .strip_prefix(".")
             .unwrap_or(input)
             .to_string_lossy()
             .into_owned();
 
-        let mut args = Vec::with_capacity(self.args.len());
-        for arg in &self.args {
-            args.push(arg.generate(&input));
+        let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
+        for arg in &self.args[1..] {
+            cmd.arg(arg.generate(&input).as_ref());
         }
 
-        CommandTicket::new(args, out_perm)
+        execute_command(cmd, out_perm)
     }
 }
 
