@@ -13,6 +13,7 @@ extern crate version_check;
 use clap::Shell;
 use std::io::{self, Write};
 use std::process::exit;
+use std::fs;
 
 include!("src/app.rs");
 
@@ -32,6 +33,7 @@ fn main() {
         None => return,
         Some(outdir) => outdir,
     };
+    fs::create_dir_all(&outdir).unwrap();
 
     let mut app = build_app();
     app.gen_completions("fd", Shell::Bash, &outdir);
