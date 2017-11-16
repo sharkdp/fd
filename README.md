@@ -169,6 +169,13 @@ You can install `sysutils/fd` via portmaster:
 portmaster sysutils/fd
 ```
 
+### On Void Linux
+
+You can install `fd` via xbps-install:
+```
+xbps-install -S fd
+```
+
 ## Development
 ```bash
 git clone https://github.com/sharkdp/fd
