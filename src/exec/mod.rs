@@ -7,168 +7,171 @@
 // according to those terms.
 
 // TODO: Possible optimization could avoid pushing characters on a buffer.
-mod ticket;
+mod command;
 mod token;
 mod job;
 mod input;
 
+use std::borrow::Cow;
 use std::path::Path;
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 
-// use self::paths::{basename, dirname, remove_extension};
-use self::input::Input;
-use self::ticket::CommandTicket;
+use regex::Regex;
+
+use self::input::{basename, dirname, remove_extension};
+use self::command::execute_command;
 use self::token::Token;
 pub use self::job::job;
 
-/// Signifies that a placeholder token was found
-const PLACE: u8 = 1;
-
-/// Signifies that the '{' character was found.
-const OPEN: u8 = 2;
-
-/// Contains a collection of `Token`'s that are utilized to generate command strings.
+/// Represents a template that is utilized to generate command strings.
 ///
-/// The tokens are a represntation of the supplied command template, and are meant to be coupled
-/// with an input in order to generate a command. The `generate()` method will be used to
-/// generate a command and obtain a ticket for executing that command.
+/// The template is meant to be coupled with an input in order to generate a command. The
+/// `generate_and_execute()` method will be used to generate a command and execute it.
 #[derive(Debug, Clone, PartialEq)]
-pub struct TokenizedCommand {
-    pub tokens: Vec<Token>,
+pub struct CommandTemplate {
+    args: Vec<ArgumentTemplate>,
 }
 
-impl TokenizedCommand {
-    pub fn new(input: &str) -> TokenizedCommand {
-        let mut tokens = Vec::new();
-        let mut start = 0;
-        let mut flags = 0;
-        let mut chars = input.char_indices();
-        let mut text = String::new();
-
-        while let Some((id, character)) = chars.next() {
-            match character {
-                // Backslashes are useful in cases where we want to use the '{' character
-                // without having all occurrences of it to collect placeholder tokens.
-                '\\' => {
-                    if let Some((_, nchar)) = chars.next() {
-                        if nchar != '{' {
-                            text.push(character);
-                        }
-                        text.push(nchar);
-                    }
-                }
-                // When a raw '{' is discovered, we will note it's position, and use that for a
-                // later comparison against valid placeholder tokens.
-                '{' if flags & OPEN == 0 => {
-                    flags |= OPEN;
-                    start = id;
-                    if !text.is_empty() {
-                        append(&mut tokens, &text);
-                        text.clear();
-                    }
-                }
-                // If the `OPEN` bit is set, we will compare the contents between the discovered
-                // '{' and '}' characters against a list of valid tokens, then pushing the
-                // corresponding token onto the `tokens` vector.
-                '}' if flags & OPEN != 0 => {
-                    flags ^= OPEN;
-                    match &input[start + 1..id] {
-                        "" => tokens.push(Token::Placeholder),
-                        "." => tokens.push(Token::NoExt),
-                        "/" => tokens.push(Token::Basename),
-                        "//" => tokens.push(Token::Parent),
-                        "/." => tokens.push(Token::BasenameNoExt),
-                        _ => {
-                            append(&mut tokens, &input[start..id + 1]);
-                            continue;
-                        }
-                    }
-                    flags |= PLACE;
-                }
-                // We aren't collecting characters for a text string if the `OPEN` bit is set.
-                _ if flags & OPEN != 0 => (),
-                // Push the character onto the text buffer
-                _ => text.push(character),
-            }
+impl CommandTemplate {
+    pub fn new<I, S>(input: I) -> CommandTemplate
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        lazy_static! {
+            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
         }
 
-        // Take care of any stragglers left behind.
-        if !text.is_empty() {
-            append(&mut tokens, &text);
+        let mut args = Vec::new();
+        let mut has_placeholder = false;
+
+        for arg in input {
+            let arg = arg.as_ref();
+
+            let mut tokens = Vec::new();
+            let mut start = 0;
+
+            for placeholder in PLACEHOLDER_PATTERN.find_iter(arg) {
+                // Leading text before the placeholder.
+                if placeholder.start() > start {
+                    tokens.push(Token::Text(arg[start..placeholder.start()].to_owned()));
+                }
+
+                start = placeholder.end();
+
+                match placeholder.as_str() {
+                    "{}" => tokens.push(Token::Placeholder),
+                    "{.}" => tokens.push(Token::NoExt),
+                    "{/}" => tokens.push(Token::Basename),
+                    "{//}" => tokens.push(Token::Parent),
+                    "{/.}" => tokens.push(Token::BasenameNoExt),
+                    _ => panic!("Unhandled placeholder"),
+                }
+
+                has_placeholder = true;
+            }
+
+            // Without a placeholder, the argument is just fixed text.
+            if tokens.is_empty() {
+                args.push(ArgumentTemplate::Text(arg.to_owned()));
+                continue;
+            }
+
+            if start < arg.len() {
+                // Trailing text after last placeholder.
+                tokens.push(Token::Text(arg[start..].to_owned()));
+            }
+
+            args.push(ArgumentTemplate::Tokens(tokens));
         }
 
         // If a placeholder token was not supplied, append one at the end of the command.
-        if flags & PLACE == 0 {
-            append(&mut tokens, " ");
-            tokens.push(Token::Placeholder)
+        if !has_placeholder {
+            args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        TokenizedCommand { tokens: tokens }
+        CommandTemplate { args: args }
     }
 
-    /// Generates a ticket that is required to execute the generated command.
+    /// Generates and executes a command.
     ///
-    /// Using the internal `tokens` field, and a supplied `input` variable, commands will be
-    /// written into the `command` buffer. Once all tokens have been processed, the mutable
-    /// reference of the `command` will be wrapped within a `CommandTicket`, which will be
-    /// responsible for executing the command and clearing the buffer.
-    pub fn generate<'a>(
-        &self,
-        command: &'a mut String,
-        input: &Path,
-        out_perm: Arc<Mutex<()>>,
-    ) -> CommandTicket<'a> {
-        use self::Token::*;
-        let input = input.strip_prefix(".").unwrap_or(input).to_string_lossy();
-        for token in &self.tokens {
-            match *token {
-                Basename => *command += &Input::new(&input).basename().get(),
-                BasenameNoExt => {
-                    *command += &Input::new(&input).basename().remove_extension().get()
-                }
-                NoExt => *command += &Input::new(&input).remove_extension().get(),
-                Parent => *command += &Input::new(&input).dirname().get(),
-                Placeholder => *command += &Input::new(&input).get(),
-                Text(ref string) => *command += string,
-            }
+    /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
+    /// build. Once all arguments have been processed, the command is executed.
+    pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) {
+        let input = input
+            .strip_prefix(".")
+            .unwrap_or(input)
+            .to_string_lossy()
+            .into_owned();
+
+        let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
+        for arg in &self.args[1..] {
+            cmd.arg(arg.generate(&input).as_ref());
         }
 
-        CommandTicket::new(command, out_perm)
+        execute_command(cmd, out_perm)
     }
 }
 
-/// If the last token is a text token, append to that token. Otherwise, create a new token.
-fn append(tokens: &mut Vec<Token>, elem: &str) {
-    // Useful to avoid a borrowing issue with the tokens vector.
-    let mut append_text = false;
+/// Represents a template for a single command argument.
+///
+/// The argument is either a collection of `Token`s including at least one placeholder variant, or
+/// a fixed text.
+#[derive(Clone, Debug, PartialEq)]
+enum ArgumentTemplate {
+    Tokens(Vec<Token>),
+    Text(String),
+}
 
-    // If the last token is a `Text` token, simply the `elem` at the end.
-    match tokens.last_mut() {
-        Some(&mut Token::Text(ref mut string)) => *string += elem,
-        _ => append_text = true,
-    };
+impl ArgumentTemplate {
+    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
+        use self::Token::*;
 
-    // Otherwise, we will need to add a new `Text` token that contains the `elem`
-    if append_text {
-        tokens.push(Token::Text(String::from(elem)));
+        match *self {
+            ArgumentTemplate::Tokens(ref tokens) => {
+                let mut s = String::new();
+                for token in tokens {
+                    match *token {
+                        Basename => s += basename(path),
+                        BasenameNoExt => s += remove_extension(basename(path)),
+                        NoExt => s += remove_extension(path),
+                        Parent => s += dirname(path),
+                        Placeholder => s += path,
+                        Text(ref string) => s += string,
+                    }
+                }
+                Cow::Owned(s)
+            }
+            ArgumentTemplate::Text(ref text) => Cow::Borrowed(text),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{TokenizedCommand, Token};
+    use super::{CommandTemplate, ArgumentTemplate, Token};
 
     #[test]
     fn tokens() {
-        let expected = TokenizedCommand {
-            tokens: vec![Token::Text("echo ${SHELL}: ".into()), Token::Placeholder],
+        let expected = CommandTemplate {
+            args: vec![
+                ArgumentTemplate::Text("echo".into()),
+                ArgumentTemplate::Text("${SHELL}:".into()),
+                ArgumentTemplate::Tokens(vec![Token::Placeholder]),
+            ],
         };
 
-        assert_eq!(TokenizedCommand::new("echo $\\{SHELL}: {}"), expected);
-        assert_eq!(TokenizedCommand::new("echo ${SHELL}:"), expected);
+        assert_eq!(CommandTemplate::new(&[&"echo", &"${SHELL}:"]), expected);
+
         assert_eq!(
-            TokenizedCommand::new("echo {.}"),
-            TokenizedCommand { tokens: vec![Token::Text("echo ".into()), Token::NoExt] }
+            CommandTemplate::new(&["echo", "{.}"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Tokens(vec![Token::NoExt]),
+                ],
+            }
         );
     }
 }

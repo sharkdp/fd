@@ -18,7 +18,6 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-extern crate shell_escape;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -40,7 +39,7 @@ use std::time;
 use atty::Stream;
 use regex::RegexBuilder;
 
-use exec::TokenizedCommand;
+use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
@@ -60,12 +59,7 @@ fn main() {
 
     // Get the root directory for the search
     let mut root_dir_buf = match matches.value_of("path") {
-        Some(path) => {
-            #[cfg(windows)]
-            let path = path.replace('/', "\\");
-
-            PathBuf::from(path)
-        }
+        Some(path) => PathBuf::from(path),
         None => current_dir.to_path_buf(),
     };
     if !fshelper::is_dir(&root_dir_buf) {
@@ -111,7 +105,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(x));
+    let command = matches.values_of("exec").map(CommandTemplate::new);
 
     let config = FdOptions {
         case_sensitive,

@@ -110,40 +110,71 @@ commands is similar to that of GNU Parallel:
 - `{/.}`: Uses the basename, with the extension removed (`party`).
 
 ``` bash
-# Convert all jpg files to png files
-fd -e jpg -x 'convert {} {.}.png'
+# Convert all jpg files to png files:
+fd -e jpg -x convert {} {.}.png
 
 # Unpack all zip files (if no placeholder is given, the path is appended):
 fd -e zip -x unzip
 
 # Convert all flac files into opus files:
-fd -e flac -x 'ffmpeg -i {} -c:a libopus {.}.opus'
+fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
+
+# Count the number of lines in Rust files (the command template can be terminated with ';'):
+fd -x wc -l \; -e rs
 ```
 
 ## Install
+
+### From source
+
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
 ```
 cargo install fd-find
 ```
 Note that rust version *1.19.0* or later is required.
-The release page of this repository also includes precompiled binaries for Linux.
 
-On **macOS**, you can use [Homebrew](http://braumeister.org/formula/fd):
+### From binaries
+
+The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
+
+### On macOS
+
+You can install [this Homebrew package](http://braumeister.org/formula/fd):
 ```
 brew install fd
 ```
 
-On **Arch Linux**, you can install the package from the official repos:
+### On Arch Linux
+
+You can install [the fd-rs package](https://www.archlinux.org/packages/community/x86_64/fd-rs/) from the official repos:
 ```
 pacman -S fd-rs
 ```
 
-On **NixOS**, or any Linux distro you can use [Nix](https://nixos.org/nix/):
+### On NixOS / via Nix
+
+You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
 nix-env -i fd
 ```
 
-On **Windows**, you can download the pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
+### Windows
+
+You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
+
+### FreeBSD
+
+You can install `sysutils/fd` via portmaster:
+```
+portmaster sysutils/fd
+```
+
+### On Void Linux
+
+You can install `fd` via xbps-install:
+```
+xbps-install -S fd
+```
 
 ## Development
 ```bash
@@ -181,7 +212,7 @@ OPTIONS:
     -d, --max-depth <depth>       Set maximum search depth (default: none)
     -t, --type <filetype>         Filter by type: f(ile), d(irectory), (sym)l(ink)
     -e, --extension <ext>         Filter by file extension
-    -x, --exec <cmd>              Execute the given command for each search result
+    -x, --exec <cmd>...           Execute a command for each search result
     -E, --exclude <pattern>...    Exclude entries that match the given glob pattern.
     -c, --color <when>            When to use colors: never, *auto*, always
     -j, --threads <num>           Set number of threads to use for searching &
