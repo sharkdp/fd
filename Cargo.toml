@@ -12,11 +12,11 @@ keywords = [
     "filesystem",
     "tool",
 ]
-license = "MIT"
+license = "MIT/Apache-2.0"
 name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
-version = "4.0.0"
+version = "6.0.0"
 
 [[bin]]
 name = "fd"
@@ -29,6 +29,7 @@ repository = "sharkdp/fd"
 
 [build-dependencies]
 clap = "2.26.0"
+version_check = "0.1.3"
 
 [dependencies]
 ansi_term = "0.9"
@@ -43,6 +44,10 @@ ctrlc = "3.0"
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+kernel32-sys = "0.2"
+winapi = "0.2"
 
 [dev-dependencies]
 diff = "0.1"

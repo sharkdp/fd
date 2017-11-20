@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std;
 use std::env;
 use std::fs;
@@ -43,6 +51,7 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         fs::create_dir(root.join("one/two/three/directory_foo"))?;
         fs::File::create(root.join("ignored.foo"))?;
         fs::File::create(root.join(".hidden.foo"))?;
+        fs::File::create(root.join("e1 e2"))?;
 
         #[cfg(unix)] unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
@@ -118,8 +127,7 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
         })
         .collect::<Vec<_>>();
 
-    // Sort ignoring case.
-    lines.sort_by_key(|s| s.to_lowercase());
+    lines.sort_by_key(|s| s.clone());
 
     lines.join("\n")
 }

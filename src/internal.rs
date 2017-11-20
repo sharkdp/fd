@@ -1,8 +1,16 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::process;
 use std::time;
 use std::io::Write;
 
-use exec::TokenizedCommand;
+use exec::CommandTemplate;
 use lscolors::LsColors;
 use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
@@ -68,7 +76,10 @@ pub struct FdOptions {
     pub extension: Option<String>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
-    pub command: Option<TokenizedCommand>,
+    pub command: Option<CommandTemplate>,
+
+    /// A list of glob patterns that should be excluded from the search.
+    pub exclude_patterns: Vec<String>,
 }
 
 /// Print error message to stderr and exit with status `1`.
@@ -94,7 +105,7 @@ fn expr_has_uppercase_char(expr: &Expr) -> bool {
                 r.start.is_uppercase() || r.end.is_uppercase()
             })
         }
-        Expr::Group { ref e, .. } => expr_has_uppercase_char(e),
+        Expr::Group { ref e, .. } |
         Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
         Expr::Concat(ref es) => es.iter().any(expr_has_uppercase_char),
         Expr::Alternate(ref es) => es.iter().any(expr_has_uppercase_char),

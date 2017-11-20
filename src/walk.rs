@@ -1,6 +1,14 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 extern crate ctrlc;
 
-use exec::{self, TokenizedCommand};
+use exec;
 use fshelper;
 use internal::{error, FdOptions};
 use output;
@@ -13,6 +21,7 @@ use std::thread;
 use std::time;
 
 use ignore::{self, WalkBuilder};
+use ignore::overrides::OverrideBuilder;
 use regex::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -43,6 +52,18 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let (tx, rx) = channel();
     let threads = config.threads;
 
+    let mut override_builder = OverrideBuilder::new(root);
+
+    for pattern in &config.exclude_patterns {
+        let res = override_builder.add(pattern);
+        if res.is_err() {
+            error(&format!("Error: malformed exclude pattern '{}'", pattern));
+        }
+    }
+    let overrides = override_builder.build().unwrap_or_else(|_| {
+        error("Mismatch in exclude patterns");
+    });
+
     let walker = WalkBuilder::new(root)
         .hidden(config.ignore_hidden)
         .ignore(config.read_ignore)
@@ -50,6 +71,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .parents(config.read_ignore)
         .git_global(config.read_ignore)
         .git_exclude(config.read_ignore)
+        .overrides(overrides)
         .follow_links(config.follow_links)
         .max_depth(config.max_depth)
         .threads(threads)
@@ -74,16 +96,18 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             let out_perm = Arc::new(Mutex::new(()));
 
-            // This is safe because `cmd` will exist beyond the end of this scope.
-            // It's required to tell Rust that it's safe to share across threads.
-            let cmd = unsafe { Arc::from_raw(cmd as *const TokenizedCommand) };
+            // TODO: the following line is a workaround to replace the `unsafe` block that was
+            // previously used here to avoid the (unnecessary?) cloning of the command. The
+            // `unsafe` block caused problems on some platforms (SIGILL instructions on Linux) and
+            // therefore had to be removed.
+            let cmd = Arc::new(cmd.clone());
 
             // Each spawned job will store it's thread handle in here.
             let mut handles = Vec::with_capacity(threads);
             for _ in 0..threads {
-                let rx = shared_rx.clone();
-                let cmd = cmd.clone();
-                let out_perm = out_perm.clone();
+                let rx = Arc::clone(&shared_rx);
+                let cmd = Arc::clone(&cmd);
+                let out_perm = Arc::clone(&out_perm);
 
                 // Spawn a job thread that will listen for and execute inputs.
                 let handle = thread::spawn(move || exec::job(rx, cmd, out_perm));
@@ -166,17 +190,17 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             match config.file_type {
                 FileType::Any => (),
                 FileType::RegularFile => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_file()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_file()) {
                         return ignore::WalkState::Continue;
                     }
                 }
                 FileType::Directory => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_dir()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_dir()) {
                         return ignore::WalkState::Continue;
                     }
                 }
                 FileType::SymLink => {
-                    if entry.file_type().map_or(false, |ft| !ft.is_symlink()) {
+                    if entry.file_type().map_or(true, |ft| !ft.is_symlink()) {
                         return ignore::WalkState::Continue;
                     }
                 }
@@ -193,7 +217,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(&entry_path) {
+                match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
                     Err(_) => error("Error: unable to get full path."),
                 }

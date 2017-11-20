@@ -1,3 +1,11 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 extern crate ansi_term;
 extern crate atty;
 #[macro_use]
@@ -19,6 +27,9 @@ mod internal;
 mod output;
 mod walk;
 
+#[cfg(windows)]
+mod windows;
+
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -28,7 +39,7 @@ use std::time;
 use atty::Stream;
 use regex::RegexBuilder;
 
-use exec::TokenizedCommand;
+use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
@@ -42,7 +53,7 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    if !fshelper::is_dir(&current_dir) {
+    if !fshelper::is_dir(current_dir) {
         error("Error: could not get current directory.");
     }
 
@@ -80,6 +91,9 @@ fn main() {
         _ => atty::is(Stream::Stdout),
     };
 
+    #[cfg(windows)]
+    let colored_output = colored_output && windows::enable_colored_output();
+
     let ls_colors = if colored_output {
         Some(
             env::var("LS_COLORS")
@@ -91,7 +105,7 @@ fn main() {
         None
     };
 
-    let command = matches.value_of("exec").map(|x| TokenizedCommand::new(&x));
+    let command = matches.values_of("exec").map(CommandTemplate::new);
 
     let config = FdOptions {
         case_sensitive,
@@ -129,6 +143,10 @@ fn main() {
             e.trim_left_matches('.').to_lowercase()
         }),
         command,
+        exclude_patterns: matches
+            .values_of("exclude")
+            .map(|v| v.map(|p| String::from("!") + p).collect())
+            .unwrap_or_else(|| vec![]),
     };
 
     match RegexBuilder::new(pattern)

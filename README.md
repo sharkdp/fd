@@ -97,57 +97,84 @@ complete (and more colorful) variants, see
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
 
-## Parallel Command Execution
-If the `--exec` flag is specified alongside a command template, a job pool will be created for
-generating and executing commands in parallel with each discovered path as the inputs. The syntax
-for generating commands is similar to that of GNU Parallel:
+## Parallel command execution
+If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
+for executing commands in parallel for each discovered path as the input. The syntax for generating
+commands is similar to that of GNU Parallel:
 
-- **{}**: A placeholder token that will be replaced with the discovered path.
-- **{.}**: Removes the extension from the path.
-- **{/}**: Uses the basename of the discovered path.
-- **{//}**: Uses the parent of the discovered path.
-- **{/.}**: Uses the basename, with the extension removed.
+- `{}`: A placeholder token that will be replaced with the path of the search result
+  (`documents/images/party.jpg`).
+- `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
+- `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
+- `{//}`: Uses the parent of the discovered path (`documents/images`).
+- `{/.}`: Uses the basename, with the extension removed (`party`).
 
-```sh
-# Demonstration of parallel job execution
-fd -e flac --exec 'sleep 1; echo $\{SHELL}: {}'
+``` bash
+# Convert all jpg files to png files:
+fd -e jpg -x convert {} {.}.png
 
-# This also works, because `SHELL` is not a valid token
-fd -e flac --exec 'sleep 1; echo ${SHELL}: {}'
+# Unpack all zip files (if no placeholder is given, the path is appended):
+fd -e zip -x unzip
 
-# The token is optional -- it gets added at the end by default.
-fd -e flac --exec 'echo'
+# Convert all flac files into opus files:
+fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
 
-# Real world example of converting flac files into opus files.
-fd -e flac --type f --exec 'ffmpeg -i "{}" -c:a libopus "{.}.opus"'
+# Count the number of lines in Rust files (the command template can be terminated with ';'):
+fd -x wc -l \; -e rs
 ```
 
 ## Install
+
+### From source
+
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
 ```
 cargo install fd-find
 ```
-Note that rust version *1.16.0* or later is required.
-The release page of this repository also includes precompiled binaries for Linux.
+Note that rust version *1.19.0* or later is required.
 
-On **macOS**, you can use [Homebrew](http://braumeister.org/formula/fd):
+### From binaries
+
+The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
+
+### On macOS
+
+You can install [this Homebrew package](http://braumeister.org/formula/fd):
 ```
 brew install fd
 ```
 
-On **Arch Linux**, you can install the AUR package [fd-rs](https://aur.archlinux.org/packages/fd-rs/) via yaourt, or manually:
+### On Arch Linux
+
+You can install [the fd-rs package](https://www.archlinux.org/packages/community/x86_64/fd-rs/) from the official repos:
 ```
-git clone https://aur.archlinux.org/fd-rs.git
-cd fd-rs
-makepkg -si
+pacman -S fd-rs
 ```
 
-On **NixOS**, or any Linux distro you can use [Nix](https://nixos.org/nix/):
+### On NixOS / via Nix
+
+You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
 nix-env -i fd
 ```
 
-On **Windows**, you can download the pre-built binaries from the [Release page](https://github.com/sharkdp/fd/releases).
+### Windows
+
+You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
+
+### FreeBSD
+
+You can install `sysutils/fd` via portmaster:
+```
+portmaster sysutils/fd
+```
+
+### On Void Linux
+
+You can install `fd` via xbps-install:
+```
+xbps-install -S fd
+```
 
 ## Development
 ```bash
@@ -173,6 +200,7 @@ FLAGS:
     -H, --hidden            Search hidden files and directories
     -I, --no-ignore         Do not respect .(git)ignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
+    -i, --ignore-case       Case-insensitive search (default: smart case)
     -a, --absolute-path     Show absolute instead of relative paths
     -L, --follow            Follow symbolic links
     -p, --full-path         Search full path (default: file-/dirname only)
@@ -181,13 +209,14 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>    Set maximum search depth (default: none)
-    -t, --type <filetype>      Filter by type: f(ile), d(irectory), (sym)l(ink)
-    -e, --extension <ext>      Filter by file extension
-    -c, --color <when>         When to use color in the output:
-                               never, auto, always (default: auto)
-    -j, --threads <num>        Set number of threads to use for searching:
-                               (default: number of available CPU cores)
+    -d, --max-depth <depth>       Set maximum search depth (default: none)
+    -t, --type <filetype>         Filter by type: f(ile), d(irectory), (sym)l(ink)
+    -e, --extension <ext>         Filter by file extension
+    -x, --exec <cmd>...           Execute a command for each search result
+    -E, --exclude <pattern>...    Exclude entries that match the given glob pattern.
+    -c, --color <when>            When to use colors: never, *auto*, always
+    -j, --threads <num>           Set number of threads to use for searching &
+                                  executing
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
@@ -196,161 +225,100 @@ ARGS:
 
 ## Tutorial
 
-First, to see all command line options, you can get `fd`'s help text by running:
+First, to get an overview of all available command line options, you can either run
+`fd -h` for a concise help message (see above) or `fd --help` for a more detailed
+version.
+
+### Simple search
+
+*fd* is designed to find entries in your filesystem. The most basic search you can perform is to
+run *fd* with a single argument: the search pattern. For example, assume that you want to find an
+old script of yours (the name included `netflix`):
+``` bash
+> fd netfl
+Software/python/imdb-ratings/netflix-details.py
 ```
-fd --help
+If called with just a single argument like this, *fd* searches the current directory recursively
+for any entries that *contain* the pattern `netfl`.
+
+### Regular expression search
+
+The search pattern is treated as a regular expression. Here, we search for entries that start
+with `x` and end with `rc`:
+``` bash
+> cd /etc
+> fd '^x.*rc$'
+X11/xinit/xinitrc
+X11/xinit/xserverrc
 ```
 
-For the sake of this tutorial, let's assume we have a directory with the following file structure:
-```
-fd_examples
-├── .gitignore
-├── desub_dir
-│   └── old_test.txt
-├── not_file
-├── sub_dir
-│   ├── .here_be_tests
-│   ├── more_dir
-│   │   ├── .not_here
-│   │   ├── even_further_down
-│   │   │   ├── not_me.sh
-│   │   │   ├── test_seven
-│   │   │   └── testing_eight
-│   │   ├── not_file -> /Users/fd_user/Desktop/fd_examples/not_file
-│   │   └── test_file_six
-│   ├── new_test.txt
-│   ├── test_file_five
-│   ├── test_file_four
-│   └── test_file_three
-├── test_file_one
-├── test_file_two
-├── test_one
-└── this_is_a_test
+### Specifying the root directory
+
+If we want so search a specific directory, it can be given as a second argument to *fd*:
+``` bash
+> fd passwd /etc
+/etc/default/passwd
+/etc/pam.d/passwd
+/etc/passwd
 ```
 
-If `fd` is called with a single argument (the search pattern), it will perform a recursive search
-through the current directory. To search for all files that include the string "test", we can
-simply run:
-```
-> fd test
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
-this_is_a_test
-```
+### Running *fd* without any arguments
 
-The search pattern is treated as a regular expression. To show only entries that start with "test",
-we can call:
-```
-> fd '^test'
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
-```
-
-Note that `fd` does not show hidden files (`.here_be_tests`) by default. To change this, we can use
-the `-H` (or `--hidden`) option:
-```
-> fd -H test
-sub_dir/.here_be_tests
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_four
-sub_dir/test_file_three
-test_file_one
-test_file_two
-test_one
-this_is_a_test
-```
-
-If we are interested in showing the results from a particular directory, we can specify the root of
-the search as a second argument:
-```
-> fd test sub_dir
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-```
-
-If we don't give *any* arguments to `fd`, it simply shows all entries in the current directory,
-recursively (like `ls -R`):
-```
+*fd* can be called with no arguments. This is very useful to get a quick overview of all entries
+in the current directory, recursively (similar to `ls -R`):
+``` bash
+> cd fd/tests
 > fd
-not_file
-sub_dir
-sub_dir/more_dir
-sub_dir/more_dir/even_further_down
-sub_dir/more_dir/even_further_down/test_seven
-sub_dir/more_dir/even_further_down/testing_eight
-sub_dir/more_dir/not_file
-sub_dir/more_dir/test_file_six
-sub_dir/test_file_five
-sub_dir/test_file_three
-sub_dir/test_four
-test_file_one
-test_file_two
-test_one
-this_is_a_test
+testenv
+testenv/mod.rs
+tests.rs
 ```
 
-If we work in a directory that is a Git repository (or includes several Git repositories), `fd`
-does not search folders (and does not show files) that match the `.gitignore` pattern. For example,
-imagine we had a `.gitignore` file with the following content:
-```
-*.sh
-```
-In this case, `fd` would not show any files that end in `.sh`. To disable this behavior, we can
-use the `-I` (or `--ignore`) option:
-```
-> fd -I me
-sub_dir/more_dir/even_further_down/not_me.sh
+### Searching for a particular file extension
+
+Often, we are interested in all files of a particular type. This can be done with the `-e` (or
+`--extension`) option. Here, we search for all Markdown files in the fd repository:
+``` bash
+> cd fd
+> fd -e md
+CONTRIBUTING.md
+README.md
 ```
 
-To really search *all* files and directories, we can combine the hidden and ignore features to show
-everything (`-HI`):
-```
-fd -HI 'not|here'
-not_file
-sub_dir/.here_be_tests
-sub_dir/more_dir/.not_here
-sub_dir/more_dir/even_further_down/not_me.sh
-sub_dir/more_dir/not_file
+The `-e` option can be used in combination with a search pattern:
+``` bash
+> fd -e rs mod
+src/fshelper/mod.rs
+src/lscolors/mod.rs
+tests/testenv/mod.rs
 ```
 
-Searching for a file extension is easy too, using the `-e` (or `--extension`) switch for file
-extensions:
-```
-> fd -e sh
-sub_dir/more_dir/even_further_down/not_me.sh
-```
-
-Next, we can even use a pattern in combination with `-e` to search for a regex pattern over the
-files that end in the specified extension.
-```
-> fd -e txt test
-fd_examples/desub_dir/old_test.txt
-fd_examples/sub_dir/new_test.txt
+### Hidden and ignored files
+By default, *fd* does not search hidden directories and does not show hidden files in the
+search results. To disable this behavior, we can use the `-H` (or `--hidden`) option:
+``` bash
+> fd pre-commit
+> fd -H pre-commit
+.git/hooks/pre-commit.sample
 ```
 
-If we want to run a command for each of the search results, we can use the `-0` option to pipe
-the output to `xargs`:
+If we work in a directory that is a Git repository (or includes Git repositories), *fd* does not
+search folders (and does not show files) that match one of the `.gitignore` patterns. To disable
+this behavior, we can use the `-I` (or `--ignore`) option:
+``` bash
+> fd num_cpu
+> fd -I num_cpu
+target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
-> fd -0 'test' | xargs -0 wc -l
+
+To really search *all* files and directories, simply combine the hidden and ignore features to show
+everything (`-HI`).
+
+### Using fd with `xargs` or `parallel`
+
+If we want to run a command on all search results, we can pipe the output to `xargs`:
+``` bash
+> fd -0 -e rs | xargs -0 wc -l
 ```
+Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of     .
+newlines) In the same way, the `-0` option of `xargs` tells it to read the input in this way      .

@@ -1,26 +1,39 @@
+// Copyright (c) 2017 fd developers
+// Licensed under the Apache License, Version 2.0
+// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
+// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
+// at your option. All files in the project carrying such
+// notice may not be copied, modified, or distributed except
+// according to those terms.
+
 use std::path::MAIN_SEPARATOR;
 
-pub fn basename(input: &str) -> &str {
+/// Removes the parent component of the path
+pub fn basename(path: &str) -> &str {
     let mut index = 0;
-    for (id, character) in input.char_indices() {
+    for (id, character) in path.char_indices() {
         if character == MAIN_SEPARATOR {
             index = id;
         }
     }
-    if index == 0 {
-        input
-    } else {
-        &input[index + 1..]
+
+    // FIXME: On Windows, should return what for C:file.txt D:file.txt and \\server\share ?
+    if index != 0 {
+        return &path[index + 1..];
     }
+
+    path
 }
 
-/// Removes the extension of a given input
-pub fn remove_extension(input: &str) -> &str {
+/// Removes the extension from the path
+pub fn remove_extension(path: &str) -> &str {
+    let mut has_dir = false;
     let mut dir_index = 0;
     let mut ext_index = 0;
 
-    for (id, character) in input.char_indices() {
+    for (id, character) in path.char_indices() {
         if character == MAIN_SEPARATOR {
+            has_dir = true;
             dir_index = id;
         }
         if character == '.' {
@@ -29,31 +42,40 @@ pub fn remove_extension(input: &str) -> &str {
     }
 
     // Account for hidden files and directories
-    if ext_index == 0 || dir_index + 2 > ext_index {
-        input
-    } else {
-        &input[0..ext_index]
+    if ext_index != 0 && (!has_dir || dir_index + 2 <= ext_index) {
+        return &path[0..ext_index];
     }
+
+    path
 }
 
-pub fn dirname(input: &str) -> &str {
+/// Removes the basename from the path.
+pub fn dirname(path: &str) -> &str {
+    let mut has_dir = false;
     let mut index = 0;
-    for (id, character) in input.char_indices() {
+    for (id, character) in path.char_indices() {
         if character == MAIN_SEPARATOR {
+            has_dir = true;
             index = id;
         }
     }
-    if index == 0 { "." } else { &input[0..index] }
+
+    // FIXME: On Windows, return what for C:file.txt D:file.txt and \\server\share ?
+    if !has_dir {
+        "."
+    } else if index == 0 {
+        &path[..1]
+    } else {
+        &path[0..index]
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{MAIN_SEPARATOR, basename, dirname, remove_extension};
 
     fn correct(input: &str) -> String {
-        let mut sep = String::new();
-        sep.push(MAIN_SEPARATOR);
-        input.replace('/', &sep)
+        input.replace('/', &MAIN_SEPARATOR.to_string())
     }
 
     #[test]
@@ -65,7 +87,7 @@ mod tests {
     fn path_remove_ext_dir() {
         assert_eq!(
             remove_extension(&correct("dir/foo.txt")),
-            &correct("dir/foo")
+            correct("dir/foo")
         );
     }
 
@@ -87,6 +109,11 @@ mod tests {
     #[test]
     fn path_basename_simple() {
         assert_eq!(basename("foo.txt"), "foo.txt");
+    }
+
+    #[test]
+    fn path_basename_no_ext() {
+        assert_eq!(remove_extension(basename("foo.txt")), "foo");
     }
 
     #[test]
@@ -124,5 +151,15 @@ mod tests {
     #[test]
     fn path_dirname_empty() {
         assert_eq!(dirname(""), ".");
+    }
+
+    #[test]
+    fn path_dirname_root() {
+        #[cfg(windows)]
+        assert_eq!(dirname("C:\\"), "C:");
+        #[cfg(windows)]
+        assert_eq!(dirname("\\"), "\\");
+        #[cfg(not(windows))]
+        assert_eq!(dirname("/"), "/");
     }
 }
