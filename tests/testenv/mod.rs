@@ -50,6 +50,7 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         fs::File::create(root.join("one/two/three/d.foo"))?;
         fs::create_dir(root.join("one/two/three/directory_foo"))?;
         fs::File::create(root.join("ignored.foo"))?;
+        fs::File::create(root.join("gitignored.foo"))?;
         fs::File::create(root.join(".hidden.foo"))?;
         fs::File::create(root.join("e1 e2"))?;
 
@@ -61,6 +62,10 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
 
         fs::File::create(root.join(".ignore"))?.write_all(
             b"ignored.foo",
+        )?;
+
+        fs::File::create(root.join(".gitignore"))?.write_all(
+            b"gitignored.foo",
         )?;
     }
 
