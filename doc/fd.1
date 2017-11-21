@@ -30,9 +30,10 @@ is a simple, fast and user-friendly alternative to
 Search hidden files and directories.
 .TP
 .B \-I, \-\-no\-ignore
-Do not respect any
-.BR gitignore (5)
-files.
+Don't respect ignore files (.gitignore, .ignore, etc.)
+.TP
+.B \-\-no\-ignore\-vcs
+Don't respect version control ignore files (e.g., .gitignore).
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search (default: smart case).

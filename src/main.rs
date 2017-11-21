@@ -114,6 +114,9 @@ fn main() {
                              matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
         read_ignore: !(matches.is_present("no-ignore") ||
                            matches.is_present("rg-alias-hidden-ignore")),
+        read_gitignore: !(matches.is_present("no-ignore") ||
+                              matches.is_present("rg-alias-hidden-ignore") ||
+                              matches.is_present("no-ignore-vcs")),
         follow_links: matches.is_present("follow"),
         null_separator: matches.is_present("null_separator"),
         max_depth: matches.value_of("depth").and_then(|n| {

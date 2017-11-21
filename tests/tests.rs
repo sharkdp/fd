@@ -228,6 +228,7 @@ fn test_no_ignore() {
         &["--no-ignore", "foo"],
         "a.foo
         ignored.foo
+        gitignored.foo
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2
@@ -240,6 +241,24 @@ fn test_no_ignore() {
         ".hidden.foo
         a.foo
         ignored.foo
+        gitignored.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three/d.foo
+        one/two/three/directory_foo",
+    );
+}
+
+/// VCS ignored files (--no-ignore-vcs)
+#[test]
+fn test_no_ignore_vcs() {
+    let te = TestEnv::new();
+
+    te.assert_output(
+        &["--no-ignore-vcs", "foo"],
+        "a.foo
+        gitignored.foo
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2
@@ -257,6 +276,7 @@ fn test_no_ignore_aliases() {
         &["-u", "foo"],
         "a.foo
         ignored.foo
+        gitignored.foo
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2
@@ -269,6 +289,7 @@ fn test_no_ignore_aliases() {
         ".hidden.foo
         a.foo
         ignored.foo
+        gitignored.foo
         one/b.foo
         one/two/c.foo
         one/two/C.Foo2

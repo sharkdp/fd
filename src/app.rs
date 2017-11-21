@@ -42,6 +42,7 @@ pub fn build_app() -> App<'static, 'static> {
         .setting(AppSettings::DeriveDisplayOrder)
         .arg(arg("hidden").long("hidden").short("H"))
         .arg(arg("no-ignore").long("no-ignore").short("I"))
+        .arg(arg("no-ignore-vcs").long("no-ignore-vcs"))
         .arg(
             arg("rg-alias-hidden-ignore")
                 .short("u")
@@ -137,6 +138,10 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Do not respect .(git)ignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
             '.*ignore' files.");
+    doc!(h, "no-ignore-vcs"
+        , "Do not respect .gitignore files"
+        , "Show search results from files and directories that would otherwise be ignored by \
+            '.gitignore' files.");
     doc!(h, "case-sensitive"
         , "Case-sensitive search (default: smart case)"
         , "Perform a case-sensitive search. By default, fd uses case-insensitive searches, \
