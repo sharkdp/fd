@@ -15,6 +15,8 @@ use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(windows)]
+use std::env;
 
 use ansi_term;
 
@@ -30,6 +32,20 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions) {
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
         process::exit(0);
+    }
+}
+
+#[cfg(not(windows))]
+fn get_separator() -> String {
+    path::MAIN_SEPARATOR.to_string()
+}
+
+#[cfg(windows)]
+fn get_separator() -> String {
+    if let Some(_) = env::var_os("PATH") {
+        String::from("/")
+    } else {
+        path::MAIN_SEPARATOR.to_string()
     }
 }
 
@@ -61,7 +77,9 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
             // RootDir is already a separator.
             Component::RootDir => String::new(),
             // Everything else uses a separator that is painted the same way as the component.
-            _ => style.paint(path::MAIN_SEPARATOR.to_string()).to_string(),
+            _ => {
+                    style.paint(get_separator()).to_string()
+            },
         };
     }
 
