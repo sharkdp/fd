@@ -43,6 +43,9 @@ fn get_separator() -> String {
 
 #[cfg(windows)]
 fn get_separator() -> String {
+    // The HOME environment variable is not available when using cmd
+    // and allows a way to determine if we're running fd with cmd
+    // or cygwin.
     if let Some(_) = env::var_os("HOME") {
         String::from("/")
     } else {
@@ -78,9 +81,7 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
             // RootDir is already a separator.
             Component::RootDir => String::new(),
             // Everything else uses a separator that is painted the same way as the component.
-            _ => {
-                style.paint(get_separator()).to_string()
-            },
+            _ => style.paint(get_separator()).to_string(),
         };
     }
 
@@ -98,6 +99,10 @@ fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Resu
 
 #[cfg(windows)]
 fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Result<()> {
+    // The HOME environment variable is not available when using cmd
+    // and allows a way to determine if we're running fd with cmd
+    // or cygwin.
+    // Replace back slashes with forward slashes when running on cygwin.
     if let Some(_) = env::var_os("HOME") {
 		write!(&mut io::stdout(), "{}{}", entry.replace("\\", "/"), separator)
 	} else {
