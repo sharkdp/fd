@@ -15,6 +15,7 @@ use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(windows)]
 use std::env;
 use std::borrow::Cow;
 
@@ -91,7 +92,7 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
 }
 
 #[cfg(not(windows))]
-fn write_entry_uncolorized(entry: Cow<str>, separator: str) -> io::Result<()> {
+fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Result<()> {
     write!(&mut io::stdout(), "{}{}", entry, separator)
 }
 
