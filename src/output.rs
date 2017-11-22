@@ -15,6 +15,9 @@ use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
+#[cfg(windows)]
+use std::env;
+use std::borrow::Cow;
 
 use ansi_term;
 
@@ -30,6 +33,23 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions) {
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
         process::exit(0);
+    }
+}
+
+#[cfg(not(windows))]
+fn get_separator() -> String {
+    path::MAIN_SEPARATOR.to_string()
+}
+
+#[cfg(windows)]
+fn get_separator() -> String {
+    // The HOME environment variable is not available when using cmd
+    // and allows a way to determine if we're running fd with cmd
+    // or cygwin.
+    if let Some(_) = env::var_os("HOME") {
+        String::from("/")
+    } else {
+        path::MAIN_SEPARATOR.to_string()
     }
 }
 
@@ -61,7 +81,7 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
             // RootDir is already a separator.
             Component::RootDir => String::new(),
             // Everything else uses a separator that is painted the same way as the component.
-            _ => style.paint(path::MAIN_SEPARATOR.to_string()).to_string(),
+            _ => style.paint(get_separator()).to_string(),
         };
     }
 
@@ -72,11 +92,34 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
     }
 }
 
+#[cfg(not(windows))]
+fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Result<()> {
+    write!(&mut io::stdout(), "{}{}", entry, separator)
+}
+
+#[cfg(windows)]
+fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Result<()> {
+    // The HOME environment variable is not available when using cmd
+    // and allows a way to determine if we're running fd with cmd
+    // or cygwin.
+    // Replace back slashes with forward slashes when running on cygwin.
+    if let Some(_) = env::var_os("HOME") {
+        write!(
+            &mut io::stdout(),
+            "{}{}",
+            entry.replace("\\", "/"),
+            separator
+        )
+    } else {
+        write!(&mut io::stdout(), "{}{}", entry, separator)
+    }
+}
+
 fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let path_str = path.to_string_lossy();
-    write!(&mut io::stdout(), "{}{}", path_str, separator)
+    write_entry_uncolorized(path_str, separator)
 }
 
 fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_term::Style> {
