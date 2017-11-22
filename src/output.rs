@@ -13,16 +13,18 @@ use std::{fs, process};
 use std::io::{self, Write};
 use std::ops::Deref;
 use std::path::{self, Path, PathBuf, Component};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
 
-pub fn print_entry(entry: &PathBuf, config: &FdOptions) {
+pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<AtomicBool>) {
     let path = entry.strip_prefix(".").unwrap_or(entry);
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(path, config, ls_colors)
+        print_entry_colorized(path, config, ls_colors, &wants_to_quit)
     } else {
         print_entry_uncolorized(path, config)
     };
@@ -33,7 +35,12 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions) {
     }
 }
 
-fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) -> io::Result<()> {
+fn print_entry_colorized(
+    path: &Path,
+    config: &FdOptions,
+    ls_colors: &LsColors,
+    wants_to_quit: &Arc<AtomicBool>,
+) -> io::Result<()> {
     let default_style = ansi_term::Style::default();
 
     let stdout = io::stdout();
@@ -63,6 +70,11 @@ fn print_entry_colorized(path: &Path, config: &FdOptions, ls_colors: &LsColors) 
             // Everything else uses a separator that is painted the same way as the component.
             _ => style.paint(path::MAIN_SEPARATOR.to_string()).to_string(),
         };
+
+        if wants_to_quit.load(Ordering::Relaxed) {
+            write!(handle, "\n")?;
+            process::exit(0);
+        }
     }
 
     if config.null_separator {
