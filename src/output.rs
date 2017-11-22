@@ -104,17 +104,22 @@ fn write_entry_uncolorized(entry: Cow<str>, separator: &'static str) -> io::Resu
     // or cygwin.
     // Replace back slashes with forward slashes when running on cygwin.
     if let Some(_) = env::var_os("HOME") {
-		write!(&mut io::stdout(), "{}{}", entry.replace("\\", "/"), separator)
-	} else {
-		write!(&mut io::stdout(), "{}{}", entry, separator)
-	}
+        write!(
+            &mut io::stdout(),
+            "{}{}",
+            entry.replace("\\", "/"),
+            separator
+        )
+    } else {
+        write!(&mut io::stdout(), "{}{}", entry, separator)
+    }
 }
 
 fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let path_str = path.to_string_lossy();
-	write_entry_uncolorized(path_str, separator)
+    write_entry_uncolorized(path_str, separator)
 }
 
 fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_term::Style> {
