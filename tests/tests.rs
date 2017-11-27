@@ -15,10 +15,7 @@ mod testenv;
 use testenv::TestEnv;
 use regex::escape;
 
-static DEFAULT_DIRS: &'static [&'static str] = &[
-    "one/two/three",
-    "one/two/three/directory_foo",
-];
+static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
 static DEFAULT_FILES: &'static [&'static str] = &[
     "a.foo",
@@ -84,33 +81,23 @@ fn test_simple() {
 /// Test multiple directory searches
 #[test]
 fn test_multi_file() {
-    let dirs = &[
-        "test1",
-        "test2",
-    ];
-    let files = &[
-        "test1/a.foo",
-        "test1/b.foo",
-        "test2/a.foo",
-    ];
+    let dirs = &["test1", "test2"];
+    let files = &["test1/a.foo", "test1/b.foo", "test2/a.foo"];
     let te = TestEnv::new(dirs, files);
     te.assert_output(
         &["a.foo", "test1", "test2"],
         "test1/a.foo
-        test2/a.foo"
+        test2/a.foo",
     );
-    
+
     te.assert_output(
         &["", "test1", "test2"],
         "test1/a.foo
         test2/a.foo
-        test1/b.foo"
+        test1/b.foo",
     );
 
-    te.assert_output(
-        &["b.foo", "test1", "test2"],
-        "test1/b.foo"
-    );
+    te.assert_output(&["b.foo", "test1", "test2"], "test1/b.foo");
 }
 
 /// Explicit root path

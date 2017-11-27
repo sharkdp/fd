@@ -137,10 +137,7 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
 }
 
 impl TestEnv {
-    pub fn new(
-        directories: &[&'static str],
-        files: &[&'static str]
-    ) -> TestEnv {
+    pub fn new(directories: &[&'static str], files: &[&'static str]) -> TestEnv {
         let temp_dir = create_working_directory(directories, files).expect("working directory");
         let fd_exe = find_fd_exe();
 

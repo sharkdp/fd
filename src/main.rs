@@ -71,15 +71,12 @@ fn main() {
         ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
     }
 
-     //Get the root directory for the search
+    //Get one or more root directories to search.
     let dir_vec: Vec<_> = match matches.values_of("path") {
-        Some(paths) => {
-            paths.map(|path| {
-                PathBuf::from(path)
-            }).collect::<Vec<_>>()
-        },
+        Some(paths) => paths.map(|path| PathBuf::from(path)).collect::<Vec<_>>(),
         None => vec![current_dir.to_path_buf()],
     };
+
     for mut root_dir_buf in dir_vec {
         if !fshelper::is_dir(&root_dir_buf) {
             error(&format!(
@@ -119,7 +116,7 @@ fn main() {
         };
 
         let command = matches.values_of("exec").map(CommandTemplate::new);
-    
+
         let config = FdOptions {
             case_sensitive,
             search_full_path: matches.is_present("full-path"),
