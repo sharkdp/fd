@@ -46,7 +46,12 @@ pub enum FileType {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>, wants_to_quit: &Arc<AtomicBool>) {
+pub fn scan(
+    root: &Path,
+    pattern: Arc<Regex>,
+    config: Arc<FdOptions>,
+    wants_to_quit: &Arc<AtomicBool>,
+) {
     let (tx, rx) = channel();
     let threads = config.threads;
 
