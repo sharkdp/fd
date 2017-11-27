@@ -6,8 +6,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate ctrlc;
-
 use exec;
 use fshelper;
 use internal::{error, FdOptions};
@@ -15,7 +13,7 @@ use output;
 
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::channel;
 use std::thread;
 use std::time;
@@ -48,7 +46,7 @@ pub enum FileType {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
+pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>, wants_to_quit: &Arc<AtomicBool>) {
     let (tx, rx) = channel();
     let threads = config.threads;
 
@@ -77,14 +75,9 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .threads(threads)
         .build_parallel();
 
-    let wants_to_quit = Arc::new(AtomicBool::new(false));
-
-    if let Some(_) = config.ls_colors {
-        let wq = Arc::clone(&wants_to_quit);
-        ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
-    }
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
+    let wc_clone = Arc::clone(wants_to_quit);
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
@@ -138,7 +131,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         if time::Instant::now() - start > max_buffer_time {
                             // Flush the buffer
                             for v in &buffer {
-                                output::print_entry(&v, &rx_config, &wants_to_quit);
+                                output::print_entry(&v, &rx_config, &wc_clone);
                             }
                             buffer.clear();
 
@@ -147,7 +140,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         }
                     }
                     ReceiverMode::Streaming => {
-                        output::print_entry(&value, &rx_config, &wants_to_quit);
+                        output::print_entry(&value, &rx_config, &wc_clone);
                     }
                 }
             }
@@ -157,7 +150,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&value, &rx_config, &wants_to_quit);
+                    output::print_entry(&value, &rx_config, &wc_clone);
                 }
             }
         }

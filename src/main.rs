@@ -18,6 +18,7 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+extern crate ctrlc;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -43,6 +44,7 @@ use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
 use lscolors::LsColors;
 use walk::FileType;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 fn main() {
     let matches = app::build_app().get_matches();
@@ -55,6 +57,18 @@ fn main() {
     let current_dir = Path::new(".");
     if !fshelper::is_dir(current_dir) {
         error("Error: could not get current directory.");
+    }
+
+    let colored_output = match matches.value_of("color") {
+        Some("always") => true,
+        Some("never") => false,
+        _ => atty::is(Stream::Stdout),
+    };
+
+    let wants_to_quit = Arc::new(AtomicBool::new(false));
+    if colored_output {
+        let wq = Arc::clone(&wants_to_quit);
+        ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
     }
 
      //Get the root directory for the search
@@ -89,12 +103,6 @@ fn main() {
         // if the pattern has an uppercase character (smart case).
         let case_sensitive = !matches.is_present("ignore-case") &&
             (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
-
-        let colored_output = match matches.value_of("color") {
-            Some("always") => true,
-            Some("never") => false,
-            _ => atty::is(Stream::Stdout),
-        };
 
         #[cfg(windows)]
         let colored_output = colored_output && windows::enable_colored_output();
@@ -161,7 +169,7 @@ fn main() {
             .case_insensitive(!config.case_sensitive)
             .dot_matches_new_line(true)
             .build() {
-            Ok(re) => walk::scan(root_dir, Arc::new(re), Arc::new(config)),
+            Ok(re) => walk::scan(root_dir, Arc::new(re), Arc::new(config), &wants_to_quit),
             Err(err) => error(err.description()),
         }
     }
