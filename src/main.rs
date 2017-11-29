@@ -48,8 +48,7 @@ fn main() {
     let matches = app::build_app().get_matches();
 
     // Get the search pattern
-    let empty_pattern = String::new();
-    let pattern = matches.value_of("pattern").unwrap_or(&empty_pattern);
+    let pattern = matches.value_of("pattern").unwrap_or("");
 
     // Get the current working directory
     let current_dir = Path::new(".");
