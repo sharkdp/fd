@@ -57,12 +57,6 @@ fn main() {
         error("Error: could not get current directory.");
     }
 
-    let colored_output = match matches.value_of("color") {
-        Some("always") => true,
-        Some("never") => false,
-        _ => atty::is(Stream::Stdout),
-    };
-
     //Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches.values_of("path") {
         Some(paths) => {
@@ -93,6 +87,12 @@ fn main() {
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case") &&
         (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
+
+    let colored_output = match matches.value_of("color") {
+        Some("always") => true,
+        Some("never") => false,
+        _ => atty::is(Stream::Stdout),
+    };
 
     #[cfg(windows)]
     let colored_output = colored_output && windows::enable_colored_output();
