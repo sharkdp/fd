@@ -38,7 +38,6 @@ pub struct TestEnv {
 fn create_working_directory(
     directories: &[&'static str],
     files: &[&'static str],
-    //symlinks: Vec<&'static str>
 ) -> Result<TempDir, io::Error> {
     let temp_dir = TempDir::new("fd-tests")?;
 
