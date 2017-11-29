@@ -82,7 +82,7 @@ pub fn scan(
 
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
-    let wc_clone = Arc::clone(wants_to_quit);
+    let quit_clone = Arc::clone(wants_to_quit);
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
@@ -136,7 +136,7 @@ pub fn scan(
                         if time::Instant::now() - start > max_buffer_time {
                             // Flush the buffer
                             for v in &buffer {
-                                output::print_entry(&v, &rx_config, &wc_clone);
+                                output::print_entry(&v, &rx_config, &quit_clone);
                             }
                             buffer.clear();
 
@@ -145,7 +145,7 @@ pub fn scan(
                         }
                     }
                     ReceiverMode::Streaming => {
-                        output::print_entry(&value, &rx_config, &wc_clone);
+                        output::print_entry(&value, &rx_config, &quit_clone);
                     }
                 }
             }
@@ -155,7 +155,7 @@ pub fn scan(
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&value, &rx_config, &wc_clone);
+                    output::print_entry(&value, &rx_config, &quit_clone);
                 }
             }
         }
