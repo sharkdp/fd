@@ -162,16 +162,12 @@ fn main() {
             .unwrap_or_else(|| vec![]),
     };
 
-    let config_arc = Arc::new(config);
 
-    for root_dir_buf in dir_vec {
-        let root_dir = root_dir_buf.as_path();
-        match RegexBuilder::new(pattern)
-            .case_insensitive(!config_arc.clone().case_sensitive)
-            .dot_matches_new_line(true)
-            .build() {
-            Ok(re) => walk::scan(root_dir, Arc::new(re), config_arc.clone(), &wants_to_quit),
-            Err(err) => error(err.description()),
-        }
+    match RegexBuilder::new(pattern)
+        .case_insensitive(!config.case_sensitive)
+        .dot_matches_new_line(true)
+        .build() {
+        Ok(re) => walk::scan(&mut dir_vec, Arc::new(re), Arc::new(config), &wants_to_quit),
+        Err(err) => error(err.description()),
     }
 }

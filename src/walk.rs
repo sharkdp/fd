@@ -11,7 +11,7 @@ use fshelper;
 use internal::{error, FdOptions};
 use output;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::channel;
@@ -47,15 +47,16 @@ pub enum FileType {
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
 pub fn scan(
-    root: &Path,
+    path_vec: &mut Vec<PathBuf>,
     pattern: Arc<Regex>,
     config: Arc<FdOptions>,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
+    let first_path_buf = path_vec.pop().unwrap();
     let (tx, rx) = channel();
     let threads = config.threads;
 
-    let mut override_builder = OverrideBuilder::new(root);
+    let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
     for pattern in &config.exclude_patterns {
         let res = override_builder.add(pattern);
@@ -67,7 +68,8 @@ pub fn scan(
         error("Mismatch in exclude patterns");
     });
 
-    let walker = WalkBuilder::new(root)
+    let mut walker = WalkBuilder::new(first_path_buf.as_path());
+    walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_ignore)
         .git_ignore(config.read_gitignore)
@@ -76,7 +78,11 @@ pub fn scan(
         .git_exclude(config.read_gitignore)
         .overrides(overrides)
         .follow_links(config.follow_links)
-        .max_depth(config.max_depth)
+        .max_depth(config.max_depth);
+    while path_vec.len() > 0 {
+        walker.add(path_vec.pop().unwrap().as_path());
+    }
+    let parallel_walker = walker
         .threads(threads)
         .build_parallel();
 
@@ -162,11 +168,10 @@ pub fn scan(
     });
 
     // Spawn the sender threads.
-    walker.run(|| {
+    parallel_walker.run(|| {
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
-        let root = root.to_owned();
 
         Box::new(move |entry_o| {
             let entry = match entry_o {
@@ -176,7 +181,7 @@ pub fn scan(
 
             let entry_path = entry.path();
 
-            if entry_path == root {
+            if entry.depth() == 0 {
                 return ignore::WalkState::Continue;
             }
 
