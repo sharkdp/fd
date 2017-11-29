@@ -18,7 +18,6 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-extern crate ctrlc;
 
 pub mod fshelper;
 pub mod lscolors;
@@ -44,7 +43,6 @@ use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, FdOptions};
 use lscolors::LsColors;
 use walk::FileType;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 fn main() {
     let matches = app::build_app().get_matches();
@@ -64,12 +62,6 @@ fn main() {
         Some("never") => false,
         _ => atty::is(Stream::Stdout),
     };
-
-    let wants_to_quit = Arc::new(AtomicBool::new(false));
-    if colored_output {
-        let wq = Arc::clone(&wants_to_quit);
-        ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
-    }
 
     //Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches.values_of("path") {
@@ -167,7 +159,7 @@ fn main() {
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(&mut dir_vec, Arc::new(re), Arc::new(config), &wants_to_quit),
+        Ok(re) => walk::scan(&mut dir_vec, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }
