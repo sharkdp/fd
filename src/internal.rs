@@ -15,16 +15,6 @@ use lscolors::LsColors;
 use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
 
-/// Defines how to display search result paths.
-#[derive(PartialEq)]
-pub enum PathDisplay {
-    /// As an absolute path
-    Absolute,
-
-    /// As a relative path
-    Relative,
-}
-
 /// Configuration options for *fd*.
 pub struct FdOptions {
     /// Whether the search is case-sensitive or case-insensitive.
@@ -62,9 +52,6 @@ pub struct FdOptions {
     /// provide a sorted output, in case the total execution time is shorter than
     /// `max_buffer_time`.
     pub max_buffer_time: Option<time::Duration>,
-
-    /// Display results as relative or absolute path.
-    pub path_display: PathDisplay,
 
     /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
     /// how to style different filetypes.
