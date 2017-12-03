@@ -14,6 +14,7 @@ mod testenv;
 
 use testenv::TestEnv;
 use regex::escape;
+use std::env;
 
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env.test_root()
@@ -93,6 +94,7 @@ fn test_explicit_root_path() {
         ../../one/two/C.Foo2
         ../../one/two/three/d.foo
         ../../one/two/three/directory_foo",
+        "",
     );
 
     te.assert_output_subdirectory(
@@ -103,6 +105,7 @@ fn test_explicit_root_path() {
         ../three
         ../three/d.foo
         ../three/directory_foo",
+        "",
     );
 }
 
@@ -505,6 +508,7 @@ fn test_symlink() {
             {dir}/symlink",
             dir = &parent_parent
         ),
+        "",
     );
 
     te.assert_output_subdirectory(
@@ -519,6 +523,7 @@ fn test_symlink() {
             dir = if cfg!(windows) { "symlink" } else { "one/two" },
             abs_path = &abs_path
         ),
+        "",
     );
 
     te.assert_output(
@@ -550,6 +555,7 @@ fn test_symlink() {
             dir = if cfg!(windows) { "symlink" } else { "one/two" },
             abs_path = &abs_path
         ),
+        "",
     );
 
     te.assert_output(
@@ -638,6 +644,30 @@ fn test_exec() {
                 abs_path = &abs_path
             ),
         );
+
+        // On travis Trusty quotes are differents with `rm -i`
+        // ‘a.foo’ instead of locally 'a.foo'
+        match env::var("TRAVIS_OS_NAME") {
+            Ok(val) => {
+                if val == "linux" {
+                    te.assert_output_error(
+                        &["a.foo", "--exec", "rm", "-i", "{}"],
+                        "rm: remove regular empty file ‘a.foo’? ",
+                    );
+                } else if val == "osx" {
+                    te.assert_output_error(
+                        &["a.foo", "--exec", "rm", "-i", "{}"],
+                        "remove a.foo? ",
+                    );
+                }
+            }
+            Err(_) => {
+                te.assert_output_error(
+                    &["a.foo", "--exec", "rm", "-i", "{}"],
+                    "rm: remove regular empty file 'a.foo'? ",
+                );
+            }
+        }
 
         te.assert_output(
             &["foo", "--exec", "echo", "{}"],
