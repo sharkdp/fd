@@ -60,8 +60,11 @@ fn create_working_directory() -> Result<TempDir, io::Error> {
         // is by default only granted for administrators.
         #[cfg(windows)] windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
+        fs::File::create(root.join("echo_err.sh"))?.write_all(
+            b"echo $* 1>&2",
+        )?;
         fs::File::create(root.join(".ignore"))?.write_all(
-            b"ignored.foo",
+            b"ignored.foo\necho_err.sh",
         )?;
 
         fs::File::create(root.join(".gitignore"))?.write_all(

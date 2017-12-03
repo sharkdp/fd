@@ -14,7 +14,6 @@ mod testenv;
 
 use testenv::TestEnv;
 use regex::escape;
-use std::env;
 
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env.test_root()
@@ -645,29 +644,7 @@ fn test_exec() {
             ),
         );
 
-        // On travis Trusty quotes are differents with `rm -i`
-        // ‘a.foo’ instead of locally 'a.foo'
-        match env::var("TRAVIS_OS_NAME") {
-            Ok(val) => {
-                if val == "linux" {
-                    te.assert_output_error(
-                        &["a.foo", "--exec", "rm", "-i", "{}"],
-                        "rm: remove regular empty file ‘a.foo’? ",
-                    );
-                } else if val == "osx" {
-                    te.assert_output_error(
-                        &["a.foo", "--exec", "rm", "-i", "{}"],
-                        "remove a.foo? ",
-                    );
-                }
-            }
-            Err(_) => {
-                te.assert_output_error(
-                    &["a.foo", "--exec", "rm", "-i", "{}"],
-                    "rm: remove regular empty file 'a.foo'? ",
-                );
-            }
-        }
+        te.assert_output_error(&["a.foo", "--exec", "sh", "echo_err.sh", "{}"], "a.foo");
 
         te.assert_output(
             &["foo", "--exec", "echo", "{}"],
