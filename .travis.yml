@@ -131,7 +131,9 @@ deploy:
   # - PROJECT_NAME: name of the project, set on the `env.global` above
   # - TRAVIS_TAG: tag name that the build is being deployed for, usually the version number
   # - TARGET: target triple of the build
-  file: $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
+  file:
+    - $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
+    - $PROJECT_NAME*.deb
   # don't delete artifacts from previous stage
   skip_cleanup: true
   on:
