@@ -97,6 +97,11 @@ fn test_multi_file() {
         test1/b.foo",
     );
 
+    te.assert_output(
+        &["a.foo", "test1"],
+        "test1/a.foo"
+    );
+
     te.assert_output(&["b.foo", "test1", "test2"], "test1/b.foo");
 }
 
