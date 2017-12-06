@@ -159,7 +159,7 @@ fn main() {
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(&mut dir_vec, Arc::new(re), Arc::new(config)),
+        Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }

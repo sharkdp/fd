@@ -48,8 +48,9 @@ pub enum FileType {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &mut Vec<PathBuf>, pattern: Arc<Regex>, config: Arc<FdOptions>) {
-    let first_path_buf = path_vec.pop().unwrap();
+pub fn scan(path_vec: &Vec<PathBuf>, pattern: Arc<Regex>, config: Arc<FdOptions>) {
+    let mut path_iter = path_vec.iter();
+    let first_path_buf = path_iter.next().expect("Error: Path vector can not be empty");
     let (tx, rx) = channel();
     let threads = config.threads;
 
@@ -76,9 +77,11 @@ pub fn scan(path_vec: &mut Vec<PathBuf>, pattern: Arc<Regex>, config: Arc<FdOpti
         .overrides(overrides)
         .follow_links(config.follow_links)
         .max_depth(config.max_depth);
-    while path_vec.len() > 0 {
-        walker.add(path_vec.pop().unwrap().as_path());
+
+    for path_entry in path_iter {
+        walker.add(path_entry.as_path());
     }
+
     let parallel_walker = walker.threads(threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
