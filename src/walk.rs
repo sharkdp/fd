@@ -50,7 +50,9 @@ pub enum FileType {
 /// path will simply be written to standard output.
 pub fn scan(path_vec: &Vec<PathBuf>, pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let mut path_iter = path_vec.iter();
-    let first_path_buf = path_iter.next().expect("Error: Path vector can not be empty");
+    let first_path_buf = path_iter.next().expect(
+        "Error: Path vector can not be empty",
+    );
     let (tx, rx) = channel();
     let threads = config.threads;
 
