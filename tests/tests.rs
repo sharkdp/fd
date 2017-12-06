@@ -15,6 +15,20 @@ mod testenv;
 use testenv::TestEnv;
 use regex::escape;
 
+static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
+
+static DEFAULT_FILES: &'static [&'static str] = &[
+    "a.foo",
+    "one/b.foo",
+    "one/two/c.foo",
+    "one/two/C.Foo2",
+    "one/two/three/d.foo",
+    "ignored.foo",
+    "gitignored.foo",
+    ".hidden.foo",
+    "e1 e2",
+];
+
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env.test_root()
         .canonicalize()
@@ -32,7 +46,7 @@ fn get_absolute_root_path(env: &TestEnv) -> String {
 /// Simple tests
 #[test]
 fn test_simple() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(&["a.foo"], "a.foo");
     te.assert_output(&["b.foo"], "one/b.foo");
@@ -64,10 +78,34 @@ fn test_simple() {
     );
 }
 
+/// Test multiple directory searches
+#[test]
+fn test_multi_file() {
+    let dirs = &["test1", "test2"];
+    let files = &["test1/a.foo", "test1/b.foo", "test2/a.foo"];
+    let te = TestEnv::new(dirs, files);
+    te.assert_output(
+        &["a.foo", "test1", "test2"],
+        "test1/a.foo
+        test2/a.foo",
+    );
+
+    te.assert_output(
+        &["", "test1", "test2"],
+        "test1/a.foo
+        test2/a.foo
+        test1/b.foo",
+    );
+
+    te.assert_output(&["a.foo", "test1"], "test1/a.foo");
+
+    te.assert_output(&["b.foo", "test1", "test2"], "test1/b.foo");
+}
+
 /// Explicit root path
 #[test]
 fn test_explicit_root_path() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["foo", "one"],
@@ -109,7 +147,7 @@ fn test_explicit_root_path() {
 /// Regex searches
 #[test]
 fn test_regex_searches() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["[a-c].foo"],
@@ -130,7 +168,7 @@ fn test_regex_searches() {
 /// Smart case
 #[test]
 fn test_smart_case() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["c.foo"],
@@ -154,7 +192,7 @@ fn test_smart_case() {
 /// Case sensitivity (--case-sensitive)
 #[test]
 fn test_case_sensitive() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(&["--case-sensitive", "c.foo"], "one/two/c.foo");
 
@@ -169,7 +207,7 @@ fn test_case_sensitive() {
 /// Case insensitivity (--ignore-case)
 #[test]
 fn test_case_insensitive() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--ignore-case", "C.Foo"],
@@ -187,7 +225,7 @@ fn test_case_insensitive() {
 /// Full path search (--full-path)
 #[test]
 fn test_full_path() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
@@ -205,7 +243,7 @@ fn test_full_path() {
 /// Hidden files (--hidden)
 #[test]
 fn test_hidden() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--hidden", "foo"],
@@ -222,7 +260,7 @@ fn test_hidden() {
 /// Ignored files (--no-ignore)
 #[test]
 fn test_no_ignore() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--no-ignore", "foo"],
@@ -253,7 +291,7 @@ fn test_no_ignore() {
 /// VCS ignored files (--no-ignore-vcs)
 #[test]
 fn test_no_ignore_vcs() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--no-ignore-vcs", "foo"],
@@ -270,7 +308,7 @@ fn test_no_ignore_vcs() {
 /// Ignored files with ripgrep aliases (-u / -uu)
 #[test]
 fn test_no_ignore_aliases() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["-u", "foo"],
@@ -301,7 +339,7 @@ fn test_no_ignore_aliases() {
 /// Symlinks (--follow)
 #[test]
 fn test_follow() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--follow", "c.foo"],
@@ -315,7 +353,7 @@ fn test_follow() {
 /// Null separator (--print0)
 #[test]
 fn test_print0() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--print0", "foo"],
@@ -331,7 +369,7 @@ fn test_print0() {
 /// Maximum depth (--max-depth)
 #[test]
 fn test_max_depth() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--max-depth", "3"],
@@ -368,7 +406,7 @@ fn test_max_depth() {
 /// Absolute paths (--absolute-path)
 #[test]
 fn test_absolute_path() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     let abs_path = get_absolute_root_path(&te);
 
@@ -420,7 +458,7 @@ fn test_absolute_path() {
 /// File type filter (--type)
 #[test]
 fn test_type() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--type", "f"],
@@ -446,7 +484,7 @@ fn test_type() {
 /// File extension (--extension)
 #[test]
 fn test_extension() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--extension", "foo"],
@@ -470,7 +508,7 @@ fn test_extension() {
 /// Symlinks misc
 #[test]
 fn test_symlink() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     let abs_path = get_absolute_root_path(&te);
 
@@ -570,7 +608,7 @@ fn test_symlink() {
 /// Exclude patterns (--exclude)
 #[test]
 fn test_excludes() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--exclude", "*.foo"],
@@ -620,7 +658,7 @@ fn test_excludes() {
 /// Shell script execution (--exec)
 #[test]
 fn test_exec() {
-    let te = TestEnv::new();
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     let abs_path = get_absolute_root_path(&te);
 

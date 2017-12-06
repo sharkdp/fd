@@ -124,7 +124,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden(true),
         )
         .arg(arg("pattern"))
-        .arg(arg("path"))
+        .arg(arg("path").multiple(true))
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

@@ -35,24 +35,22 @@ pub struct TestEnv {
 }
 
 /// Create the working directory and the test files.
-fn create_working_directory() -> Result<TempDir, io::Error> {
+fn create_working_directory(
+    directories: &[&'static str],
+    files: &[&'static str],
+) -> Result<TempDir, io::Error> {
     let temp_dir = TempDir::new("fd-tests")?;
 
     {
         let root = temp_dir.path();
 
-        fs::create_dir_all(root.join("one/two/three"))?;
+        for directory in directories {
+            fs::create_dir_all(root.join(directory))?;
+        }
 
-        fs::File::create(root.join("a.foo"))?;
-        fs::File::create(root.join("one/b.foo"))?;
-        fs::File::create(root.join("one/two/c.foo"))?;
-        fs::File::create(root.join("one/two/C.Foo2"))?;
-        fs::File::create(root.join("one/two/three/d.foo"))?;
-        fs::create_dir(root.join("one/two/three/directory_foo"))?;
-        fs::File::create(root.join("ignored.foo"))?;
-        fs::File::create(root.join("gitignored.foo"))?;
-        fs::File::create(root.join(".hidden.foo"))?;
-        fs::File::create(root.join("e1 e2"))?;
+        for file in files {
+            fs::File::create(root.join(file))?;
+        }
 
         #[cfg(unix)] unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
@@ -138,8 +136,8 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
 }
 
 impl TestEnv {
-    pub fn new() -> TestEnv {
-        let temp_dir = create_working_directory().expect("working directory");
+    pub fn new(directories: &[&'static str], files: &[&'static str]) -> TestEnv {
+        let temp_dir = create_working_directory(directories, files).expect("working directory");
         let fd_exe = find_fd_exe();
 
         TestEnv {

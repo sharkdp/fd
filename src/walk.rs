@@ -13,7 +13,7 @@ use fshelper;
 use internal::{error, FdOptions};
 use output;
 
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
@@ -48,11 +48,15 @@ pub enum FileType {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
+pub fn scan(path_vec: &Vec<PathBuf>, pattern: Arc<Regex>, config: Arc<FdOptions>) {
+    let mut path_iter = path_vec.iter();
+    let first_path_buf = path_iter.next().expect(
+        "Error: Path vector can not be empty",
+    );
     let (tx, rx) = channel();
     let threads = config.threads;
 
-    let mut override_builder = OverrideBuilder::new(root);
+    let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
     for pattern in &config.exclude_patterns {
         let res = override_builder.add(pattern);
@@ -64,7 +68,8 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         error("Mismatch in exclude patterns");
     });
 
-    let walker = WalkBuilder::new(root)
+    let mut walker = WalkBuilder::new(first_path_buf.as_path());
+    walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_ignore)
         .git_ignore(config.read_gitignore)
@@ -73,16 +78,20 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .git_exclude(config.read_gitignore)
         .overrides(overrides)
         .follow_links(config.follow_links)
-        .max_depth(config.max_depth)
-        .threads(threads)
-        .build_parallel();
+        .max_depth(config.max_depth);
+
+    for path_entry in path_iter {
+        walker.add(path_entry.as_path());
+    }
+
+    let parallel_walker = walker.threads(threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
-
     if let Some(_) = config.ls_colors {
         let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
     }
+
     // Spawn the thread that receives all results through the channel.
     let rx_config = Arc::clone(&config);
     let receiver_thread = thread::spawn(move || {
@@ -164,11 +173,10 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
     });
 
     // Spawn the sender threads.
-    walker.run(|| {
+    parallel_walker.run(|| {
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
-        let root = root.to_owned();
 
         Box::new(move |entry_o| {
             let entry = match entry_o {
@@ -178,7 +186,7 @@ pub fn scan(root: &Path, pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             let entry_path = entry.path();
 
-            if entry_path == root {
+            if entry.depth() == 0 {
                 return ignore::WalkState::Continue;
             }
 
