@@ -58,8 +58,11 @@ fn create_working_directory(
         // is by default only granted for administrators.
         #[cfg(windows)] windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
+        fs::File::create(root.join("echo_err.sh"))?.write_all(
+            b"echo $* 1>&2",
+        )?;
         fs::File::create(root.join(".ignore"))?.write_all(
-            b"ignored.foo",
+            b"ignored.foo\necho_err.sh",
         )?;
 
         fs::File::create(root.join(".gitignore"))?.write_all(
@@ -159,7 +162,12 @@ impl TestEnv {
 
     /// Assert that calling *fd* with the specified arguments produces the expected output.
     pub fn assert_output(&self, args: &[&str], expected: &str) {
-        self.assert_output_subdirectory(".", args, expected)
+        self.assert_output_subdirectory(".", args, expected, "")
+    }
+
+    /// Assert that calling *fd* with the specified arguments produces the expected stderr.
+    pub fn assert_output_error(&self, args: &[&str], expected: &str) {
+        self.assert_output_subdirectory(".", args, "", expected)
     }
 
     /// Assert that calling *fd* in the specified path under the root working directory,
@@ -168,7 +176,8 @@ impl TestEnv {
         &self,
         path: P,
         args: &[&str],
-        expected: &str,
+        expected_stdout: &str,
+        expected_stderr: &str,
     ) {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
@@ -184,12 +193,17 @@ impl TestEnv {
         }
 
         // Normalize both expected and actual output.
-        let expected = normalize_output(expected, true);
-        let actual = normalize_output(&String::from_utf8_lossy(&output.stdout), false);
+        let expected_stdout = normalize_output(expected_stdout, true);
+        let actual_stdout = normalize_output(&String::from_utf8_lossy(&output.stdout), false);
+        let expected_stderr = normalize_output(expected_stderr, true);
+        let actual_stderr = normalize_output(&String::from_utf8_lossy(&output.stderr), false);
 
         // Compare actual output to expected output.
-        if expected != actual {
-            panic!(format_output_error(args, &expected, &actual));
+        if expected_stdout != actual_stdout {
+            panic!(format_output_error(args, &expected_stdout, &actual_stdout));
+        }
+        if expected_stderr != actual_stderr {
+            panic!(format_output_error(args, &expected_stderr, &actual_stderr));
         }
     }
 }

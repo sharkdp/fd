@@ -131,6 +131,7 @@ fn test_explicit_root_path() {
         ../../one/two/C.Foo2
         ../../one/two/three/d.foo
         ../../one/two/three/directory_foo",
+        "",
     );
 
     te.assert_output_subdirectory(
@@ -141,6 +142,7 @@ fn test_explicit_root_path() {
         ../three
         ../three/d.foo
         ../three/directory_foo",
+        "",
     );
 }
 
@@ -543,6 +545,7 @@ fn test_symlink() {
             {dir}/symlink",
             dir = &parent_parent
         ),
+        "",
     );
 
     te.assert_output_subdirectory(
@@ -557,6 +560,7 @@ fn test_symlink() {
             dir = if cfg!(windows) { "symlink" } else { "one/two" },
             abs_path = &abs_path
         ),
+        "",
     );
 
     te.assert_output(
@@ -588,6 +592,7 @@ fn test_symlink() {
             dir = if cfg!(windows) { "symlink" } else { "one/two" },
             abs_path = &abs_path
         ),
+        "",
     );
 
     te.assert_output(
@@ -676,6 +681,8 @@ fn test_exec() {
                 abs_path = &abs_path
             ),
         );
+
+        te.assert_output_error(&["a.foo", "--exec", "sh", "echo_err.sh", "{}"], "a.foo");
 
         te.assert_output(
             &["foo", "--exec", "echo", "{}"],

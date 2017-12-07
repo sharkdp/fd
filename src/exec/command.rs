@@ -45,7 +45,7 @@ pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
 /// Executes a command.
 #[cfg(all(unix))]
 pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
-    use libc::{close, dup2, pipe, STDERR_FILENO, STDOUT_FILENO};
+    use libc::{close, dup2, pipe, STDOUT_FILENO};
     use std::fs::File;
     use std::os::unix::process::CommandExt;
     use std::os::unix::io::FromRawFd;
@@ -64,7 +64,6 @@ pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
     let child = cmd.before_exec(move || unsafe {
         // Redirect the child's std{out,err} to the write ends of our pipe.
         dup2(stdout_fds[1], STDOUT_FILENO);
-        dup2(stderr_fds[1], STDERR_FILENO);
 
         // Close all the fds we created here, so EOF will be sent when the program exits.
         close(stdout_fds[0]);
