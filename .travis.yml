@@ -59,19 +59,19 @@ matrix:
 
     # Minimum Rust supported channel.
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-unknown-linux-musl
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=i686-unknown-linux-gnu
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=i686-unknown-linux-musl
     - os: osx
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-apple-darwin
 
     # Code formatting check
