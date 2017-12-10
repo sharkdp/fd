@@ -194,11 +194,12 @@ cargo install
 ## Command-line options
 ```
 USAGE:
-    fd [FLAGS/OPTIONS] [<pattern>] [<path>]
+    fd [FLAGS/OPTIONS] [<pattern>] [<path>...]
 
 FLAGS:
     -H, --hidden            Search hidden files and directories
     -I, --no-ignore         Do not respect .(git)ignore files
+        --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
     -a, --absolute-path     Show absolute instead of relative paths
@@ -220,7 +221,7 @@ OPTIONS:
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
-    <path>       the root directory for the filesystem search (optional)
+    <path>...    the root directory for the filesystem search (optional)
 ```
 
 ## Tutorial

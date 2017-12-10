@@ -19,7 +19,7 @@ fd \- find entries in the filesystem
 .RB [ \-x
 .IR cmd ]
 .RI [ pattern ]
-.RI [ path ]
+.RI [ path... ]
 .SH DESCRIPTION
 .B fd
 is a simple, fast and user-friendly alternative to
@@ -33,7 +33,7 @@ Search hidden files and directories.
 Don't respect ignore files (.gitignore, .ignore, etc.)
 .TP
 .B \-\-no\-ignore\-vcs
-Don't respect version control ignore files (e.g., .gitignore).
+Don't respect version control ignore files (like .gitignore).
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search (default: smart case).

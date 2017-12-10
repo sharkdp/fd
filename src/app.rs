@@ -37,7 +37,7 @@ pub fn build_app() -> App<'static, 'static> {
 
     App::new("fd")
         .version(crate_version!())
-        .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>]")
+        .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>...]")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::DeriveDisplayOrder)
         .arg(arg("hidden").long("hidden").short("H"))
