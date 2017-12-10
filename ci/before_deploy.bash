@@ -31,7 +31,7 @@ pack() {
     cp LICENSE-APACHE "$tempdir/$package_name"
 
     # various autocomplete
-    cp target/"$TARGET"/release/build/"$PROJECT_NAME"-*/out/"$PROJECT_NAME".bash-completion "$tempdir/$package_name/autocomplete"
+    cp target/"$TARGET"/release/build/"$PROJECT_NAME"-*/out/"$PROJECT_NAME".bash "$tempdir/$package_name/autocomplete/${PROJECT_NAME}.bash-completion"
     cp target/"$TARGET"/release/build/"$PROJECT_NAME"-*/out/"$PROJECT_NAME".fish "$tempdir/$package_name/autocomplete"
     cp target/"$TARGET"/release/build/"$PROJECT_NAME"-*/out/_"$PROJECT_NAME" "$tempdir/$package_name/autocomplete"
 
@@ -85,7 +85,7 @@ make_deb() {
     install -Dm644 LICENSE-APACHE "$tempdir/usr/share/doc/$PROJECT_NAME/LICENSE-APACHE"
 
     # completions
-    install -Dm644 target/$TARGET/release/build/$PROJECT_NAME-*/out/$PROJECT_NAME.bash-completion "$tempdir/usr/share/bash_completion/completions/$PROJECT_NAME"
+    install -Dm644 target/$TARGET/release/build/$PROJECT_NAME-*/out/$PROJECT_NAME.bash "$tempdir/usr/share/bash_completion/completions/$PROJECT_NAME/${PROJECT_NAME}.bash-completion"
     install -Dm644 target/$TARGET/release/build/$PROJECT_NAME-*/out/$PROJECT_NAME.fish "$tempdir/usr/share/fish/vendor_completions.d/$PROJECT_NAME.fish"
     install -Dm644 target/$TARGET/release/build/$PROJECT_NAME-*/out/_$PROJECT_NAME "$tempdir/usr/share/zsh/site-functions/_$PROJECT_NAME"
 
