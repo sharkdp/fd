@@ -31,7 +31,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
 
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
-        process::exit(0);
+        process::exit(1);
     }
 }
 
