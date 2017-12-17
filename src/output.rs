@@ -73,7 +73,7 @@ fn print_entry_colorized(
 
         if wants_to_quit.load(Ordering::Relaxed) {
             write!(handle, "\n")?;
-            process::exit(0);
+            process::exit(130);
         }
     }
 
