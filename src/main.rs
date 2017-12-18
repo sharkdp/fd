@@ -40,7 +40,7 @@ use atty::Stream;
 use regex::RegexBuilder;
 
 use exec::CommandTemplate;
-use internal::{error, pattern_has_uppercase_char, FdOptions, PathDisplay};
+use internal::{error, pattern_has_uppercase_char, FdOptions};
 use lscolors::LsColors;
 use walk::FileType;
 
@@ -48,8 +48,7 @@ fn main() {
     let matches = app::build_app().get_matches();
 
     // Get the search pattern
-    let empty_pattern = String::new();
-    let pattern = matches.value_of("pattern").unwrap_or(&empty_pattern);
+    let pattern = matches.value_of("pattern").unwrap_or("");
 
     // Get the current working directory
     let current_dir = Path::new(".");
@@ -57,28 +56,31 @@ fn main() {
         error("Error: could not get current directory.");
     }
 
-    // Get the root directory for the search
-    let mut root_dir_buf = match matches.value_of("path") {
-        Some(path) => PathBuf::from(path),
-        None => current_dir.to_path_buf(),
+    //Get one or more root directories to search.
+    let mut dir_vec: Vec<_> = match matches.values_of("path") {
+        Some(paths) => {
+            paths
+                .map(|path| {
+                    let path_buffer = PathBuf::from(path);
+                    if !fshelper::is_dir(&path_buffer) {
+                        error(&format!(
+                            "Error: '{}' is not a directory.",
+                            path_buffer.to_string_lossy()
+                        ));
+                    }
+                    path_buffer
+                })
+                .collect::<Vec<_>>()
+        }
+        None => vec![current_dir.to_path_buf()],
     };
-    if !fshelper::is_dir(&root_dir_buf) {
-        error(&format!(
-            "Error: '{}' is not a directory.",
-            root_dir_buf.to_string_lossy()
-        ));
-    }
 
-    let path_display = if matches.is_present("absolute-path") || root_dir_buf.is_absolute() {
-        PathDisplay::Absolute
-    } else {
-        PathDisplay::Relative
-    };
-
-    if path_display == PathDisplay::Absolute && root_dir_buf.is_relative() {
-        root_dir_buf = fshelper::absolute_path(root_dir_buf.as_path()).unwrap();
+    if matches.is_present("absolute-path") {
+        dir_vec = dir_vec
+            .iter()
+            .map(|path_buffer| fshelper::absolute_path(path_buffer).unwrap())
+            .collect();
     }
-    let root_dir = root_dir_buf.as_path();
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
@@ -133,7 +135,6 @@ fn main() {
             .value_of("max-buffer-time")
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
-        path_display,
         ls_colors,
         file_type: match matches.value_of("file-type") {
             Some("f") | Some("file") => FileType::RegularFile,
@@ -152,11 +153,12 @@ fn main() {
             .unwrap_or_else(|| vec![]),
     };
 
+
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build() {
-        Ok(re) => walk::scan(root_dir, Arc::new(re), Arc::new(config)),
+        Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
 }

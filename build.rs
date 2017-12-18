@@ -18,12 +18,12 @@ use std::fs;
 include!("src/app.rs");
 
 fn main() {
-    match version_check::is_min_version("1.19") {
-        // rustc >= 1.19
+    match version_check::is_min_version("1.20") {
+        // rustc >= 1.20
         Some((true, _)) => {}
-        // rustc < 1.19 or can't figure it out
+        // rustc < 1.20 or can't figure it out
         _ => {
-            writeln!(&mut io::stderr(), "This crate requires rustc >= 1.19").unwrap();
+            writeln!(&mut io::stderr(), "This crate requires rustc >= 1.20").unwrap();
             exit(1);
         }
     }

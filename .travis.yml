@@ -59,35 +59,35 @@ matrix:
 
     # Minimum Rust supported channel.
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-unknown-linux-musl
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=i686-unknown-linux-gnu
     - os: linux
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=i686-unknown-linux-musl
     - os: osx
-      rust: 1.19.0
+      rust: 1.20.0
       env: TARGET=x86_64-apple-darwin
 
-    # Code formatting check
-    - os: linux
-      rust: stable
-      # skip the global install step
-      install:
-        - which cargo-install-update || cargo install cargo-update
-        - cargo install-update rustfmt
-      script: cargo fmt -- --write-mode=diff
+    # # Code formatting check
+    # - os: linux
+    #   rust: stable
+    #   # skip the global install step
+    #   install:
+    #     - which cargo-install-update || cargo install cargo-update
+    #     - cargo install-update -i rustfmt
+    #   script: cargo fmt -- --write-mode=diff
     - os: linux
       rust: nightly
       # skip the global install step
       install:
         - which cargo-install-update || cargo install cargo-update
-        - cargo install-update rustfmt-nightly
+        - cargo install-update -i rustfmt-nightly
       script: cargo fmt -- --write-mode=diff
 
 addons:
@@ -131,7 +131,9 @@ deploy:
   # - PROJECT_NAME: name of the project, set on the `env.global` above
   # - TRAVIS_TAG: tag name that the build is being deployed for, usually the version number
   # - TARGET: target triple of the build
-  file: $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
+  file:
+    - $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
+    - $PROJECT_NAME*.deb
   # don't delete artifacts from previous stage
   skip_cleanup: true
   on:
