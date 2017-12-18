@@ -20,6 +20,9 @@ use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
 
+const EXIT_CODE_ERROR: i32 = 1;
+const EXIT_CODE_SIGINT: i32 = 130;
+
 pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<AtomicBool>) {
     let path = entry.strip_prefix(".").unwrap_or(entry);
 
@@ -31,7 +34,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
 
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
-        process::exit(1);
+        process::exit(EXIT_CODE_ERROR);
     }
 }
 
@@ -73,7 +76,7 @@ fn print_entry_colorized(
 
         if wants_to_quit.load(Ordering::Relaxed) {
             write!(handle, "\n")?;
-            process::exit(130);
+            process::exit(EXIT_CODE_SIGINT);
         }
     }
 
