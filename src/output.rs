@@ -27,7 +27,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
     let path = entry.strip_prefix(".").unwrap_or(entry);
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(path, config, ls_colors, &wants_to_quit)
+        print_entry_colorized(path, config, ls_colors, wants_to_quit)
     } else {
         print_entry_uncolorized(path, config)
     };
