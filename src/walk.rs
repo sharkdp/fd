@@ -34,10 +34,9 @@ enum ReceiverMode {
     Streaming,
 }
 
-/// The type of file to search for.
-#[derive(Copy, Clone)]
+/// The types of file to search for.
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum FileType {
-    Any,
     RegularFile,
     Directory,
     SymLink,
@@ -191,31 +190,21 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted file types.
-            match config.file_type {
-                FileType::Any => (),
-                FileType::RegularFile => {
-                    if entry.file_type().map_or(true, |ft| !ft.is_file()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
-                FileType::Directory => {
-                    if entry.file_type().map_or(true, |ft| !ft.is_dir()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
-                FileType::SymLink => {
-                    if entry.file_type().map_or(true, |ft| !ft.is_symlink()) {
-                        return ignore::WalkState::Continue;
-                    }
-                }
+            if (entry.file_type().map_or(false, |ft| ft.is_file()) &&
+                    !config.file_types.contains(&FileType::RegularFile)) ||
+               (entry.file_type().map_or(false, |ft| ft.is_dir()) &&
+                    !config.file_types.contains(&FileType::Directory)) ||
+               (entry.file_type().map_or(false, |ft| ft.is_symlink()) &&
+                    !config.file_types.contains(&FileType::SymLink)) {
+                   return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
-            if let Some(ref filter_ext) = config.extension {
+            if let Some(ref filter_exts) = config.extensions {
                 let entry_ext = entry_path.extension().map(
                     |e| e.to_string_lossy().to_lowercase(),
                 );
-                if entry_ext.map_or(true, |ext| ext != *filter_ext) {
+                if entry_ext.map_or(true, |ext| !filter_exts.contains(&ext)) {
                     return ignore::WalkState::Continue;
                 }
             }

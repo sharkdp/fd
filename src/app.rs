@@ -70,6 +70,7 @@ pub fn build_app() -> App<'static, 'static> {
             arg("file-type")
                 .long("type")
                 .short("t")
+                .multiple(true)
                 .takes_value(true)
                 .value_name("filetype")
                 .possible_values(&["f", "file", "d", "directory", "l", "symlink"])
@@ -79,6 +80,7 @@ pub fn build_app() -> App<'static, 'static> {
             arg("extension")
                 .long("extension")
                 .short("e")
+                .multiple(true)
                 .takes_value(true)
                 .value_name("ext"),
         )
