@@ -6,11 +6,12 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate kernel32;
 extern crate winapi;
 
-use self::kernel32::{GetStdHandle, GetConsoleMode, SetConsoleMode};
-use self::winapi::{STD_OUTPUT_HANDLE, INVALID_HANDLE_VALUE};
+use self::winapi::um::processenv::GetStdHandle;
+use self::winapi::um::consoleapi::{GetConsoleMode, SetConsoleMode};
+use self::winapi::um::winbase::STD_OUTPUT_HANDLE;
+use self::winapi::um::handleapi::INVALID_HANDLE_VALUE;
 
 const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
 
