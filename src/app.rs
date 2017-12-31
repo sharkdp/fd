@@ -175,13 +175,14 @@ fn usage() -> HashMap<&'static str, Help> {
            on the search depth.");
     doc!(h, "file-type"
         , "Filter by type: f(ile), d(irectory), (sym)l(ink)"
-        , "Filter the search by type:\n  \
+        , "Filter the search by type (multiple allowable filetypes can be specified):\n  \
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
              'l' or 'symlink':      symbolic links");
     doc!(h, "extension"
         , "Filter by file extension"
-        , "(Additionally) filter search results by their file extension.");
+        , "(Additionally) filter search results by their file extension. Multiple allowable file \
+           extensions can be specified.");
     doc!(h, "exec"
         , "Execute a command for each search result"
         , "Execute a command for each search result.\n\
