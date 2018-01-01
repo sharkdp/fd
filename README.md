@@ -123,7 +123,54 @@ fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
 fd -x wc -l \; -e rs
 ```
 
-## Install
+## Installation
+
+### On Ubuntu
+*... and other Debian-based Linux distrutions.*
+
+Download the latest `.deb` package from the [release page](https://github.com/sharkdp/fd/releases) and install it via:
+``` bash
+sudo dpkg -i fd_6.1.0_amd64.deb  # adapt version number and architecture
+```
+
+### On Arch Linux
+
+You can install [the fd-rs package](https://www.archlinux.org/packages/community/x86_64/fd-rs/) from the official repos:
+```
+pacman -S fd-rs
+```
+
+### On Void Linux
+
+You can install `fd` via xbps-install:
+```
+xbps-install -S fd
+```
+
+### On macOS
+
+You can install [this Homebrew package](http://braumeister.org/formula/fd):
+```
+brew install fd
+```
+
+### On Windows
+
+You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
+
+### On NixOS / via Nix
+
+You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
+```
+nix-env -i fd
+```
+
+### On FreeBSD
+
+You can install `sysutils/fd` via portmaster:
+```
+portmaster sysutils/fd
+```
 
 ### From source
 
@@ -136,45 +183,6 @@ Note that rust version *1.20.0* or later is required.
 ### From binaries
 
 The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
-
-### On macOS
-
-You can install [this Homebrew package](http://braumeister.org/formula/fd):
-```
-brew install fd
-```
-
-### On Arch Linux
-
-You can install [the fd-rs package](https://www.archlinux.org/packages/community/x86_64/fd-rs/) from the official repos:
-```
-pacman -S fd-rs
-```
-
-### On NixOS / via Nix
-
-You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
-```
-nix-env -i fd
-```
-
-### Windows
-
-You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
-
-### FreeBSD
-
-You can install `sysutils/fd` via portmaster:
-```
-portmaster sysutils/fd
-```
-
-### On Void Linux
-
-You can install `fd` via xbps-install:
-```
-xbps-install -S fd
-```
 
 ## Development
 ```bash
