@@ -9,8 +9,8 @@
 extern crate kernel32;
 extern crate winapi;
 
-use self::kernel32::{GetStdHandle, GetConsoleMode, SetConsoleMode};
-use self::winapi::{STD_OUTPUT_HANDLE, INVALID_HANDLE_VALUE};
+use self::kernel32::{GetConsoleMode, GetStdHandle, SetConsoleMode};
+use self::winapi::{INVALID_HANDLE_VALUE, STD_OUTPUT_HANDLE};
 
 const ENABLE_VIRTUAL_TERMINAL_PROCESSING: u32 = 0x0004;
 

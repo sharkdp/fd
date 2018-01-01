@@ -58,20 +58,18 @@ fn main() {
 
     //Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches.values_of("path") {
-        Some(paths) => {
-            paths
-                .map(|path| {
-                    let path_buffer = PathBuf::from(path);
-                    if !fshelper::is_dir(&path_buffer) {
-                        error(&format!(
-                            "Error: '{}' is not a directory.",
-                            path_buffer.to_string_lossy()
-                        ));
-                    }
-                    path_buffer
-                })
-                .collect::<Vec<_>>()
-        }
+        Some(paths) => paths
+            .map(|path| {
+                let path_buffer = PathBuf::from(path);
+                if !fshelper::is_dir(&path_buffer) {
+                    error(&format!(
+                        "Error: '{}' is not a directory.",
+                        path_buffer.to_string_lossy()
+                    ));
+                }
+                path_buffer
+            })
+            .collect::<Vec<_>>(),
         None => vec![current_dir.to_path_buf()],
     };
 
@@ -84,8 +82,8 @@ fn main() {
 
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
-    let case_sensitive = !matches.is_present("ignore-case") &&
-        (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
+    let case_sensitive = !matches.is_present("ignore-case")
+        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
 
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
@@ -112,18 +110,18 @@ fn main() {
     let config = FdOptions {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
-        ignore_hidden: !(matches.is_present("hidden") ||
-                             matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
-        read_ignore: !(matches.is_present("no-ignore") ||
-                           matches.is_present("rg-alias-hidden-ignore")),
-        read_gitignore: !(matches.is_present("no-ignore") ||
-                              matches.is_present("rg-alias-hidden-ignore") ||
-                              matches.is_present("no-ignore-vcs")),
+        ignore_hidden: !(matches.is_present("hidden")
+            || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
+        read_ignore: !(matches.is_present("no-ignore")
+            || matches.is_present("rg-alias-hidden-ignore")),
+        read_gitignore: !(matches.is_present("no-ignore")
+            || matches.is_present("rg-alias-hidden-ignore")
+            || matches.is_present("no-ignore-vcs")),
         follow_links: matches.is_present("follow"),
         null_separator: matches.is_present("null_separator"),
-        max_depth: matches.value_of("depth").and_then(|n| {
-            usize::from_str_radix(n, 10).ok()
-        }),
+        max_depth: matches
+            .value_of("depth")
+            .and_then(|n| usize::from_str_radix(n, 10).ok()),
         threads: std::cmp::max(
             matches
                 .value_of("threads")
@@ -137,19 +135,24 @@ fn main() {
             .map(time::Duration::from_millis),
         ls_colors,
         file_types: match matches.values_of("file-type") {
-            None => vec![FileType::RegularFile,
-                         FileType::Directory,
-                         FileType::SymLink]
-                    .into_iter().collect(),
-            Some(values) => values.map(|value| match value {
-                "f" | "file" => FileType::RegularFile,
-                "d" | "directory" => FileType::Directory,
-                "l" | "symlink" => FileType::SymLink,
-                _ => FileType::RegularFile,
-            }).collect()
+            None => vec![
+                FileType::RegularFile,
+                FileType::Directory,
+                FileType::SymLink,
+            ].into_iter()
+                .collect(),
+            Some(values) => values
+                .map(|value| match value {
+                    "f" | "file" => FileType::RegularFile,
+                    "d" | "directory" => FileType::Directory,
+                    "l" | "symlink" => FileType::SymLink,
+                    _ => FileType::RegularFile,
+                })
+                .collect(),
         },
         extensions: matches.values_of("extension").map(|exts| {
-            exts.map(|e| e.trim_left_matches('.').to_lowercase()).collect()
+            exts.map(|e| e.trim_left_matches('.').to_lowercase())
+                .collect()
         }),
         command,
         exclude_patterns: matches
@@ -158,11 +161,11 @@ fn main() {
             .unwrap_or_else(|| vec![]),
     };
 
-
     match RegexBuilder::new(pattern)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
-        .build() {
+        .build()
+    {
         Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }

@@ -1,8 +1,8 @@
 language: rust
 cache: cargo
 matrix:
-  allow_failures:
-    - rust: nightly
+  # allow_failures:
+  #   - rust: nightly
   include:
     # Stable channel.
     - os: linux
@@ -74,14 +74,7 @@ matrix:
       rust: 1.20.0
       env: TARGET=x86_64-apple-darwin
 
-    # # Code formatting check
-    # - os: linux
-    #   rust: stable
-    #   # skip the global install step
-    #   install:
-    #     - which cargo-install-update || cargo install cargo-update
-    #     - cargo install-update -i rustfmt
-    #   script: cargo fmt -- --write-mode=diff
+    # Code formatting check
     - os: linux
       rust: nightly
       # skip the global install step

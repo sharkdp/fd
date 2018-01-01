@@ -91,13 +91,10 @@ pub fn pattern_has_uppercase_char(pattern: &str) -> bool {
 fn expr_has_uppercase_char(expr: &Expr) -> bool {
     match *expr {
         Expr::Literal { ref chars, .. } => chars.iter().any(|c| c.is_uppercase()),
-        Expr::Class(ref ranges) => {
-            ranges.iter().any(|r| {
-                r.start.is_uppercase() || r.end.is_uppercase()
-            })
-        }
-        Expr::Group { ref e, .. } |
-        Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
+        Expr::Class(ref ranges) => ranges
+            .iter()
+            .any(|r| r.start.is_uppercase() || r.end.is_uppercase()),
+        Expr::Group { ref e, .. } | Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
         Expr::Concat(ref es) => es.iter().any(expr_has_uppercase_char),
         Expr::Alternate(ref es) => es.iter().any(expr_has_uppercase_char),
         _ => false,

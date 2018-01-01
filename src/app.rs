@@ -30,9 +30,9 @@ macro_rules! doc {
 pub fn build_app() -> App<'static, 'static> {
     let helps = usage();
     let arg = |name| {
-        Arg::with_name(name).help(helps[name].short).long_help(
-            helps[name].long,
-        )
+        Arg::with_name(name)
+            .help(helps[name].short)
+            .long_help(helps[name].long)
     };
 
     App::new("fd")

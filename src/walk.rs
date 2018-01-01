@@ -49,9 +49,9 @@ pub enum FileType {
 /// path will simply be written to standard output.
 pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let mut path_iter = path_vec.iter();
-    let first_path_buf = path_iter.next().expect(
-        "Error: Path vector can not be empty",
-    );
+    let first_path_buf = path_iter
+        .next()
+        .expect("Error: Path vector can not be empty");
     let (tx, rx) = channel();
     let threads = config.threads;
 
@@ -88,7 +88,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let wants_to_quit = Arc::new(AtomicBool::new(false));
     if config.ls_colors.is_some() {
         let wq = Arc::clone(&wants_to_quit);
-        ctrlc::set_handler(move || { wq.store(true, Ordering::Relaxed); }).unwrap();
+        ctrlc::set_handler(move || {
+            wq.store(true, Ordering::Relaxed);
+        }).unwrap();
     }
 
     // Spawn the thread that receives all results through the channel.
@@ -133,9 +135,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             let mut mode = ReceiverMode::Buffering;
 
             // Maximum time to wait before we start streaming to the console.
-            let max_buffer_time = rx_config.max_buffer_time.unwrap_or_else(
-                || time::Duration::from_millis(100),
-            );
+            let max_buffer_time = rx_config
+                .max_buffer_time
+                .unwrap_or_else(|| time::Duration::from_millis(100));
 
             for value in rx {
                 match mode {
@@ -190,20 +192,21 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted file types.
-            if (entry.file_type().map_or(false, |ft| ft.is_file()) &&
-                    !config.file_types.contains(&FileType::RegularFile)) ||
-               (entry.file_type().map_or(false, |ft| ft.is_dir()) &&
-                    !config.file_types.contains(&FileType::Directory)) ||
-               (entry.file_type().map_or(false, |ft| ft.is_symlink()) &&
-                    !config.file_types.contains(&FileType::SymLink)) {
-                   return ignore::WalkState::Continue;
+            if (entry.file_type().map_or(false, |ft| ft.is_file())
+                && !config.file_types.contains(&FileType::RegularFile))
+                || (entry.file_type().map_or(false, |ft| ft.is_dir())
+                    && !config.file_types.contains(&FileType::Directory))
+                || (entry.file_type().map_or(false, |ft| ft.is_symlink())
+                    && !config.file_types.contains(&FileType::SymLink))
+            {
+                return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref filter_exts) = config.extensions {
-                let entry_ext = entry_path.extension().map(
-                    |e| e.to_string_lossy().to_lowercase(),
-                );
+                let entry_ext = entry_path
+                    .extension()
+                    .map(|e| e.to_string_lossy().to_lowercase());
                 if entry_ext.map_or(true, |ext| !filter_exts.contains(&ext)) {
                     return ignore::WalkState::Continue;
                 }
