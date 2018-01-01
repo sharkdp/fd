@@ -6,6 +6,7 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+use std::collections::HashSet;
 use std::process;
 use std::time;
 use std::io::Write;
@@ -58,12 +59,12 @@ pub struct FdOptions {
     pub ls_colors: Option<LsColors>,
 
     /// The type of file to search for. All files other than the specified type will be ignored.
-    pub file_type: FileType,
+    pub file_types: HashSet<FileType>,
 
     /// The extension to search for. Only entries matching the extension will be included.
     ///
     /// The value (if present) will be a lowercase string without leading dots.
-    pub extension: Option<String>,
+    pub extensions: Option<HashSet<String>>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<CommandTemplate>,

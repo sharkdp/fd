@@ -471,11 +471,25 @@ fn test_type() {
     );
 
     te.assert_output(
+        &["--type", "f", "e1"],
+        "e1 e2",
+    );
+
+    te.assert_output(
         &["--type", "d"],
         "one
         one/two
         one/two/three
         one/two/three/directory_foo",
+    );
+
+    te.assert_output(
+        &["--type", "d", "--type", "l"],
+        "one
+        one/two
+        one/two/three
+        one/two/three/directory_foo
+        symlink",
     );
 
     te.assert_output(&["--type", "l"], "symlink");
@@ -500,6 +514,20 @@ fn test_extension() {
         one/b.foo
         one/two/c.foo
         one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--extension", ".foo", "--extension", "foo2"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo
+        one/two/C.Foo2",
+    );
+
+    te.assert_output(
+        &["--extension", ".foo", "a"],
+        "a.foo",
     );
 
     te.assert_output(&["--extension", "foo2"], "one/two/C.Foo2");

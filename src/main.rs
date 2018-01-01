@@ -136,15 +136,20 @@ fn main() {
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
         ls_colors,
-        file_type: match matches.value_of("file-type") {
-            Some("f") | Some("file") => FileType::RegularFile,
-            Some("d") |
-            Some("directory") => FileType::Directory,
-            Some("l") | Some("symlink") => FileType::SymLink,
-            _ => FileType::Any,
+        file_types: match matches.values_of("file-type") {
+            None => vec![FileType::RegularFile,
+                         FileType::Directory,
+                         FileType::SymLink]
+                    .into_iter().collect(),
+            Some(values) => values.map(|value| match value {
+                "f" | "file" => FileType::RegularFile,
+                "d" | "directory" => FileType::Directory,
+                "l" | "symlink" => FileType::SymLink,
+                _ => FileType::RegularFile,
+            }).collect()
         },
-        extension: matches.value_of("extension").map(|e| {
-            e.trim_left_matches('.').to_lowercase()
+        extensions: matches.values_of("extension").map(|exts| {
+            exts.map(|e| e.trim_left_matches('.').to_lowercase()).collect()
         }),
         command,
         exclude_patterns: matches
