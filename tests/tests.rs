@@ -470,10 +470,7 @@ fn test_type() {
         one/two/three/d.foo",
     );
 
-    te.assert_output(
-        &["--type", "f", "e1"],
-        "e1 e2",
-    );
+    te.assert_output(&["--type", "f", "e1"], "e1 e2");
 
     te.assert_output(
         &["--type", "d"],
@@ -525,10 +522,7 @@ fn test_extension() {
         one/two/C.Foo2",
     );
 
-    te.assert_output(
-        &["--extension", ".foo", "a"],
-        "a.foo",
-    );
+    te.assert_output(&["--extension", ".foo", "a"], "a.foo");
 
     te.assert_output(&["--extension", "foo2"], "one/two/C.Foo2");
 }

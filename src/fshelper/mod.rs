@@ -23,9 +23,12 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
     let path_buf = path_absolute_form(path)?;
 
     #[cfg(windows)]
-    let path_buf = Path::new(path_buf.as_path().to_string_lossy().trim_left_matches(
-        r"\\?\",
-    )).to_path_buf();
+    let path_buf = Path::new(
+        path_buf
+            .as_path()
+            .to_string_lossy()
+            .trim_left_matches(r"\\?\"),
+    ).to_path_buf();
 
     Ok(path_buf)
 }

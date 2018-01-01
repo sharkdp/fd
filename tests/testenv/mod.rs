@@ -52,19 +52,17 @@ fn create_working_directory(
             fs::File::create(root.join(file))?;
         }
 
-        #[cfg(unix)] unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
+        #[cfg(unix)]
+        unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
         // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
         // is by default only granted for administrators.
-        #[cfg(windows)] windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+        #[cfg(windows)]
+        windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
-        fs::File::create(root.join(".ignore"))?.write_all(
-            b"ignored.foo",
-        )?;
+        fs::File::create(root.join(".ignore"))?.write_all(b"ignored.foo")?;
 
-        fs::File::create(root.join(".gitignore"))?.write_all(
-            b"gitignored.foo",
-        )?;
+        fs::File::create(root.join(".gitignore"))?.write_all(b"gitignored.foo")?;
     }
 
     Ok(temp_dir)
@@ -125,7 +123,8 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
     let mut lines = s.replace('\0', "NULL\n")
         .lines()
         .map(|line| {
-            let line = if trim_left { line.trim_left() } else { line };
+            let line =
+                if trim_left { line.trim_left() } else { line };
             line.replace('/', &std::path::MAIN_SEPARATOR.to_string())
         })
         .collect::<Vec<_>>();

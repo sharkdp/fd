@@ -150,7 +150,7 @@ impl ArgumentTemplate {
 
 #[cfg(test)]
 mod tests {
-    use super::{CommandTemplate, ArgumentTemplate, Token};
+    use super::{ArgumentTemplate, CommandTemplate, Token};
 
     #[test]
     fn tokens() {
