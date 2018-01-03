@@ -86,6 +86,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let parallel_walker = walker.threads(threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
+    let sender_wtq = Arc::clone(&wants_to_quit);
     if config.ls_colors.is_some() {
         let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || {
@@ -178,8 +179,13 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
+        let wants_to_quit = Arc::clone(&sender_wtq);
 
         Box::new(move |entry_o| {
+            if wants_to_quit.load(Ordering::Relaxed) {
+                return ignore::WalkState::Quit;
+            }
+
             let entry = match entry_o {
                 Ok(e) => e,
                 Err(_) => return ignore::WalkState::Continue,
