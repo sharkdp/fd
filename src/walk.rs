@@ -10,7 +10,7 @@ extern crate ctrlc;
 
 use exec;
 use fshelper;
-use internal::{error, FdOptions, EXITCODE_SIGINT};
+use internal::{error, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
 use output;
 
 use std::process;
@@ -147,8 +147,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     ReceiverMode::Buffering => {
                         buffer.push(value);
 
-                        // Have we reached the maximum time?
-                        if time::Instant::now() - start > max_buffer_time {
+                        // Have we reached the maximum buffer size or maximum buffering time?
+                        if buffer.len() > MAX_BUFFER_LENGTH
+                            || time::Instant::now() - start > max_buffer_time
+                        {
                             // Flush the buffer
                             for v in &buffer {
                                 output::print_entry(v, &rx_config, &receiver_wtq);
