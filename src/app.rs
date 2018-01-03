@@ -196,7 +196,7 @@ fn usage() -> HashMap<&'static str, Help> {
              '{.}':  path without file extension\n  \
              '{/.}': basename without file extension");
     doc!(h, "exclude"
-        , "Exclude entries that match the given glob pattern."
+        , "Exclude entries that match the given glob pattern"
         , "Exclude files/directories that match the given glob pattern. This overrides any \
            other ignore logic. Multiple exclude patterns can be specified.");
     doc!(h, "color"

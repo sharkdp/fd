@@ -27,13 +27,19 @@ is a simple, fast and user-friendly alternative to
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
-Search hidden files and directories.
+Include hidden files and directories in the search results.
 .TP
 .B \-I, \-\-no\-ignore
-Don't respect ignore files (.gitignore, .ignore, etc.)
+Do not respect files like
+.I .gitignore
+and
+.I .ignore
+and include ignored files in the search results.
 .TP
 .B \-\-no\-ignore\-vcs
-Don't respect version control ignore files (like .gitignore).
+Do not respect version control ignore files like
+.I ".gitignore"
+and include the respective entries in the search results.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search (default: smart case).
@@ -48,23 +54,23 @@ Show absolute instead of relative paths.
 Dereference all symbolic links encountered.
 .TP
 .B \-p, \-\-full\-path
-Match
+Match the
 .I pattern
-against the full path
+against the full path instead of just the file or directory name.
 .TP
 .B \-0, \-\-print0
-Print results followed by null character instead of newlines.
+Separate search results by null characters instead of newlines.
 .TP
 .B \-h, \-\-help
-Prints help information.
+Print help information.
 .TP
 .B \-V, \-\-version
-Prints version information.
+Print version information.
 .TP
-.BI "\-d, \-\-max\-depth " levels
+.BI "\-d, \-\-max\-depth " d
 Limit directory traversal to at most
-.I levels
-of depth.
+.I d
+levels of depth. By default, there is no limit on the search depth.
 .TP
 .BI "\-t, \-\-type " filetype
 Filter search by type:
@@ -76,10 +82,15 @@ directories
 .IP "s, symlink"
 symbolic links
 .RE
+
+.RS
+This option can be used repeatedly to allow for multiple file types.
+.RE
 .TP
 .BI "\-e, \-\-extension " ext
 Filter search results by file extension
 .IR ext .
+This option can be used repeatedly to allow for multiple possible file extensions.
 .TP
 .BI "\-E, \-\-exclude " pattern
 Exclude files/directories that match the given glob pattern.
