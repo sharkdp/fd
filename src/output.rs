@@ -6,8 +6,7 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use exit_codes;
-use internal::FdOptions;
+use internal::{FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
 use lscolors::LsColors;
 
 use std::{fs, process};
@@ -32,7 +31,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
 
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
-        process::exit(exit_codes::ERROR);
+        process::exit(EXITCODE_ERROR);
     }
 }
 
@@ -74,7 +73,7 @@ fn print_entry_colorized(
 
         if wants_to_quit.load(Ordering::Relaxed) {
             write!(handle, "\n")?;
-            process::exit(exit_codes::SIGINT);
+            process::exit(EXITCODE_SIGINT);
         }
     }
 

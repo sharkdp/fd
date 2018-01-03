@@ -100,3 +100,9 @@ fn expr_has_uppercase_char(expr: &Expr) -> bool {
         _ => false,
     }
 }
+
+/// Exit code representing a general error
+pub const EXITCODE_ERROR: i32 = 1;
+
+/// Exit code representing that the process was killed by SIGINT
+pub const EXITCODE_SIGINT: i32 = 130;

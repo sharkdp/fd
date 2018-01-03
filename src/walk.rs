@@ -10,10 +10,9 @@ extern crate ctrlc;
 
 use exec;
 use fshelper;
-use internal::{error, FdOptions};
+use internal::{error, FdOptions, EXITCODE_SIGINT};
 use output;
 
-use exit_codes;
 use std::process;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -249,6 +248,6 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        process::exit(exit_codes::SIGINT);
+        process::exit(EXITCODE_SIGINT);
     }
 }
