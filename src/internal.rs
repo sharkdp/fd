@@ -101,6 +101,9 @@ fn expr_has_uppercase_char(expr: &Expr) -> bool {
     }
 }
 
+/// Maximum size of the output buffer before flushing results to the console
+pub const MAX_BUFFER_LENGTH: usize = 1000;
+
 /// Exit code representing a general error
 pub const EXITCODE_ERROR: i32 = 1;
 
