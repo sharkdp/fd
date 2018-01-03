@@ -13,6 +13,8 @@ use fshelper;
 use internal::{error, FdOptions};
 use output;
 
+use exit_codes;
+use std::process;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -86,8 +88,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let parallel_walker = walker.threads(threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
+    let receiver_wtq = Arc::clone(&wants_to_quit);
+    let sender_wtq = Arc::clone(&wants_to_quit);
     if config.ls_colors.is_some() {
-        let wq = Arc::clone(&wants_to_quit);
+        let wq = Arc::clone(&receiver_wtq);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
         }).unwrap();
@@ -148,7 +152,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         if time::Instant::now() - start > max_buffer_time {
                             // Flush the buffer
                             for v in &buffer {
-                                output::print_entry(v, &rx_config, &wants_to_quit);
+                                output::print_entry(v, &rx_config, &receiver_wtq);
                             }
                             buffer.clear();
 
@@ -157,7 +161,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         }
                     }
                     ReceiverMode::Streaming => {
-                        output::print_entry(&value, &rx_config, &wants_to_quit);
+                        output::print_entry(&value, &rx_config, &receiver_wtq);
                     }
                 }
             }
@@ -167,7 +171,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&value, &rx_config, &wants_to_quit);
+                    output::print_entry(&value, &rx_config, &receiver_wtq);
                 }
             }
         }
@@ -178,8 +182,13 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         let config = Arc::clone(&config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
+        let wants_to_quit = Arc::clone(&sender_wtq);
 
         Box::new(move |entry_o| {
+            if wants_to_quit.load(Ordering::Relaxed) {
+                return ignore::WalkState::Quit;
+            }
+
             let entry = match entry_o {
                 Ok(e) => e,
                 Err(_) => return ignore::WalkState::Continue,
@@ -238,4 +247,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
     // Wait for the receiver thread to print out all results.
     receiver_thread.join().unwrap();
+
+    if wants_to_quit.load(Ordering::Relaxed) {
+        process::exit(exit_codes::SIGINT);
+    }
 }
