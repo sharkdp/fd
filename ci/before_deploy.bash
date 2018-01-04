@@ -78,6 +78,7 @@ make_deb() {
 
     # manpage
     install -Dm644 "doc/$PROJECT_NAME.1" "$tempdir/usr/share/man/man1/$PROJECT_NAME.1"
+    gzip --best "$tempdir/usr/share/man/man1/$PROJECT_NAME.1"
 
     # readme and license
     install -Dm644 README.md "$tempdir/usr/share/doc/$PROJECT_NAME/README.md"
@@ -96,14 +97,16 @@ Package: $dpkgname
 Version: $version
 Section: utils
 Priority: optional
-Maintainer: David Peter
+Maintainer: David Peter <mail@david-peter.de>
 Architecture: $architecture
 Provides: $PROJECT_NAME
 Conflicts: $conflictname
 Description: Simple, fast and user-friendly alternative to find
+ While fd does not seek to mirror all of find's powerful functionality, it
+ provides sensible (opinionated) defaults for 80% of the use cases.
 EOF
 
-    dpkg-deb --build "$tempdir" "${dpkgname}_${version}_${architecture}.deb"
+    fakeroot dpkg-deb --build "$tempdir" "${dpkgname}_${version}_${architecture}.deb"
 }
 
 
