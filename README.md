@@ -127,7 +127,7 @@ fd -x wc -l \; -e rs
 ## Installation
 
 ### On Ubuntu
-*... and other Debian-based Linux distrutions.*
+*... and other Debian-based Linux distributions.*
 
 Download the latest `.deb` package from the [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
@@ -263,7 +263,7 @@ X11/xinit/xserverrc
 
 ### Specifying the root directory
 
-If we want so search a specific directory, it can be given as a second argument to *fd*:
+If we want to search a specific directory, it can be given as a second argument to *fd*:
 ``` bash
 > fd passwd /etc
 /etc/default/passwd
