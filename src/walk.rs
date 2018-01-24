@@ -89,7 +89,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let wants_to_quit = Arc::new(AtomicBool::new(false));
     let receiver_wtq = Arc::clone(&wants_to_quit);
     let sender_wtq = Arc::clone(&wants_to_quit);
-    if config.ls_colors.is_some() {
+    if config.ls_colors.is_some() && config.command.is_none() {
         let wq = Arc::clone(&receiver_wtq);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
