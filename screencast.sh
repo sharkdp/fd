@@ -1,16 +1,21 @@
 #!/bin/sh
 # Designed to be executed via svg-term:
-# svg-term --command="sh screencast.sh" --out screencast.svg --padding=10 --width=40
+# svg-term --command="sh screencast.sh" --out screencast.svg --padding=10
 set -e
+set -u
 
 PROMPT="▶"
 
 enter() {
+    INPUT=$1
+    DELAY=$2
+
     prompt
-    type $1
+    sleep $DELAY
+    type $INPUT
     sleep 0.5
     printf '%b' " ⏎\n"
-    eval $1
+    eval $INPUT
     type "\n"
 }
 
@@ -26,27 +31,25 @@ type() {
 main() {
     IFS='%'
 
-    enter "fd"
+    enter "fd" 0
 
-    enter "fd -e md"
+    enter "fd -e md" 1
 
-    enter "fd -e md --exec wc -l"
+    enter "fd -e md --exec wc -l" 1
 
-    enter "fd mod"
+    enter "fd mod" 1
 
-    enter "fd sh"
+    enter "fd sh" 1
 
-    enter "fd -H sample"
+    enter "fd -H sample" 1
 
-    enter "fd -h"
+    enter "fd -h" 1
 
     prompt
 
     sleep 3
 
     unset IFS
-
-    echo ""
 }
 
 main
