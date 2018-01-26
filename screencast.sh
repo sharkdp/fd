@@ -1,4 +1,6 @@
 #!/bin/sh
+# Designed to be executed via svg-term:
+# svg-term --command="sh screencast.sh" --out screencast.svg --padding=10 --width=40
 set -e
 
 PROMPT="▶"
