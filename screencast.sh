@@ -1,20 +1,31 @@
 #!/bin/sh
 set -e
 
-type() {
-    printf '\e[32m%s\e[m' "λ "
-    echo $1 | pv -qL $[10+(-2 + RANDOM%5)]
-    sleep 0.75
+PROMPT="▶ "
+
+enter() {
+    IFS='%'
+    type $PROMPT
+    type $1
+    sleep 0.5
+    type " "
+    sleep 0.25
+    type "\n"
     eval $1
-    echo ""
+    type "\n"
+    unset IFS
 }
 
-type "fd"
+type() {
+    printf '%b' $1 | pv -qL $[10+(-2 + RANDOM%5)]
+}
 
-type "fd mod"
+enter "fd"
 
-type "fd sh$"
+enter "fd mod"
 
-type "fd -H sample"
+enter "fd sh"
 
-type "fd -h"
+enter "fd -H sample"
+
+enter "fd -h"
