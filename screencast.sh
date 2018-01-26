@@ -14,7 +14,7 @@ enter() {
     sleep $DELAY
     type $INPUT
     sleep 0.5
-    printf '%b' " ⏎\n"
+    printf '%b' " >\n"
     eval $INPUT
     type "\n"
 }
