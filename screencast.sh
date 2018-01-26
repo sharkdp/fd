@@ -8,9 +8,8 @@ enter() {
     type $PROMPT
     type $1
     sleep 0.5
-    type " "
-    sleep 0.25
-    type "\n"
+    printf '%b' " ⏎\n"
+    sleep 0.1
     eval $1
     type "\n"
     unset IFS
@@ -21,6 +20,10 @@ type() {
 }
 
 enter "fd"
+
+enter "fd -e md"
+
+enter "fd -e md --exec wc -l"
 
 enter "fd mod"
 
