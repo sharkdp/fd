@@ -1,34 +1,50 @@
 #!/bin/sh
 set -e
 
-PROMPT="▶ "
+PROMPT="▶"
 
 enter() {
-    IFS='%'
-    type $PROMPT
+    prompt
     type $1
     sleep 0.5
     printf '%b' " ⏎\n"
-    sleep 0.1
     eval $1
     type "\n"
-    unset IFS
+}
+
+prompt() {
+  printf $PROMPT
+  type " "
 }
 
 type() {
     printf '%b' $1 | pv -qL $[10+(-2 + RANDOM%5)]
 }
 
-enter "fd"
+main() {
+    IFS='%'
 
-enter "fd -e md"
+    enter "fd"
 
-enter "fd -e md --exec wc -l"
+    enter "fd -e md"
 
-enter "fd mod"
+    enter "fd -e md --exec wc -l"
 
-enter "fd sh"
+    enter "fd mod"
 
-enter "fd -H sample"
+    enter "fd sh"
 
-enter "fd -h"
+    enter "fd -H sample"
+
+    enter "fd -h"
+
+    prompt
+
+    sleep 3
+
+    unset IFS
+
+    echo ""
+}
+
+main
