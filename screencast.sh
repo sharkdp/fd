@@ -14,14 +14,13 @@ enter() {
     sleep $DELAY
     type $INPUT
     sleep 0.5
-    printf '%b' " >\n"
+    printf '%b' "\n"
     eval $INPUT
     type "\n"
 }
 
 prompt() {
-  printf $PROMPT
-  type " "
+  printf '%b ' $PROMPT | pv -q
 }
 
 type() {
@@ -48,6 +47,8 @@ main() {
     prompt
 
     sleep 3
+
+    echo ""
 
     unset IFS
 }
