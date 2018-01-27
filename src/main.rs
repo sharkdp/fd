@@ -32,6 +32,7 @@ mod windows;
 
 use std::env;
 use std::error::Error;
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time;
@@ -45,7 +46,8 @@ use lscolors::LsColors;
 use walk::FileType;
 
 fn main() {
-    let matches = app::build_app().get_matches();
+    let checked_args = transform_args_with_exec();
+    let matches = app::build_app().get_matches_from(checked_args);
 
     // Get the search pattern
     let pattern = matches.value_of("pattern").unwrap_or("");
@@ -169,4 +171,26 @@ fn main() {
         Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
         Err(err) => error(err.description()),
     }
+}
+
+fn transform_args_with_exec() -> Vec<OsString> {
+    let target = {
+        let mut ex = OsString::new();
+        ex.push("-exec");
+        ex
+    };
+
+    if !std::env::args_os().any(|v| v == target) {
+        return env::args_os().collect();
+    }
+
+    let replacement = {
+        let mut exr = OsString::new();
+        exr.push("--exec");
+        exr
+    };
+
+    env::args_os()
+        .map(|v| if v == target { replacement.clone() } else { v })
+        .collect()
 }
