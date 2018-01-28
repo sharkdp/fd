@@ -27,7 +27,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 
 ## Demo
 
-![Demo](./screencast.svg)
+![Demo](doc/screencast.svg)
 
 ## Benchmark
 Let's search my home folder for files that end in `[0-9].jpg`. It contains ~150.000
