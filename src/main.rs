@@ -195,19 +195,19 @@ where
             }
             args.push(curr);
             return args;
-        } else {
-            if curr == target || curr == long_start || curr == short_start {
-                args.push(if curr == target {
-                    OsString::from("--exec")
-                } else {
-                    curr
-                });
-                in_exec_opt = true;
-            } else {
-                args.push(curr);
-            }
-            args
         }
+
+        if curr == target || curr == long_start || curr == short_start {
+            args.push(if curr == target {
+                OsString::from("--exec")
+            } else {
+                curr
+            });
+            in_exec_opt = true;
+        } else {
+            args.push(curr);
+        }
+        args
     })
 }
 
