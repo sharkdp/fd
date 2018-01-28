@@ -182,62 +182,33 @@ fn transform_args_with_exec<I>(original: I) -> Vec<OsString>
 where
     I: Iterator<Item = OsString>,
 {
-    ArgScanner::default().process_args(original)
-    // let target = OsString::from("-exec");
-    // original
-    //     .into_iter()
-    //     .map(|v| {
-    //         if v == target {
-    //             OsString::from("--exec")
-    //         } else {
-    //             v
-    //         }
-    //     })
-    //     .collect()
-}
+    let mut in_exec_opt = false;
+    let target = OsString::from("-exec");
+    let long_start = OsString::from("--exec");
+    let short_start = OsString::from("-x");
+    let exec_end = OsString::from(";");
 
-struct ArgScanner {
-    in_exec: bool,
-    transformed_args: Vec<OsString>,
-}
-
-impl ArgScanner {
-    fn default() -> ArgScanner {
-        ArgScanner {
-            in_exec: false,
-            transformed_args: vec![],
-        }
-    }
-
-    fn process_args<I>(mut self, args: I) -> Vec<OsString>
-    where
-        I: Iterator<Item = OsString>,
-    {
-        let target = OsString::from("-exec");
-        let long_start = OsString::from("--exec");
-        let short_start = OsString::from("-x");
-        let exec_end = OsString::from(";");
-
-        for arg in args {
-            if self.in_exec {
-                self.transformed_args.push(arg.clone());
-                if arg == exec_end {
-                    self.in_exec = false;
-                }
-            } else {
-                if arg == target {
-                    self.transformed_args.push(OsString::from("--exec"));
-                    self.in_exec = true;
-                } else {
-                    self.transformed_args.push(arg.clone());
-                    if arg == long_start || arg == short_start {
-                        self.in_exec = true;
-                    }
-                }
+    original.fold(vec![], |mut args, curr| {
+        if in_exec_opt {
+            if curr == exec_end {
+                in_exec_opt = false;
             }
+            args.push(curr);
+            return args;
+        } else {
+            if curr == target || curr == long_start || curr == short_start {
+                args.push(if curr == target {
+                    OsString::from("--exec")
+                } else {
+                    curr
+                });
+                in_exec_opt = true;
+            } else {
+                args.push(curr);
+            }
+            args
         }
-        Vec::from(self.transformed_args)
-    }
+    })
 }
 
 #[cfg(test)]
