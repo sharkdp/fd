@@ -46,7 +46,7 @@ use lscolors::LsColors;
 use walk::FileType;
 
 fn main() {
-    let checked_args = transform_args_with_exec(env::args_os().collect());
+    let checked_args = transform_args_with_exec(env::args_os());
     let matches = app::build_app().get_matches_from(checked_args);
 
     // Get the search pattern
@@ -178,7 +178,10 @@ fn main() {
 /// # Returns
 ///
 /// * The args, with substitution if required
-fn transform_args_with_exec(original: Vec<OsString>) -> Vec<OsString> {
+fn transform_args_with_exec<I>(original: I) -> Vec<OsString>
+where
+    I: Iterator<Item = OsString>,
+{
     let target = OsString::from("-exec");
     original
         .into_iter()
@@ -203,7 +206,7 @@ fn normal_exec_substitution() {
     let original = vec![oss("fd"), oss("foo"), oss("-exec"), oss("cmd")];
     let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
 
-    let actual = transform_args_with_exec(original);
+    let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
 }
 
@@ -213,7 +216,7 @@ fn passthru_of_original_exec() {
     let original = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
     let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
 
-    let actual = transform_args_with_exec(original);
+    let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
 }
 
@@ -238,6 +241,6 @@ fn nexted_exec_gets_transformed() {
         oss("--exec"),
     ];
 
-    let actual = transform_args_with_exec(original);
+    let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
 }
