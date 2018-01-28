@@ -288,27 +288,3 @@ fn temp_check_that_exec_context_observed() {
     let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
 }
-// Show that -exec passed as param to previous --exec will get changed
-// #[test]
-// fn nexted_exec_gets_transformed() {
-//     // N.B: This is not desirable, but it is here to show that it will
-//     // happen. However, the likelihood is relatively low that a
-//     // secondary command will have -exec as an option.
-//     let original = vec![
-//         oss("fd"),
-//         oss("foo"),
-//         oss("-exec"),
-//         oss("find"),
-//         oss("-exec"),
-//     ];
-//     let expected = vec![
-//         oss("fd"),
-//         oss("foo"),
-//         oss("--exec"),
-//         oss("find"),
-//         oss("--exec"),
-//     ];
-
-//     let actual = transform_args_with_exec(original.into_iter());
-//     assert_eq!(expected, actual);
-// }
