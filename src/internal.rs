@@ -7,6 +7,7 @@
 // according to those terms.
 
 use std::collections::HashSet;
+use std::ffi::OsString;
 use std::process;
 use std::time;
 use std::io::Write;
@@ -109,3 +110,119 @@ pub const EXITCODE_ERROR: i32 = 1;
 
 /// Exit code representing that the process was killed by SIGINT
 pub const EXITCODE_SIGINT: i32 = 130;
+
+/// Traverse args_os, looking for -exec and replacing it with --exec.
+///
+/// # Returns
+///
+/// * The args, with substitution if required
+pub fn transform_args_with_exec<I>(original: I) -> Vec<OsString>
+where
+    I: Iterator<Item = OsString>,
+{
+    let mut in_exec_opt = false;
+    let target = OsString::from("-exec");
+    let long_start = OsString::from("--exec");
+    let short_start = OsString::from("-x");
+    let exec_end = OsString::from(";");
+
+    original.fold(vec![], |mut args, curr| {
+        if in_exec_opt {
+            if curr == exec_end {
+                in_exec_opt = false;
+            }
+            args.push(curr);
+            return args;
+        }
+
+        if curr == target || curr == long_start || curr == short_start {
+            args.push(if curr == target {
+                OsString::from("--exec")
+            } else {
+                curr
+            });
+            in_exec_opt = true;
+        } else {
+            args.push(curr);
+        }
+        args
+    })
+}
+
+#[cfg(test)]
+fn oss(v: &str) -> OsString {
+    OsString::from(v)
+}
+
+/// Ensure that -exec gets transformed into --exec
+#[test]
+fn normal_exec_substitution() {
+    let original = vec![oss("fd"), oss("foo"), oss("-exec"), oss("cmd")];
+    let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+
+    let actual = transform_args_with_exec(original.into_iter());
+    assert_eq!(expected, actual);
+}
+
+/// Ensure that --exec is not touched
+#[test]
+fn passthru_of_original_exec() {
+    let original = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+    let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+
+    let actual = transform_args_with_exec(original.into_iter());
+    assert_eq!(expected, actual);
+}
+
+#[test]
+fn temp_check_that_exec_context_observed() {
+    let original = vec![
+        oss("fd"),
+        oss("foo"),
+        oss("-exec"),
+        oss("cmd"),
+        oss("-exec"),
+        oss("ls"),
+        oss(";"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("--exec"),
+        oss("find"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("-x"),
+        oss("foo"),
+        oss("-exec"),
+        oss("something"),
+        oss(";"),
+        oss("-exec"),
+    ];
+    let expected = vec![
+        oss("fd"),
+        oss("foo"),
+        oss("--exec"),
+        oss("cmd"),
+        oss("-exec"),
+        oss("ls"),
+        oss(";"),
+        oss("--exec"),
+        oss("rm"),
+        oss(";"),
+        oss("--exec"),
+        oss("find"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("-x"),
+        oss("foo"),
+        oss("-exec"),
+        oss("something"),
+        oss(";"),
+        oss("--exec"),
+    ];
+
+    let actual = transform_args_with_exec(original.into_iter());
+    assert_eq!(expected, actual);
+}
