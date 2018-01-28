@@ -182,17 +182,62 @@ fn transform_args_with_exec<I>(original: I) -> Vec<OsString>
 where
     I: Iterator<Item = OsString>,
 {
-    let target = OsString::from("-exec");
-    original
-        .into_iter()
-        .map(|v| {
-            if v == target {
-                OsString::from("--exec")
+    ArgScanner::default().process_args(original)
+    // let target = OsString::from("-exec");
+    // original
+    //     .into_iter()
+    //     .map(|v| {
+    //         if v == target {
+    //             OsString::from("--exec")
+    //         } else {
+    //             v
+    //         }
+    //     })
+    //     .collect()
+}
+
+struct ArgScanner {
+    in_exec: bool,
+    transformed_args: Vec<OsString>,
+}
+
+impl ArgScanner {
+    fn default() -> ArgScanner {
+        ArgScanner {
+            in_exec: false,
+            transformed_args: vec![],
+        }
+    }
+
+    fn process_args<I>(mut self, args: I) -> Vec<OsString>
+    where
+        I: Iterator<Item = OsString>,
+    {
+        let target = OsString::from("-exec");
+        let long_start = OsString::from("--exec");
+        let short_start = OsString::from("-x");
+        let exec_end = OsString::from(";");
+
+        for arg in args {
+            if self.in_exec {
+                self.transformed_args.push(arg.clone());
+                if arg == exec_end {
+                    self.in_exec = false;
+                }
             } else {
-                v
+                if arg == target {
+                    self.transformed_args.push(OsString::from("--exec"));
+                    self.in_exec = true;
+                } else {
+                    self.transformed_args.push(arg.clone());
+                    if arg == long_start || arg == short_start {
+                        self.in_exec = true;
+                    }
+                }
             }
-        })
-        .collect()
+        }
+        Vec::from(self.transformed_args)
+    }
 }
 
 #[cfg(test)]
@@ -220,27 +265,79 @@ fn passthru_of_original_exec() {
     assert_eq!(expected, actual);
 }
 
-/// Show that -exec passed as param to previous --exec will get changed
 #[test]
-fn nexted_exec_gets_transformed() {
-    // N.B: This is not desirable, but it is here to show that it will
-    // happen. However, the likelihood is relatively low that a
-    // secondary command will have -exec as an option.
+fn temp_check_that_exec_context_observed() {
     let original = vec![
         oss("fd"),
         oss("foo"),
         oss("-exec"),
+        oss("cmd"),
+        oss("-exec"),
+        oss("ls"),
+        oss(";"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("--exec"),
         oss("find"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("-x"),
+        oss("foo"),
+        oss("-exec"),
+        oss("something"),
+        oss(";"),
         oss("-exec"),
     ];
     let expected = vec![
         oss("fd"),
         oss("foo"),
         oss("--exec"),
+        oss("cmd"),
+        oss("-exec"),
+        oss("ls"),
+        oss(";"),
+        oss("--exec"),
+        oss("rm"),
+        oss(";"),
+        oss("--exec"),
         oss("find"),
+        oss("-exec"),
+        oss("rm"),
+        oss(";"),
+        oss("-x"),
+        oss("foo"),
+        oss("-exec"),
+        oss("something"),
+        oss(";"),
         oss("--exec"),
     ];
 
     let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
 }
+// Show that -exec passed as param to previous --exec will get changed
+// #[test]
+// fn nexted_exec_gets_transformed() {
+//     // N.B: This is not desirable, but it is here to show that it will
+//     // happen. However, the likelihood is relatively low that a
+//     // secondary command will have -exec as an option.
+//     let original = vec![
+//         oss("fd"),
+//         oss("foo"),
+//         oss("-exec"),
+//         oss("find"),
+//         oss("-exec"),
+//     ];
+//     let expected = vec![
+//         oss("fd"),
+//         oss("foo"),
+//         oss("--exec"),
+//         oss("find"),
+//         oss("--exec"),
+//     ];
+
+//     let actual = transform_args_with_exec(original.into_iter());
+//     assert_eq!(expected, actual);
+// }
