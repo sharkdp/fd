@@ -46,7 +46,7 @@ use lscolors::LsColors;
 use walk::FileType;
 
 fn main() {
-    let checked_args = transform_args_with_exec();
+    let checked_args = transform_args_with_exec(env::args_os().collect());
     let matches = app::build_app().get_matches_from(checked_args);
 
     // Get the search pattern
@@ -173,24 +173,71 @@ fn main() {
     }
 }
 
-fn transform_args_with_exec() -> Vec<OsString> {
-    let target = {
-        let mut ex = OsString::new();
-        ex.push("-exec");
-        ex
-    };
-
-    if !std::env::args_os().any(|v| v == target) {
-        return env::args_os().collect();
-    }
-
-    let replacement = {
-        let mut exr = OsString::new();
-        exr.push("--exec");
-        exr
-    };
-
-    env::args_os()
-        .map(|v| if v == target { replacement.clone() } else { v })
+/// Traverse args_os, looking for -exec and replacing it with --exec.
+///
+/// # Returns
+///
+/// * The args, with substitution if required
+fn transform_args_with_exec(original: Vec<OsString>) -> Vec<OsString> {
+    let target = OsString::from("-exec");
+    original
+        .into_iter()
+        .map(|v| {
+            if v == target {
+                OsString::from("--exec")
+            } else {
+                v
+            }
+        })
         .collect()
+}
+
+#[cfg(test)]
+fn oss(v: &str) -> OsString {
+    OsString::from(v)
+}
+
+/// Ensure that -exec gets transformed into --exec
+#[test]
+fn normal_exec_substitution() {
+    let original = vec![oss("fd"), oss("foo"), oss("-exec"), oss("cmd")];
+    let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+
+    let actual = transform_args_with_exec(original);
+    assert_eq!(expected, actual);
+}
+
+/// Ensure that --exec is not touched
+#[test]
+fn passthru_of_original_exec() {
+    let original = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+    let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
+
+    let actual = transform_args_with_exec(original);
+    assert_eq!(expected, actual);
+}
+
+/// Show that -exec passed as param to previous --exec will get changed
+#[test]
+fn nexted_exec_gets_transformed() {
+    // N.B: This is not desirable, but it is here to show that it will
+    // happen. However, the likelihood is relatively low that a
+    // secondary command will have -exec as an option.
+    let original = vec![
+        oss("fd"),
+        oss("foo"),
+        oss("-exec"),
+        oss("find"),
+        oss("-exec"),
+    ];
+    let expected = vec![
+        oss("fd"),
+        oss("foo"),
+        oss("--exec"),
+        oss("find"),
+        oss("--exec"),
+    ];
+
+    let actual = transform_args_with_exec(original);
+    assert_eq!(expected, actual);
 }

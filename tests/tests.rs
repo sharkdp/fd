@@ -43,6 +43,13 @@ fn get_absolute_root_path(env: &TestEnv) -> String {
     path
 }
 
+#[cfg(test)]
+fn get_test_env_with_abs_path(dirs: &[&'static str], files: &[&'static str]) -> (TestEnv, String) {
+    let env = TestEnv::new(dirs, files);
+    let root_path = get_absolute_root_path(&env);
+    (env, root_path)
+}
+
 /// Simple tests
 #[test]
 fn test_simple() {
@@ -406,9 +413,7 @@ fn test_max_depth() {
 /// Absolute paths (--absolute-path)
 #[test]
 fn test_absolute_path() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-
-    let abs_path = get_absolute_root_path(&te);
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--absolute-path"],
@@ -530,9 +535,7 @@ fn test_extension() {
 /// Symlinks misc
 #[test]
 fn test_symlink() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-
-    let abs_path = get_absolute_root_path(&te);
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     // From: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getcwd.html
     // The getcwd() function shall place an absolute pathname of the current working directory in
@@ -680,14 +683,28 @@ fn test_excludes() {
 /// Shell script execution (--exec)
 #[test]
 fn test_exec() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    assert_exec_output("--exec");
+}
 
-    let abs_path = get_absolute_root_path(&te);
+/// Shell script execution using -exec
+#[test]
+fn test_exec_substitution() {
+    assert_exec_output("-exec");
+}
 
+// Shell script execution using -x
+#[test]
+fn test_exec_short_arg() {
+    assert_exec_output("-x");
+}
+
+#[cfg(test)]
+fn assert_exec_output(exec_style: &str) {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
     if !cfg!(windows) {
         te.assert_output(
-            &["--absolute-path", "foo", "--exec", "echo"],
+            &["--absolute-path", "foo", exec_style, "echo"],
             &format!(
                 "{abs_path}/a.foo
                 {abs_path}/one/b.foo
@@ -700,7 +717,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo", "{}"],
+            &["foo", exec_style, "echo", "{}"],
             "a.foo
             one/b.foo
             one/two/C.Foo2
@@ -710,7 +727,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo", "{.}"],
+            &["foo", exec_style, "echo", "{.}"],
             "a
             one/b
             one/two/C
@@ -720,7 +737,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo", "{/}"],
+            &["foo", exec_style, "echo", "{/}"],
             "a.foo
             b.foo
             C.Foo2
@@ -730,7 +747,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo", "{/.}"],
+            &["foo", exec_style, "echo", "{/.}"],
             "a
             b
             C
@@ -740,7 +757,7 @@ fn test_exec() {
         );
 
         te.assert_output(
-            &["foo", "--exec", "echo", "{//}"],
+            &["foo", exec_style, "echo", "{//}"],
             ".
             one
             one/two
@@ -749,6 +766,6 @@ fn test_exec() {
             one/two/three",
         );
 
-        te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "e1 e2.");
+        te.assert_output(&["e1", exec_style, "printf", "%s.%s\n"], "e1 e2.");
     }
 }
