@@ -90,7 +90,6 @@ pub fn build_app() -> App<'static, 'static> {
             arg("exec")
                 .long("exec")
                 .short("x")
-                .multiple(true)
                 .min_values(1)
                 .allow_hyphen_values(true)
                 .value_terminator(";")

@@ -40,12 +40,13 @@ use atty::Stream;
 use regex::RegexBuilder;
 
 use exec::CommandTemplate;
-use internal::{error, pattern_has_uppercase_char, FdOptions};
+use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions};
 use lscolors::LsColors;
 use walk::FileType;
 
 fn main() {
-    let matches = app::build_app().get_matches();
+    let checked_args = transform_args_with_exec(env::args_os());
+    let matches = app::build_app().get_matches_from(checked_args);
 
     // Get the search pattern
     let pattern = matches.value_of("pattern").unwrap_or("");
