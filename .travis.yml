@@ -79,7 +79,7 @@ matrix:
       rust: nightly
       # skip the global install step
       install:
-        - cargo install --force rustfmt-nightly
+        - cargo install --debug --force rustfmt-nightly
       script: cargo fmt -- --write-mode=diff
 
 addons:
