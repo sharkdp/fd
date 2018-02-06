@@ -530,6 +530,28 @@ fn test_extension() {
     te.assert_output(&["--extension", ".foo", "a"], "a.foo");
 
     te.assert_output(&["--extension", "foo2"], "one/two/C.Foo2");
+
+    let te2 = TestEnv::new(&[], &["spam.bar.baz", "egg.bar.baz", "yolk.bar.baz.sig"]);
+
+    te2.assert_output(
+        &["--extension", ".bar.baz"],
+        "spam.bar.baz
+        egg.bar.baz",
+    );
+
+    te2.assert_output(&["--extension", "sig"], "yolk.bar.baz.sig");
+
+    te2.assert_output(&["--extension", "bar.baz.sig"], "yolk.bar.baz.sig");
+
+    let te3 = TestEnv::new(&[], &["latin1.e\u{301}xt", "smiley.☻"]);
+
+    te3.assert_output(&["--extension", "☻"], "smiley.☻");
+
+    te3.assert_output(&["--extension", ".e\u{301}xt"], "latin1.e\u{301}xt");
+
+    let te4 = TestEnv::new(&[], &[".hidden", "test.hidden"]);
+
+    te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
 }
 
 /// Symlinks misc
