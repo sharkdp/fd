@@ -11,7 +11,6 @@ extern crate ctrlc;
 use exec;
 use fshelper;
 use internal::{error, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
-use utils::path_has_any_extension;
 use output;
 
 use std::process;
@@ -214,9 +213,11 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted extensions.
-            if let Some(ref filter_exts) = config.extensions {
-                if !path_has_any_extension(entry_path, filter_exts.iter()) {
-                    return ignore::WalkState::Continue;
+            if let Some(ref exts_regex) = config.extensions {
+                if let Some(path_str) = entry_path.file_name().map_or(None, |s| s.to_str()) {
+                    if !exts_regex.is_match(path_str) {
+                        return ignore::WalkState::Continue;
+                    }
                 }
             }
 
