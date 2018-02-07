@@ -25,7 +25,6 @@ mod app;
 mod exec;
 mod internal;
 mod output;
-mod utils;
 mod walk;
 
 #[cfg(windows)]
@@ -38,7 +37,7 @@ use std::sync::Arc;
 use std::time;
 
 use atty::Stream;
-use regex::RegexBuilder;
+use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions};
@@ -153,8 +152,15 @@ fn main() {
                 .collect(),
         },
         extensions: matches.values_of("extension").map(|exts| {
-            exts.map(|e| String::from(".") + &e.trim_left_matches('.'))
-                .collect()
+            let patterns = exts.map(|e| e.trim_left_matches('.'))
+                .map(|e| format!(r".\.{}$", regex::escape(e)));
+            match RegexSetBuilder::new(patterns)
+                .case_insensitive(true)
+                .build()
+            {
+                Ok(re) => re,
+                Err(err) => error(err.description()),
+            }
         }),
         command,
         exclude_patterns: matches
