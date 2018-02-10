@@ -87,6 +87,8 @@ addons:
     packages:
       # needed for i686-unknown-linux-gnu target
       - gcc-multilib
+      # needed to build deb packages
+      - fakeroot
 
 env:
   global:
