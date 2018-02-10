@@ -61,6 +61,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("i")
                 .overrides_with("case-sensitive"),
         )
+        .arg(
+            arg("fixed-strings")
+                .long("fixed-strings")
+                .short("F")
+                .alias("literal"),
+        )
         .arg(arg("absolute-path").long("absolute-path").short("a"))
         .arg(arg("follow").long("follow").short("L").alias("dereference"))
         .arg(arg("full-path").long("full-path").short("p"))
@@ -153,6 +159,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Case-insensitive search (default: smart case)"
         , "Perform a case-insensitive search. By default, fd uses case-insensitive searches, \
            unless the pattern contains an uppercase character (smart case).");
+    doc!(h, "fixed-strings"
+        , "Treat the pattern as a literal string"
+        , "Treat the pattern as a literal string instead of a regular expression.");
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");

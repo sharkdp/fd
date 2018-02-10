@@ -791,3 +791,33 @@ fn assert_exec_output(exec_style: &str) {
         te.assert_output(&["e1", exec_style, "printf", "%s.%s\n"], "e1 e2.");
     }
 }
+
+/// Literal search (--fixed-strings)
+#[test]
+fn test_fixed_strings() {
+    let dirs = &["test1", "test2"];
+    let files = &["test1/a.foo", "test1/a_foo", "test2/Download (1).tar.gz"];
+    let te = TestEnv::new(dirs, files);
+
+    // Regex search, dot is treated as "any character"
+    te.assert_output(
+        &["a.foo"],
+        "test1/a.foo
+         test1/a_foo",
+    );
+
+    // Literal search, dot is treated as character
+    te.assert_output(&["--fixed-strings", "a.foo"], "test1/a.foo");
+
+    // Regex search, parens are treated as group
+    te.assert_output(&["download (1)"], "");
+
+    // Literal search, parens are treated as characters
+    te.assert_output(
+        &["--fixed-strings", "download (1)"],
+        "test2/Download (1).tar.gz",
+    );
+
+    // Combine with --case-sensitive
+    te.assert_output(&["--fixed-strings", "--case-sensitive", "download (1)"], "");
+}
