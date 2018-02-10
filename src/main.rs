@@ -81,10 +81,17 @@ fn main() {
             .collect();
     }
 
+    // Treat pattern as literal string if '--fixed-strings' is used
+    let pattern_regex = if matches.is_present("fixed-strings") {
+        regex::escape(pattern)
+    } else {
+        String::from(pattern)
+    };
+
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
-        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern));
+        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
 
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
@@ -169,7 +176,7 @@ fn main() {
             .unwrap_or_else(|| vec![]),
     };
 
-    match RegexBuilder::new(pattern)
+    match RegexBuilder::new(&pattern_regex)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build()

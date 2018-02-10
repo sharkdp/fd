@@ -211,6 +211,7 @@ FLAGS:
         --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
+    -F, --fixed-strings     Treat the pattern as a literal string
     -a, --absolute-path     Show absolute instead of relative paths
     -L, --follow            Follow symbolic links
     -p, --full-path         Search full path (default: file-/dirname only)
@@ -222,7 +223,7 @@ OPTIONS:
     -d, --max-depth <depth>       Set maximum search depth (default: none)
     -t, --type <filetype>...      Filter by type: f(ile), d(irectory), (sym)l(ink)
     -e, --extension <ext>...      Filter by file extension
-    -x, --exec <cmd>...           Execute a command for each search result
+    -x, --exec <cmd>              Execute a command for each search result
     -E, --exclude <pattern>...    Exclude entries that match the given glob pattern
     -c, --color <when>            When to use colors: never, *auto*, always
     -j, --threads <num>           Set number of threads to use for searching & executing
