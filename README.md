@@ -30,60 +30,59 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 ![Demo](doc/screencast.svg)
 
 ## Benchmark
-Let's search my home folder for files that end in `[0-9].jpg`. It contains ~150.000
+
+Let's search my home folder for files that end in `[0-9].jpg`. It contains ~190.000
 subdirectories and about a million files. For averaging and statistical analysis, I'm using
-[bench](https://github.com/Gabriel439/bench). All benchmarks are performed for a "warm
-cache". Results for a cold cache are similar.
+[hyperfine](https://github.com/sharkdp/hyperfine). The following benchmarks are performed
+with a "warm"/pre-filled disk-cache (results for a "cold" disk-cache show the same trends).
 
 Let's start with `find`:
 ```
-find ~ -iregex '.*[0-9]\.jpg$'
+Benchmark #1: find ~ -iregex '.*[0-9]\.jpg$'
 
-time                 6.265 s    (6.127 s .. NaN s)
-                     1.000 R²   (1.000 R² .. 1.000 R²)
-mean                 6.162 s    (6.140 s .. 6.181 s)
-std dev              31.73 ms   (0.0 s .. 33.48 ms)
+  Time (mean ± σ):      7.236 s ±  0.090 s
+ 
+  Range (min … max):    7.133 s …  7.385 s
 ```
 
 `find` is much faster if it does not need to perform a regular-expression search:
 ```
-find ~ -iname '*[0-9].jpg'
+Benchmark #2: find ~ -iname '*[0-9].jpg'
 
-time                 2.866 s    (2.754 s .. 2.964 s)
-                     1.000 R²   (0.999 R² .. 1.000 R²)
-mean                 2.860 s    (2.834 s .. 2.875 s)
-std dev              23.11 ms   (0.0 s .. 25.09 ms)
+  Time (mean ± σ):      3.914 s ±  0.027 s
+ 
+  Range (min … max):    3.876 s …  3.964 s
 ```
 
 Now let's try the same for `fd`. Note that `fd` *always* performs a regular expression
 search. The options `--hidden` and `--no-ignore` are needed for a fair comparison,
 otherwise `fd` does not have to traverse hidden folders and ignored paths (see below):
 ```
-fd --hidden --no-ignore '.*[0-9]\.jpg$' ~
+Benchmark #3: fd -HI '.*[0-9]\.jpg$' ~
 
-time                 892.6 ms   (839.0 ms .. 915.4 ms)
-                     0.999 R²   (0.997 R² .. 1.000 R²)
-mean                 871.2 ms   (857.9 ms .. 881.3 ms)
-std dev              15.50 ms   (0.0 s .. 17.49 ms)
+  Time (mean ± σ):     811.6 ms ±  26.9 ms
+ 
+  Range (min … max):   786.0 ms … 870.7 ms
 ```
-For this particular example, `fd` is approximately seven times faster than `find -iregex`
-and about three times faster than `find -iname`. By the way, both tools found the exact
-same 14030 files :smile:.
+For this particular example, `fd` is approximately nine times faster than `find -iregex`
+and about five times faster than `find -iname`. By the way, both tools found the exact
+same 20880 files :smile:.
 
 Finally, let's run `fd` without `--hidden` and `--no-ignore` (this can lead to different
-search results, of course):
+search results, of course). If *fd* does not have to traverse the hidden and git-ignored
+folders, it is almost an order of magnitude faster:
 ```
-fd '[0-9]\.jpg$' ~
+Benchmark #4: fd '[0-9]\.jpg$' ~
 
-time                 159.5 ms   (155.8 ms .. 165.3 ms)
-                     0.999 R²   (0.996 R² .. 1.000 R²)
-mean                 158.7 ms   (156.5 ms .. 161.6 ms)
-std dev              3.263 ms   (2.401 ms .. 4.298 ms)
+  Time (mean ± σ):     123.7 ms ±   6.0 ms
+ 
+  Range (min … max):   118.8 ms … 140.0 ms
 ```
 
 **Note**: This is *one particular* benchmark on *one particular* machine. While I have
 performed quite a lot of different tests (and found consistent results), things might
-be different for you! I encourage everyone to try it out on their own.
+be different for you! I encourage everyone to try it out on their own. See 
+[this repository](https://github.com/sharkdp/fd-benchmarks) for all necessary scripts.
 
 Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
 in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
