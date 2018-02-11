@@ -135,9 +135,9 @@ sudo dpkg -i fd_6.3.0_amd64.deb  # adapt version number and architecture
 
 ### On Arch Linux
 
-You can install [the fd-rs package](https://www.archlinux.org/packages/community/x86_64/fd-rs/) from the official repos:
+You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
 ```
-pacman -S fd-rs
+pacman -S fd
 ```
 
 ### On Void Linux
