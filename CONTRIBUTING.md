@@ -16,5 +16,5 @@ give us the chance to discuss any potential changes first.
   * [Open pull requests](https://github.com/sharkdp/fd/pulls)
   * [Development section in the README](https://github.com/sharkdp/fd#development)
   * [fd on crates.io](https://crates.io/crates/fd-find)
-  * [LICENSE](https://github.com/sharkdp/fd/blob/master/LICENSE)
+  * [LICENSE-APACHE](https://github.com/sharkdp/fd/blob/master/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/sharkdp/fd/blob/master/LICENSE-MIT)
   
