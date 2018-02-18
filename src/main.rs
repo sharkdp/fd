@@ -182,6 +182,12 @@ fn main() {
         .build()
     {
         Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
-        Err(err) => error(err.description()),
+        Err(err) => error(
+            format!(
+                "{}\nHint: You can use the '--fixed-strings' option to search for a \
+                            literal string instead of a regular expression",
+                err.description()
+            ).as_str(),
+        ),
     }
 }
