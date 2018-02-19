@@ -185,7 +185,7 @@ fn main() {
         Err(err) => error(
             format!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \
-                            literal string instead of a regular expression",
+                 literal string instead of a regular expression",
                 err.description()
             ).as_str(),
         ),
