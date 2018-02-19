@@ -138,6 +138,12 @@ You can install [the fd package](https://www.archlinux.org/packages/community/x8
 ```
 pacman -S fd
 ```
+### On Gentoo Linux
+
+You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) from the official repo:
+```
+emerge -av fd
+```
 
 ### On Void Linux
 
