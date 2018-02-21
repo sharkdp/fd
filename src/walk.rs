@@ -71,14 +71,18 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let mut walker = WalkBuilder::new(first_path_buf.as_path());
     walker
         .hidden(config.ignore_hidden)
-        .ignore(config.read_ignore)
-        .git_ignore(config.read_gitignore)
-        .parents(config.read_ignore || config.read_gitignore)
-        .git_global(config.read_gitignore)
-        .git_exclude(config.read_gitignore)
+        .ignore(false)
+        .parents(config.read_fdignore || config.read_vcsignore)
+        .git_ignore(config.read_vcsignore)
+        .git_global(config.read_vcsignore)
+        .git_exclude(config.read_vcsignore)
         .overrides(overrides)
         .follow_links(config.follow_links)
         .max_depth(config.max_depth);
+
+    if config.read_fdignore {
+        walker.add_custom_ignore_filename(".fdignore");
+    }
 
     for path_entry in path_iter {
         walker.add(path_entry.as_path());
