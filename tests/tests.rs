@@ -14,6 +14,8 @@ mod testenv;
 
 use testenv::TestEnv;
 use regex::escape;
+use std::fs;
+use std::io::Write;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -23,7 +25,7 @@ static DEFAULT_FILES: &'static [&'static str] = &[
     "one/two/c.foo",
     "one/two/C.Foo2",
     "one/two/three/d.foo",
-    "ignored.foo",
+    "fdignored.foo",
     "gitignored.foo",
     ".hidden.foo",
     "e1 e2",
@@ -272,7 +274,7 @@ fn test_no_ignore() {
     te.assert_output(
         &["--no-ignore", "foo"],
         "a.foo
-        ignored.foo
+        fdignored.foo
         gitignored.foo
         one/b.foo
         one/two/c.foo
@@ -285,7 +287,7 @@ fn test_no_ignore() {
         &["--hidden", "--no-ignore", "foo"],
         ".hidden.foo
         a.foo
-        ignored.foo
+        fdignored.foo
         gitignored.foo
         one/b.foo
         one/two/c.foo
@@ -293,6 +295,70 @@ fn test_no_ignore() {
         one/two/three/d.foo
         one/two/three/directory_foo",
     );
+}
+
+/// Custom ignore files
+#[test]
+fn test_custom_ignore() {
+    let files = &[
+        "ignored-by-nothing",
+        "ignored-by-fdignore",
+        "ignored-by-gitignore",
+        "ignored-by-both",
+    ];
+    let te = TestEnv::new(&[], files);
+
+    fs::File::create(te.test_root().join(".fdignore"))
+        .unwrap()
+        .write_all(b"ignored-by-fdignore\nignored-by-both")
+        .unwrap();
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"ignored-by-gitignore\nignored-by-both")
+        .unwrap();
+
+    te.assert_output(&["ignored"], "ignored-by-nothing");
+
+    te.assert_output(
+        &["--no-ignore-vcs", "ignored"],
+        "ignored-by-nothing
+        ignored-by-gitignore",
+    );
+
+    te.assert_output(
+        &["--no-ignore", "ignored"],
+        "ignored-by-nothing
+        ignored-by-fdignore
+        ignored-by-gitignore
+        ignored-by-both",
+    );
+}
+
+/// Precedence of custom ignore files
+#[test]
+fn test_custom_ignore_precedence() {
+    let dirs = &["inner"];
+    let files = &["inner/foo"];
+    let te = TestEnv::new(dirs, files);
+
+    // Ignore 'foo' via .gitignore
+    fs::File::create(te.test_root().join("inner/.gitignore"))
+        .unwrap()
+        .write_all(b"foo")
+        .unwrap();
+
+    // Whitelist 'foo' via .fdignore
+    fs::File::create(te.test_root().join(".fdignore"))
+        .unwrap()
+        .write_all(b"!foo")
+        .unwrap();
+
+    te.assert_output(&["foo"], "inner/foo");
+
+    te.assert_output(&["--no-ignore-vcs", "foo"], "inner/foo");
+
+    te.assert_output(&["--no-ignore", "foo"], "inner/foo");
 }
 
 /// VCS ignored files (--no-ignore-vcs)
@@ -320,7 +386,7 @@ fn test_no_ignore_aliases() {
     te.assert_output(
         &["-u", "foo"],
         "a.foo
-        ignored.foo
+        fdignored.foo
         gitignored.foo
         one/b.foo
         one/two/c.foo
@@ -333,7 +399,7 @@ fn test_no_ignore_aliases() {
         &["-uu", "foo"],
         ".hidden.foo
         a.foo
-        ignored.foo
+        fdignored.foo
         gitignored.foo
         one/b.foo
         one/two/c.foo

@@ -30,11 +30,11 @@ pub struct FdOptions {
     /// Whether to ignore hidden files and directories (or not).
     pub ignore_hidden: bool,
 
-    /// Whether to respect ignore files (`.gitignore`, `.ignore`, ..) or not.
-    pub read_ignore: bool,
+    /// Whether to respect `.fdignore` files or not.
+    pub read_fdignore: bool,
 
     /// Whether to respect VCS ignore files (`.gitignore`, ..) or not.
-    pub read_gitignore: bool,
+    pub read_vcsignore: bool,
 
     /// Whether to follow symlinks or not.
     pub follow_links: bool,

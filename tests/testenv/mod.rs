@@ -60,7 +60,7 @@ fn create_working_directory(
         #[cfg(windows)]
         windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
 
-        fs::File::create(root.join(".ignore"))?.write_all(b"ignored.foo")?;
+        fs::File::create(root.join(".fdignore"))?.write_all(b"fdignored.foo")?;
 
         fs::File::create(root.join(".gitignore"))?.write_all(b"gitignored.foo")?;
     }
