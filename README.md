@@ -163,6 +163,11 @@ brew install fd
 
 You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
 
+You can install `fd` via [Scoop](http://scoop.sh):
+```
+scoop install fd
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
