@@ -20,8 +20,22 @@ use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
 
+/// Remove the `./` prefix from a path.
+fn strip_current_dir<'a>(pathbuf: &'a PathBuf) -> &'a Path {
+    let mut iter = pathbuf.components();
+    let mut iter_next = iter.clone();
+    if iter_next.next() == Some(Component::CurDir) {
+        iter.next();
+    }
+    iter.as_path()
+}
+
 pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<AtomicBool>) {
-    let path = entry.strip_prefix(".").unwrap_or(entry);
+    let path = if entry.is_absolute() {
+        entry.as_path()
+    } else {
+        strip_current_dir(entry)
+    };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
         print_entry_colorized(path, config, ls_colors, &wants_to_quit)
