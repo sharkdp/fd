@@ -35,14 +35,6 @@ enum ReceiverMode {
     Streaming,
 }
 
-/// The types of file to search for.
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub enum FileType {
-    RegularFile,
-    Directory,
-    SymLink,
-}
-
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -206,14 +198,17 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted file types.
-            if (entry.file_type().map_or(false, |ft| ft.is_file())
-                && !config.file_types.contains(&FileType::RegularFile))
-                || (entry.file_type().map_or(false, |ft| ft.is_dir())
-                    && !config.file_types.contains(&FileType::Directory))
-                || (entry.file_type().map_or(false, |ft| ft.is_symlink())
-                    && !config.file_types.contains(&FileType::SymLink))
-            {
-                return ignore::WalkState::Continue;
+            if let Some(ref file_types) = config.file_types {
+                if let Some(ref entry_type) = entry.file_type() {
+                    if (entry_type.is_file() && !file_types.files)
+                        || (entry_type.is_dir() && !file_types.directories)
+                        || (entry_type.is_symlink() && !file_types.symlinks)
+                    {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
+                    return ignore::WalkState::Continue;
+                }
             }
 
             // Filter out unwanted extensions.

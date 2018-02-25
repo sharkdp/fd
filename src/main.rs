@@ -40,9 +40,8 @@ use atty::Stream;
 use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
-use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions};
+use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes};
 use lscolors::LsColors;
-use walk::FileType;
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
@@ -142,22 +141,18 @@ fn main() {
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
         ls_colors,
-        file_types: match matches.values_of("file-type") {
-            None => vec![
-                FileType::RegularFile,
-                FileType::Directory,
-                FileType::SymLink,
-            ].into_iter()
-                .collect(),
-            Some(values) => values
-                .map(|value| match value {
-                    "f" | "file" => FileType::RegularFile,
-                    "d" | "directory" => FileType::Directory,
-                    "l" | "symlink" => FileType::SymLink,
-                    _ => FileType::RegularFile,
-                })
-                .collect(),
-        },
+        file_types: matches.values_of("file-type").map(|values| {
+            let mut file_types = FileTypes::default();
+            for value in values {
+                match value {
+                    "f" | "file" => file_types.files = true,
+                    "d" | "directory" => file_types.directories = true,
+                    "l" | "symlink" => file_types.symlinks = true,
+                    _ => unreachable!(),
+                }
+            }
+            file_types
+        }),
         extensions: matches.values_of("extension").map(|exts| {
             let patterns = exts.map(|e| e.trim_left_matches('.'))
                 .map(|e| format!(r".\.{}$", regex::escape(e)));
