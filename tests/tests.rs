@@ -889,6 +889,7 @@ fn test_fixed_strings() {
 }
 
 /// Filenames with invalid UTF-8 sequences
+#[cfg(target_os = "linux")]
 #[test]
 fn test_invalid_utf8() {
     use std::ffi::OsStr;
