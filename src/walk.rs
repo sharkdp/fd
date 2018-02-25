@@ -191,8 +191,6 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 Err(_) => return ignore::WalkState::Continue,
             };
 
-            let entry_path = entry.path();
-
             if entry.depth() == 0 {
                 return ignore::WalkState::Continue;
             }
@@ -210,6 +208,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     return ignore::WalkState::Continue;
                 }
             }
+
+            let entry_path = entry.path();
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
