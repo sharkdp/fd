@@ -6,7 +6,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use std::collections::HashSet;
 use std::ffi::OsString;
 use std::process;
 use std::time;
@@ -14,9 +13,25 @@ use std::io::Write;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
-use walk::FileType;
 use regex_syntax::{Expr, ExprBuilder};
 use regex::RegexSet;
+
+/// Whether or not to show
+pub struct FileTypes {
+    pub files: bool,
+    pub directories: bool,
+    pub symlinks: bool,
+}
+
+impl Default for FileTypes {
+    fn default() -> FileTypes {
+        FileTypes {
+            files: false,
+            directories: false,
+            symlinks: false,
+        }
+    }
+}
 
 /// Configuration options for *fd*.
 pub struct FdOptions {
@@ -60,8 +75,9 @@ pub struct FdOptions {
     /// how to style different filetypes.
     pub ls_colors: Option<LsColors>,
 
-    /// The type of file to search for. All files other than the specified type will be ignored.
-    pub file_types: HashSet<FileType>,
+    /// The type of file to search for. If set to `None`, all file types are displayed. If
+    /// set to `Some(..)`, only the types that are specified are shown.
+    pub file_types: Option<FileTypes>,
 
     /// The extension to search for. Only entries matching the extension will be included.
     ///
