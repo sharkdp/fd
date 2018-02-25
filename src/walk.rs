@@ -217,6 +217,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     if !exts_regex.is_match(path_str) {
                         return ignore::WalkState::Continue;
                     }
+                } else {
+                    return ignore::WalkState::Continue;
                 }
             }
 

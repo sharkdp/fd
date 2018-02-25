@@ -887,3 +887,26 @@ fn test_fixed_strings() {
     // Combine with --case-sensitive
     te.assert_output(&["--fixed-strings", "--case-sensitive", "download (1)"], "");
 }
+
+/// Filenames with invalid UTF-8 sequences
+#[test]
+fn test_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    ).unwrap();
+
+    te.assert_output(&["", "test1/"], "test1/test_�invalid.txt");
+
+    te.assert_output(&["invalid", "test1/"], "test1/test_�invalid.txt");
+
+    // Should not be found under a different extension
+    te.assert_output(&["-e", "zip", "", "test1/"], "");
+}
