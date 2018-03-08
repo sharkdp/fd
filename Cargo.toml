@@ -37,8 +37,8 @@ atty = "0.2"
 ignore = "0.4.1"
 lazy_static = "1"
 num_cpus = "1.8"
-regex = "0.2"
-regex-syntax = "0.4"
+regex = "0.2.7"
+regex-syntax = "0.5"
 ctrlc = "3.0"
 
 [dependencies.clap]

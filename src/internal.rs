@@ -13,7 +13,8 @@ use std::io::Write;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
-use regex_syntax::{Expr, ExprBuilder};
+use regex_syntax::Parser;
+use regex_syntax::hir::Hir;
 use regex::RegexSet;
 
 /// Whether or not to show
@@ -99,22 +100,27 @@ pub fn error(message: &str) -> ! {
 
 /// Determine if a regex pattern contains a literal uppercase character.
 pub fn pattern_has_uppercase_char(pattern: &str) -> bool {
-    ExprBuilder::new()
+    Parser::new()
         .parse(pattern)
-        .map(|expr| expr_has_uppercase_char(&expr))
+        .map(|hir| hir_has_uppercase_char(&hir))
         .unwrap_or(false)
 }
 
 /// Determine if a regex expression contains a literal uppercase character.
-fn expr_has_uppercase_char(expr: &Expr) -> bool {
-    match *expr {
-        Expr::Literal { ref chars, .. } => chars.iter().any(|c| c.is_uppercase()),
-        Expr::Class(ref ranges) => ranges
+fn hir_has_uppercase_char(hir: &Hir) -> bool {
+    use regex_syntax::hir::*;
+
+    match *hir.kind() {
+        HirKind::Literal(Literal::Unicode(c)) => c.is_uppercase(),
+        HirKind::Class(Class::Unicode(ref ranges)) => ranges
             .iter()
-            .any(|r| r.start.is_uppercase() || r.end.is_uppercase()),
-        Expr::Group { ref e, .. } | Expr::Repeat { ref e, .. } => expr_has_uppercase_char(e),
-        Expr::Concat(ref es) => es.iter().any(expr_has_uppercase_char),
-        Expr::Alternate(ref es) => es.iter().any(expr_has_uppercase_char),
+            .any(|r| r.start().is_uppercase() || r.end().is_uppercase()),
+        HirKind::Group(Group { ref hir, .. }) | HirKind::Repetition(Repetition { ref hir, .. }) => {
+            hir_has_uppercase_char(hir)
+        }
+        HirKind::Concat(ref hirs) | HirKind::Alternation(ref hirs) => {
+            hirs.iter().any(hir_has_uppercase_char)
+        }
         _ => false,
     }
 }
