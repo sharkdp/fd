@@ -83,7 +83,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .takes_value(true)
                 .value_name("filetype")
-                .possible_values(&["f", "file", "d", "directory", "l", "symlink"])
+                .possible_values(&["f", "file", "d", "directory", "l", "symlink", "x", "executable"])
                 .hide_possible_values(true),
         )
         .arg(
@@ -189,7 +189,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Filter the search by type (multiple allowable filetypes can be specified):\n  \
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
-             'l' or 'symlink':      symbolic links");
+             'l' or 'symlink':      symbolic links\n  \
+             'x' or 'executable':   executables");
     doc!(h, "extension"
         , "Filter by file extension"
         , "(Additionally) filter search results by their file extension. Multiple allowable file \
