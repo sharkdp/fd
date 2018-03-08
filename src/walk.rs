@@ -201,6 +201,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     if (entry_type.is_file() && !file_types.files)
                         || (entry_type.is_dir() && !file_types.directories)
                         || (entry_type.is_symlink() && !file_types.symlinks)
+                        || (output::is_executable(&entry.metadata().unwrap()) && !file_types.executables)
                     {
                         return ignore::WalkState::Continue;
                     } else if !(entry_type.is_file() || entry_type.is_dir()

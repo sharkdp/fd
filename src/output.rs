@@ -135,11 +135,11 @@ fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_t
 }
 
 #[cfg(any(unix, target_os = "redox"))]
-fn is_executable(md: &fs::Metadata) -> bool {
+pub fn is_executable(md: &fs::Metadata) -> bool {
     md.permissions().mode() & 0o111 != 0
 }
 
 #[cfg(windows)]
-fn is_executable(_: &fs::Metadata) -> bool {
+pub fn is_executable(_: &fs::Metadata) -> bool {
     false
 }
