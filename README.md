@@ -174,7 +174,12 @@ You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
 nix-env -i fd
 ```
-
+### On Fedora
+You can use this [fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
+```
+dnf copr enable keefle/fd
+dnf install fd
+```
 ### On FreeBSD
 
 You can install `sysutils/fd` via portmaster:
