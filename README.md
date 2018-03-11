@@ -132,6 +132,13 @@ Download the latest `.deb` package from the [release page](https://github.com/sh
 sudo dpkg -i fd_6.3.0_amd64.deb  # adapt version number and architecture
 ```
 
+### On Fedora
+You can use this [fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
+```
+dnf copr enable keefle/fd
+dnf install fd
+```
+
 ### On Arch Linux
 
 You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
@@ -174,12 +181,7 @@ You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
 nix-env -i fd
 ```
-### On Fedora
-You can use this [fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
-```
-dnf copr enable keefle/fd
-dnf install fd
-```
+
 ### On FreeBSD
 
 You can install `sysutils/fd` via portmaster:
