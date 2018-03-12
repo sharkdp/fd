@@ -27,9 +27,6 @@ mod internal;
 mod output;
 mod walk;
 
-#[cfg(windows)]
-mod windows;
-
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -99,7 +96,7 @@ fn main() {
     };
 
     #[cfg(windows)]
-    let colored_output = colored_output && windows::enable_colored_output();
+    let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
 
     let ls_colors = if colored_output {
         Some(
