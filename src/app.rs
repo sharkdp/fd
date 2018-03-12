@@ -16,14 +16,17 @@ struct Help {
 }
 
 macro_rules! doc {
-    ($map:expr, $name:expr, $short:expr) => {
+    ($map: expr, $name: expr, $short: expr) => {
         doc!($map, $name, $short, $short)
     };
-    ($map:expr, $name:expr, $short:expr, $long:expr) => {
-        $map.insert($name, Help {
-            short: $short,
-            long: concat!($long, "\n ")
-        });
+    ($map: expr, $name: expr, $short: expr, $long: expr) => {
+        $map.insert(
+            $name,
+            Help {
+                short: $short,
+                long: concat!($long, "\n "),
+            },
+        );
     };
 }
 
