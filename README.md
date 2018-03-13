@@ -333,6 +333,34 @@ target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 To really search *all* files and directories, simply combine the hidden and ignore features to show
 everything (`-HI`).
 
+### Excluding specific files or directories
+
+Sometimes we want to ignore search results from a specific subdirectory. For example, we might
+want to search all hidden files and directories (`-H`) but exclude all matches from `.git`
+directories. We can use the `-E` (or `--exclude`) option for this. It takes an arbitrary glob
+pattern as an argument:
+``` bash
+> fd -H -E .git …
+```
+
+We can also use this to skip mounted directories:
+``` bash
+> fd -E /mnt/external-drive …
+```
+
+.. or to skip certain file types:
+``` bash
+> fd -E '*.bak' …
+```
+
+To make exclude-patterns like these permanent, you can create a `.fdignore` file. They work like
+`.gitignore` files, but are specific to `fd`. For example:
+``` bash
+> cat ~/.fdignore
+/mnt/external-drive
+*.bak
+```
+
 ### Using fd with `xargs` or `parallel`
 
 If we want to run a command on all search results, we can pipe the output to `xargs`:
