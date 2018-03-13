@@ -374,8 +374,8 @@ If we want to run a command on all search results, we can pipe the output to `xa
 ``` bash
 > fd -0 -e rs | xargs -0 wc -l
 ```
-Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of     .
-newlines) In the same way, the `-0` option of `xargs` tells it to read the input in this way      .
+Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
+newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
 ### Using fd with `fzf`
 
