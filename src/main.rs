@@ -77,6 +77,22 @@ fn main() {
             .collect();
     }
 
+    // Detect if the user accidentally supplied a path instead of a search pattern
+    if !matches.is_present("full-path") && pattern.contains(std::path::MAIN_SEPARATOR)
+        && fshelper::is_dir(Path::new(pattern))
+    {
+        error(&format!(
+            "Error: The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+             and will not lead to any search results.\n\n\
+             If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
+             fd . '{pattern}'\n\n\
+             Instead, if you want to search for the pattern in the full path, use:\n\n  \
+             fd --full-path '{pattern}'",
+            pattern = pattern,
+            sep = std::path::MAIN_SEPARATOR,
+        ));
+    }
+
     // Treat pattern as literal string if '--fixed-strings' is used
     let pattern_regex = if matches.is_present("fixed-strings") {
         regex::escape(pattern)
