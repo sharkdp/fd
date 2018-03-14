@@ -53,7 +53,7 @@ fn main() {
         error("Error: could not get current directory.");
     }
 
-    //Get one or more root directories to search.
+    // Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches.values_of("path") {
         Some(paths) => paths
             .map(|path| {
