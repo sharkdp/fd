@@ -203,6 +203,11 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         || (entry_type.is_symlink() && !file_types.symlinks)
                     {
                         return ignore::WalkState::Continue;
+                    } else if !(entry_type.is_file() || entry_type.is_dir()
+                        || entry_type.is_symlink())
+                    {
+                        // This is probably a block device, char device, fifo or socket. Skip it.
+                        return ignore::WalkState::Continue;
                     }
                 } else {
                     return ignore::WalkState::Continue;
