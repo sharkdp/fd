@@ -175,6 +175,11 @@ Alternatively, you can install `fd` via [Scoop](http://scoop.sh):
 scoop install fd
 ```
 
+Or via [Chocolatey](https://chocolatey.org):
+```
+choco install fd
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
