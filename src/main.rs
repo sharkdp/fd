@@ -161,7 +161,10 @@ fn main() {
                     "f" | "file" => file_types.files = true,
                     "d" | "directory" => file_types.directories = true,
                     "l" | "symlink" => file_types.symlinks = true,
-                    "x" | "executable" => file_types.executables = true,
+                    "x" | "executable" => {
+                        file_types.executables_only = true;
+                        file_types.files = true;
+                    },
                     _ => unreachable!(),
                 }
             }
