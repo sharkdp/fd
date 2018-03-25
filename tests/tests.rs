@@ -767,7 +767,13 @@ fn test_symlink_and_full_path() {
             abs_path = &abs_path
         ),
     );
+}
 
+#[test]
+fn test_symlink_and_full_path_abs_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
     te.assert_output(
         &[
             "--full-path",
