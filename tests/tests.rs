@@ -673,10 +673,10 @@ fn test_extension() {
     te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
 }
 
-/// Symlinks misc
+/// Symlink as search directory
 #[test]
-fn test_symlink() {
-    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+fn test_symlink_as_root() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // From: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getcwd.html
     // The getcwd() function shall place an absolute pathname of the current working directory in
@@ -710,20 +710,29 @@ fn test_symlink() {
             dir = &parent_parent
         ),
     );
+}
+
+#[test]
+fn test_symlink_and_absolute_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output_subdirectory(
         "symlink",
         &["--absolute-path"],
         &format!(
-            "{abs_path}/{dir}/c.foo
-            {abs_path}/{dir}/C.Foo2
-            {abs_path}/{dir}/three
-            {abs_path}/{dir}/three/d.foo
-            {abs_path}/{dir}/three/directory_foo",
-            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            "{abs_path}/one/two/c.foo
+            {abs_path}/one/two/C.Foo2
+            {abs_path}/one/two/three
+            {abs_path}/one/two/three/d.foo
+            {abs_path}/one/two/three/directory_foo",
             abs_path = &abs_path
         ),
     );
+}
+
+#[test]
+fn test_symlink_as_absolute_root() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["", &format!("{abs_path}/symlink", abs_path = abs_path)],
@@ -737,7 +746,11 @@ fn test_symlink() {
             abs_path = &abs_path
         ),
     );
+}
 
+#[test]
+fn test_symlink_and_full_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
 
