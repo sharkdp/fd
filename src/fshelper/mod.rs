@@ -15,7 +15,10 @@ pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
         Ok(path.to_path_buf())
     } else {
         let path = path.strip_prefix(".").unwrap_or(path);
-        current_dir().map(|path_buf| path_buf.join(path))
+        current_dir().map(|path_buf| {
+            let pb = path_buf.join(path);
+            pb.canonicalize().unwrap_or(pb)
+        })
     }
 }
 

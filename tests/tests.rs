@@ -532,6 +532,26 @@ fn test_implicit_absolute_path() {
     );
 }
 
+/// Absolute paths should be normalized
+#[test]
+fn test_normalized_absolute_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output_subdirectory(
+        "one",
+        &["--absolute-path", "foo", ".."],
+        &format!(
+            "{abs_path}/a.foo
+            {abs_path}/one/b.foo
+            {abs_path}/one/two/c.foo
+            {abs_path}/one/two/C.Foo2
+            {abs_path}/one/two/three/d.foo
+            {abs_path}/one/two/three/directory_foo",
+            abs_path = &abs_path
+        ),
+    );
+}
+
 /// File type filter (--type)
 #[test]
 fn test_type() {
