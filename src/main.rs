@@ -73,7 +73,11 @@ fn main() {
     if matches.is_present("absolute-path") {
         dir_vec = dir_vec
             .iter()
-            .map(|path_buffer| fshelper::absolute_path(path_buffer).unwrap())
+            .map(|path_buffer| {
+                fshelper::absolute_path(path_buffer)
+                    .and_then(|p| p.canonicalize())
+                    .unwrap()
+            })
             .collect();
     }
 
