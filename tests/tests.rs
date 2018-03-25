@@ -728,11 +728,12 @@ fn test_symlink() {
     te.assert_output(
         &["", &format!("{abs_path}/symlink", abs_path = abs_path)],
         &format!(
-            "{abs_path}/symlink/c.foo
-            {abs_path}/symlink/C.Foo2
-            {abs_path}/symlink/three
-            {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo",
+            "{abs_path}/{dir}/c.foo
+            {abs_path}/{dir}/C.Foo2
+            {abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "one/two" } else { "symlink" },
             abs_path = &abs_path
         ),
     );
@@ -762,9 +763,10 @@ fn test_symlink() {
             &format!("{abs_path}/symlink", abs_path = abs_path),
         ],
         &format!(
-            "{abs_path}/symlink/three
-            {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo",
+            "{abs_path}/{dir}/three
+            {abs_path}/{dir}/three/d.foo
+            {abs_path}/{dir}/three/directory_foo",
+            dir = if cfg!(windows) { "one/two" } else { "symlink" },
             abs_path = &abs_path
         ),
     );
