@@ -14,6 +14,7 @@ use internal::{error, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
 use output;
 
 use std::process;
+use std::error::Error;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -74,6 +75,22 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
     if config.read_fdignore {
         walker.add_custom_ignore_filename(".fdignore");
+    }
+
+    for ignore_file in &config.ignore_files {
+        let result = walker.add_ignore(ignore_file);
+        if let Some(err) = result {
+            match err {
+                ignore::Error::Partial(_) => (),
+                _ => {
+                    error(&format!(
+                        "Error while parsing custom ignore file '{}': {}.",
+                        ignore_file.to_string_lossy(),
+                        err.description()
+                    ));
+                }
+            }
+        }
     }
 
     for path_entry in path_iter {

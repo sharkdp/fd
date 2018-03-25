@@ -123,6 +123,14 @@ pub fn build_app() -> App<'static, 'static> {
                 .multiple(true),
         )
         .arg(
+            arg("ignore-file")
+                .long("ignore-file")
+                .takes_value(true)
+                .value_name("path")
+                .number_of_values(1)
+                .multiple(true),
+        )
+        .arg(
             arg("color")
                 .long("color")
                 .short("c")
@@ -220,6 +228,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Exclude entries that match the given glob pattern"
         , "Exclude files/directories that match the given glob pattern. This overrides any \
            other ignore logic. Multiple exclude patterns can be specified.");
+    doc!(h, "ignore-file"
+        , "Add a custom ignore-file in .gitignore format"
+        , "Add a custom ignore-file in .gitignore format. These files have a low precedence.");
     doc!(h, "color"
         , "When to use colors: never, *auto*, always"
         , "Declare when to use color for the pattern match output:\n  \
