@@ -511,6 +511,12 @@ fn test_absolute_path() {
             abs_path = &abs_path
         ),
     );
+}
+
+/// Show absolute paths if the path argument is absolute
+#[test]
+fn test_implicit_absolute_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["foo", &abs_path],
