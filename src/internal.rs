@@ -10,6 +10,7 @@ use std::ffi::OsString;
 use std::process;
 use std::time;
 use std::io::Write;
+use std::path::PathBuf;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
@@ -92,6 +93,9 @@ pub struct FdOptions {
 
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
+
+    /// A list of custom ignore files.
+    pub ignore_files: Vec<PathBuf>,
 }
 
 /// Print error message to stderr and exit with status `1`.

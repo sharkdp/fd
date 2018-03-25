@@ -297,9 +297,9 @@ fn test_no_ignore() {
     );
 }
 
-/// Custom ignore files
+/// .gitignore and .fdignore
 #[test]
-fn test_custom_ignore() {
+fn test_gitignore_and_fdignore() {
     let files = &[
         "ignored-by-nothing",
         "ignored-by-fdignore",
@@ -335,7 +335,7 @@ fn test_custom_ignore() {
     );
 }
 
-/// Precedence of custom ignore files
+/// Precedence of .fdignore files
 #[test]
 fn test_custom_ignore_precedence() {
     let dirs = &["inner"];
@@ -375,6 +375,25 @@ fn test_no_ignore_vcs() {
         one/two/C.Foo2
         one/two/three/d.foo
         one/two/three/directory_foo",
+    );
+}
+
+/// Custom ignore files (--ignore-file)
+#[test]
+fn test_custom_ignore_files() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Ignore 'C.Foo2' and everything in 'three'.
+    fs::File::create(te.test_root().join("custom.ignore"))
+        .unwrap()
+        .write_all(b"C.Foo2\nthree")
+        .unwrap();
+
+    te.assert_output(
+        &["--ignore-file", "custom.ignore", "foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo",
     );
 }
 

@@ -191,6 +191,10 @@ fn main() {
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())
             .unwrap_or_else(|| vec![]),
+        ignore_files: matches
+            .values_of("ignore-file")
+            .map(|vs| vs.map(PathBuf::from).collect())
+            .unwrap_or_else(|| vec![]),
     };
 
     match RegexBuilder::new(&pattern_regex)
