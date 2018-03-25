@@ -748,10 +748,9 @@ fn test_symlink() {
             &format!("^{prefix}.*three", prefix = prefix),
         ],
         &format!(
-            "{abs_path}/{dir}/three
-            {abs_path}/{dir}/three/d.foo
-            {abs_path}/{dir}/three/directory_foo",
-            dir = if cfg!(windows) { "symlink" } else { "one/two" },
+            "{abs_path}/one/two/three
+            {abs_path}/one/two/three/d.foo
+            {abs_path}/one/two/three/directory_foo",
             abs_path = &abs_path
         ),
     );
