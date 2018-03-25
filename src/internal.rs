@@ -10,9 +10,6 @@ use std::ffi::OsString;
 use std::process;
 use std::time;
 use std::io::Write;
-use std::fs;
-#[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::PermissionsExt;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
@@ -175,16 +172,6 @@ where
         }
         args
     })
-}
-
-#[cfg(any(unix, target_os = "redox"))]
-pub fn is_executable(md: &fs::Metadata) -> bool {
-    md.permissions().mode() & 0o111 != 0
-}
-
-#[cfg(windows)]
-pub fn is_executable(_: &fs::Metadata) -> bool {
-    false
 }
 
 #[cfg(test)]

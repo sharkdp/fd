@@ -9,6 +9,9 @@
 use std::env::current_dir;
 use std::path::{Path, PathBuf};
 use std::io;
+use std::fs;
+#[cfg(any(unix, target_os = "redox"))]
+use std::os::unix::fs::PermissionsExt;
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
@@ -41,4 +44,14 @@ pub fn is_dir(path: &Path) -> bool {
     } else {
         path.is_dir() && path.canonicalize().is_ok()
     }
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn is_executable(md: &fs::Metadata) -> bool {
+    md.permissions().mode() & 0o111 != 0
+}
+
+#[cfg(windows)]
+pub fn is_executable(_: &fs::Metadata) -> bool {
+    false
 }

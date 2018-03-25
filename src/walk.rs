@@ -10,7 +10,7 @@ extern crate ctrlc;
 
 use exec;
 use fshelper;
-use internal::{error, is_executable, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
+use internal::{error, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
 use output;
 
 use std::process;
@@ -202,7 +202,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     if (entry_type.is_file() && !file_types.files)
                         || (entry_type.is_dir() && !file_types.directories)
                         || (entry_type.is_symlink() && !file_types.symlinks)
-                        || (entry.metadata().is_ok() && !is_executable(&entry.metadata().unwrap())
+                        || (entry.metadata().is_ok()
+                            && !fshelper::is_executable(&entry.metadata().unwrap())
                             && file_types.executables_only)
                     {
                         return ignore::WalkState::Continue;

@@ -6,7 +6,8 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use internal::{is_executable, FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
+use internal::{FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
+use fshelper::is_executable;
 use lscolors::LsColors;
 
 use std::process;
