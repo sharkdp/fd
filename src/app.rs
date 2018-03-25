@@ -83,7 +83,16 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .takes_value(true)
                 .value_name("filetype")
-                .possible_values(&["f", "file", "d", "directory", "l", "symlink", "x", "executable"])
+                .possible_values(&[
+                    "f",
+                    "file",
+                    "d",
+                    "directory",
+                    "l",
+                    "symlink",
+                    "x",
+                    "executable",
+                ])
                 .hide_possible_values(true),
         )
         .arg(
