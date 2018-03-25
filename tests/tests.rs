@@ -781,10 +781,9 @@ fn test_symlink_and_full_path_abs_path() {
             &format!("{abs_path}/symlink", abs_path = abs_path),
         ],
         &format!(
-            "{abs_path}/{dir}/three
-            {abs_path}/{dir}/three/d.foo
-            {abs_path}/{dir}/three/directory_foo",
-            dir = if cfg!(windows) { "one/two" } else { "symlink" },
+            "{abs_path}/symlink/three
+            {abs_path}/symlink/three/d.foo
+            {abs_path}/symlink/three/directory_foo",
             abs_path = &abs_path
         ),
     );
