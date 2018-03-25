@@ -6,17 +6,15 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use internal::{FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
+use internal::{is_executable, FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
 use lscolors::LsColors;
 
-use std::{fs, process};
+use std::process;
 use std::io::{self, Write};
 use std::ops::Deref;
 use std::path::{self, Component, Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-#[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::PermissionsExt;
 
 use ansi_term;
 
@@ -132,14 +130,4 @@ fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_t
     } else {
         None
     }
-}
-
-#[cfg(any(unix, target_os = "redox"))]
-pub fn is_executable(md: &fs::Metadata) -> bool {
-    md.permissions().mode() & 0o111 != 0
-}
-
-#[cfg(windows)]
-pub fn is_executable(_: &fs::Metadata) -> bool {
-    false
 }
