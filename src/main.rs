@@ -74,8 +74,9 @@ fn main() {
         dir_vec = dir_vec
             .iter()
             .map(|path_buffer| {
-                fshelper::absolute_path(path_buffer)
-                    .and_then(|p| p.canonicalize())
+                path_buffer
+                    .canonicalize()
+                    .and_then(|pb| fshelper::absolute_path(pb.as_path()))
                     .unwrap()
             })
             .collect();
