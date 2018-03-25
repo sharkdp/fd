@@ -563,6 +563,33 @@ fn test_type() {
     te.assert_output(&["--type", "l"], "symlink");
 }
 
+/// Test `--type executable`
+#[cfg(unix)]
+#[test]
+fn test_type_executable() {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .mode(0o777)
+        .open(te.test_root().join("executable-file.sh"))
+        .unwrap();
+
+    te.assert_output(&["--type", "executable"], "executable-file.sh");
+
+    te.assert_output(
+        &["--type", "executable", "--type", "directory"],
+        "executable-file.sh
+        one
+        one/two
+        one/two/three
+        one/two/three/directory_foo",
+    );
+}
+
 /// File extension (--extension)
 #[test]
 fn test_extension() {
