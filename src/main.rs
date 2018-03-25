@@ -164,7 +164,7 @@ fn main() {
                     "x" | "executable" => {
                         file_types.executables_only = true;
                         file_types.files = true;
-                    },
+                    }
                     _ => unreachable!(),
                 }
             }
