@@ -129,7 +129,7 @@ fd -x wc -l \; -e rs
 
 Download the latest `.deb` package from the [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_6.3.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i fd_7.0.0_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Fedora
