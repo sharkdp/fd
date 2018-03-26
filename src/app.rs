@@ -164,9 +164,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Include hidden directories and files in the search results (default: hidden files \
            and directories are skipped).");
     doc!(h, "no-ignore"
-        , "Do not respect .(git)ignore files"
+        , "Do not respect .(git|fd)ignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
-            '.*ignore' files.");
+            '.gitignore' or '.fdignore' files.");
     doc!(h, "no-ignore-vcs"
         , "Do not respect .gitignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
@@ -202,7 +202,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit the directory traversal to a given depth. By default, there is no limit \
            on the search depth.");
     doc!(h, "file-type"
-        , "Filter by type: f(ile), d(irectory), (sym)l(ink)"
+        , "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x)"
         , "Filter the search by type (multiple allowable filetypes can be specified):\n  \
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
@@ -230,7 +230,7 @@ fn usage() -> HashMap<&'static str, Help> {
            other ignore logic. Multiple exclude patterns can be specified.");
     doc!(h, "ignore-file"
         , "Add a custom ignore-file in .gitignore format"
-        , "Add a custom ignore-file in .gitignore format. These files have a low precedence.");
+        , "Add a custom ignore-file in '.gitignore' format. These files have a low precedence.");
     doc!(h, "color"
         , "When to use colors: never, *auto*, always"
         , "Declare when to use color for the pattern match output:\n  \

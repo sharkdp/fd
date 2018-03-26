@@ -84,6 +84,8 @@ regular files
 directories
 .IP "l, symlink"
 symbolic links
+.IP "x, executable"
+executable (files)
 .RE
 
 .RS
@@ -99,6 +101,10 @@ This option can be used repeatedly to allow for multiple possible file extension
 Exclude files/directories that match the given glob pattern.
 This overrides any other ignore logic.
 Multiple exclude patterns can be specified.
+.TP
+.BI "\-\-ignore-file " path
+Add a custom ignore-file in '.gitignore' format.
+These files have a low precedence.
 .TP
 .BI "\-c, \-\-color " when
 Declare

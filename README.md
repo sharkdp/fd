@@ -228,7 +228,7 @@ USAGE:
 
 FLAGS:
     -H, --hidden            Search hidden files and directories
-    -I, --no-ignore         Do not respect .(git)ignore files
+    -I, --no-ignore         Do not respect .(git|fd)ignore files
         --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
@@ -241,13 +241,15 @@ FLAGS:
     -V, --version           Prints version information
 
 OPTIONS:
-    -d, --max-depth <depth>       Set maximum search depth (default: none)
-    -t, --type <filetype>...      Filter by type: f(ile), d(irectory), (sym)l(ink)
-    -e, --extension <ext>...      Filter by file extension
-    -x, --exec <cmd>              Execute a command for each search result
-    -E, --exclude <pattern>...    Exclude entries that match the given glob pattern
-    -c, --color <when>            When to use colors: never, *auto*, always
-    -j, --threads <num>           Set number of threads to use for searching & executing
+    -d, --max-depth <depth>        Set maximum search depth (default: none)
+    -t, --type <filetype>...       Filter by type: file (f), directory (d), symlink (l),
+                                   executable (x)
+    -e, --extension <ext>...       Filter by file extension
+    -x, --exec <cmd>               Execute a command for each search result
+    -E, --exclude <pattern>...     Exclude entries that match the given glob pattern
+        --ignore-file <path>...    Add a custom ignore-file in .gitignore format
+    -c, --color <when>             When to use colors: never, *auto*, always
+    -j, --threads <num>            Set number of threads to use for searching & executing
 
 ARGS:
     <pattern>    the search pattern, a regular expression (optional)
