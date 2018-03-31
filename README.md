@@ -152,6 +152,13 @@ You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) fr
 emerge -av fd
 ```
 
+### On openSUSE Linux
+
+You can install [the fd package](https://software.opensuse.org/package/fd) from the official repo:
+```
+zypper in fd
+```
+
 ### On Void Linux
 
 You can install `fd` via xbps-install:
