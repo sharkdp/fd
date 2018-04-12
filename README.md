@@ -391,7 +391,9 @@ If we want to run a command on all search results, we can pipe the output to `xa
 Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
 newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
-### Using fd with `fzf`
+### Integration with other programs
+
+#### Using fd with `fzf`
 
 You can use *fd* to generate input for the command-line fuzzy finder [fzf](https://github.com/junegunn/fzf):
 ``` bash
@@ -413,3 +415,15 @@ export FZF_DEFAULT_OPTS="--ansi"
 ```
 
 For more details, see the [Tips section](https://github.com/junegunn/fzf#tips) of the fzf README.
+
+#### Using fd with `emacs`
+
+Emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can use *fd* to find files in project.
+
+Setup in simple. After installing `find-file-in-project`, you only insert one line `(setq ffip-use-rust-fd t)` into `~/.emacs` or `~/.emacs.d/init.el`.
+
+No further setup is required and it should work out of box on Window/Linux/Mac.
+
+In Emacs, please run `M-x find-file-in-project-by-selected` to find files matching glob pattern.
+
+Or run `M-x find-file-in-project` to list all available file in project.
