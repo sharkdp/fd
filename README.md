@@ -418,12 +418,11 @@ For more details, see the [Tips section](https://github.com/junegunn/fzf#tips) o
 
 #### Using fd with `emacs`
 
-Emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can use *fd* to find files in project.
+The emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can
+use *fd* to find files.
 
-Setup in simple. After installing `find-file-in-project`, you only insert one line `(setq ffip-use-rust-fd t)` into `~/.emacs` or `~/.emacs.d/init.el`.
+After installing `find-file-in-project`, add the line `(setq ffip-use-rust-fd t)` to your
+`~/.emacs` or `~/.emacs.d/init.el` file.
 
-No further setup is required and it should work out of box on Window/Linux/Mac.
-
-In Emacs, please run `M-x find-file-in-project-by-selected` to find files matching glob pattern.
-
-Or run `M-x find-file-in-project` to list all available file in project.
+In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alternatively, run
+`M-x find-file-in-project` to list all available files in the project.
