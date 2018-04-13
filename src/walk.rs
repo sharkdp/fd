@@ -13,17 +13,17 @@ use fshelper;
 use internal::{error, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
 use output;
 
-use std::process;
 use std::error::Error;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
-use ignore::{self, WalkBuilder};
 use ignore::overrides::OverrideBuilder;
+use ignore::{self, WalkBuilder};
 use regex::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.

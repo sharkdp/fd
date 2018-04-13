@@ -6,16 +6,16 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use internal::{FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
 use fshelper::is_executable;
+use internal::{FdOptions, EXITCODE_ERROR, EXITCODE_SIGINT};
 use lscolors::LsColors;
 
-use std::process;
 use std::io::{self, Write};
 use std::ops::Deref;
 use std::path::{self, Component, Path, PathBuf};
-use std::sync::Arc;
+use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use ansi_term;
 

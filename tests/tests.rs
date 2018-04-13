@@ -12,10 +12,10 @@ extern crate regex;
 
 mod testenv;
 
-use testenv::TestEnv;
 use regex::escape;
 use std::fs;
 use std::io::Write;
+use testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
