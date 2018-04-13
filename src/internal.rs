@@ -7,16 +7,16 @@
 // according to those terms.
 
 use std::ffi::OsString;
-use std::process;
-use std::time;
 use std::io::Write;
 use std::path::PathBuf;
+use std::process;
+use std::time;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
-use regex_syntax::Parser;
-use regex_syntax::hir::Hir;
 use regex::RegexSet;
+use regex_syntax::hir::Hir;
+use regex_syntax::Parser;
 
 /// Whether or not to show
 pub struct FileTypes {

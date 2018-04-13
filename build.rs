@@ -11,9 +11,9 @@ extern crate clap;
 extern crate version_check;
 
 use clap::Shell;
+use std::fs;
 use std::io::{self, Write};
 use std::process::exit;
-use std::fs;
 
 include!("src/app.rs");
 

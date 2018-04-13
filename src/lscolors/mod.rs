@@ -6,10 +6,9 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-/// A parser for the `LS_COLORS` environment variable.
-
-use std::collections::HashMap;
 use ansi_term::{Colour, Style};
+/// A parser for the `LS_COLORS` environment variable.
+use std::collections::HashMap;
 
 /// Maps file extensions to ANSI colors / styles.
 pub type ExtensionStyles = HashMap<String, Style>;

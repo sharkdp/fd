@@ -19,11 +19,11 @@ extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
 
-pub mod fshelper;
-pub mod lscolors;
 mod app;
 mod exec;
+pub mod fshelper;
 mod internal;
+pub mod lscolors;
 mod output;
 mod walk;
 

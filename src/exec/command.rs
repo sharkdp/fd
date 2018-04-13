@@ -6,10 +6,10 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use std::process::Command;
-use std::sync::{Arc, Mutex};
 use std::io;
 use std::io::Write;
+use std::process::Command;
+use std::sync::{Arc, Mutex};
 
 /// Executes a command.
 pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {

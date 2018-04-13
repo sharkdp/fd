@@ -7,8 +7,8 @@
 // according to those terms.
 
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use std::sync::mpsc::Receiver;
+use std::sync::{Arc, Mutex};
 
 use super::CommandTemplate;
 

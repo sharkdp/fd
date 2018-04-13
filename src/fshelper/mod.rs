@@ -7,11 +7,11 @@
 // according to those terms.
 
 use std::env::current_dir;
-use std::path::{Path, PathBuf};
-use std::io;
 use std::fs;
+use std::io;
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {

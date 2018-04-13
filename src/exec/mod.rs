@@ -8,9 +8,9 @@
 
 // TODO: Possible optimization could avoid pushing characters on a buffer.
 mod command;
-mod token;
-mod job;
 mod input;
+mod job;
+mod token;
 
 use std::borrow::Cow;
 use std::path::Path;
@@ -19,10 +19,10 @@ use std::sync::{Arc, Mutex};
 
 use regex::Regex;
 
-use self::input::{basename, dirname, remove_extension};
 use self::command::execute_command;
-use self::token::Token;
+use self::input::{basename, dirname, remove_extension};
 pub use self::job::job;
+use self::token::Token;
 
 /// Represents a template that is utilized to generate command strings.
 ///
