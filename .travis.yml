@@ -1,8 +1,8 @@
 language: rust
 cache: cargo
 matrix:
-  # allow_failures:
-  #   - rust: nightly
+  allow_failures:
+    - rust: nightly
   include:
     # Stable channel.
     - os: linux
