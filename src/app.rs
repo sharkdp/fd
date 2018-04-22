@@ -5,7 +5,6 @@
 // at your option. All files in the project carrying such
 // notice may not be copied, modified, or distributed except
 // according to those terms.
-
 use std::collections::HashMap;
 
 use clap::{App, AppSettings, Arg};
@@ -16,10 +15,10 @@ struct Help {
 }
 
 macro_rules! doc {
-    ($map:expr, $name:expr, $short:expr) => {
+    ($map: expr, $name: expr, $short: expr) => {
         doc!($map, $name, $short, $short)
     };
-    ($map:expr, $name:expr, $short:expr, $long:expr) => {
+    ($map: expr, $name: expr, $short: expr, $long: expr) => {
         $map.insert(
             $name,
             Help {
@@ -147,6 +146,15 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("num"),
         )
         .arg(
+            arg("size")
+                .long("size")
+                .short("S")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(true)
+                .multiple(true),
+        )
+        .arg(
             arg("max-buffer-time")
                 .long("max-buffer-time")
                 .takes_value(true)
@@ -254,6 +262,18 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "rg-alias-hidden-ignore"
         , "Alias for no-ignore and/or hidden"
         , "Alias for no-ignore ('u') and no-ignore and hidden ('uu')");
-
+    doc!(h, "size"
+        , "Limit results based on the size of files."
+        , "Limit results based on the size of files using the format <+-><NUM><UN>.\n   \
+            '+': file size must be greater than this\n   \
+            '-': file size must be less than this\n   \
+            'NUM':      The numeric size (e.g. 500)\n   \
+            'UN':       The units for NUM.\n\
+            Allowed unit values:\n   \
+                'b' or 'B': bytes\n   \
+                'k' or 'K': kilobytes\n   \
+                'm' or 'M': megabytes\n   \
+                'g' or 'G': gigabytes\n   \
+                't' or 'T': terabytes");
     h
 }
