@@ -14,9 +14,13 @@ use std::time;
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
-use regex::RegexSet;
+use regex::{Regex, RegexSet};
 use regex_syntax::hir::Hir;
 use regex_syntax::Parser;
+
+lazy_static! {
+    static ref SIZE_CAPTURES: Regex = { Regex::new(r"^(\+|-)(\d+)([a-zA-Z]{1,2})$").unwrap() };
+}
 
 /// Whether or not to show
 pub struct FileTypes {
@@ -33,6 +37,58 @@ impl Default for FileTypes {
             directories: false,
             symlinks: false,
             executables_only: false,
+        }
+    }
+}
+
+enum SizeLimitType {
+    Max,
+    Min,
+}
+
+pub struct SizeFilter {
+    size: u64,
+    limit_type: SizeLimitType,
+}
+
+impl SizeFilter {
+    pub fn is_within(&self, size: u64) -> bool {
+        match self.limit_type {
+            SizeLimitType::Max => size <= self.size,
+            SizeLimitType::Min => size >= self.size,
+        }
+    }
+}
+
+const KILO: u64 = 1024;
+const MEGA: u64 = KILO * 1024;
+const GIGA: u64 = MEGA * 1024;
+const TERA: u64 = GIGA * 1024;
+
+impl<'a> From<&'a str> for SizeFilter {
+    /// Create the `SizeFilter` from the given `&str`.
+    /// It is imperative that the incoming value has been validated for
+    /// proper format.
+    fn from(s: &str) -> Self {
+        let captures = SIZE_CAPTURES.captures(s).unwrap();
+        let limit = match captures.get(1).map_or("+", |m| m.as_str()) {
+            "+" => SizeLimitType::Min,
+            _ => SizeLimitType::Max,
+        };
+
+        let quantity = captures.get(2).unwrap().as_str().parse::<u64>().unwrap();
+
+        let multiplier = match &captures.get(3).map_or("m", |m| m.as_str()).to_lowercase()[..] {
+            "k" => KILO,
+            "m" => MEGA,
+            "g" => GIGA,
+            "t" => TERA,
+            _ => 1, // Any we don't understand we'll just say the number of bytes
+        };
+
+        SizeFilter {
+            size: quantity * multiplier,
+            limit_type: limit,
         }
     }
 }
@@ -96,6 +152,9 @@ pub struct FdOptions {
 
     /// A list of custom ignore files.
     pub ignore_files: Vec<PathBuf>,
+
+    /// The given constraints on the size of returned files
+    pub size_constraints: Vec<SizeFilter>,
 }
 
 /// Print error message to stderr and exit with status `1`.

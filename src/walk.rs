@@ -248,6 +248,16 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 }
             }
 
+            // Filter out unwanted sizes if it is a file and we have been given size constraints.
+            if entry_path.is_file() && config.size_constraints.len() > 0 {
+                if let Ok(metadata) = entry_path.metadata() {
+                    let file_size = metadata.len();
+                    if config.size_constraints.iter().any(|sc| !sc.is_within(file_size)) {
+                        return ignore::WalkState::Continue;
+                    }
+                }
+            }
+
             let search_str_o = if config.search_full_path {
                 match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
