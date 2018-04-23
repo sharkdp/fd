@@ -19,7 +19,7 @@ use regex_syntax::hir::Hir;
 use regex_syntax::Parser;
 
 lazy_static! {
-    static ref SIZE_CAPTURES: Regex = { Regex::new(r"^(\+|-)(\d+)([a-zA-Z]{1,2})$").unwrap() };
+    static ref SIZE_CAPTURES: Regex = { Regex::new(r"(?i)^([+-])(\d+)([bkmgt]i?)b?$").unwrap() };
 }
 
 /// Whether or not to show
@@ -41,54 +41,69 @@ impl Default for FileTypes {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum SizeLimitType {
     Max,
     Min,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SizeFilter {
     size: u64,
     limit_type: SizeLimitType,
 }
 
+// SI units for now
+const KILO: u64 = 1000;
+const MEGA: u64 = KILO * 1000;
+const GIGA: u64 = MEGA * 1000;
+const TERA: u64 = GIGA * 1000;
+
+const KIBI: u64 = 1024;
+const MEBI: u64 = KIBI * 1024;
+const GIBI: u64 = MEBI * 1024;
+const TEBI: u64 = GIBI * 1024;
+
 impl SizeFilter {
-    pub fn is_within(&self, size: u64) -> bool {
-        match self.limit_type {
-            SizeLimitType::Max => size <= self.size,
-            SizeLimitType::Min => size >= self.size,
+    pub fn from_string<'a>(s: &str) -> Option<Self> {
+        if !SIZE_CAPTURES.is_match(s) {
+            return None;
         }
-    }
-}
 
-const KILO: u64 = 1024;
-const MEGA: u64 = KILO * 1024;
-const GIGA: u64 = MEGA * 1024;
-const TERA: u64 = GIGA * 1024;
+        let captures = SIZE_CAPTURES.captures(s)?;
 
-impl<'a> From<&'a str> for SizeFilter {
-    /// Create the `SizeFilter` from the given `&str`.
-    /// It is imperative that the incoming value has been validated for
-    /// proper format.
-    fn from(s: &str) -> Self {
-        let captures = SIZE_CAPTURES.captures(s).unwrap();
         let limit = match captures.get(1).map_or("+", |m| m.as_str()) {
             "+" => SizeLimitType::Min,
             _ => SizeLimitType::Max,
         };
 
-        let quantity = captures.get(2).unwrap().as_str().parse::<u64>().unwrap();
+        let quantity = match captures.get(2)?.as_str().parse::<u64>() {
+            Ok(val) => val,
+            _ => return None,
+        };
 
-        let multiplier = match &captures.get(3).map_or("m", |m| m.as_str()).to_lowercase()[..] {
+        let multiplier = match &captures.get(3).map_or("k", |m| m.as_str()).to_lowercase()[..] {
+            "ki" => KIBI,
             "k" => KILO,
+            "mi" => MEBI,
             "m" => MEGA,
+            "gi" => GIBI,
             "g" => GIGA,
+            "ti" => TEBI,
             "t" => TERA,
             _ => 1, // Any we don't understand we'll just say the number of bytes
         };
 
-        SizeFilter {
+        Some(SizeFilter {
             size: quantity * multiplier,
             limit_type: limit,
+        })
+    }
+
+    pub fn is_within(&self, size: u64) -> bool {
+        match self.limit_type {
+            SizeLimitType::Max => size <= self.size,
+            SizeLimitType::Min => size >= self.size,
         }
     }
 }
@@ -313,4 +328,146 @@ fn temp_check_that_exec_context_observed() {
 
     let actual = transform_args_with_exec(original.into_iter());
     assert_eq!(expected, actual);
+}
+
+/// Parsing and size conversion tests
+#[cfg(test)]
+macro_rules! gen_size_filter_parse_test {
+    ($($name: ident: $val: expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let (txt, expected) = $val;
+                let actual = SizeFilter::from_string(txt).unwrap();
+                assert_eq!(actual, expected);
+            }
+        )*
+    };
+}
+/// Parsing and size conversion tests data. Ensure that each type gets properly interpreted.
+/// Call with higher base values to ensure expected multiplication (only need a couple)
+#[cfg(test)]
+gen_size_filter_parse_test! {
+    parse_byte_plus: ("+1b", SizeFilter { size: 1, limit_type: SizeLimitType::Min, }),
+    parse_byte_plus_multiplier: ("+10b", SizeFilter { size: 10, limit_type: SizeLimitType::Min, }),
+    parse_byte_minus: ("-1b", SizeFilter { size: 1, limit_type: SizeLimitType::Max, }),
+    parse_kilo_plus: ("+1k", SizeFilter { size: 1000, limit_type: SizeLimitType::Min, }),
+    parse_kilo_plus_suffix: ("+1kb", SizeFilter { size: 1000, limit_type: SizeLimitType::Min, }),
+    parse_kilo_minus: ("-1k", SizeFilter { size: 1000, limit_type: SizeLimitType::Max, }),
+    parse_kilo_minus_multiplier: ("-100k", SizeFilter { size: 100000, limit_type: SizeLimitType::Max, }),
+    parse_kilo_minus_suffix: ("-1kb", SizeFilter { size: 1000, limit_type: SizeLimitType::Max, }),
+    parse_kilo_plus_upper: ("+1K", SizeFilter { size: 1000, limit_type: SizeLimitType::Min, }),
+    parse_kilo_plus_suffix_upper: ("+1KB", SizeFilter { size: 1000, limit_type: SizeLimitType::Min, }),
+    parse_kilo_minus_upper: ("-1K", SizeFilter { size: 1000, limit_type: SizeLimitType::Max, }),
+    parse_kilo_minus_suffix_upper: ("-1Kb", SizeFilter { size: 1000, limit_type: SizeLimitType::Max, }),
+    parse_kibi_plus: ("+1ki", SizeFilter { size: 1024, limit_type: SizeLimitType::Min, }),
+    parse_kibi_plus_multiplier: ("+10ki", SizeFilter { size: 10240, limit_type: SizeLimitType::Min, }),
+    parse_kibi_plus_suffix: ("+1kib", SizeFilter { size: 1024, limit_type: SizeLimitType::Min, }),
+    parse_kibi_minus: ("-1ki", SizeFilter { size: 1024, limit_type: SizeLimitType::Max, }),
+    parse_kibi_minus_multiplier: ("-100ki", SizeFilter { size: 102400, limit_type: SizeLimitType::Max, }),
+    parse_kibi_minus_suffix: ("-1kib", SizeFilter { size: 1024, limit_type: SizeLimitType::Max, }),
+    parse_kibi_plus_upper: ("+1KI", SizeFilter { size: 1024, limit_type: SizeLimitType::Min, }),
+    parse_kibi_plus_suffix_upper: ("+1KiB", SizeFilter { size: 1024, limit_type: SizeLimitType::Min, }),
+    parse_kibi_minus_upper: ("-1Ki", SizeFilter { size: 1024, limit_type: SizeLimitType::Max, }),
+    parse_kibi_minus_suffix_upper: ("-1KIB", SizeFilter { size: 1024, limit_type: SizeLimitType::Max, }),
+    parse_mega_plus: ("+1m", SizeFilter { size: 1000000, limit_type: SizeLimitType::Min, }),
+    parse_mega_plus_suffix: ("+1mb", SizeFilter { size: 1000000, limit_type: SizeLimitType::Min, }),
+    parse_mega_minus: ("-1m", SizeFilter { size: 1000000, limit_type: SizeLimitType::Max, }),
+    parse_mega_minus_suffix: ("-1mb", SizeFilter { size: 1000000, limit_type: SizeLimitType::Max, }),
+    parse_mega_plus_upper: ("+1M", SizeFilter { size: 1000000, limit_type: SizeLimitType::Min, }),
+    parse_mega_plus_suffix_upper: ("+1MB", SizeFilter { size: 1000000, limit_type: SizeLimitType::Min, }),
+    parse_mega_minus_upper: ("-1M", SizeFilter { size: 1000000, limit_type: SizeLimitType::Max, }),
+    parse_mega_minus_suffix_upper: ("-1Mb", SizeFilter { size: 1000000, limit_type: SizeLimitType::Max, }),
+    parse_mebi_plus: ("+1mi", SizeFilter { size: 1048576, limit_type: SizeLimitType::Min, }),
+    parse_mebi_plus_suffix: ("+1mib", SizeFilter { size: 1048576, limit_type: SizeLimitType::Min, }),
+    parse_mebi_minus: ("-1mi", SizeFilter { size: 1048576, limit_type: SizeLimitType::Max, }),
+    parse_mebi_minus_suffix: ("-1mib", SizeFilter { size: 1048576, limit_type: SizeLimitType::Max, }),
+    parse_mebi_plus_upper: ("+1MI", SizeFilter { size: 1048576, limit_type: SizeLimitType::Min, }),
+    parse_mebi_plus_suffix_upper: ("+1MiB", SizeFilter { size: 1048576, limit_type: SizeLimitType::Min, }),
+    parse_mebi_minus_upper: ("-1Mi", SizeFilter { size: 1048576, limit_type: SizeLimitType::Max, }),
+    parse_mebi_minus_suffix_upper: ("-1MIB", SizeFilter { size: 1048576, limit_type: SizeLimitType::Max, }),
+    parse_giga_plus: ("+1g", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Min, }),
+    parse_giga_plus_suffix: ("+1gb", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Min, }),
+    parse_giga_minus: ("-1g", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Max, }),
+    parse_giga_minus_suffix: ("-1gb", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Max, }),
+    parse_giga_plus_upper: ("+1G", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Min, }),
+    parse_giga_plus_suffix_upper: ("+1GB", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Min, }),
+    parse_giga_minus_upper: ("-1G", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Max, }),
+    parse_giga_minus_suffix_upper: ("-1Gb", SizeFilter { size: 1000000000, limit_type: SizeLimitType::Max, }),
+    parse_gibi_plus: ("+1gi", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Min, }),
+    parse_gibi_plus_suffix: ("+1gib", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Min, }),
+    parse_gibi_minus: ("-1gi", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Max, }),
+    parse_gibi_minus_suffix: ("-1gib", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Max, }),
+    parse_gibi_plus_upper: ("+1GI", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Min, }),
+    parse_gibi_plus_suffix_upper: ("+1GiB", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Min, }),
+    parse_gibi_minus_upper: ("-1Gi", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Max, }),
+    parse_gibi_minus_suffix_upper: ("-1GIB", SizeFilter { size: 1073741824, limit_type: SizeLimitType::Max, }),
+    parse_tera_plus: ("+1t", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Min, }),
+    parse_tera_plus_suffix: ("+1tb", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Min, }),
+    parse_tera_minus: ("-1t", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Max, }),
+    parse_tera_minus_suffix: ("-1tb", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Max, }),
+    parse_tera_plus_upper: ("+1T", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Min, }),
+    parse_tera_plus_suffix_upper: ("+1TB", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Min, }),
+    parse_tera_minus_upper: ("-1T", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Max, }),
+    parse_tera_minus_suffix_upper: ("-1Tb", SizeFilter { size: 1000000000000, limit_type: SizeLimitType::Max, }),
+    parse_tebi_plus: ("+1ti", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Min, }),
+    parse_tebi_plus_suffix: ("+1tib", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Min, }),
+    parse_tebi_minus: ("-1ti", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Max, }),
+    parse_tebi_minus_suffix: ("-1tib", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Max, }),
+    parse_tebi_plus_upper: ("+1TI", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Min, }),
+    parse_tebi_plus_suffix_upper: ("+1TiB", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Min, }),
+    parse_tebi_minus_upper: ("-1Ti", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Max, }),
+    parse_tebi_minus_suffix_upper: ("-1TIB", SizeFilter { size: 1099511627776, limit_type: SizeLimitType::Max, }),
+}
+
+/// Invalid parse testing
+#[cfg(test)]
+macro_rules! gen_size_filter_failure {
+    ($($name:ident: $value:expr,)*) => {
+        $(
+            #[test]
+            fn $name() {
+                let i = SizeFilter::from_string($value);
+                assert!(i.is_none());
+            }
+        )*
+    };
+}
+
+/// Invalid parse data
+#[cfg(test)]
+gen_size_filter_failure! {
+    ensure_missing_symbol_returns_none: "10M",
+    ensure_missing_number_returns_none: "+g",
+    ensure_missing_unit_returns_none: "+18",
+    ensure_bad_format_returns_none_1: "$10M",
+    ensure_bad_format_returns_none_2: "badval",
+    ensure_bad_format_returns_none_3: "9999",
+    ensure_invalid_unit_returns_none_1: "+50a",
+    ensure_invalid_unit_returns_none_2: "-10v",
+    ensure_invalid_unit_returns_none_3: "+1Mv",
+}
+
+#[test]
+fn is_within_less_than() {
+    let f = SizeFilter::from_string("-1k").unwrap();
+    assert!(f.is_within(999));
+}
+
+#[test]
+fn is_within_less_than_equal() {
+    let f = SizeFilter::from_string("-1k").unwrap();
+    assert!(f.is_within(1000));
+}
+
+#[test]
+fn is_within_greater_than() {
+    let f = SizeFilter::from_string("+1k").unwrap();
+    assert!(f.is_within(1001));
+}
+
+#[test]
+fn is_within_greater_than_equal() {
+    let f = SizeFilter::from_string("+1K").unwrap();
+    assert!(f.is_within(1000));
 }

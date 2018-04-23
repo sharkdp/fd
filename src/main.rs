@@ -34,16 +34,12 @@ use std::sync::Arc;
 use std::time;
 
 use atty::Stream;
-use regex::{RegexBuilder, RegexSetBuilder, Regex};
+use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
 use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes,
                SizeFilter};
 use lscolors::LsColors;
-
-lazy_static! {
-    static ref VALIDATE_SIZE: Regex = { Regex::new(r"^[\+-]{1}\d+[bBkKmMgGTt]{1,2}$").unwrap() };
-}
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
@@ -139,12 +135,14 @@ fn main() {
 
     let size_limits: Vec<SizeFilter> = matches
         .values_of("size")
-        .map(|v| v.map(|sf| {
-            if !VALIDATE_SIZE.is_match(sf) {
+        .map(|v| {
+            v.map(|sf| {
+                if let Some(f) = SizeFilter::from_string(sf) {
+                    return f;
+                }
                 error(&format!("Error: {} is not a valid size constraint.", sf));
-            }
-            sf.into()
-        }).collect())
+            }).collect()
+        })
         .unwrap_or_else(|| vec![]);
 
     let config = FdOptions {

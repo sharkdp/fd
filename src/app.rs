@@ -264,16 +264,20 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Alias for no-ignore ('u') and no-ignore and hidden ('uu')");
     doc!(h, "size"
         , "Limit results based on the size of files."
-        , "Limit results based on the size of files using the format <+-><NUM><UN>.\n   \
-            '+': file size must be greater than this\n   \
-            '-': file size must be less than this\n   \
-            'NUM':      The numeric size (e.g. 500)\n   \
-            'UN':       The units for NUM.\n\
+        , "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
+            '+': file size must be greater than or equal to this\n   \
+            '-': file size must be less than or equal to this\n   \
+            'NUM':  The numeric size (e.g. 500)\n   \
+            'UNIT': The units for NUM. They are not case-sensitive.\n\
             Allowed unit values:\n   \
-                'b' or 'B': bytes\n   \
-                'k' or 'K': kilobytes\n   \
-                'm' or 'M': megabytes\n   \
-                'g' or 'G': gigabytes\n   \
-                't' or 'T': terabytes");
+                'b':  bytes\n   \
+                'k':  kilobytes\n   \
+                'm':  megabytes\n   \
+                'g':  gigabytes\n   \
+                't':  terabytes\n   \
+                'ki': kibibytes\n   \
+                'mi': mebibytes\n   \
+                'gi': gibibytes\n   \
+                'ti': tebibytes");
     h
 }
