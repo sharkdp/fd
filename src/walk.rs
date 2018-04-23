@@ -249,10 +249,14 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
-            if entry_path.is_file() && config.size_constraints.len() > 0 {
+            if config.size_constraints.len() > 0 && entry_path.is_file() {
                 if let Ok(metadata) = entry_path.metadata() {
                     let file_size = metadata.len();
-                    if config.size_constraints.iter().any(|sc| !sc.is_within(file_size)) {
+                    if config
+                        .size_constraints
+                        .iter()
+                        .any(|sc| !sc.is_within(file_size))
+                    {
                         return ignore::WalkState::Continue;
                     }
                 }
