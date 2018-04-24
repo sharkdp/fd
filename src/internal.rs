@@ -19,7 +19,7 @@ use regex_syntax::hir::Hir;
 use regex_syntax::Parser;
 
 lazy_static! {
-    static ref SIZE_CAPTURES: Regex = { Regex::new(r"(?i)^([+-])(\d+)([bkmgt]i?)b?$").unwrap() };
+    static ref SIZE_CAPTURES: Regex = { Regex::new(r"(?i)^([+-])(\d+)(b|[kmgt]i?b?)$").unwrap() };
 }
 
 /// Whether or not to show
@@ -53,12 +53,13 @@ pub struct SizeFilter {
     limit_type: SizeLimitType,
 }
 
-// SI units for now
+// SI prefixes (powers of 10)
 const KILO: u64 = 1000;
 const MEGA: u64 = KILO * 1000;
 const GIGA: u64 = MEGA * 1000;
 const TERA: u64 = GIGA * 1000;
 
+// Binary prefixes (powers of 2)
 const KIBI: u64 = 1024;
 const MEBI: u64 = KIBI * 1024;
 const GIBI: u64 = MEBI * 1024;
@@ -88,16 +89,17 @@ impl SizeFilter {
             },
         };
 
-        let multiplier = match &captures.get(3).map_or("k", |m| m.as_str()).to_lowercase()[..] {
-            "ki" => KIBI,
-            "k" => KILO,
-            "mi" => MEBI,
-            "m" => MEGA,
-            "gi" => GIBI,
-            "g" => GIGA,
-            "ti" => TEBI,
-            "t" => TERA,
-            _ => 1, // Any we don't understand we'll just say the number of bytes
+        let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
+            v if v.starts_with("ki") => KIBI,
+            v if v.starts_with("k") => KILO,
+            v if v.starts_with("mi") => MEBI,
+            v if v.starts_with("m") => MEGA,
+            v if v.starts_with("gi") => GIBI,
+            v if v.starts_with("g") => GIGA,
+            v if v.starts_with("ti") => TEBI,
+            v if v.starts_with("t") => TERA,
+            "b" => 1,
+            _ => return None,
         };
 
         Some(SizeFilter {
@@ -452,6 +454,8 @@ gen_size_filter_failure! {
     ensure_invalid_unit_returns_none_1: "+50a",
     ensure_invalid_unit_returns_none_2: "-10v",
     ensure_invalid_unit_returns_none_3: "+1Mv",
+    ensure_bib_format_returns_none: "+1bib",
+    ensure_bb_format_returns_none: "+1bb",
 }
 
 #[test]
