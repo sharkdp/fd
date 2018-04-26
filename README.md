@@ -168,12 +168,12 @@ xbps-install -S fd
 
 ### On macOS
 
-You can install [this Homebrew package](http://braumeister.org/formula/fd):
+You can install `fd` with [Homebrew](http://braumeister.org/formula/fd):
 ```
 brew install fd
 ```
 
-You can install `fd` with MacPorts:
+… or with MacPorts:
 ```
 sudo port install fd
 ```
