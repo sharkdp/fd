@@ -173,6 +173,11 @@ You can install [this Homebrew package](http://braumeister.org/formula/fd):
 brew install fd
 ```
 
+You can install `fd` with MacPorts:
+```
+sudo port install fd
+```
+
 ### On Windows
 
 You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
