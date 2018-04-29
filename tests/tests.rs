@@ -1010,97 +1010,74 @@ fn test_invalid_utf8() {
     te.assert_output(&["-e", "zip", "", "test1/"], "");
 }
 
-/// (--size)
+/// Filtering for file size (--size)
 #[test]
 fn test_size() {
-    let dirs = &["test1", "test2"];
-    let files = &["test1/a.foo", "test1/b.foo", "test1/c.foo"];
-    let te = TestEnv::new(dirs, files);
+    let te = TestEnv::new(&[], &[]);
 
-    create_file_with_size(te.test_root().join("test1/11_bytes.foo"), 11);
-    create_file_with_size(te.test_root().join("test2/30_bytes.foo"), 30);
-    create_file_with_size(te.test_root().join("test1/3_kilobytes.foo"), 3 * 1000);
-    create_file_with_size(te.test_root().join("test2/4_kibibytes.foo"), 4 * 1024);
+    create_file_with_size(te.test_root().join("0_bytes.foo"), 0);
+    create_file_with_size(te.test_root().join("11_bytes.foo"), 11);
+    create_file_with_size(te.test_root().join("30_bytes.foo"), 30);
+    create_file_with_size(te.test_root().join("3_kilobytes.foo"), 3 * 1000);
+    create_file_with_size(te.test_root().join("4_kibibytes.foo"), 4 * 1024);
 
     // Zero and non-zero sized files.
     te.assert_output(
-        &["", "test1", "test2", "--size", "+0B"],
-        "test1/11_bytes.foo
-        test1/a.foo
-        test1/b.foo
-        test1/c.foo
-        test1/3_kilobytes.foo
-        test2/30_bytes.foo
-        test2/4_kibibytes.foo"
+        &["", "--size", "+0B"],
+        "0_bytes.foo
+        11_bytes.foo
+        30_bytes.foo
+        3_kilobytes.foo
+        4_kibibytes.foo",
     );
 
     // Zero sized files.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "-0B"],
-        "test1/a.foo
-        test1/b.foo
-        test1/c.foo"
-    );
+    te.assert_output(&["", "--size", "-0B"], "0_bytes.foo");
 
     // Files with 2 bytes or more.
     te.assert_output(
-        &["", "test1", "test2", "--size", "+2B"],
-        "test1/11_bytes.foo
-        test1/3_kilobytes.foo
-        test2/30_bytes.foo
-        test2/4_kibibytes.foo"
+        &["", "--size", "+2B"],
+        "11_bytes.foo
+        30_bytes.foo
+        3_kilobytes.foo
+        4_kibibytes.foo",
     );
 
     // Files with 2 bytes or less.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "-2B"],
-        "test1/a.foo
-        test1/b.foo
-        test1/c.foo"
-    );
+    te.assert_output(&["", "--size", "-2B"], "0_bytes.foo");
 
     // Files with size between 1 byte and 11 bytes.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "+1B", "--size", "-11B"],
-        "test1/11_bytes.foo"
-    );
+    te.assert_output(&["", "--size", "+1B", "--size", "-11B"], "11_bytes.foo");
 
     // Files with size between 1 byte and 30 bytes.
     te.assert_output(
-        &["", "test1", "test2", "--size", "+1B", "--size", "-30B"],
-        "test1/11_bytes.foo
-        test2/30_bytes.foo"
+        &["", "--size", "+1B", "--size", "-30B"],
+        "11_bytes.foo
+        30_bytes.foo",
     );
+
+    // Combine with a search pattern
+    te.assert_output(&["^11_", "--size", "+1B", "--size", "-30B"], "11_bytes.foo");
 
     // Files with size between 12 and 30 bytes.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "+12B", "--size", "-30B"],
-        "test2/30_bytes.foo"
-    );
+    te.assert_output(&["", "--size", "+12B", "--size", "-30B"], "30_bytes.foo");
 
     // Files with size between 31 and 100 bytes.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "+31B", "--size", "-100B"],
-        ""
-    );
+    te.assert_output(&["", "--size", "+31B", "--size", "-100B"], "");
 
     // Files with size between 3 kibibytes and 5 kibibytes.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "+3ki", "--size", "-5ki"],
-        "test2/4_kibibytes.foo"
-    );
+    te.assert_output(&["", "--size", "+3ki", "--size", "-5ki"], "4_kibibytes.foo");
 
     // Files with size between 3 kilobytes and 5 kilobytes.
     te.assert_output(
-        &["", "test1", "test2", "--size", "+3k", "--size", "-5k"],
-        "test1/3_kilobytes.foo
-        test2/4_kibibytes.foo"
+        &["", "--size", "+3k", "--size", "-5k"],
+        "3_kilobytes.foo
+        4_kibibytes.foo",
     );
 
-    // Files with size greater than 3 kilobytes and less than 4 kibibytes.
-    te.assert_output(
-        &["", "test1", "test2", "--size", "+3k", "--size", "-3ki"],
-        "test1/3_kilobytes.foo"
-    );
+    // Files with size greater than 3 kilobytes and less than 3 kibibytes.
+    te.assert_output(&["", "--size", "+3k", "--size", "-3ki"], "3_kilobytes.foo");
 
+    // Files with size equal 4 kibibytes.
+    te.assert_output(&["", "--size", "+4ki", "--size", "-4ki"], "4_kibibytes.foo");
 }
