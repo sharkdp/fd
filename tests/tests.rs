@@ -1005,9 +1005,6 @@ fn test_invalid_utf8() {
 /// (--size)
 #[test]
 fn test_size() {
-    use std::ffi::OsStr;
-    use std::os::unix::ffi::OsStrExt;
-
     let dirs = &["test1", "test2"];
     let files = &["test1/a.foo", "test1/b.foo", "test1/c.foo"];
     let te = TestEnv::new(dirs, files);
