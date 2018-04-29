@@ -1001,3 +1001,80 @@ fn test_invalid_utf8() {
     // Should not be found under a different extension
     te.assert_output(&["-e", "zip", "", "test1/"], "");
 }
+
+/// (--size)
+#[test]
+fn test_size() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1", "test2"];
+    let files = &["test1/a.foo", "test1/b.foo", "test1/c.foo"];
+    let te = TestEnv::new(dirs, files);
+
+    let mut f = fs::File::create(te.test_root().join("test1/tiny.foo")).unwrap();
+    f.write("Hello world".as_bytes()).unwrap(); // 11 bytes
+    f.flush().unwrap();
+
+    let mut f = fs::File::create(te.test_root().join("test2/big.foo")).unwrap();
+    f.write("Hello user, fd is a nice tool.".as_bytes()).unwrap(); // 30 bytes
+    f.flush().unwrap();
+
+    // Zero and non-zero sized files.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+0B"],
+        "test1/a.foo
+        test1/b.foo
+        test1/c.foo
+        test1/tiny.foo
+        test2/big.foo"
+    );
+
+    // Zero sized files.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "-0B"],
+        "test1/a.foo
+        test1/b.foo
+        test1/c.foo"
+    );
+
+    // Files with 2 bytes or more.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+2B"],
+        "test1/tiny.foo
+        test2/big.foo"
+    );
+
+    // Files with 2 bytes or less.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "-2B"],
+        "test1/a.foo
+        test1/b.foo
+        test1/c.foo"
+    );
+
+    // Files with size between 1 byte and 11 bytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+1B", "--size", "-11B"],
+        "test1/tiny.foo"
+    );
+
+    // Files with size between 1 byte and 30 bytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+1B", "--size", "-30B"],
+        "test1/tiny.foo
+        test2/big.foo"
+    );
+
+    // Files with size between 12 and 30 bytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+12B", "--size", "-30B"],
+        "test2/big.foo"
+    );
+
+    // Files with size between 31 and 100 bytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+31B", "--size", "-100B"],
+        ""
+    );
+}
