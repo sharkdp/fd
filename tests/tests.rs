@@ -15,6 +15,7 @@ mod testenv;
 use regex::escape;
 use std::fs;
 use std::io::Write;
+use std::path::Path;
 use testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
@@ -50,6 +51,13 @@ fn get_test_env_with_abs_path(dirs: &[&'static str], files: &[&'static str]) -> 
     let env = TestEnv::new(dirs, files);
     let root_path = get_absolute_root_path(&env);
     (env, root_path)
+}
+
+#[cfg(test)]
+fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
+    let content = "#".repeat(size_in_bytes);
+    let mut f = fs::File::create::<P>(path).unwrap();
+    f.write(content.as_bytes()).unwrap();
 }
 
 /// Simple tests
@@ -1009,22 +1017,21 @@ fn test_size() {
     let files = &["test1/a.foo", "test1/b.foo", "test1/c.foo"];
     let te = TestEnv::new(dirs, files);
 
-    let mut f = fs::File::create(te.test_root().join("test1/tiny.foo")).unwrap();
-    f.write("Hello world".as_bytes()).unwrap(); // 11 bytes
-    f.flush().unwrap();
-
-    let mut f = fs::File::create(te.test_root().join("test2/big.foo")).unwrap();
-    f.write("Hello user, fd is a nice tool.".as_bytes()).unwrap(); // 30 bytes
-    f.flush().unwrap();
+    create_file_with_size(te.test_root().join("test1/11_bytes.foo"), 11);
+    create_file_with_size(te.test_root().join("test2/30_bytes.foo"), 30);
+    create_file_with_size(te.test_root().join("test1/3_kilobytes.foo"), 3 * 1000);
+    create_file_with_size(te.test_root().join("test2/4_kibibytes.foo"), 4 * 1024);
 
     // Zero and non-zero sized files.
     te.assert_output(
         &["", "test1", "test2", "--size", "+0B"],
-        "test1/a.foo
+        "test1/11_bytes.foo
+        test1/a.foo
         test1/b.foo
         test1/c.foo
-        test1/tiny.foo
-        test2/big.foo"
+        test1/3_kilobytes.foo
+        test2/30_bytes.foo
+        test2/4_kibibytes.foo"
     );
 
     // Zero sized files.
@@ -1038,8 +1045,10 @@ fn test_size() {
     // Files with 2 bytes or more.
     te.assert_output(
         &["", "test1", "test2", "--size", "+2B"],
-        "test1/tiny.foo
-        test2/big.foo"
+        "test1/11_bytes.foo
+        test1/3_kilobytes.foo
+        test2/30_bytes.foo
+        test2/4_kibibytes.foo"
     );
 
     // Files with 2 bytes or less.
@@ -1053,20 +1062,20 @@ fn test_size() {
     // Files with size between 1 byte and 11 bytes.
     te.assert_output(
         &["", "test1", "test2", "--size", "+1B", "--size", "-11B"],
-        "test1/tiny.foo"
+        "test1/11_bytes.foo"
     );
 
     // Files with size between 1 byte and 30 bytes.
     te.assert_output(
         &["", "test1", "test2", "--size", "+1B", "--size", "-30B"],
-        "test1/tiny.foo
-        test2/big.foo"
+        "test1/11_bytes.foo
+        test2/30_bytes.foo"
     );
 
     // Files with size between 12 and 30 bytes.
     te.assert_output(
         &["", "test1", "test2", "--size", "+12B", "--size", "-30B"],
-        "test2/big.foo"
+        "test2/30_bytes.foo"
     );
 
     // Files with size between 31 and 100 bytes.
@@ -1074,4 +1083,24 @@ fn test_size() {
         &["", "test1", "test2", "--size", "+31B", "--size", "-100B"],
         ""
     );
+
+    // Files with size between 3 kibibytes and 5 kibibytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+3ki", "--size", "-5ki"],
+        "test2/4_kibibytes.foo"
+    );
+
+    // Files with size between 3 kilobytes and 5 kilobytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+3k", "--size", "-5k"],
+        "test1/3_kilobytes.foo
+        test2/4_kibibytes.foo"
+    );
+
+    // Files with size greater than 3 kilobytes and less than 4 kibibytes.
+    te.assert_output(
+        &["", "test1", "test2", "--size", "+3k", "--size", "-3ki"],
+        "test1/3_kilobytes.foo"
+    );
+
 }
