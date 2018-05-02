@@ -133,8 +133,14 @@ sudo dpkg -i fd_7.0.0_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Fedora
-You can use this [fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
+
+Starting with Fedora 28, you can install `fd` from the official package sources:
+``` bash
+dnf install fd-find
 ```
+
+For older versions, you can use this [Fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
+``` bash
 dnf copr enable keefle/fd
 dnf install fd
 ```
