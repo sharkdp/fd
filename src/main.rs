@@ -37,8 +37,9 @@ use atty::Stream;
 use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
-use internal::{error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes,
-               SizeFilter};
+use internal::{
+    error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes, SizeFilter,
+};
 use lscolors::LsColors;
 
 fn main() {
@@ -84,7 +85,8 @@ fn main() {
     }
 
     // Detect if the user accidentally supplied a path instead of a search pattern
-    if !matches.is_present("full-path") && pattern.contains(std::path::MAIN_SEPARATOR)
+    if !matches.is_present("full-path")
+        && pattern.contains(std::path::MAIN_SEPARATOR)
         && fshelper::is_dir(Path::new(pattern))
     {
         error(&format!(
@@ -189,7 +191,8 @@ fn main() {
             file_types
         }),
         extensions: matches.values_of("extension").map(|exts| {
-            let patterns = exts.map(|e| e.trim_left_matches('.'))
+            let patterns = exts
+                .map(|e| e.trim_left_matches('.'))
                 .map(|e| format!(r".\.{}$", regex::escape(e)));
             match RegexSetBuilder::new(patterns)
                 .case_insensitive(true)

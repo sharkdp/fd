@@ -120,7 +120,8 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
 /// Normalize the output for comparison.
 fn normalize_output(s: &str, trim_left: bool) -> String {
     // Split into lines and normalize separators.
-    let mut lines = s.replace('\0', "NULL\n")
+    let mut lines = s
+        .replace('\0', "NULL\n")
         .lines()
         .map(|line| {
             let line =

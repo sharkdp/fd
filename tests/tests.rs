@@ -33,7 +33,8 @@ static DEFAULT_FILES: &'static [&'static str] = &[
 ];
 
 fn get_absolute_root_path(env: &TestEnv) -> String {
-    let path = env.test_root()
+    let path = env
+        .test_root()
         .canonicalize()
         .expect("absolute path")
         .to_str()
