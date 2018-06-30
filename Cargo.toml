@@ -51,6 +51,9 @@ anyhow = "1.0"
 version = "2.31.2"
 features = ["suggestions", "color", "wrap_help"]
 
+[target.'cfg(unix)'.dependencies]
+users = "0.10.0"
+
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
 

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use std::fs;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct OwnerFilter {
@@ -13,11 +14,29 @@ impl OwnerFilter {
 
         let uid = match fst {
             Some("") | None => None,
-            Some(s) => Some(s.parse()?),
+            Some(s) => {
+                let maybe_uid = s
+                    .parse()
+                    .ok()
+                    .or_else(|| users::get_user_by_name(s).map(|user| user.uid()));
+                match maybe_uid {
+                    Some(uid) => Some(uid),
+                    _ => return Err(anyhow!("'{}' is not a recognized user name", s)),
+                }
+            }
         };
         let gid = match snd {
             Some("") | None => None,
-            Some(s) => Some(s.parse()?),
+            Some(s) => {
+                let maybe_gid = s
+                    .parse()
+                    .ok()
+                    .or_else(|| users::get_group_by_name(s).map(|group| group.gid()));
+                match maybe_gid {
+                    Some(gid) => Some(gid),
+                    _ => return Err(anyhow!("'{}' is not a recognized group name", s)),
+                }
+            }
         };
 
         if uid.is_none() && gid.is_none() {
@@ -28,6 +47,15 @@ impl OwnerFilter {
         } else {
             Ok(OwnerFilter { uid, gid })
         }
+    }
+
+    pub fn matches(&self, md: &fs::Metadata) -> bool {
+        use std::os::unix::fs::MetadataExt;
+
+        let uid_ok = self.uid.map(|u| u == md.uid()).unwrap_or(true);
+        let gid_ok = self.gid.map(|g| g == md.gid()).unwrap_or(true);
+
+        uid_ok && gid_ok
     }
 }
 
