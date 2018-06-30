@@ -3,8 +3,15 @@ use std::fs;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct OwnerFilter {
-    uid: Option<u32>,
-    gid: Option<u32>,
+    uid: Check<u32>,
+    gid: Check<u32>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Check<T> {
+    Equal(T),
+    NotEq(T),
+    Ignore,
 }
 
 impl OwnerFilter {
@@ -39,7 +46,17 @@ impl OwnerFilter {
             }
         };
 
-        if uid.is_none() && gid.is_none() {
+        use self::Check::*;
+        let uid = match uid {
+            Some(u) => Equal(u),
+            _ => Ignore,
+        };
+        let gid = match gid {
+            Some(g) => Equal(g),
+            _ => Ignore,
+        };
+
+        if let (Ignore, Ignore) = (uid, gid) {
             Err(anyhow!(
                 "'{}' is not a valid user/group specifier. See 'fd --help'.",
                 input
@@ -52,10 +69,17 @@ impl OwnerFilter {
     pub fn matches(&self, md: &fs::Metadata) -> bool {
         use std::os::unix::fs::MetadataExt;
 
-        let uid_ok = self.uid.map(|u| u == md.uid()).unwrap_or(true);
-        let gid_ok = self.gid.map(|g| g == md.gid()).unwrap_or(true);
+        self.uid.check(md.uid()) && self.gid.check(md.gid())
+    }
+}
 
-        uid_ok && gid_ok
+impl<T: PartialEq> Check<T> {
+    fn check(&self, v: T) -> bool {
+        match self {
+            Check::Equal(x) => v == *x,
+            Check::NotEq(x) => v != *x,
+            Check::Ignore => true,
+        }
     }
 }
 
@@ -78,12 +102,13 @@ mod owner_parsing {
         };
     }
 
+    use super::Check::*;
     owner_tests! {
         empty:      ""      => Err(_),
-        uid_only:   "5"     => Ok(OwnerFilter { uid: Some(5), gid: None   }),
-        uid_gid:    "9:3"   => Ok(OwnerFilter { uid: Some(9), gid: Some(3)}),
-        gid_only:   ":8"    => Ok(OwnerFilter { uid: None,    gid: Some(8)}),
+        uid_only:   "5"     => Ok(OwnerFilter { uid: Equal(5), gid: Ignore    }),
+        uid_gid:    "9:3"   => Ok(OwnerFilter { uid: Equal(9), gid: Equal(3)  }),
+        gid_only:   ":8"    => Ok(OwnerFilter { uid: Ignore,   gid: Equal(8)  }),
         colon_only: ":"     => Err(_),
-        trailing:   "5:"    => Ok(OwnerFilter { uid: Some(5), gid: None   }),
+        trailing:   "5:"    => Ok(OwnerFilter { uid: Equal(5), gid: Ignore    }),
     }
 }
