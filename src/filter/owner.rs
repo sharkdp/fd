@@ -19,44 +19,20 @@ impl OwnerFilter {
         let mut it = input.split(':');
         let (fst, snd) = (it.next(), it.next());
 
-        let uid = match fst {
-            Some("") | None => None,
-            Some(s) => {
-                let maybe_uid = s
-                    .parse()
-                    .ok()
-                    .or_else(|| users::get_user_by_name(s).map(|user| user.uid()));
-                match maybe_uid {
-                    Some(uid) => Some(uid),
-                    _ => return Err(anyhow!("'{}' is not a recognized user name", s)),
-                }
-            }
-        };
-        let gid = match snd {
-            Some("") | None => None,
-            Some(s) => {
-                let maybe_gid = s
-                    .parse()
-                    .ok()
-                    .or_else(|| users::get_group_by_name(s).map(|group| group.gid()));
-                match maybe_gid {
-                    Some(gid) => Some(gid),
-                    _ => return Err(anyhow!("'{}' is not a recognized group name", s)),
-                }
-            }
-        };
+        let uid = Check::parse(fst, |s| {
+            s.parse()
+                .ok()
+                .or_else(|| users::get_user_by_name(s).map(|user| user.uid()))
+                .ok_or_else(|| anyhow!("'{}' is not a recognized user name", s))
+        })?;
+        let gid = Check::parse(snd, |s| {
+            s.parse()
+                .ok()
+                .or_else(|| users::get_group_by_name(s).map(|group| group.gid()))
+                .ok_or_else(|| anyhow!("'{}' is not a recognized group name", s))
+        })?;
 
-        use self::Check::*;
-        let uid = match uid {
-            Some(u) => Equal(u),
-            _ => Ignore,
-        };
-        let gid = match gid {
-            Some(g) => Equal(g),
-            _ => Ignore,
-        };
-
-        if let (Ignore, Ignore) = (uid, gid) {
+        if let (Check::Ignore, Check::Ignore) = (uid, gid) {
             Err(anyhow!(
                 "'{}' is not a valid user/group specifier. See 'fd --help'.",
                 input
@@ -80,6 +56,25 @@ impl<T: PartialEq> Check<T> {
             Check::NotEq(x) => v != *x,
             Check::Ignore => true,
         }
+    }
+
+    fn parse<F>(s: Option<&str>, f: F) -> Result<Self>
+    where
+        F: Fn(&str) -> Result<T>,
+    {
+        let (s, equality) = match s {
+            Some("") | None => return Ok(Check::Ignore),
+            Some(s) if s.starts_with('!') => (&s[1..], false),
+            Some(s) => (s, true),
+        };
+
+        f(s).map(|x| {
+            if equality {
+                Check::Equal(x)
+            } else {
+                Check::NotEq(x)
+            }
+        })
     }
 }
 
@@ -110,5 +105,9 @@ mod owner_parsing {
         gid_only:   ":8"    => Ok(OwnerFilter { uid: Ignore,   gid: Equal(8)  }),
         colon_only: ":"     => Err(_),
         trailing:   "5:"    => Ok(OwnerFilter { uid: Equal(5), gid: Ignore    }),
+
+        uid_negate: "!5"    => Ok(OwnerFilter { uid: NotEq(5), gid: Ignore    }),
+        both_negate:"!4:!3" => Ok(OwnerFilter { uid: NotEq(4), gid: NotEq(3)  }),
+        uid_not_gid:"6:!8"  => Ok(OwnerFilter { uid: Equal(6), gid: NotEq(8)  }),
     }
 }
