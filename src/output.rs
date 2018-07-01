@@ -97,11 +97,24 @@ fn print_entry_colorized(
     }
 }
 
+#[cfg(not(target_os = "linux"))]
 fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let path_str = path.to_string_lossy();
     write!(&mut io::stdout(), "{}{}", path_str, separator)
+}
+
+#[cfg(target_os = "linux")]
+fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
+    use std::os::unix::ffi::OsStrExt;
+
+    let separator = if config.null_separator { "\0" } else { "\n" };
+
+    let mut out = io::stdout();
+    out.write(path.as_os_str().as_bytes())?;
+    out.write(separator.as_bytes())?;
+    Ok(())
 }
 
 fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_term::Style> {

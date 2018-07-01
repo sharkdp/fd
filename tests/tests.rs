@@ -1003,9 +1003,9 @@ fn test_invalid_utf8() {
             .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
     ).unwrap();
 
-    te.assert_output(&["", "test1/"], "test1/test_�invalid.txt");
+    te.assert_output_raw(&["", "test1/"], b"test1/test_\xFEinvalid.txt\n");
 
-    te.assert_output(&["invalid", "test1/"], "test1/test_�invalid.txt");
+    te.assert_output_raw(&["invalid", "test1/"], b"test1/test_\xFEinvalid.txt\n");
 
     // Should not be found under a different extension
     te.assert_output(&["-e", "zip", "", "test1/"], "");
