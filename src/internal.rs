@@ -102,8 +102,8 @@ impl SizeFilter {
 
     pub fn is_within(&self, size: u64) -> bool {
         match self {
-            SizeFilter::Max(limit) => size <= *limit,
-            SizeFilter::Min(limit) => size >= *limit,
+            &SizeFilter::Max(limit) => size <= limit,
+            &SizeFilter::Min(limit) => size >= limit,
         }
     }
 }
