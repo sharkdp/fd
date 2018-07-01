@@ -6,6 +6,11 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+#![cfg(not(unix))]
+///! The operations in this module are not strictly speaking 100% correct,
+///! as not all platforms use always-valid UTF-8 paths.
+///! This is just a temporary solution until they can be implemented correctly
+///! for every platform
 use std::path::MAIN_SEPARATOR;
 
 /// Removes the parent component of the path

@@ -8,11 +8,17 @@
 
 // TODO: Possible optimization could avoid pushing characters on a buffer.
 mod command;
-mod input;
 mod job;
 mod token;
 
+#[cfg(not(unix))]
+mod input;
+
+#[cfg(unix)]
+mod input_unix;
+
 use std::borrow::Cow;
+use std::ffi::{OsStr, OsString};
 use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
@@ -20,7 +26,6 @@ use std::sync::{Arc, Mutex};
 use regex::Regex;
 
 use self::command::execute_command;
-use self::input::{basename, dirname, remove_extension};
 pub use self::job::job;
 use self::token::Token;
 
@@ -99,15 +104,11 @@ impl CommandTemplate {
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build. Once all arguments have been processed, the command is executed.
     pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) {
-        let input = input
-            .strip_prefix(".")
-            .unwrap_or(input)
-            .to_string_lossy()
-            .into_owned();
+        let input = input.strip_prefix(".").unwrap_or(input).to_owned();
 
-        let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
+        let mut cmd = Command::new(self.args[0].generate(&input));
         for arg in &self.args[1..] {
-            cmd.arg(arg.generate(&input).as_ref());
+            cmd.arg(arg.generate(&input));
         }
 
         execute_command(cmd, out_perm)
@@ -125,25 +126,37 @@ enum ArgumentTemplate {
 }
 
 impl ArgumentTemplate {
-    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
+    pub fn generate<'a>(&'a self, path: &Path) -> Cow<'a, OsStr> {
         use self::Token::*;
+
+        #[cfg(unix)]
+        use self::input_unix::{basename, dirname, remove_extension};
+
+        #[cfg(not(unix))]
+        use self::input::{basename, dirname, remove_extension};
+        #[cfg(not(unix))]
+        let tmp = path.as_os_str().to_string_lossy().into_owned();
+        #[cfg(not(unix))]
+        let path = tmp.as_ref();
+
+        // Note: due to the above conditionals, the calls below actually work on different types
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
-                let mut s = String::new();
+                let mut s = OsString::new();
                 for token in tokens {
                     match *token {
-                        Basename => s += basename(path),
-                        BasenameNoExt => s += remove_extension(basename(path)),
-                        NoExt => s += remove_extension(path),
-                        Parent => s += dirname(path),
-                        Placeholder => s += path,
-                        Text(ref string) => s += string,
+                        Basename => s.push(basename(path)),
+                        BasenameNoExt => s.push(remove_extension(basename(path))),
+                        NoExt => s.push(remove_extension(path)),
+                        Parent => s.push(dirname(path)),
+                        Placeholder => s.push(path),
+                        Text(ref string) => s.push(string),
                     }
                 }
                 Cow::Owned(s)
             }
-            ArgumentTemplate::Text(ref text) => Cow::Borrowed(text),
+            ArgumentTemplate::Text(ref text) => Cow::Borrowed(text.as_ref()),
         }
     }
 }
