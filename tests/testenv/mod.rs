@@ -162,6 +162,12 @@ impl TestEnv {
         self.assert_output_subdirectory(".", args, expected)
     }
 
+    /// Similar to assert_output, but able to handle non-utf8 output
+    pub fn assert_output_raw(&self, args: &[&str], expected: &[u8]) {
+        let actual = self.raw_output_subdirectory(".", args);
+        assert_eq!(expected, actual.as_ref());
+    }
+
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces the expected output.
     pub fn assert_output_subdirectory<P: AsRef<Path>>(
@@ -170,6 +176,19 @@ impl TestEnv {
         args: &[&str],
         expected: &str,
     ) {
+        let raw_out = self.raw_output_subdirectory(path, args);
+
+        // Normalize both expected and actual output.
+        let expected = normalize_output(expected, true);
+        let actual = normalize_output(&String::from_utf8_lossy(&raw_out), false);
+
+        // Compare actual output to expected output.
+        if expected != actual {
+            panic!(format_output_error(args, &expected, &actual));
+        }
+    }
+
+    fn raw_output_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str]) -> Box<[u8]> {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
@@ -183,13 +202,6 @@ impl TestEnv {
             panic!(format_exit_error(args, &output));
         }
 
-        // Normalize both expected and actual output.
-        let expected = normalize_output(expected, true);
-        let actual = normalize_output(&String::from_utf8_lossy(&output.stdout), false);
-
-        // Compare actual output to expected output.
-        if expected != actual {
-            panic!(format_output_error(args, &expected, &actual));
-        }
+        output.stdout.into_boxed_slice()
     }
 }
