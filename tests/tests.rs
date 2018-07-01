@@ -957,6 +957,28 @@ fn assert_exec_output(exec_style: &str) {
     }
 }
 
+/// Filenames with non-utf8 paths are passed to the exec'ed program unchanged
+#[cfg(target_os = "linux")]
+#[test]
+fn test_exec_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    ).unwrap();
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{}"],
+        b"test1/test_\xFEinvalid.txt\n",
+    );
+}
+
 /// Literal search (--fixed-strings)
 #[test]
 fn test_fixed_strings() {
