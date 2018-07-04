@@ -71,90 +71,46 @@ pub fn dirname(path: &str) -> &str {
 }
 
 #[cfg(test)]
-mod tests {
+mod path_tests {
     use super::{basename, dirname, remove_extension, MAIN_SEPARATOR};
 
     fn correct(input: &str) -> String {
         input.replace('/', &MAIN_SEPARATOR.to_string())
     }
 
-    #[test]
-    fn path_remove_ext_simple() {
-        assert_eq!(remove_extension("foo.txt"), "foo");
+    macro_rules! func_tests {
+        ($($name:ident: $func:ident for $input:expr => $output:expr)+) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!($func(&correct($input)), correct($output));
+                }
+            )+
+        }
+    }
+
+    func_tests! {
+        remove_ext_simple:  remove_extension  for  "foo.txt"      =>  "foo"
+        remove_ext_dir:     remove_extension  for  "dir/foo.txt"  =>  "dir/foo"
+        hidden:             remove_extension  for  ".foo"         =>  ".foo"
+        remove_ext_utf8:    remove_extension  for  "💖.txt"       =>  "💖"
+        remove_ext_empty:   remove_extension  for  ""             =>  ""
+
+        basename_simple:  basename  for  "foo.txt"      =>  "foo.txt"
+        basename_dir:     basename  for  "dir/foo.txt"  =>  "foo.txt"
+        basename_empty:   basename  for  ""             =>  ""
+        basename_utf8_0:  basename  for  "💖/foo.txt"   =>  "foo.txt"
+        basename_utf8_1:  basename  for  "dir/💖.txt"   =>  "💖.txt"
+
+        dirname_simple:  dirname  for  "foo.txt"      =>  "."
+        dirname_dir:     dirname  for  "dir/foo.txt"  =>  "dir"
+        dirname_utf8_0:  dirname  for  "💖/foo.txt"   =>  "💖"
+        dirname_utf8_1:  dirname  for  "dir/💖.txt"   =>  "dir"
+        dirname_empty:   dirname  for  ""             =>  "."
     }
 
     #[test]
-    fn path_remove_ext_dir() {
-        assert_eq!(
-            remove_extension(&correct("dir/foo.txt")),
-            correct("dir/foo")
-        );
-    }
-
-    #[test]
-    fn path_hidden() {
-        assert_eq!(remove_extension(".foo"), ".foo")
-    }
-
-    #[test]
-    fn path_remove_ext_utf8() {
-        assert_eq!(remove_extension("💖.txt"), "💖");
-    }
-
-    #[test]
-    fn path_remove_ext_empty() {
-        assert_eq!(remove_extension(""), "");
-    }
-
-    #[test]
-    fn path_basename_simple() {
-        assert_eq!(basename("foo.txt"), "foo.txt");
-    }
-
-    #[test]
-    fn path_basename_no_ext() {
-        assert_eq!(remove_extension(basename("foo.txt")), "foo");
-    }
-
-    #[test]
-    fn path_basename_dir() {
-        assert_eq!(basename(&correct("dir/foo.txt")), "foo.txt");
-    }
-
-    #[test]
-    fn path_basename_empty() {
-        assert_eq!(basename(""), "");
-    }
-
-    #[test]
-    fn path_basename_utf8() {
-        assert_eq!(basename(&correct("💖/foo.txt")), "foo.txt");
-        assert_eq!(basename(&correct("dir/💖.txt")), "💖.txt");
-    }
-
-    #[test]
-    fn path_dirname_simple() {
-        assert_eq!(dirname("foo.txt"), ".");
-    }
-
-    #[test]
-    fn path_dirname_dir() {
-        assert_eq!(dirname(&correct("dir/foo.txt")), "dir");
-    }
-
-    #[test]
-    fn path_dirname_utf8() {
-        assert_eq!(dirname(&correct("💖/foo.txt")), "💖");
-        assert_eq!(dirname(&correct("dir/💖.txt")), "dir");
-    }
-
-    #[test]
-    fn path_dirname_empty() {
-        assert_eq!(dirname(""), ".");
-    }
-
-    #[test]
-    fn path_dirname_root() {
+    fn dirname_root() {
         #[cfg(windows)]
         assert_eq!(dirname("C:\\"), "C:");
         #[cfg(windows)]
