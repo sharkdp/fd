@@ -112,8 +112,8 @@ fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let mut out = io::stdout();
-    out.write(path.as_os_str().as_bytes())?;
-    out.write(separator.as_bytes())?;
+    out.write_all(path.as_os_str().as_bytes())?;
+    out.write_all(separator.as_bytes())?;
     Ok(())
 }
 
