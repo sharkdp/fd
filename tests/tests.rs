@@ -977,6 +977,23 @@ fn test_exec_invalid_utf8() {
         &["", "test1/", "--exec", "echo", "{}"],
         b"test1/test_\xFEinvalid.txt\n",
     );
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{/}"],
+        b"test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--exec", "echo", "{//}"], b"test1\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{.}"],
+        b"test1/test_\xFEinvalid\n",
+    );
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{/.}"],
+        b"test_\xFEinvalid\n",
+    );
 }
 
 /// Literal search (--fixed-strings)
