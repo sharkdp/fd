@@ -958,7 +958,13 @@ fn assert_exec_output(exec_style: &str) {
 }
 
 /// Filenames with non-utf8 paths are passed to the exec'ed program unchanged
-#[cfg(target_os = "linux")]
+///
+/// This is unix-only, due to the ability to use OsStr as [u8] on unix.
+/// TODO: extend test to other platforms, with their specific non-utf they support
+///
+/// Note: the test is disabled on Darwin/OSX, since it coerces file names to UTF-8,
+///       even when the requesed file name is not valid UTF-8.
+#[cfg(all(unix, not(target_os = "macos")))]
 #[test]
 fn test_exec_invalid_utf8() {
     use std::ffi::OsStr;
