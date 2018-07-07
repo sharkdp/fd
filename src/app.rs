@@ -529,7 +529,18 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("owner")
                 .long("owner")
                 .short("o")
-                .takes_value(true),
+                .takes_value(true)
+                .value_name("user:group")
+                .help("Filter by owning user and/or group")
+                .long_help(
+                    "Filter files by their user and/or group. \
+                     Format: [(user|uid)][:(group|gid)]. Either side is optional. \
+                     Precede either side with a '!' to exclude files instead.\n\
+                     Examples:\n    \
+                         --owner john\n    \
+                         --owner :students\n    \
+                         --owner '!john:students'",
+                ),
         );
     }
 
