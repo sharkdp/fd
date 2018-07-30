@@ -44,6 +44,9 @@ fn create_working_directory(
     {
         let root = temp_dir.path();
 
+        // Pretend that this is a Git repository in order for `.gitignore` files to be respected
+        fs::create_dir_all(root.join(".git"))?;
+
         for directory in directories {
             fs::create_dir_all(root.join(directory))?;
         }
