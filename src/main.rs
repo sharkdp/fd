@@ -67,8 +67,7 @@ fn main() {
                     ));
                 }
                 path_buffer
-            })
-            .collect::<Vec<_>>(),
+            }).collect::<Vec<_>>(),
         None => vec![current_dir.to_path_buf()],
     };
 
@@ -80,8 +79,7 @@ fn main() {
                     .canonicalize()
                     .and_then(|pb| fshelper::absolute_path(pb.as_path()))
                     .unwrap()
-            })
-            .collect();
+            }).collect();
     }
 
     // Detect if the user accidentally supplied a path instead of a search pattern
@@ -144,8 +142,7 @@ fn main() {
                 }
                 error(&format!("Error: {} is not a valid size constraint.", sf));
             }).collect()
-        })
-        .unwrap_or_else(|| vec![]);
+        }).unwrap_or_else(|| vec![]);
 
     let config = FdOptions {
         case_sensitive,
