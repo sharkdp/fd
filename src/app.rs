@@ -50,26 +50,22 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("u")
                 .multiple(true)
                 .hidden(true),
-        )
-        .arg(
+        ).arg(
             arg("case-sensitive")
                 .long("case-sensitive")
                 .short("s")
                 .overrides_with("ignore-case"),
-        )
-        .arg(
+        ).arg(
             arg("ignore-case")
                 .long("ignore-case")
                 .short("i")
                 .overrides_with("case-sensitive"),
-        )
-        .arg(
+        ).arg(
             arg("fixed-strings")
                 .long("fixed-strings")
                 .short("F")
                 .alias("literal"),
-        )
-        .arg(arg("absolute-path").long("absolute-path").short("a"))
+        ).arg(arg("absolute-path").long("absolute-path").short("a"))
         .arg(arg("follow").long("follow").short("L").alias("dereference"))
         .arg(arg("full-path").long("full-path").short("p"))
         .arg(arg("null_separator").long("print0").short("0"))
@@ -91,10 +87,8 @@ pub fn build_app() -> App<'static, 'static> {
                     "symlink",
                     "x",
                     "executable",
-                ])
-                .hide_possible_values(true),
-        )
-        .arg(
+                ]).hide_possible_values(true),
+        ).arg(
             arg("extension")
                 .long("extension")
                 .short("e")
@@ -102,8 +96,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .takes_value(true)
                 .value_name("ext"),
-        )
-        .arg(
+        ).arg(
             arg("exec")
                 .long("exec")
                 .short("x")
@@ -111,8 +104,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd"),
-        )
-        .arg(
+        ).arg(
             arg("exclude")
                 .long("exclude")
                 .short("E")
@@ -120,16 +112,14 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("pattern")
                 .number_of_values(1)
                 .multiple(true),
-        )
-        .arg(
+        ).arg(
             arg("ignore-file")
                 .long("ignore-file")
                 .takes_value(true)
                 .value_name("path")
                 .number_of_values(1)
                 .multiple(true),
-        )
-        .arg(
+        ).arg(
             arg("color")
                 .long("color")
                 .short("c")
@@ -137,15 +127,13 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("when")
                 .possible_values(&["never", "auto", "always"])
                 .hide_possible_values(true),
-        )
-        .arg(
+        ).arg(
             arg("threads")
                 .long("threads")
                 .short("j")
                 .takes_value(true)
                 .value_name("num"),
-        )
-        .arg(
+        ).arg(
             arg("size")
                 .long("size")
                 .short("S")
@@ -153,14 +141,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .allow_hyphen_values(true)
                 .multiple(true),
-        )
-        .arg(
+        ).arg(
             arg("max-buffer-time")
                 .long("max-buffer-time")
                 .takes_value(true)
                 .hidden(true),
-        )
-        .arg(arg("pattern"))
+        ).arg(arg("pattern"))
         .arg(arg("path").multiple(true))
 }
 
