@@ -48,10 +48,6 @@ features = ["suggestions", "color", "wrap_help"]
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
 
-[target.'cfg(windows)'.dependencies]
-kernel32-sys = "0.2"
-winapi = "0.3"
-
 [dev-dependencies]
 diff = "0.1"
 tempdir = "0.3"
