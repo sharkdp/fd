@@ -13,6 +13,8 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
+use ignore::DirEntry;
+
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
         Ok(path.to_path_buf())
@@ -36,7 +38,7 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
     Ok(path_buf)
 }
 
-// Path::is_dir() is not guarandteed to be intuitively correct for "." and ".."
+// Path::is_dir() is not guaranteed to be intuitively correct for "." and ".."
 // See: https://github.com/rust-lang/rust/issues/45302
 pub fn is_dir(path: &Path) -> bool {
     if path.file_name().is_some() {
@@ -54,4 +56,22 @@ pub fn is_executable(md: &fs::Metadata) -> bool {
 #[cfg(windows)]
 pub fn is_executable(_: &fs::Metadata) -> bool {
     false
+}
+
+pub fn is_empty(entry: &DirEntry) -> bool {
+    if let Some(file_type) = entry.file_type() {
+        if file_type.is_dir() {
+            if let Ok(mut entries) = fs::read_dir(entry.path()) {
+                entries.next().is_none()
+            } else {
+                false
+            }
+        } else if file_type.is_file() {
+            entry.metadata().map(|m| m.len() == 0).unwrap_or(false)
+        } else {
+            false
+        }
+    } else {
+        false
+    }
 }

@@ -182,9 +182,19 @@ fn main() {
                         file_types.executables_only = true;
                         file_types.files = true;
                     }
+                    "e" | "empty" => {
+                        file_types.empty_only = true;
+                    }
                     _ => unreachable!(),
                 }
             }
+
+            // If only 'empty' was specified, search for both files and directories:
+            if file_types.empty_only && !(file_types.files || file_types.directories) {
+                file_types.files = true;
+                file_types.directories = true;
+            }
+
             file_types
         }),
         extensions: matches.values_of("extension").map(|exts| {

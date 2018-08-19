@@ -28,6 +28,7 @@ pub struct FileTypes {
     pub directories: bool,
     pub symlinks: bool,
     pub executables_only: bool,
+    pub empty_only: bool,
 }
 
 impl Default for FileTypes {
@@ -37,6 +38,7 @@ impl Default for FileTypes {
             directories: false,
             symlinks: false,
             executables_only: false,
+            empty_only: false,
         }
     }
 }

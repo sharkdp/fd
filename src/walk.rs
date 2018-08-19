@@ -223,6 +223,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                             .metadata()
                             .map(|m| fshelper::is_executable(&m))
                             .unwrap_or(false))
+                        || (file_types.empty_only && !fshelper::is_empty(&entry))
                     {
                         return ignore::WalkState::Continue;
                     } else if !(entry_type.is_file()

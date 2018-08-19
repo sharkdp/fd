@@ -644,6 +644,33 @@ fn test_type_executable() {
     );
 }
 
+/// Test `--type empty`
+#[test]
+fn test_type_empty() {
+    let te = TestEnv::new(&["dir_empty", "dir_nonempty"], &[]);
+
+    create_file_with_size(te.test_root().join("0_bytes.foo"), 0);
+    create_file_with_size(te.test_root().join("5_bytes.foo"), 5);
+
+    create_file_with_size(te.test_root().join("dir_nonempty").join("2_bytes.foo"), 2);
+
+    te.assert_output(
+        &["--type", "empty"],
+        "0_bytes.foo
+        dir_empty",
+    );
+
+    te.assert_output(
+        &["--type", "empty", "--type", "file", "--type", "directory"],
+        "0_bytes.foo
+        dir_empty",
+    );
+
+    te.assert_output(&["--type", "empty", "--type", "file"], "0_bytes.foo");
+
+    te.assert_output(&["--type", "empty", "--type", "directory"], "dir_empty");
+}
+
 /// File extension (--extension)
 #[test]
 fn test_extension() {

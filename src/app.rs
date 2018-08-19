@@ -87,6 +87,8 @@ pub fn build_app() -> App<'static, 'static> {
                     "symlink",
                     "x",
                     "executable",
+                    "e",
+                    "empty",
                 ]).hide_possible_values(true),
         ).arg(
             arg("extension")
@@ -196,12 +198,13 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit the directory traversal to a given depth. By default, there is no limit \
            on the search depth.");
     doc!(h, "file-type"
-        , "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x)"
+        , "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x), empty (e)"
         , "Filter the search by type (multiple allowable filetypes can be specified):\n  \
              'f' or 'file':         regular files\n  \
              'd' or 'directory':    directories\n  \
              'l' or 'symlink':      symbolic links\n  \
-             'x' or 'executable':   executables");
+             'x' or 'executable':   executables\n  \
+             'e' or 'empty':        empty files or directories");
     doc!(h, "extension"
         , "Filter by file extension"
         , "(Additionally) filter search results by their file extension. Multiple allowable file \
