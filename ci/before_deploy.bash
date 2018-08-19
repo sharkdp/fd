@@ -11,10 +11,17 @@ pack() {
     local tempdir
     local out_dir
     local package_name
+    local gcc_prefix
 
     tempdir=$(mktemp -d 2>/dev/null || mktemp -d -t tmp)
     out_dir=$(pwd)
     package_name="$PROJECT_NAME-$TRAVIS_TAG-$TARGET"
+
+    if [[ $TARGET == "arm-unknown-linux-gnueabihf" ]]; then
+        gcc_prefix="arm-linux-gnueabihf-"
+    else
+        gcc_prefix=""
+    fi
 
     # create a "staging" directory
     mkdir "$tempdir/$package_name"
@@ -22,7 +29,7 @@ pack() {
 
     # copying the main binary
     cp "target/$TARGET/release/$PROJECT_NAME" "$tempdir/$package_name/"
-    strip "$tempdir/$package_name/$PROJECT_NAME"
+    "${gcc_prefix}"strip "$tempdir/$package_name/$PROJECT_NAME"
 
     # manpage, readme and license
     cp "doc/$PROJECT_NAME.1" "$tempdir/$package_name"
@@ -57,8 +64,8 @@ make_deb() {
             architecture=i386
             ;;
         *)
-            echo "ERROR: unknown target" >&2
-            return 1
+            echo "make_deb: skipping target '${TARGET}'" >&2
+            return 0
             ;;
     esac
     version=${TRAVIS_TAG#v}

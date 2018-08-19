@@ -20,6 +20,11 @@ matrix:
     - os: osx
       rust: stable
       env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: stable
+      env:
+        - TARGET=arm-unknown-linux-gnueabihf
+        - CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc-4.8
 
     # Beta channel.
     - os: linux
@@ -82,13 +87,10 @@ matrix:
         - cargo install --debug --force rustfmt-nightly
       script: cargo fmt -- --check
 
-addons:
-  apt:
-    packages:
-      # needed for i686-unknown-linux-gnu target
-      - gcc-multilib
-      # needed to build deb packages
-      - fakeroot
+sudo: required
+
+before_install:
+  - ci/before_install.bash
 
 env:
   global:
@@ -103,9 +105,7 @@ install:
   - if [[ $TRAVIS_OS_NAME = linux && $HOST != $TARGET ]]; then rustup target add $TARGET; fi
 
 script:
-  # Incorporate TARGET env var to the build and test process
-  - cargo build --target $TARGET --verbose
-  - cargo test --target $TARGET --verbose
+  - ci/script.bash
 
 before_deploy:
   - bash ci/before_deploy.bash
