@@ -124,6 +124,41 @@ Always colorize output.
 .BI "\-j, \-\-threads " num
 Number of threads to use for searching (default: number of available CPUs).
 .TP
+.BI "\-S, \-\-size " size
+Limit results based on the size of files using the format
+.I <+-><NUM><UNIT>
+.RS
+.IP '+'
+file size must be greater than or equal to this
+.IP '-'
+file size must be less than or equal to this
+.IP 'NUM'
+The numeric size (e.g. 500)
+.IP 'UNIT'
+The units for NUM. They are not case-sensitive.
+Allowed unit values:
+.RS
+.IP 'b'
+bytes
+.IP 'k'
+kilobytes
+.IP 'm'
+megabytes
+.IP 'g'
+gigabytes
+.IP 't'
+terabytes
+.IP 'ki'
+kibibytes
+.IP 'mi'
+mebibytes
+.IP 'gi'
+gibibytes
+.IP 'ti'
+tebibytes
+.RE
+.RE
+.TP
 .BI "\-x, \-\-exec " command "\fR [args...] ;"
 Execute
 .I command
