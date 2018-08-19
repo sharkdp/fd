@@ -216,9 +216,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             if let Some(ref file_types) = config.file_types {
                 if let Some(ref entry_type) = entry.file_type() {
-                    if (entry_type.is_file() && !file_types.files)
-                        || (entry_type.is_dir() && !file_types.directories)
-                        || (entry_type.is_symlink() && !file_types.symlinks)
+                    if (!file_types.files && entry_type.is_file())
+                        || (!file_types.directories && entry_type.is_dir())
+                        || (!file_types.symlinks && entry_type.is_symlink())
                         || (file_types.executables_only && !entry
                             .metadata()
                             .map(|m| fshelper::is_executable(&m))
