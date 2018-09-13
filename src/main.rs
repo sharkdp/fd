@@ -158,6 +158,7 @@ fn main() {
         null_separator: matches.is_present("null_separator"),
         max_depth: matches
             .value_of("depth")
+            .or_else(|| matches.value_of("rg-depth"))
             .and_then(|n| usize::from_str_radix(n, 10).ok()),
         threads: std::cmp::max(
             matches

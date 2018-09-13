@@ -70,7 +70,13 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(arg("full-path").long("full-path").short("p"))
         .arg(arg("null_separator").long("print0").short("0"))
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
+        // support --maxdepth as well, for compatibility with rg
         .arg(
+            arg("rg-depth")
+                .long("maxdepth")
+                .hidden(true)
+                .takes_value(true),
+        ).arg(
             arg("file-type")
                 .long("type")
                 .short("t")
@@ -194,6 +200,10 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Separate search results by the null character (instead of newlines). Useful for \
            piping results to 'xargs'.");
     doc!(h, "depth"
+        , "Set maximum search depth (default: none)"
+        , "Limit the directory traversal to a given depth. By default, there is no limit \
+           on the search depth.");
+    doc!(h, "rg-depth"
         , "Set maximum search depth (default: none)"
         , "Limit the directory traversal to a given depth. By default, there is no limit \
            on the search depth.");
