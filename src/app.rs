@@ -204,9 +204,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit the directory traversal to a given depth. By default, there is no limit \
            on the search depth.");
     doc!(h, "rg-depth"
-        , "Set maximum search depth (default: none)"
-        , "Limit the directory traversal to a given depth. By default, there is no limit \
-           on the search depth.");
+        , "See --max-depth"
+        , "See --max-depth");
     doc!(h, "file-type"
         , "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x), empty (e)"
         , "Filter the search by type (multiple allowable filetypes can be specified):\n  \
