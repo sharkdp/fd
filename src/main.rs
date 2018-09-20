@@ -138,14 +138,12 @@ fn main() {
 
     let command = matches.values_of("exec").map(CommandTemplate::new);
 
-    #[allow(unused_assignments)]
     let mut gids = vec![];
-    #[allow(unused_assignments)]
     let mut uids = vec![];
 
     #[cfg(any(unix, target_os = "redox"))]
     {
-        uids = matches
+        let mut uids_ = matches
             .values_of("uid")
             .map(|v| {
                 v.map(|sf| {
@@ -167,7 +165,7 @@ fn main() {
                 }).collect()
             }).unwrap_or_else(|| vec![]);
 
-        gids = matches
+        let mut gids_ = matches
             .values_of("gid")
             .map(|v| {
                 v.map(|sf| {
@@ -189,6 +187,8 @@ fn main() {
                 }).collect()
             }).unwrap_or_else(|| vec![]);
 
+        gids.append(&mut gids_);
+        uids.append(&mut uids_);
         gids.append(&mut gids_from_name);
         uids.append(&mut uids_from_name);
     }

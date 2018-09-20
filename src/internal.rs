@@ -17,7 +17,6 @@ use lscolors::LsColors;
 use regex::{Regex, RegexSet};
 use regex_syntax::hir::Hir;
 use regex_syntax::Parser;
-#[cfg(any(unix, target_os = "redox"))]
 
 lazy_static! {
     static ref SIZE_CAPTURES: Regex = { Regex::new(r"(?i)^([+-])(\d+)(b|[kmgt]i?b?)$").unwrap() };

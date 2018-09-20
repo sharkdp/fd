@@ -252,7 +252,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
-            if config.size_constraints.len() > 0 {
+            if !config.size_constraints.is_empty() {
                 if entry_path.is_file() {
                     if let Ok(metadata) = entry_path.metadata() {
                         let file_size = metadata.len();
@@ -270,33 +270,35 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     return ignore::WalkState::Continue;
                 }
             }
-
-            if config.uids.len() > 0 {
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
-                        let uid = fshelper::get_uid(&metadata);
-                        if config.uids.iter().all(|&uf| uf != uid) {
+            #[cfg(any(unix, target_os = "redox"))]
+            {
+                if !config.uids.is_empty() {
+                    if entry_path.is_file() {
+                        if let Ok(metadata) = entry_path.metadata() {
+                            let uid = fshelper::get_uid(&metadata);
+                            if config.uids.iter().all(|&uf| uf != uid) {
+                                return ignore::WalkState::Continue;
+                            }
+                        } else {
                             return ignore::WalkState::Continue;
                         }
                     } else {
                         return ignore::WalkState::Continue;
                     }
-                } else {
-                    return ignore::WalkState::Continue;
                 }
-            }
-            if config.gids.len() > 0 {
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
-                        let gid = fshelper::get_gid(&metadata);
-                        if config.gids.iter().all(|&uf| uf != gid) {
+                if !config.gids.is_empty() {
+                    if entry_path.is_file() {
+                        if let Ok(metadata) = entry_path.metadata() {
+                            let gid = fshelper::get_gid(&metadata);
+                            if config.gids.iter().all(|&uf| uf != gid) {
+                                return ignore::WalkState::Continue;
+                            }
+                        } else {
                             return ignore::WalkState::Continue;
                         }
                     } else {
                         return ignore::WalkState::Continue;
                     }
-                } else {
-                    return ignore::WalkState::Continue;
                 }
             }
 
