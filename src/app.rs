@@ -37,7 +37,7 @@ pub fn build_app() -> App<'static, 'static> {
             .long_help(helps[name].long)
     };
 
-    App::new("fd")
+    let app = App::new("fd")
         .version(crate_version!())
         .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>...]")
         .setting(AppSettings::ColoredHelp)
@@ -155,7 +155,44 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .hidden(true),
         ).arg(arg("pattern"))
-        .arg(arg("path").multiple(true))
+        .arg(arg("path").multiple(true));
+
+    #[cfg(any(unix, target_os = "redox"))]
+    {
+        app.arg(
+            arg("user")
+                .long("user")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(true)
+                .multiple(true),
+        ).arg(
+            arg("uid")
+                .long("uid")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(true)
+                .multiple(true),
+        ).arg(
+            arg("group")
+                .long("group")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(true)
+                .multiple(true),
+        ).arg(
+            arg("gid")
+                .long("gid")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(true)
+                .multiple(true),
+        )
+    }
+    #[cfg(any(windows))]
+    {
+        app
+    }
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -277,5 +314,15 @@ fn usage() -> HashMap<&'static str, Help> {
                 'mi': mebibytes\n   \
                 'gi': gibibytes\n   \
                 'ti': tebibytes");
+    #[cfg(any(unix, target_os = "redox"))] {
+    doc!(h, "user"
+         , "File belongs to user");
+    doc!(h, "uid"
+         , "File's numeric user ID is uid");
+    doc!(h, "group"
+         , "File belongs to group");
+    doc!(h, "gid"
+         , "File's numeric group ID is gid");
+    }
     h
 }

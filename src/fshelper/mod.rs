@@ -10,7 +10,7 @@ use std::env::current_dir;
 use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use ignore::DirEntry;
@@ -56,6 +56,16 @@ pub fn is_executable(md: &fs::Metadata) -> bool {
 #[cfg(windows)]
 pub fn is_executable(_: &fs::Metadata) -> bool {
     false
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn get_uid(md: &fs::Metadata) -> u32 {
+    md.uid()
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn get_gid(md: &fs::Metadata) -> u32 {
+    md.gid()
 }
 
 pub fn is_empty(entry: &DirEntry) -> bool {

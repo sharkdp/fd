@@ -18,6 +18,8 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+#[cfg(any(unix, target_os = "redox"))]
+extern crate users;
 
 mod app;
 mod exec;
@@ -41,6 +43,9 @@ use internal::{
     error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes, SizeFilter,
 };
 use lscolors::LsColors;
+
+#[cfg(any(unix, target_os = "redox"))]
+use users::{get_group_by_name, get_user_by_name};
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
@@ -133,6 +138,61 @@ fn main() {
 
     let command = matches.values_of("exec").map(CommandTemplate::new);
 
+    #[allow(unused_assignments)]
+    let mut gids = vec![];
+    #[allow(unused_assignments)]
+    let mut uids = vec![];
+
+    #[cfg(any(unix, target_os = "redox"))]
+    {
+        uids = matches
+            .values_of("uid")
+            .map(|v| {
+                v.map(|sf| {
+                    if let Ok(uid) = sf.parse() {
+                        return uid;
+                    }
+                    error(&format!("Error: {} is not a valid uid", sf));
+                }).collect()
+            }).unwrap_or_else(|| vec![]);
+
+        let mut uids_from_name: Vec<u32> = matches
+            .values_of("user")
+            .map(|v| {
+                v.map(|sf| {
+                    if let Some(user) = get_user_by_name(sf) {
+                        return user.uid();
+                    }
+                    error(&format!("Error: {} is not a valid user name", sf));
+                }).collect()
+            }).unwrap_or_else(|| vec![]);
+
+        gids = matches
+            .values_of("gid")
+            .map(|v| {
+                v.map(|sf| {
+                    if let Ok(gid) = sf.parse() {
+                        return gid;
+                    }
+                    error(&format!("Error: {} is not a valid gid", sf));
+                }).collect()
+            }).unwrap_or_else(|| vec![]);
+
+        let mut gids_from_name: Vec<u32> = matches
+            .values_of("group")
+            .map(|v| {
+                v.map(|sf| {
+                    if let Some(group) = get_group_by_name(sf) {
+                        return group.gid();
+                    }
+                    error(&format!("Error: {} is not a valid group name", sf));
+                }).collect()
+            }).unwrap_or_else(|| vec![]);
+
+        gids.append(&mut gids_from_name);
+        uids.append(&mut uids_from_name);
+    }
+
     let size_limits: Vec<SizeFilter> = matches
         .values_of("size")
         .map(|v| {
@@ -220,6 +280,8 @@ fn main() {
             .map(|vs| vs.map(PathBuf::from).collect())
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
+        uids,
+        gids,
     };
 
     match RegexBuilder::new(&pattern_regex)

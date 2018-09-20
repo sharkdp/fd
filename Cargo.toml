@@ -45,6 +45,9 @@ ctrlc = "3.1"
 version = "2.31.2"
 features = ["suggestions", "color", "wrap_help"]
 
+[target.'cfg(any(unix, target_os = "redox"))'.dependencies]
+users = "0.7"
+
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
 

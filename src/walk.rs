@@ -271,6 +271,35 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 }
             }
 
+            if config.uids.len() > 0 {
+                if entry_path.is_file() {
+                    if let Ok(metadata) = entry_path.metadata() {
+                        let uid = fshelper::get_uid(&metadata);
+                        if config.uids.iter().all(|&uf| uf != uid) {
+                            return ignore::WalkState::Continue;
+                        }
+                    } else {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
+                    return ignore::WalkState::Continue;
+                }
+            }
+            if config.gids.len() > 0 {
+                if entry_path.is_file() {
+                    if let Ok(metadata) = entry_path.metadata() {
+                        let gid = fshelper::get_gid(&metadata);
+                        if config.gids.iter().all(|&uf| uf != gid) {
+                            return ignore::WalkState::Continue;
+                        }
+                    } else {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
             let search_str_o = if config.search_full_path {
                 match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
