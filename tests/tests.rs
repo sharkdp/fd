@@ -1028,7 +1028,8 @@ fn test_invalid_utf8() {
     fs::File::create(
         te.test_root()
             .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
-    ).unwrap();
+    )
+    .unwrap();
 
     te.assert_output(&["", "test1/"], "test1/test_�invalid.txt");
 

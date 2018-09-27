@@ -106,7 +106,8 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
             diff::Result::Left(l) => format!("-{}", l),
             diff::Result::Both(l, _) => format!(" {}", l),
             diff::Result::Right(r) => format!("+{}", r),
-        }).collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
         .join("\n");
 
     format!(
@@ -128,7 +129,8 @@ fn normalize_output(s: &str, trim_left: bool) -> String {
         .map(|line| {
             let line = if trim_left { line.trim_left() } else { line };
             line.replace('/', &std::path::MAIN_SEPARATOR.to_string())
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
     lines.sort_by_key(|s| s.clone());
 

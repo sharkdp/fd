@@ -106,7 +106,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         let wq = Arc::clone(&receiver_wtq);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
-        }).unwrap();
+        })
+        .unwrap();
     }
 
     // Spawn the thread that receives all results through the channel.
