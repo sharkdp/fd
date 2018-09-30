@@ -39,7 +39,7 @@ enum ReceiverMode {
 /// The Worker threads can result in a valid entry having PathBuf or an error.
 pub enum WorkerResult {
     Entry(PathBuf),
-    Error(ignore::Error)
+    Error(ignore::Error),
 }
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
@@ -300,7 +300,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             if let Some(search_str) = search_str_o {
                 if pattern.is_match(&*search_str) {
                     // TODO: take care of the unwrap call
-                    tx_thread.send(WorkerResult::Entry(entry_path.to_owned())).unwrap()
+                    tx_thread
+                        .send(WorkerResult::Entry(entry_path.to_owned()))
+                        .unwrap()
                 }
             }
 
