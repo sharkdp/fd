@@ -36,6 +36,12 @@ enum ReceiverMode {
     Streaming,
 }
 
+/// The Worker threads can result in a valid entry having PathBuf or an error.
+pub enum WorkerResult {
+    Entry(PathBuf),
+    Error(ignore::Error)
+}
+
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -156,27 +162,34 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 .max_buffer_time
                 .unwrap_or_else(|| time::Duration::from_millis(100));
 
-            for value in rx {
-                match mode {
-                    ReceiverMode::Buffering => {
-                        buffer.push(value);
+            for worker_result in rx {
+                match worker_result {
+                    WorkerResult::Entry(value) => {
+                        match mode {
+                            ReceiverMode::Buffering => {
+                                buffer.push(value);
 
-                        // Have we reached the maximum buffer size or maximum buffering time?
-                        if buffer.len() > MAX_BUFFER_LENGTH
-                            || time::Instant::now() - start > max_buffer_time
-                        {
-                            // Flush the buffer
-                            for v in &buffer {
-                                output::print_entry(v, &rx_config, &receiver_wtq);
+                                // Have we reached the maximum buffer size or maximum buffering time?
+                                if buffer.len() > MAX_BUFFER_LENGTH
+                                    || time::Instant::now() - start > max_buffer_time
+                                {
+                                    // Flush the buffer
+                                    for v in &buffer {
+                                        output::print_entry(v, &rx_config, &receiver_wtq);
+                                    }
+                                    buffer.clear();
+
+                                    // Start streaming
+                                    mode = ReceiverMode::Streaming;
+                                }
                             }
-                            buffer.clear();
-
-                            // Start streaming
-                            mode = ReceiverMode::Streaming;
+                            ReceiverMode::Streaming => {
+                                output::print_entry(&value, &rx_config, &receiver_wtq);
+                            }
                         }
                     }
-                    ReceiverMode::Streaming => {
-                        output::print_entry(&value, &rx_config, &receiver_wtq);
+                    WorkerResult::Error(err) => {
+                        error(&format!("{}", err));
                     }
                 }
             }
@@ -206,7 +219,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             let entry = match entry_o {
                 Ok(e) => e,
-                Err(_) => return ignore::WalkState::Continue,
+                Err(err) => {
+                    tx_thread.send(WorkerResult::Error(err)).unwrap();
+                    return ignore::WalkState::Continue;
+                }
             };
 
             if entry.depth() == 0 {
@@ -284,7 +300,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             if let Some(search_str) = search_str_o {
                 if pattern.is_match(&*search_str) {
                     // TODO: take care of the unwrap call
-                    tx_thread.send(entry_path.to_owned()).unwrap()
+                    tx_thread.send(WorkerResult::Entry(entry_path.to_owned())).unwrap()
                 }
             }
 

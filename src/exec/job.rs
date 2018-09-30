@@ -9,13 +9,14 @@
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-
+use::walk::WorkerResult;
+use::internal::error;
 use super::CommandTemplate;
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then
 /// be executed, and this process will continue until the receiver's sender has closed.
-pub fn job(rx: Arc<Mutex<Receiver<PathBuf>>>, cmd: Arc<CommandTemplate>, out_perm: Arc<Mutex<()>>) {
+pub fn job(rx: Arc<Mutex<Receiver<WorkerResult>>>, cmd: Arc<CommandTemplate>, out_perm: Arc<Mutex<()>>) {
     loop {
         // Create a lock on the shared receiver for this thread.
         let lock = rx.lock().unwrap();
@@ -23,7 +24,14 @@ pub fn job(rx: Arc<Mutex<Receiver<PathBuf>>>, cmd: Arc<CommandTemplate>, out_per
         // Obtain the next path from the receiver, else if the channel
         // has closed, exit from the loop
         let value: PathBuf = match lock.recv() {
-            Ok(value) => value,
+            Ok(value) => {
+                match value {
+                    WorkerResult::Entry(val) => val,
+                    WorkerResult::Error(err) => {
+                        error(&format!("{}", err));
+                    }
+                }
+            },
             Err(_) => break,
         };
 
