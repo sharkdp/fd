@@ -89,7 +89,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             match err {
                 ignore::Error::Partial(_) => (),
                 _ => {
-                    print_error_and_exit(&format!(
+                    print_error(&format!(
                         "Error while parsing custom ignore file '{}': {}.",
                         ignore_file.to_string_lossy(),
                         err.description()
