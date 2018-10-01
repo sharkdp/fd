@@ -7,7 +7,6 @@
 // according to those terms.
 
 use std::ffi::OsString;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 use std::time;
@@ -174,9 +173,14 @@ pub struct FdOptions {
     pub size_constraints: Vec<SizeFilter>,
 }
 
+/// Print error message to stderr.
+pub fn print_error(message: &str) {
+    eprintln!("{}", message);
+}
+
 /// Print error message to stderr and exit with status `1`.
-pub fn error(message: &str) -> ! {
-    writeln!(&mut ::std::io::stderr(), "{}", message).expect("Failed writing to stderr");
+pub fn print_error_and_exit(message: &str) -> ! {
+    print_error(message);
     process::exit(1);
 }
 
