@@ -7,7 +7,7 @@
 // according to those terms.
 
 use super::CommandTemplate;
-use internal::print_error_and_exit;
+use internal::print_error;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
@@ -25,15 +25,14 @@ pub fn job(
         // Create a lock on the shared receiver for this thread.
         let lock = rx.lock().unwrap();
 
-        // Obtain the next path from the receiver, else if the channel
+        // Obtain the next result from the receiver, else if the channel
         // has closed, exit from the loop
         let value: PathBuf = match lock.recv() {
-            Ok(value) => match value {
-                WorkerResult::Entry(val) => val,
-                WorkerResult::Error(err) => {
-                    print_error_and_exit(&format!("{}", err));
-                }
-            },
+            Ok(WorkerResult::Entry(val)) => val,
+            Ok(WorkerResult::Error(err)) => {
+                print_error(&format!("{}", err));
+                continue;
+            }
             Err(_) => break,
         };
 
