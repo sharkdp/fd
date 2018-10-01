@@ -7,7 +7,7 @@
 // according to those terms.
 
 use super::CommandTemplate;
-use internal::error;
+use internal::print_error_and_exit;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
@@ -31,7 +31,7 @@ pub fn job(
             Ok(value) => match value {
                 WorkerResult::Entry(val) => val,
                 WorkerResult::Error(err) => {
-                    error(&format!("{}", err));
+                    print_error_and_exit(&format!("{}", err));
                 }
             },
             Err(_) => break,

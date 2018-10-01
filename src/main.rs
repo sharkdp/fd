@@ -38,7 +38,8 @@ use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
 use internal::{
-    error, pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes, SizeFilter,
+    pattern_has_uppercase_char, print_error_and_exit, transform_args_with_exec, FdOptions,
+    FileTypes, SizeFilter,
 };
 use lscolors::LsColors;
 
@@ -52,7 +53,7 @@ fn main() {
     // Get the current working directory
     let current_dir = Path::new(".");
     if !fshelper::is_dir(current_dir) {
-        error("Error: could not get current directory.");
+        print_error_and_exit("Error: could not get current directory.");
     }
 
     // Get one or more root directories to search.
@@ -61,7 +62,7 @@ fn main() {
             .map(|path| {
                 let path_buffer = PathBuf::from(path);
                 if !fshelper::is_dir(&path_buffer) {
-                    error(&format!(
+                    print_error_and_exit(&format!(
                         "Error: '{}' is not a directory.",
                         path_buffer.to_string_lossy()
                     ));
@@ -89,7 +90,7 @@ fn main() {
         && pattern.contains(std::path::MAIN_SEPARATOR)
         && fshelper::is_dir(Path::new(pattern))
     {
-        error(&format!(
+        print_error_and_exit(&format!(
             "Error: The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
@@ -142,7 +143,7 @@ fn main() {
                 if let Some(f) = SizeFilter::from_string(sf) {
                     return f;
                 }
-                error(&format!("Error: {} is not a valid size constraint.", sf));
+                print_error_and_exit(&format!("Error: {} is not a valid size constraint.", sf));
             })
             .collect()
         })
@@ -211,7 +212,7 @@ fn main() {
                 .build()
             {
                 Ok(re) => re,
-                Err(err) => error(err.description()),
+                Err(err) => print_error_and_exit(err.description()),
             }
         }),
         command,
@@ -232,7 +233,7 @@ fn main() {
         .build()
     {
         Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
-        Err(err) => error(
+        Err(err) => print_error_and_exit(
             format!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \
                  literal string instead of a regular expression",
