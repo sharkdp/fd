@@ -21,6 +21,7 @@ extern crate regex_syntax;
 
 mod app;
 mod exec;
+mod exit_codes;
 pub mod fshelper;
 mod internal;
 pub mod lscolors;

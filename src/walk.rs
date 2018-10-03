@@ -9,8 +9,9 @@
 extern crate ctrlc;
 
 use exec;
+use exit_codes::ExitCode;
 use fshelper;
-use internal::{print_error, print_error_and_exit, FdOptions, EXITCODE_SIGINT, MAX_BUFFER_LENGTH};
+use internal::{print_error, print_error_and_exit, FdOptions, MAX_BUFFER_LENGTH};
 use output;
 
 use std::error::Error;
@@ -318,6 +319,6 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        process::exit(EXITCODE_SIGINT);
+        process::exit(ExitCode::Sigint.into());
     }
 }
