@@ -20,11 +20,13 @@ extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
 
+#[macro_use]
+mod internal;
+
 mod app;
 mod exec;
 mod exit_codes;
 pub mod fshelper;
-mod internal;
 pub mod lscolors;
 mod output;
 mod walk;
@@ -40,8 +42,8 @@ use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
 use internal::{
-    pattern_has_uppercase_char, print_error_and_exit, transform_args_with_exec, FdOptions,
-    FileTypes, SizeFilter, TimeFilter,
+    pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes, SizeFilter,
+    TimeFilter,
 };
 use lscolors::LsColors;
 
@@ -55,7 +57,7 @@ fn main() {
     // Get the current working directory
     let current_dir = Path::new(".");
     if !fshelper::is_dir(current_dir) {
-        print_error_and_exit("Error: could not get current directory.");
+        print_error_and_exit!("Error: could not get current directory.");
     }
 
     // Get one or more root directories to search.
@@ -64,10 +66,10 @@ fn main() {
             .map(|path| {
                 let path_buffer = PathBuf::from(path);
                 if !fshelper::is_dir(&path_buffer) {
-                    print_error_and_exit(&format!(
+                    print_error_and_exit!(
                         "Error: '{}' is not a directory.",
                         path_buffer.to_string_lossy()
-                    ));
+                    );
                 }
                 path_buffer
             })
@@ -92,7 +94,7 @@ fn main() {
         && pattern.contains(std::path::MAIN_SEPARATOR)
         && fshelper::is_dir(Path::new(pattern))
     {
-        print_error_and_exit(&format!(
+        print_error_and_exit!(
             "Error: The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
@@ -101,7 +103,7 @@ fn main() {
              fd --full-path '{pattern}'",
             pattern = pattern,
             sep = std::path::MAIN_SEPARATOR,
-        ));
+        );
     }
 
     // Treat pattern as literal string if '--fixed-strings' is used
@@ -145,7 +147,7 @@ fn main() {
                 if let Some(f) = SizeFilter::from_string(sf) {
                     return f;
                 }
-                print_error_and_exit(&format!("Error: {} is not a valid size constraint.", sf));
+                print_error_and_exit!("Error: {} is not a valid size constraint.", sf);
             })
             .collect()
         })
@@ -157,14 +159,14 @@ fn main() {
         if let Some(f) = TimeFilter::after(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit(&format!("Error: {} is not a valid time.", t));
+            print_error_and_exit!("Error: {} is not a valid time.", t);
         }
     }
     if let Some(t) = matches.value_of("changed-before") {
         if let Some(f) = TimeFilter::before(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit(&format!("Error: {} is not a valid time.", t));
+            print_error_and_exit!("Error: {} is not a valid time.", t);
         }
     }
 
@@ -231,7 +233,9 @@ fn main() {
                 .build()
             {
                 Ok(re) => re,
-                Err(err) => print_error_and_exit(err.description()),
+                Err(err) => {
+                    print_error_and_exit!("{}", err.description());
+                }
             }
         }),
         command,
@@ -253,13 +257,12 @@ fn main() {
         .build()
     {
         Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
-        Err(err) => print_error_and_exit(
-            format!(
+        Err(err) => {
+            print_error_and_exit!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \
                  literal string instead of a regular expression",
                 err.description()
-            )
-            .as_str(),
-        ),
+            );
+        }
     }
 }

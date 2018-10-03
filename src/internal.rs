@@ -8,7 +8,6 @@
 
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process;
 use std::time::{self, SystemTime};
 
 use exec::CommandTemplate;
@@ -199,15 +198,15 @@ pub struct FdOptions {
     pub time_constraints: Vec<TimeFilter>,
 }
 
-/// Print error message to stderr.
-pub fn print_error(message: &str) {
-    eprintln!("{}", message);
+macro_rules! print_error {
+    ($($arg:tt)*) => (eprintln!($($arg)*))
 }
 
-/// Print error message to stderr and exit with status `1`.
-pub fn print_error_and_exit(message: &str) -> ! {
-    print_error(message);
-    process::exit(1);
+macro_rules! print_error_and_exit {
+    ($($arg:tt)*) => {
+        print_error!($($arg)*);
+        ::std::process::exit(1);
+    };
 }
 
 /// Determine if a regex pattern contains a literal uppercase character.
