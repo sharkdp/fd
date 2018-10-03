@@ -72,7 +72,7 @@ pub fn dirname(path: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use super::{basename, dirname, remove_extension, MAIN_SEPARATOR};
+    use super::*;
 
     fn correct(input: &str) -> String {
         input.replace('/', &MAIN_SEPARATOR.to_string())
