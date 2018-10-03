@@ -150,26 +150,69 @@ impl ArgumentTemplate {
 
 #[cfg(test)]
 mod tests {
-    use super::{ArgumentTemplate, CommandTemplate, Token};
+    use super::*;
 
     #[test]
-    fn tokens() {
-        let expected = CommandTemplate {
-            args: vec![
-                ArgumentTemplate::Text("echo".into()),
-                ArgumentTemplate::Text("${SHELL}:".into()),
-                ArgumentTemplate::Tokens(vec![Token::Placeholder]),
-            ],
-        };
+    fn tokens_with_placeholder() {
+        assert_eq!(
+            CommandTemplate::new(&[&"echo", &"${SHELL}:"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Text("${SHELL}:".into()),
+                    ArgumentTemplate::Tokens(vec![Token::Placeholder]),
+                ],
+            }
+        );
+    }
 
-        assert_eq!(CommandTemplate::new(&[&"echo", &"${SHELL}:"]), expected);
-
+    #[test]
+    fn tokens_with_no_extension() {
         assert_eq!(
             CommandTemplate::new(&["echo", "{.}"]),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::NoExt]),
+                ],
+            }
+        );
+    }
+
+    #[test]
+    fn tokens_with_basename() {
+        assert_eq!(
+            CommandTemplate::new(&["echo", "{/}"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Tokens(vec![Token::Basename]),
+                ],
+            }
+        );
+    }
+
+    #[test]
+    fn tokens_with_parent() {
+        assert_eq!(
+            CommandTemplate::new(&["echo", "{//}"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Tokens(vec![Token::Parent]),
+                ],
+            }
+        );
+    }
+
+    #[test]
+    fn tokens_with_basename_no_extension() {
+        assert_eq!(
+            CommandTemplate::new(&["echo", "{/.}"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("echo".into()),
+                    ArgumentTemplate::Tokens(vec![Token::BasenameNoExt]),
                 ],
             }
         );

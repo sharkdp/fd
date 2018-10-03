@@ -167,65 +167,70 @@ impl LsColors {
     }
 }
 
-#[test]
-fn test_parse_simple() {
-    assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("31"));
-}
+#[cfg(test)]
+mod test {
+    use super::*;
 
-#[test]
-fn test_parse_decoration() {
-    assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("00;31"));
+    #[test]
+    fn test_parse_simple() {
+        assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("31"));
+    }
 
-    assert_eq!(Some(Colour::Blue.italic()), LsColors::parse_style("03;34"));
+    #[test]
+    fn test_parse_decoration() {
+        assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("00;31"));
 
-    assert_eq!(Some(Colour::Cyan.bold()), LsColors::parse_style("01;36"));
-}
+        assert_eq!(Some(Colour::Blue.italic()), LsColors::parse_style("03;34"));
 
-#[test]
-fn test_parse_decoration_backwards() {
-    assert_eq!(Some(Colour::Blue.italic()), LsColors::parse_style("34;03"));
+        assert_eq!(Some(Colour::Cyan.bold()), LsColors::parse_style("01;36"));
+    }
 
-    assert_eq!(Some(Colour::Cyan.bold()), LsColors::parse_style("36;01"));
+    #[test]
+    fn test_parse_decoration_backwards() {
+        assert_eq!(Some(Colour::Blue.italic()), LsColors::parse_style("34;03"));
 
-    assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("31;00"));
-}
+        assert_eq!(Some(Colour::Cyan.bold()), LsColors::parse_style("36;01"));
 
-#[test]
-fn test_parse_256() {
-    assert_eq!(
-        Some(Colour::Fixed(115).normal()),
-        LsColors::parse_style("38;5;115")
-    );
+        assert_eq!(Some(Colour::Red.normal()), LsColors::parse_style("31;00"));
+    }
 
-    assert_eq!(
-        Some(Colour::Fixed(115).normal()),
-        LsColors::parse_style("00;38;5;115")
-    );
+    #[test]
+    fn test_parse_256() {
+        assert_eq!(
+            Some(Colour::Fixed(115).normal()),
+            LsColors::parse_style("38;5;115")
+        );
 
-    assert_eq!(
-        Some(Colour::Fixed(119).bold()),
-        LsColors::parse_style("01;38;5;119")
-    );
+        assert_eq!(
+            Some(Colour::Fixed(115).normal()),
+            LsColors::parse_style("00;38;5;115")
+        );
 
-    assert_eq!(
-        Some(Colour::Fixed(119).bold()),
-        LsColors::parse_style("38;5;119;01")
-    );
-}
+        assert_eq!(
+            Some(Colour::Fixed(119).bold()),
+            LsColors::parse_style("01;38;5;119")
+        );
 
-#[test]
-fn test_from_string() {
-    assert_eq!(LsColors::default(), LsColors::from_string(&String::new()));
+        assert_eq!(
+            Some(Colour::Fixed(119).bold()),
+            LsColors::parse_style("38;5;119;01")
+        );
+    }
 
-    let result = LsColors::from_string(&String::from(
-        "rs=0:di=03;34:ln=01;36:*.foo=01;35:*README=33",
-    ));
+    #[test]
+    fn test_from_string() {
+        assert_eq!(LsColors::default(), LsColors::from_string(&String::new()));
 
-    assert_eq!(Colour::Blue.italic(), result.directory);
-    assert_eq!(Colour::Cyan.bold(), result.symlink);
-    assert_eq!(Some(&Colour::Purple.bold()), result.extensions.get("foo"));
-    assert_eq!(
-        Some(&Colour::Yellow.normal()),
-        result.filenames.get("README")
-    );
+        let result = LsColors::from_string(&String::from(
+            "rs=0:di=03;34:ln=01;36:*.foo=01;35:*README=33",
+        ));
+
+        assert_eq!(Colour::Blue.italic(), result.directory);
+        assert_eq!(Colour::Cyan.bold(), result.symlink);
+        assert_eq!(Some(&Colour::Purple.bold()), result.extensions.get("foo"));
+        assert_eq!(
+            Some(&Colour::Yellow.normal()),
+            result.filenames.get("README")
+        );
+    }
 }
