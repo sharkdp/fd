@@ -214,12 +214,6 @@ fn hir_has_uppercase_char(hir: &Hir) -> bool {
 /// Maximum size of the output buffer before flushing results to the console
 pub const MAX_BUFFER_LENGTH: usize = 1000;
 
-/// Exit code representing a general error
-pub const EXITCODE_ERROR: i32 = 1;
-
-/// Exit code representing that the process was killed by SIGINT
-pub const EXITCODE_SIGINT: i32 = 130;
-
 /// Traverse args_os, looking for -exec and replacing it with --exec.
 ///
 /// # Returns
