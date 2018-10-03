@@ -319,6 +319,6 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        process::exit(ExitCode::Sigint.into());
+        process::exit(ExitCode::KilledBySigint.into());
     }
 }

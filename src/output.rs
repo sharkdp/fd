@@ -45,7 +45,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
 
     if r.is_err() {
         // Probably a broken pipe. Exit gracefully.
-        process::exit(ExitCode::Error.into());
+        process::exit(ExitCode::GeneralError.into());
     }
 }
 
@@ -87,7 +87,7 @@ fn print_entry_colorized(
 
         if wants_to_quit.load(Ordering::Relaxed) {
             write!(handle, "\n")?;
-            process::exit(ExitCode::Sigint.into());
+            process::exit(ExitCode::KilledBySigint.into());
         }
     }
 
