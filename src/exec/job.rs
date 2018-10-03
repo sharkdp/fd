@@ -7,7 +7,6 @@
 // according to those terms.
 
 use super::CommandTemplate;
-use internal::print_error;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
@@ -30,7 +29,7 @@ pub fn job(
         let value: PathBuf = match lock.recv() {
             Ok(WorkerResult::Entry(val)) => val,
             Ok(WorkerResult::Error(err)) => {
-                print_error(&format!("{}", err));
+                print_error!("{}", err);
                 continue;
             }
             Err(_) => break,

@@ -11,7 +11,7 @@ extern crate ctrlc;
 use exec;
 use exit_codes::ExitCode;
 use fshelper;
-use internal::{print_error, print_error_and_exit, FdOptions, MAX_BUFFER_LENGTH};
+use internal::{FdOptions, MAX_BUFFER_LENGTH};
 use output;
 
 use std::error::Error;
@@ -61,11 +61,11 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     for pattern in &config.exclude_patterns {
         let res = override_builder.add(pattern);
         if res.is_err() {
-            print_error_and_exit(&format!("Error: malformed exclude pattern '{}'", pattern));
+            print_error_and_exit!("Error: malformed exclude pattern '{}'", pattern);
         }
     }
     let overrides = override_builder.build().unwrap_or_else(|_| {
-        print_error_and_exit("Mismatch in exclude patterns");
+        print_error_and_exit!("Mismatch in exclude patterns");
     });
 
     let mut walker = WalkBuilder::new(first_path_buf.as_path());
@@ -90,11 +90,14 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             match err {
                 ignore::Error::Partial(_) => (),
                 _ => {
-                    print_error(&format!(
-                        "Error while parsing custom ignore file '{}': {}.",
-                        ignore_file.to_string_lossy(),
-                        err.description()
-                    ));
+                    print_error!(
+                        "{}",
+                        format!(
+                            "Error while parsing custom ignore file '{}': {}.",
+                            ignore_file.to_string_lossy(),
+                            err.description()
+                        )
+                    );
                 }
             }
         }
@@ -190,7 +193,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         }
                     }
                     WorkerResult::Error(err) => {
-                        print_error(&format!("{}", err));
+                        print_error!("{}", err);
                     }
                 }
             }
@@ -310,7 +313,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             let search_str_o = if config.search_full_path {
                 match fshelper::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
-                    Err(_) => print_error_and_exit("Error: unable to get full path."),
+                    Err(_) => {
+                        print_error_and_exit!("Error: unable to get full path.");
+                    }
                 }
             } else {
                 entry_path.file_name().map(|f| f.to_string_lossy())
