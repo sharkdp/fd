@@ -29,12 +29,11 @@ pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
             let _ = stdout.lock().write_all(&output.stdout);
             let _ = stderr.lock().write_all(&output.stderr);
         }
+        Err(ref why) if why.kind() == io::ErrorKind::NotFound => {
+            eprintln!("fd: execution error: command not found");
+        }
         Err(why) => {
-            if why.kind() == io::ErrorKind::NotFound {
-                eprintln!("fd: execution error: command not found");
-            } else {
-                eprintln!("fd: execution error: {}", why);
-            }
+            eprintln!("fd: execution error: {}", why);
         }
     }
 }

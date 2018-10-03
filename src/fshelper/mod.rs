@@ -17,11 +17,11 @@ use ignore::DirEntry;
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
-        Ok(path.to_path_buf())
-    } else {
-        let path = path.strip_prefix(".").unwrap_or(path);
-        current_dir().map(|path_buf| path_buf.join(path))
+        return Ok(path.to_path_buf());
     }
+
+    let path = path.strip_prefix(".").unwrap_or(path);
+    current_dir().map(|path_buf| path_buf.join(path))
 }
 
 pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
@@ -42,11 +42,7 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
 // Path::is_dir() is not guaranteed to be intuitively correct for "." and ".."
 // See: https://github.com/rust-lang/rust/issues/45302
 pub fn is_dir(path: &Path) -> bool {
-    if path.file_name().is_some() {
-        path.is_dir()
-    } else {
-        path.is_dir() && path.canonicalize().is_ok()
-    }
+    path.is_dir() && (path.file_name().is_some() || path.canonicalize().is_ok())
 }
 
 #[cfg(any(unix, target_os = "redox"))]

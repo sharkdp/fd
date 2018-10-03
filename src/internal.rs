@@ -66,20 +66,11 @@ impl SizeFilter {
             return None;
         }
 
-        let captures = match SIZE_CAPTURES.captures(s) {
-            Some(cap) => cap,
-            None => return None,
-        };
-
+        let captures = SIZE_CAPTURES.captures(s)?;
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
-
-        let quantity = match captures.get(2) {
-            None => return None,
-            Some(v) => match v.as_str().parse::<u64>() {
-                Ok(val) => val,
-                _ => return None,
-            },
-        };
+        let quantity = captures
+            .get(2)
+            .and_then(|v| v.as_str().parse::<u64>().ok())?;
 
         let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
             v if v.starts_with("ki") => KIBI,
