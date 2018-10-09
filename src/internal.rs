@@ -9,7 +9,7 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process;
-use std::time;
+use std::time::{self, SystemTime};
 
 use exec::CommandTemplate;
 use lscolors::LsColors;
@@ -100,6 +100,38 @@ impl SizeFilter {
     }
 }
 
+/// Filter based on time ranges
+#[derive(Debug, PartialEq)]
+pub enum TimeFilter {
+    Before(SystemTime),
+    After(SystemTime),
+}
+
+impl TimeFilter {
+    fn from_str(s: &str) -> Option<SystemTime> {
+        use humantime;
+        humantime::parse_duration(s)
+            .map(|duration| SystemTime::now() - duration)
+            .or_else(|_| humantime::parse_rfc3339_weak(s))
+            .ok()
+    }
+
+    pub fn before(s: &str) -> Option<TimeFilter> {
+        Some(TimeFilter::Before(TimeFilter::from_str(s)?))
+    }
+
+    pub fn after(s: &str) -> Option<TimeFilter> {
+        Some(TimeFilter::After(TimeFilter::from_str(s)?))
+    }
+
+    pub fn is_within(&self, t: &SystemTime) -> bool {
+        match self {
+            TimeFilter::Before(limit) => t <= limit,
+            TimeFilter::After(limit) => t >= limit,
+        }
+    }
+}
+
 /// Configuration options for *fd*.
 pub struct FdOptions {
     /// Whether the search is case-sensitive or case-insensitive.
@@ -162,6 +194,9 @@ pub struct FdOptions {
 
     /// The given constraints on the size of returned files
     pub size_constraints: Vec<SizeFilter>,
+
+    /// Constraints on last modification time of files
+    pub modification_constraints: Vec<TimeFilter>,
 }
 
 /// Print error message to stderr.
@@ -467,5 +502,19 @@ mod tests {
     fn is_within_greater_than_equal() {
         let f = SizeFilter::from_string("+1K").unwrap();
         assert!(f.is_within(1000));
+    }
+
+    #[test]
+    fn is_time_within() {
+        let now = SystemTime::now();
+        assert!(TimeFilter::after("1min").unwrap().is_within(&now));
+        assert!(!TimeFilter::before("1min").unwrap().is_within(&now));
+
+        let t1m_ago = SystemTime::now() - time::Duration::from_secs(60);
+        assert!(!TimeFilter::after("30sec").unwrap().is_within(&t1m_ago));
+        assert!(TimeFilter::after("2min").unwrap().is_within(&t1m_ago));
+
+        assert!(TimeFilter::before("30sec").unwrap().is_within(&t1m_ago));
+        assert!(!TimeFilter::before("2min").unwrap().is_within(&t1m_ago));
     }
 }
