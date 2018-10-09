@@ -8,6 +8,8 @@
 
 //! Integration tests for the CLI interface of fd.
 
+extern crate filetime;
+extern crate humantime;
 extern crate regex;
 
 mod testenv;
@@ -16,6 +18,7 @@ use regex::escape;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
+use std::time::{Duration, SystemTime};
 use testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
@@ -1109,4 +1112,66 @@ fn test_size() {
 
     // Files with size equal 4 kibibytes.
     te.assert_output(&["", "--size", "+4ki", "--size", "-4ki"], "4_kibibytes.foo");
+}
+
+#[cfg(test)]
+fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
+    let st = SystemTime::now() - Duration::from_secs(duration_in_secs);
+    let ft = filetime::FileTime::from_system_time(st);
+    fs::File::create(&path).expect("creation failed");
+    filetime::set_file_times(&path, ft, ft).expect("time modification failed");
+}
+
+#[test]
+fn test_modified_relative() {
+    let te = TestEnv::new(&[], &[]);
+    create_file_with_modified(te.test_root().join("0_now"), 0);
+    create_file_with_modified(te.test_root().join("1_min"), 60);
+    create_file_with_modified(te.test_root().join("10_min"), 600);
+    create_file_with_modified(te.test_root().join("1_h"), 60 * 60);
+    create_file_with_modified(te.test_root().join("2_h"), 2 * 60 * 60);
+    create_file_with_modified(te.test_root().join("1_day"), 24 * 60 * 60);
+
+    te.assert_output(
+        &["", "--changed-within", "15min"],
+        "0_now
+        1_min
+        10_min",
+    );
+
+    te.assert_output(
+        &["", "--changed-before", "15min"],
+        "1_h
+        2_h
+        1_day",
+    );
+
+    te.assert_output(
+        &["min", "--changed-within", "12h"],
+        "1_min
+        10_min",
+    );
+}
+
+#[cfg(test)]
+fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
+    let st = humantime::parse_rfc3339(iso_date).expect("invalid date");
+    let ft = filetime::FileTime::from_system_time(st);
+    filetime::set_file_times(path, ft, ft).expect("time modification failde");
+}
+
+#[test]
+fn test_modified_asolute() {
+    let te = TestEnv::new(&[], &["15mar2018", "30dec2017"]);
+    change_file_modified(te.test_root().join("15mar2018"), "2018-03-15T12:00:00Z");
+    change_file_modified(te.test_root().join("30dec2017"), "2017-12-30T23:59:00Z");
+
+    te.assert_output(
+        &["", "--changed-within", "2018-01-01 00:00:00"],
+        "15mar2018",
+    );
+    te.assert_output(
+        &["", "--changed-before", "2018-01-01 00:00:00"],
+        "30dec2017",
+    );
 }

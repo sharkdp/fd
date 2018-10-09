@@ -13,11 +13,14 @@ extern crate clap;
 extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
+extern crate humantime;
 #[cfg(all(unix, not(target_os = "redox")))]
 extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
+#[macro_use]
+extern crate if_chain;
 
 mod app;
 mod exec;
@@ -40,7 +43,7 @@ use regex::{RegexBuilder, RegexSetBuilder};
 use exec::CommandTemplate;
 use internal::{
     pattern_has_uppercase_char, print_error_and_exit, transform_args_with_exec, FdOptions,
-    FileTypes, SizeFilter,
+    FileTypes, SizeFilter, TimeFilter,
 };
 use lscolors::LsColors;
 
@@ -150,6 +153,22 @@ fn main() {
         })
         .unwrap_or_else(|| vec![]);
 
+    let mut modification_constraints: Vec<TimeFilter> = Vec::new();
+    if let Some(t) = matches.value_of("changed-within") {
+        if let Some(f) = TimeFilter::after(t) {
+            modification_constraints.push(f);
+        } else {
+            print_error_and_exit(&format!("Error: {} is not a valid time.", t));
+        }
+    }
+    if let Some(t) = matches.value_of("changed-before") {
+        if let Some(f) = TimeFilter::before(t) {
+            modification_constraints.push(f);
+        } else {
+            print_error_and_exit(&format!("Error: {} is not a valid time.", t));
+        }
+    }
+
     let config = FdOptions {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
@@ -226,6 +245,7 @@ fn main() {
             .map(|vs| vs.map(PathBuf::from).collect())
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
+        modification_constraints,
     };
 
     match RegexBuilder::new(&pattern_regex)
