@@ -6,19 +6,22 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+use ansi_term;
+use std::{
+    io::{self, Write},
+    ops::Deref,
+    path::{self, Component, Path, PathBuf},
+    process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
+
 use exit_codes::ExitCode;
 use fshelper::is_executable;
-use internal::FdOptions;
 use lscolors::LsColors;
-
-use std::io::{self, Write};
-use std::ops::Deref;
-use std::path::{self, Component, Path, PathBuf};
-use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-
-use ansi_term;
+use opts::FdOptions;
 
 /// Remove the `./` prefix from a path.
 fn strip_current_dir<'a>(pathbuf: &'a PathBuf) -> &'a Path {

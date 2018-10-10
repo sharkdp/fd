@@ -8,24 +8,27 @@
 
 extern crate ctrlc;
 
-use exec;
-use exit_codes::ExitCode;
-use fshelper;
-use internal::{print_error, print_error_and_exit, FdOptions, MAX_BUFFER_LENGTH};
-use output;
-
-use std::error::Error;
-use std::path::PathBuf;
-use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::channel;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time;
-
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::Regex;
+use std::{
+    error::Error,
+    path::PathBuf,
+    process,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::channel,
+        Arc, Mutex,
+    },
+    thread, time,
+};
+
+use exec;
+use exit_codes::ExitCode;
+use fshelper;
+use internal::{print_error, print_error_and_exit, MAX_BUFFER_LENGTH};
+use opts::FdOptions;
+use output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
