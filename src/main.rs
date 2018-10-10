@@ -25,24 +25,27 @@ mod exit_codes;
 pub mod fshelper;
 mod internal;
 pub mod lscolors;
+mod opts;
 mod output;
 mod walk;
 
-use std::env;
-use std::error::Error;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use std::time;
-
 use atty::Stream;
 use regex::{RegexBuilder, RegexSetBuilder};
+use std::{
+    env,
+    error::Error,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time,
+};
 
 use exec::CommandTemplate;
 use internal::{
-    pattern_has_uppercase_char, print_error_and_exit, transform_args_with_exec, FdOptions,
-    FileTypes, SizeFilter,
+    pattern_has_uppercase_char, print_error_and_exit, transform_args_with_exec, FileTypes,
+    SizeFilter,
 };
 use lscolors::LsColors;
+use opts::FdOptions;
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
