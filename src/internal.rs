@@ -108,23 +108,23 @@ pub enum TimeFilter {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
+    fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
         use humantime;
         humantime::parse_duration(s)
-            .map(|duration| SystemTime::now() - duration)
+            .map(|duration| *ref_time - duration)
             .or_else(|_| humantime::parse_rfc3339_weak(s))
             .ok()
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
-        Some(TimeFilter::Before(TimeFilter::from_str(s)?))
+    pub fn before(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
+        TimeFilter::from_str(ref_time, s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
-        Some(TimeFilter::After(TimeFilter::from_str(s)?))
+    pub fn after(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
+        TimeFilter::from_str(ref_time, s).map(TimeFilter::After)
     }
 
-    pub fn is_within(&self, t: &SystemTime) -> bool {
+    pub fn applies_to(&self, t: &SystemTime) -> bool {
         match self {
             TimeFilter::Before(limit) => t <= limit,
             TimeFilter::After(limit) => t >= limit,
@@ -196,7 +196,7 @@ pub struct FdOptions {
     pub size_constraints: Vec<SizeFilter>,
 
     /// Constraints on last modification time of files
-    pub modification_constraints: Vec<TimeFilter>,
+    pub time_constraints: Vec<TimeFilter>,
 }
 
 /// Print error message to stderr.
@@ -505,16 +505,65 @@ mod tests {
     }
 
     #[test]
-    fn is_time_within() {
-        let now = SystemTime::now();
-        assert!(TimeFilter::after("1min").unwrap().is_within(&now));
-        assert!(!TimeFilter::before("1min").unwrap().is_within(&now));
+    fn is_time_filter_applicable() {
+        use humantime;
 
-        let t1m_ago = SystemTime::now() - time::Duration::from_secs(60);
-        assert!(!TimeFilter::after("30sec").unwrap().is_within(&t1m_ago));
-        assert!(TimeFilter::after("2min").unwrap().is_within(&t1m_ago));
+        let ref_time = humantime::parse_rfc3339("2010-10-10T10:10:10Z").unwrap();
+        assert!(
+            TimeFilter::after(&ref_time, "1min")
+                .unwrap()
+                .applies_to(&ref_time)
+        );
+        assert!(
+            !TimeFilter::before(&ref_time, "1min")
+                .unwrap()
+                .applies_to(&ref_time)
+        );
 
-        assert!(TimeFilter::before("30sec").unwrap().is_within(&t1m_ago));
-        assert!(!TimeFilter::before("2min").unwrap().is_within(&t1m_ago));
+        let t1m_ago = ref_time - time::Duration::from_secs(60);
+        assert!(
+            !TimeFilter::after(&ref_time, "30sec")
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+        assert!(
+            TimeFilter::after(&ref_time, "2min")
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+
+        assert!(
+            TimeFilter::before(&ref_time, "30sec")
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+        assert!(
+            !TimeFilter::before(&ref_time, "2min")
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+
+        let t10s_before = "2010-10-10 10:10:00";
+        assert!(
+            !TimeFilter::before(&ref_time, t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
+        assert!(
+            TimeFilter::before(&ref_time, t10s_before)
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+
+        assert!(
+            TimeFilter::after(&ref_time, t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
+        assert!(
+            !TimeFilter::after(&ref_time, t10s_before)
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
     }
 }

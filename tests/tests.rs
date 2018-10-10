@@ -1125,31 +1125,32 @@ fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
 #[test]
 fn test_modified_relative() {
     let te = TestEnv::new(&[], &[]);
-    create_file_with_modified(te.test_root().join("0_now"), 0);
-    create_file_with_modified(te.test_root().join("1_min"), 60);
-    create_file_with_modified(te.test_root().join("10_min"), 600);
-    create_file_with_modified(te.test_root().join("1_h"), 60 * 60);
-    create_file_with_modified(te.test_root().join("2_h"), 2 * 60 * 60);
-    create_file_with_modified(te.test_root().join("1_day"), 24 * 60 * 60);
+    create_file_with_modified(te.test_root().join("foo_0_now"), 0);
+    create_file_with_modified(te.test_root().join("bar_1_min"), 60);
+    create_file_with_modified(te.test_root().join("foo_10_min"), 600);
+    create_file_with_modified(te.test_root().join("bar_1_h"), 60 * 60);
+    create_file_with_modified(te.test_root().join("foo_2_h"), 2 * 60 * 60);
+    create_file_with_modified(te.test_root().join("bar_1_day"), 24 * 60 * 60);
 
     te.assert_output(
         &["", "--changed-within", "15min"],
-        "0_now
-        1_min
-        10_min",
+        "foo_0_now
+        bar_1_min
+        foo_10_min",
     );
 
     te.assert_output(
         &["", "--changed-before", "15min"],
-        "1_h
-        2_h
-        1_day",
+        "bar_1_h
+        foo_2_h
+        bar_1_day",
     );
 
     te.assert_output(
-        &["min", "--changed-within", "12h"],
-        "1_min
-        10_min",
+        &["foo", "--changed-within", "12h"],
+        "foo_0_now
+        foo_10_min
+        foo_2_h",
     );
 }
 

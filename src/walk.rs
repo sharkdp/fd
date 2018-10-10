@@ -290,17 +290,20 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             // Filter out unwanted modification times
-            if !config.modification_constraints.is_empty() {
-                if_chain!{
-                    if entry_path.is_file();
-                    if let Ok(metadata) = entry_path.metadata();
-                    if let Ok(modified) = metadata.modified();
-                    if config.modification_constraints.iter().all(|tf| tf.is_within(&modified));
-                    then {
-                        // When all is good, we just continue with pattern match
-                    } else {
-                        return ignore::WalkState::Continue;
+            if !config.time_constraints.is_empty() {
+                let mut matched = false;
+                if entry_path.is_file() {
+                    if let Ok(metadata) = entry_path.metadata() {
+                        if let Ok(modified) = metadata.modified() {
+                            matched = config
+                                .time_constraints
+                                .iter()
+                                .all(|tf| tf.applies_to(&modified));
+                        }
                     }
+                }
+                if !matched {
+                    return ignore::WalkState::Continue;
                 }
             }
 

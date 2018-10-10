@@ -19,8 +19,6 @@ extern crate libc;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
-#[macro_use]
-extern crate if_chain;
 
 mod app;
 mod exec;
@@ -153,17 +151,18 @@ fn main() {
         })
         .unwrap_or_else(|| vec![]);
 
-    let mut modification_constraints: Vec<TimeFilter> = Vec::new();
+    let now = time::SystemTime::now();
+    let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(t) = matches.value_of("changed-within") {
-        if let Some(f) = TimeFilter::after(t) {
-            modification_constraints.push(f);
+        if let Some(f) = TimeFilter::after(&now, t) {
+            time_constraints.push(f);
         } else {
             print_error_and_exit(&format!("Error: {} is not a valid time.", t));
         }
     }
     if let Some(t) = matches.value_of("changed-before") {
-        if let Some(f) = TimeFilter::before(t) {
-            modification_constraints.push(f);
+        if let Some(f) = TimeFilter::before(&now, t) {
+            time_constraints.push(f);
         } else {
             print_error_and_exit(&format!("Error: {} is not a valid time.", t));
         }
@@ -245,7 +244,7 @@ fn main() {
             .map(|vs| vs.map(PathBuf::from).collect())
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
-        modification_constraints,
+        time_constraints,
     };
 
     match RegexBuilder::new(&pattern_regex)
