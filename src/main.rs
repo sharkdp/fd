@@ -42,8 +42,9 @@ use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
 use internal::{
-    pattern_has_uppercase_char, transform_args_with_exec, FdOptions, FileTypes, SizeFilter,
-    TimeFilter,
+    filter::{SizeFilter, TimeFilter},
+    opts::FdOptions,
+    pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
 use lscolors::LsColors;
 
