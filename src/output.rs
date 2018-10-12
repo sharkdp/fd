@@ -8,7 +8,7 @@
 
 use exit_codes::ExitCode;
 use fshelper::is_executable;
-use internal::FdOptions;
+use internal::opts::FdOptions;
 use lscolors::LsColors;
 
 use std::io::{self, Write};

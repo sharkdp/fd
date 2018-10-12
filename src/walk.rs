@@ -11,7 +11,7 @@ extern crate ctrlc;
 use exec;
 use exit_codes::ExitCode;
 use fshelper;
-use internal::{FdOptions, MAX_BUFFER_LENGTH};
+use internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
 use output;
 
 use std::error::Error;
