@@ -53,3 +53,7 @@ libc = "0.2"
 diff = "0.1"
 tempdir = "0.3"
 filetime = "0.2.1"
+
+[profile.release]
+lto = true
+codegen-units = 1
