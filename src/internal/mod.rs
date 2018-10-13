@@ -99,79 +99,74 @@ where
 mod tests {
     use super::*;
 
-    fn oss(v: &str) -> OsString {
-        OsString::from(v)
+    fn oss_vec(strs: &[&str]) -> Vec<OsString> {
+        strs.into_iter().map(OsString::from).collect()
     }
 
     /// Ensure that -exec gets transformed into --exec
     #[test]
     fn normal_exec_substitution() {
-        let original = vec![oss("fd"), oss("foo"), oss("-exec"), oss("cmd")];
-        let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
-
+        let original = oss_vec(&["fd", "foo", "-exec", "cmd"]);
+        let expected = oss_vec(&["fd", "foo", "--exec", "cmd"]);
         let actual = transform_args_with_exec(original.into_iter());
         assert_eq!(expected, actual);
     }
-
     /// Ensure that --exec is not touched
     #[test]
     fn passthru_of_original_exec() {
-        let original = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
-        let expected = vec![oss("fd"), oss("foo"), oss("--exec"), oss("cmd")];
-
+        let original = oss_vec(&["fd", "foo", "--exec", "cmd"]);
+        let expected = oss_vec(&["fd", "foo", "--exec", "cmd"]);
         let actual = transform_args_with_exec(original.into_iter());
         assert_eq!(expected, actual);
     }
-
     #[test]
     fn temp_check_that_exec_context_observed() {
-        let original = vec![
-            oss("fd"),
-            oss("foo"),
-            oss("-exec"),
-            oss("cmd"),
-            oss("-exec"),
-            oss("ls"),
-            oss(";"),
-            oss("-exec"),
-            oss("rm"),
-            oss(";"),
-            oss("--exec"),
-            oss("find"),
-            oss("-exec"),
-            oss("rm"),
-            oss(";"),
-            oss("-x"),
-            oss("foo"),
-            oss("-exec"),
-            oss("something"),
-            oss(";"),
-            oss("-exec"),
-        ];
-        let expected = vec![
-            oss("fd"),
-            oss("foo"),
-            oss("--exec"),
-            oss("cmd"),
-            oss("-exec"),
-            oss("ls"),
-            oss(";"),
-            oss("--exec"),
-            oss("rm"),
-            oss(";"),
-            oss("--exec"),
-            oss("find"),
-            oss("-exec"),
-            oss("rm"),
-            oss(";"),
-            oss("-x"),
-            oss("foo"),
-            oss("-exec"),
-            oss("something"),
-            oss(";"),
-            oss("--exec"),
-        ];
-
+        let original = oss_vec(&[
+            "fd",
+            "foo",
+            "-exec",
+            "cmd",
+            "-exec",
+            "ls",
+            ";",
+            "-exec",
+            "rm",
+            ";",
+            "--exec",
+            "find",
+            "-exec",
+            "rm",
+            ";",
+            "-x",
+            "foo",
+            "-exec",
+            "something",
+            ";",
+            "-exec",
+        ]);
+        let expected = oss_vec(&[
+            "fd",
+            "foo",
+            "--exec",
+            "cmd",
+            "-exec",
+            "ls",
+            ";",
+            "--exec",
+            "rm",
+            ";",
+            "--exec",
+            "find",
+            "-exec",
+            "rm",
+            ";",
+            "-x",
+            "foo",
+            "-exec",
+            "something",
+            ";",
+            "--exec",
+        ]);
         let actual = transform_args_with_exec(original.into_iter());
         assert_eq!(expected, actual);
     }
