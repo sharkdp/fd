@@ -140,6 +140,8 @@ If you run Debian sid (and soon Debian Buster), fd is
 $ sudo apt-get install fd-find
 ```
 The binary is called `fdfind` as the binary name `fd` is already used by another package.
+It is recommended that you add an `alias fd=fdfind` to your shells initialization file,
+in order to use `fd` in the same way as in this documentation.
 
 ### On Fedora
 
