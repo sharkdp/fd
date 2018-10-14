@@ -132,7 +132,7 @@ Download the latest `.deb` package from the [release page](https://github.com/sh
 sudo dpkg -i fd_7.0.0_amd64.deb  # adapt version number and architecture
 ```
 
-### On Ubuntu
+### On Debian
 
 If you run Debian sid (and soon Debian Buster), fd is
 [officially maintained by Debian](https://tracker.debian.org/pkg/rust-fd-find).
