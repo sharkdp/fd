@@ -132,6 +132,15 @@ Download the latest `.deb` package from the [release page](https://github.com/sh
 sudo dpkg -i fd_7.0.0_amd64.deb  # adapt version number and architecture
 ```
 
+### On Ubuntu
+
+If you run Debian sid (and soon Debian Buster), fd is
+[officially maintained by Debian](https://tracker.debian.org/pkg/rust-fd-find).
+```
+$ sudo apt-get install fd-find
+```
+The binary is called `fdfind` as the binary name `fd` is already used by another package.
+
 ### On Fedora
 
 Starting with Fedora 28, you can install `fd` from the official package sources:
