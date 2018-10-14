@@ -137,7 +137,7 @@ sudo dpkg -i fd_7.0.0_amd64.deb  # adapt version number and architecture
 If you run Debian sid (and soon Debian Buster), fd is
 [officially maintained by Debian](https://tracker.debian.org/pkg/rust-fd-find).
 ```
-$ sudo apt-get install fd-find
+sudo apt-get install fd-find
 ```
 The binary is called `fdfind` as the binary name `fd` is already used by another package.
 It is recommended that you add an `alias fd=fdfind` to your shells initialization file,
