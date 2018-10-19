@@ -42,61 +42,41 @@ mod tests {
         use humantime;
 
         let ref_time = humantime::parse_rfc3339("2010-10-10T10:10:10Z").unwrap();
-        assert!(
-            TimeFilter::after(&ref_time, "1min")
-                .unwrap()
-                .applies_to(&ref_time)
-        );
-        assert!(
-            !TimeFilter::before(&ref_time, "1min")
-                .unwrap()
-                .applies_to(&ref_time)
-        );
+        assert!(TimeFilter::after(&ref_time, "1min")
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::before(&ref_time, "1min")
+            .unwrap()
+            .applies_to(&ref_time));
 
         let t1m_ago = ref_time - Duration::from_secs(60);
-        assert!(
-            !TimeFilter::after(&ref_time, "30sec")
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
-        assert!(
-            TimeFilter::after(&ref_time, "2min")
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
+        assert!(!TimeFilter::after(&ref_time, "30sec")
+            .unwrap()
+            .applies_to(&t1m_ago));
+        assert!(TimeFilter::after(&ref_time, "2min")
+            .unwrap()
+            .applies_to(&t1m_ago));
 
-        assert!(
-            TimeFilter::before(&ref_time, "30sec")
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
-        assert!(
-            !TimeFilter::before(&ref_time, "2min")
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
+        assert!(TimeFilter::before(&ref_time, "30sec")
+            .unwrap()
+            .applies_to(&t1m_ago));
+        assert!(!TimeFilter::before(&ref_time, "2min")
+            .unwrap()
+            .applies_to(&t1m_ago));
 
         let t10s_before = "2010-10-10 10:10:00";
-        assert!(
-            !TimeFilter::before(&ref_time, t10s_before)
-                .unwrap()
-                .applies_to(&ref_time)
-        );
-        assert!(
-            TimeFilter::before(&ref_time, t10s_before)
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
+        assert!(!TimeFilter::before(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(TimeFilter::before(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&t1m_ago));
 
-        assert!(
-            TimeFilter::after(&ref_time, t10s_before)
-                .unwrap()
-                .applies_to(&ref_time)
-        );
-        assert!(
-            !TimeFilter::after(&ref_time, t10s_before)
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
+        assert!(TimeFilter::after(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::after(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&t1m_ago));
     }
 }
