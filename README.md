@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 [![Build status](https://ci.appveyor.com/api/projects/status/21c4p5fwggc5gy3j?svg=true)](https://ci.appveyor.com/project/sharkdp/fd)
 [![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
-[中文](https://github.com/chinanf-boy/fd-zh)
+[🇨🇳](https://github.com/chinanf-boy/fd-zh)
 
 *fd* is a simple, fast and user-friendly alternative to
 [*find*](https://www.gnu.org/software/findutils/).
