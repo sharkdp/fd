@@ -240,10 +240,11 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     if (!file_types.files && entry_type.is_file())
                         || (!file_types.directories && entry_type.is_dir())
                         || (!file_types.symlinks && entry_type.is_symlink())
-                        || (file_types.executables_only && !entry
-                            .metadata()
-                            .map(|m| fshelper::is_executable(&m))
-                            .unwrap_or(false))
+                        || (file_types.executables_only
+                            && !entry
+                                .metadata()
+                                .map(|m| fshelper::is_executable(&m))
+                                .unwrap_or(false))
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
                     {
                         return ignore::WalkState::Continue;
