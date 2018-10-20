@@ -183,6 +183,14 @@ pub fn build_app() -> App<'static, 'static> {
         )
         .arg(arg("pattern"))
         .arg(arg("path").multiple(true))
+        .arg(
+            arg("search-path")
+                .long("search-path")
+                .takes_value(true)
+                .conflicts_with("path")
+                .multiple(true)
+                .number_of_values(1),
+        )
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -314,5 +322,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit results based on modification time within the duration provided:\n    \
              using a duration: <NUM>d <NUM>h <NUM>m <NUM>s (e.g. 10h, 1d, 35min...)\n    \
              or a date and time: YYYY-MM-DD HH:MM:SS");
+    doc!(h, "search-path"
+        , "Provide paths to search as flag arguments rather than positional arguments."
+        , "Provide paths to search as flag arguments, preventing the usage of any positional `path` arugments.\n\
+           Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`");
     h
 }
