@@ -181,6 +181,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .number_of_values(1),
         )
+        .arg(arg("show-errors").long("show-errors"))
         .arg(arg("pattern"))
         .arg(arg("path").multiple(true))
         .arg(
@@ -322,6 +323,10 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Limit results based on modification time within the duration provided:\n    \
              using a duration: <NUM>d <NUM>h <NUM>m <NUM>s (e.g. 10h, 1d, 35min...)\n    \
              or a date and time: YYYY-MM-DD HH:MM:SS");
+    doc!(h, "show-errors"
+        , "Enable display of filesystem errors"
+        , "Enable the display of filesystem errors for situations such as insufficient permissions \
+            or dead symlinks.");
     doc!(h, "search-path"
         , "Provide paths to search as flag arguments rather than positional arguments."
         , "Provide paths to search as flag arguments, preventing the usage of any positional `path` arugments.\n\
