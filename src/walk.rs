@@ -55,6 +55,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .expect("Error: Path vector can not be empty");
     let (tx, rx) = channel();
     let threads = config.threads;
+    let show_filesystem_errors = config.show_filesystem_errors;
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -143,7 +144,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 let out_perm = Arc::clone(&out_perm);
 
                 // Spawn a job thread that will listen for and execute inputs.
-                let handle = thread::spawn(move || exec::job(rx, cmd, out_perm));
+                let handle =
+                    thread::spawn(move || exec::job(rx, cmd, out_perm, show_filesystem_errors));
 
                 // Push the handle of the spawned thread into the vector for later joining.
                 handles.push(handle);
@@ -193,7 +195,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                         }
                     }
                     WorkerResult::Error(err) => {
-                        print_error!("{}", err);
+                        if show_filesystem_errors {
+                            print_error!("{}", err);
+                        }
                     }
                 }
             }

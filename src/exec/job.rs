@@ -19,6 +19,7 @@ pub fn job(
     rx: Arc<Mutex<Receiver<WorkerResult>>>,
     cmd: Arc<CommandTemplate>,
     out_perm: Arc<Mutex<()>>,
+    show_filesystem_errors: bool,
 ) {
     loop {
         // Create a lock on the shared receiver for this thread.
@@ -29,7 +30,9 @@ pub fn job(
         let value: PathBuf = match lock.recv() {
             Ok(WorkerResult::Entry(val)) => val,
             Ok(WorkerResult::Error(err)) => {
-                print_error!("{}", err);
+                if show_filesystem_errors {
+                    print_error!("{}", err);
+                }
                 continue;
             }
             Err(_) => break,

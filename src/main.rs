@@ -253,6 +253,7 @@ fn main() {
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
         time_constraints,
+        show_filesystem_errors: matches.is_present("show-errors"),
     };
 
     match RegexBuilder::new(&pattern_regex)

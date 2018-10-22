@@ -72,4 +72,7 @@ pub struct FdOptions {
 
     /// Constraints on last modification time of files
     pub time_constraints: Vec<TimeFilter>,
+
+    /// Whether or not to display filesystem errors
+    pub show_filesystem_errors: bool,
 }
