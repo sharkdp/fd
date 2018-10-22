@@ -284,7 +284,7 @@ fn usage() -> HashMap<&'static str, Help> {
            CPU cores)");
     doc!(h, "max-buffer-time"
         , "the time (in ms) to buffer, before streaming to the console"
-        , "Amount of time in milliseconds to buffer, before streaming the search results to\
+        , "Amount of time in milliseconds to buffer, before streaming the search results to \
            the console.");
     doc!(h, "pattern"
         , "the search pattern, a regular expression (optional)");
