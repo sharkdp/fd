@@ -1140,7 +1140,7 @@ fn test_modified_relative() {
     );
 
     te.assert_output(
-        &["", "--changed-before", "15min"],
+        &["", "--change-older-than", "15min"],
         "bar_1_h
         foo_2_h
         bar_1_day",
@@ -1168,7 +1168,7 @@ fn test_modified_asolute() {
     change_file_modified(te.test_root().join("30dec2017"), "2017-12-30T23:59:00Z");
 
     te.assert_output(
-        &["", "--changed-within", "2018-01-01 00:00:00"],
+        &["", "--change-newer-than", "2018-01-01 00:00:00"],
         "15mar2018",
     );
     te.assert_output(

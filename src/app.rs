@@ -172,13 +172,17 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             arg("changed-within")
                 .long("changed-within")
+                .alias("change-newer-than")
                 .takes_value(true)
+                .value_name("date|dur")
                 .number_of_values(1),
         )
         .arg(
             arg("changed-before")
                 .long("changed-before")
+                .alias("change-older-than")
                 .takes_value(true)
+                .value_name("date|dur")
                 .number_of_values(1),
         )
         .arg(arg("show-errors").long("show-errors"))
@@ -313,16 +317,22 @@ fn usage() -> HashMap<&'static str, Help> {
                 'mi': mebibytes\n   \
                 'gi': gibibytes\n   \
                 'ti': tebibytes");
-    doc!(h, "changed-before"
-        , "Limit results based on modification time older than duration or date provided."
-        , "Limit results based on modification time older than duration provided:\n    \
-             using a duration: <NUM>d <NUM>h <NUM>m <NUM>s (e.g. 10h, 1d, 35min...)\n    \
-             or a date and time: YYYY-MM-DD HH:MM:SS");
     doc!(h, "changed-within"
-        , "Limit results based on modification time within the duration provided or between date provided and now."
-        , "Limit results based on modification time within the duration provided:\n    \
-             using a duration: <NUM>d <NUM>h <NUM>m <NUM>s (e.g. 10h, 1d, 35min...)\n    \
-             or a date and time: YYYY-MM-DD HH:MM:SS");
+        , "Filter by file modification time (newer than)"
+        , "Filter results based on the file modification time. The argument can be provided \
+           as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+           '--change-newer-than' can be used as an alias.\n\
+           Examples:\n    \
+               --changed-within 2weeks\n    \
+               --change-newer-than '2018-10-27 10:00:00'");
+    doc!(h, "changed-before"
+        , "Filter by file modification time (older than)"
+        , "Filter results based on the file modification time. The argument can be provided \
+           as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+           '--change-older-than' can be used as an alias.\n\
+           Examples:\n    \
+               --changed-before '2018-10-27 10:00:00'\n    \
+               --change-older-than 2weeks");
     doc!(h, "show-errors"
         , "Enable display of filesystem errors"
         , "Enable the display of filesystem errors for situations such as insufficient permissions \
