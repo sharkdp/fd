@@ -72,7 +72,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let mut walker = WalkBuilder::new(first_path_buf.as_path());
     walker
         .hidden(config.ignore_hidden)
-        .ignore(true)
+        .ignore(config.read_fdignore)
         .parents(config.read_fdignore || config.read_vcsignore)
         .git_ignore(config.read_vcsignore)
         .git_global(config.read_vcsignore)
