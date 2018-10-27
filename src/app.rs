@@ -136,7 +136,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("path")
                 .number_of_values(1)
-                .multiple(true),
+                .multiple(true)
+                .hidden_short_help(true),
         )
         .arg(
             arg("color")
@@ -152,7 +153,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("threads")
                 .short("j")
                 .takes_value(true)
-                .value_name("num"),
+                .value_name("num")
+                .hidden_short_help(true),
         )
         .arg(
             arg("size")
@@ -185,7 +187,11 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("date|dur")
                 .number_of_values(1),
         )
-        .arg(arg("show-errors").long("show-errors"))
+        .arg(
+            arg("show-errors")
+                .long("show-errors")
+                .hidden_short_help(true),
+        )
         .arg(arg("pattern"))
         .arg(arg("path").multiple(true))
         .arg(
@@ -194,6 +200,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .conflicts_with("path")
                 .multiple(true)
+                .hidden_short_help(true)
                 .number_of_values(1),
         )
 }
@@ -338,8 +345,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Enable the display of filesystem errors for situations such as insufficient permissions \
             or dead symlinks.");
     doc!(h, "search-path"
-        , "Provide paths to search as flag arguments rather than positional arguments."
-        , "Provide paths to search as flag arguments, preventing the usage of any positional `path` arugments.\n\
+        , "(hidden)"
+        , "Provide paths to search as an alternative to the positional <path> argument. \
            Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`");
     h
 }
