@@ -405,6 +405,7 @@ To make exclude-patterns like these permanent, you can create a `.fdignore` file
 /mnt/external-drive
 *.bak
 ```
+Note: `fd` also supports `.ignore` files that are used by other programs such as `rg` or `ag`.
 
 ### Using fd with `xargs` or `parallel`
 

@@ -215,7 +215,7 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "no-ignore"
         , "Do not respect .(git|fd)ignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
-            '.gitignore' or '.fdignore' files.");
+            '.gitignore', '.ignore' or '.fdignore' files.");
     doc!(h, "no-ignore-vcs"
         , "Do not respect .gitignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
