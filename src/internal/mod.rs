@@ -17,7 +17,7 @@ pub mod filter;
 pub mod opts;
 
 macro_rules! print_error {
-    ($($arg:tt)*) => (eprintln!($($arg)*))
+    ($($arg:tt)*) => (eprintln!("[fd error]: {}", format!($($arg)*)))
 }
 
 macro_rules! print_error_and_exit {

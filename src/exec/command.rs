@@ -30,10 +30,10 @@ pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
             let _ = stderr.lock().write_all(&output.stderr);
         }
         Err(ref why) if why.kind() == io::ErrorKind::NotFound => {
-            print_error!("fd: execution error: command not found");
+            print_error!("Command not found: {:?}", cmd);
         }
         Err(why) => {
-            print_error!("fd: execution error: {}", why);
+            print_error!("Problem while executing command: {}", why);
         }
     }
 }

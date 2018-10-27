@@ -58,7 +58,7 @@ fn main() {
     // Get the current working directory
     let current_dir = Path::new(".");
     if !fshelper::is_dir(current_dir) {
-        print_error_and_exit!("Error: could not get current directory.");
+        print_error_and_exit!("Could not get current directory.");
     }
 
     // Get one or more root directories to search.
@@ -71,7 +71,7 @@ fn main() {
                 let path_buffer = PathBuf::from(path);
                 if !fshelper::is_dir(&path_buffer) {
                     print_error_and_exit!(
-                        "Error: '{}' is not a directory.",
+                        "'{}' is not a directory.",
                         path_buffer.to_string_lossy()
                     );
                 }
@@ -99,7 +99,7 @@ fn main() {
         && fshelper::is_dir(Path::new(pattern))
     {
         print_error_and_exit!(
-            "Error: The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
@@ -151,7 +151,7 @@ fn main() {
                 if let Some(f) = SizeFilter::from_string(sf) {
                     return f;
                 }
-                print_error_and_exit!("Error: {} is not a valid size constraint.", sf);
+                print_error_and_exit!("'{}' is not a valid size constraint. See 'fd --help'.", sf);
             })
             .collect()
         })
@@ -163,14 +163,14 @@ fn main() {
         if let Some(f) = TimeFilter::after(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit!("Error: {} is not a valid time.", t);
+            print_error_and_exit!("'{}' is not a valid date or duration. See 'fd --help'.", t);
         }
     }
     if let Some(t) = matches.value_of("changed-before") {
         if let Some(f) = TimeFilter::before(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit!("Error: {} is not a valid time.", t);
+            print_error_and_exit!("'{}' is not a valid date or duration. See 'fd --help'.", t);
         }
     }
 
