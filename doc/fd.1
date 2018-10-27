@@ -27,42 +27,53 @@ is a simple, fast and user-friendly alternative to
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
-Include hidden files and directories in the search results.
+Include hidden files and directories in the search results
+(default: hidden files and directories are skipped).
 .TP
 .B \-I, \-\-no\-ignore
-Do not respect files like
-.I .gitignore
-and
+Show search results from files and directories that would otherwise be ignored by
+.IR .gitignore ,
+.I .ignore
+or
 .I .fdignore
-and include ignored files in the search results.
+files.
 .TP
 .B \-\-no\-ignore\-vcs
-Do not respect version control ignore files like
-.I ".gitignore"
-and include the respective entries in the search results.
+Show search results from files and directories that would otherwise be ignored by
+.I .gitignore
+files.
 .TP
 .B \-s, \-\-case\-sensitive
-Perform a case-sensitive search (default: smart case).
+Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
+pattern contains an uppercase character (smart case).
 .TP
 .B \-i, \-\-ignore\-case
-Perform a case-insensitive search (default: smart case).
+Perform a case-insensitive search. By default, fd uses case-insensitive searches, unless the
+pattern contains an uppercase character (smart case).
 .TP
 .B \-F, \-\-fixed\-strings
 Treat the pattern as a literal string instead of a regular expression.
 .TP
 .B \-a, \-\-absolute\-path
-Show absolute instead of relative paths.
+Shows the full path starting from the root as opposed to relative paths.
 .TP
 .B \-L, \-\-follow
-Dereference all symbolic links encountered.
+By default, fd does not descend into symlinked directories. Using this flag, symbolic links are
+also traversed.
 .TP
 .B \-p, \-\-full\-path
-Match the
+By default, the search pattern is only matched against the filename (or directory name). Using
+this flag, the
 .I pattern
-against the full path instead of just the file or directory name.
+is matched against the full path.
 .TP
 .B \-0, \-\-print0
-Separate search results by null characters instead of newlines.
+Separate search results by the null character (instead of newlines). Useful for piping results to
+.IR xargs .
+.TP
+.B \-\-show-errors
+Enable the display of filesystem errors for situations such as insufficient
+permissions or dead symlinks.
 .TP
 .B \-h, \-\-help
 Print help information.
@@ -158,6 +169,26 @@ gibibytes
 tebibytes
 .RE
 .RE
+.TP
+.BI "\-\-changed-within " date|duration
+Filter results based on the file modification time. The argument can be provided as a specific
+point in time (\fIYYYY-MM-DD HH:MM:SS\fR) or as a duration (\fI10h, 1d, 35min\fR).
+.B --change-newer-than
+can be used as an alias.
+
+Examples:
+  \-\-changed-within 2weeks
+  \-\-change-newer-than "2018-10-27 10:00:00"
+.TP
+.BI "\-\-changed-before " date|duration
+Filter results based on the file modification time. The argument can be provided as a specific
+point in time (\fIYYYY-MM-DD HH:MM:SS\fR) or as a duration (\fI10h, 1d, 35min\fR).
+.B --change-older-than
+can be used as an alias.
+
+Examples:
+  \-\-changed-before "2018-10-27 10:00:00"
+  \-\-change-older-than 2weeks
 .TP
 .BI "\-x, \-\-exec " command "\fR [args...] ;"
 Execute
