@@ -25,6 +25,11 @@ matrix:
       env:
         - TARGET=arm-unknown-linux-gnueabihf
         - CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc-4.8
+    - os: linux
+      rust: stable
+      env:
+        - TARGET=arm-unknown-linux-musleabihf
+        - CARGO_TARGET_ARM_UNKNOWN_LINUX_MUSLEABIHF_LINKER=arm-linux-gnueabihf-gcc-4.8
 
     # Beta channel.
     - os: linux

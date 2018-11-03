@@ -6,6 +6,6 @@ set -ex
 cargo build --target "$TARGET" --verbose
 
 # We cannot run arm executables on linux
-if [[ $TARGET != arm-unknown-linux-gnueabihf ]]; then
+if [[ $TARGET != arm-unknown-linux-* ]]; then
     cargo test --target "$TARGET" --verbose
 fi

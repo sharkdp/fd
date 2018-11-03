@@ -17,7 +17,7 @@ if [[ $TARGET == i686-unknown-linux-gnu ]]; then
 fi
 
 # needed for cross-compiling for arm
-if [[ $TARGET == arm-unknown-linux-gnueabihf ]]; then
+if [[ $TARGET == arm-unknown-linux-* ]]; then
     sudo apt-get install -y \
         gcc-4.8-arm-linux-gnueabihf \
         binutils-arm-linux-gnueabihf \
