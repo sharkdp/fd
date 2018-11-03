@@ -17,7 +17,7 @@ pack() {
     out_dir=$(pwd)
     package_name="$PROJECT_NAME-$TRAVIS_TAG-$TARGET"
 
-    if [[ $TARGET == "arm-unknown-linux-gnueabihf" ]]; then
+    if [[ $TARGET == arm-unknown-linux-* ]]; then
         gcc_prefix="arm-linux-gnueabihf-"
     else
         gcc_prefix=""
