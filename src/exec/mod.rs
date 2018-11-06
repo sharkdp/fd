@@ -91,7 +91,7 @@ impl CommandTemplate {
             args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        CommandTemplate { args: args }
+        CommandTemplate { args }
     }
 
     /// Generates and executes a command.
