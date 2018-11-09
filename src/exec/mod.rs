@@ -217,4 +217,21 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn tokens_multiple() {
+        assert_eq!(
+            CommandTemplate::new(&["cp", "{}", "{/.}.ext"]),
+            CommandTemplate {
+                args: vec![
+                    ArgumentTemplate::Text("cp".into()),
+                    ArgumentTemplate::Tokens(vec![Token::Placeholder]),
+                    ArgumentTemplate::Tokens(vec![
+                        Token::BasenameNoExt,
+                        Token::Text(".ext".into())
+                    ]),
+                ],
+            }
+        );
+    }
 }
