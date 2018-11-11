@@ -32,6 +32,9 @@ pub struct TestEnv {
 
     /// Path to the *fd* executable.
     fd_exe: PathBuf,
+
+    /// Normalize each line by splitting and sorting by whitespace as well
+    normalize_line: bool,
 }
 
 /// Create the working directory and the test files.
@@ -121,19 +124,24 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
 }
 
 /// Normalize the output for comparison.
-fn normalize_output(s: &str, trim_left: bool) -> String {
+fn normalize_output(s: &str, trim_left: bool, normalize_line: bool) -> String {
     // Split into lines and normalize separators.
     let mut lines = s
         .replace('\0', "NULL\n")
         .lines()
         .map(|line| {
             let line = if trim_left { line.trim_left() } else { line };
-            line.replace('/', &std::path::MAIN_SEPARATOR.to_string())
+            let line = line.replace('/', &std::path::MAIN_SEPARATOR.to_string());
+            if normalize_line {
+                let mut worlds: Vec<_> = line.split_whitespace().collect();
+                worlds.sort();
+                return worlds.join(" ");
+            }
+            line
         })
         .collect::<Vec<_>>();
 
-    lines.sort_by_key(|s| s.clone());
-
+    lines.sort();
     lines.join("\n")
 }
 
@@ -143,8 +151,17 @@ impl TestEnv {
         let fd_exe = find_fd_exe();
 
         TestEnv {
-            temp_dir: temp_dir,
-            fd_exe: fd_exe,
+            temp_dir,
+            fd_exe,
+            normalize_line: false,
+        }
+    }
+
+    pub fn normalize_line(self, normalize: bool) -> TestEnv {
+        TestEnv {
+            temp_dir: self.temp_dir,
+            fd_exe: self.fd_exe,
+            normalize_line: normalize,
         }
     }
 
@@ -186,11 +203,46 @@ impl TestEnv {
         }
 
         // Normalize both expected and actual output.
-        let expected = normalize_output(expected, true);
-        let actual = normalize_output(&String::from_utf8_lossy(&output.stdout), false);
+        let expected = normalize_output(expected, true, self.normalize_line);
+        let actual = normalize_output(
+            &String::from_utf8_lossy(&output.stdout),
+            false,
+            self.normalize_line,
+        );
 
         // Compare actual output to expected output.
         if expected != actual {
+            panic!(format_output_error(args, &expected, &actual));
+        }
+    }
+
+    /// Assert that calling *fd* with the specified arguments produces the expected error.
+    pub fn assert_error(&self, args: &[&str], expected: &str) {
+        self.assert_error_subdirectory(".", args, expected)
+    }
+
+    /// Assert that calling *fd* in the specified path under the root working directory,
+    /// and with the specified arguments produces an error with the expected message.
+    fn assert_error_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) {
+        // Setup *fd* command.
+        let mut cmd = process::Command::new(&self.fd_exe);
+        cmd.current_dir(self.temp_dir.path().join(path));
+        cmd.args(args);
+
+        // Run *fd*.
+        let output = cmd.output().expect("fd output");
+
+        // Check for exit status.
+        if output.status.success() {
+            panic!(
+                "fd exited successfully. Expected error {} did not occur.",
+                expected
+            );
+        }
+
+        // Compare actual output to expected output.
+        let actual = String::from_utf8_lossy(&output.stderr);
+        if expected.len() <= actual.len() && expected != &actual[..expected.len()] {
             panic!(format_output_error(args, &expected, &actual));
         }
     }

@@ -987,6 +987,57 @@ fn assert_exec_output(exec_style: &str) {
     }
 }
 
+/// Shell script execution using -exec
+#[test]
+fn test_exec_batch() {
+    assert_exec_batch_output("--exec-batch");
+}
+
+// Shell script execution using -x
+#[test]
+fn test_exec_batch_short_arg() {
+    assert_exec_batch_output("-X");
+}
+
+#[cfg(test)]
+fn assert_exec_batch_output(exec_style: &str) {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let te = te.normalize_line(true);
+
+    // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
+    if !cfg!(windows) {
+        te.assert_output(
+            &["--absolute-path", "foo", exec_style, "echo"],
+            &format!(
+                "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo",
+                abs_path = &abs_path
+            ),
+        );
+
+        te.assert_output(
+            &["foo", exec_style, "echo", "{}"],
+            "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", exec_style, "echo", "{/}"],
+            "a.foo b.foo C.Foo2 c.foo d.foo directory_foo",
+        );
+
+        te.assert_output(&["no_match", exec_style, "echo", "Matched: ", "{/}"], "");
+
+        te.assert_error(
+            &["foo", exec_style, "echo", "{}", "{}"],
+            "[fd error]: Only one placeholder allowed for batch commands",
+        );
+
+        te.assert_error(
+            &["foo", exec_style, "echo", "{/}", ";", "-x", "echo"],
+            "error: The argument '--exec <cmd>' cannot be used with '--exec-batch <cmd>'",
+        );
+    }
+}
+
 /// Literal search (--fixed-strings)
 #[test]
 fn test_fixed_strings() {

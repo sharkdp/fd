@@ -9,10 +9,10 @@
 use std::io;
 use std::io::Write;
 use std::process::Command;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 /// Executes a command.
-pub fn execute_command(mut cmd: Command, out_perm: Arc<Mutex<()>>) {
+pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) {
     // Spawn the supplied command.
     let output = cmd.output();
 
