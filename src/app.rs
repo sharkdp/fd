@@ -122,6 +122,16 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("cmd"),
         )
         .arg(
+            arg("exec-batch")
+                .long("exec-batch")
+                .short("X")
+                .min_values(1)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                .conflicts_with("exec"),
+        )
+        .arg(
             arg("exclude")
                 .long("exclude")
                 .short("E")
@@ -272,6 +282,18 @@ fn usage() -> HashMap<&'static str, Help> {
            argument ';' is encountered.\n\
            Each occurrence of the following placeholders is substituted by a path derived from the \
            current search result before the command is executed:\n  \
+             '{}':   path\n  \
+             '{/}':  basename\n  \
+             '{//}': parent directory\n  \
+             '{.}':  path without file extension\n  \
+             '{/.}': basename without file extension");
+    doc!(h, "exec-batch"
+        , "Execute a command with all search results at once"
+        , "Execute a command with all search results at once.\n\
+           All arguments following --exec-batch are taken to be arguments to the command until the \
+           argument ';' is encountered.\n\
+           A single occurence of the following placeholders is authorized and substituted by the paths derived from the \
+           search results before the command is executed:\n  \
              '{}':   path\n  \
              '{/}':  basename\n  \
              '{//}': parent directory\n  \

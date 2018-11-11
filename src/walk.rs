@@ -126,34 +126,38 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
-            let shared_rx = Arc::new(Mutex::new(rx));
+            if cmd.is_batch() {
+                exec::batch(rx, cmd, show_filesystem_errors);
+            } else {
+                let shared_rx = Arc::new(Mutex::new(rx));
 
-            let out_perm = Arc::new(Mutex::new(()));
+                let out_perm = Arc::new(Mutex::new(()));
 
-            // TODO: the following line is a workaround to replace the `unsafe` block that was
-            // previously used here to avoid the (unnecessary?) cloning of the command. The
-            // `unsafe` block caused problems on some platforms (SIGILL instructions on Linux) and
-            // therefore had to be removed.
-            let cmd = Arc::new(cmd.clone());
+                // TODO: the following line is a workaround to replace the `unsafe` block that was
+                // previously used here to avoid the (unnecessary?) cloning of the command. The
+                // `unsafe` block caused problems on some platforms (SIGILL instructions on Linux) and
+                // therefore had to be removed.
+                let cmd = Arc::new(cmd.clone());
 
-            // Each spawned job will store it's thread handle in here.
-            let mut handles = Vec::with_capacity(threads);
-            for _ in 0..threads {
-                let rx = Arc::clone(&shared_rx);
-                let cmd = Arc::clone(&cmd);
-                let out_perm = Arc::clone(&out_perm);
+                // Each spawned job will store it's thread handle in here.
+                let mut handles = Vec::with_capacity(threads);
+                for _ in 0..threads {
+                    let rx = Arc::clone(&shared_rx);
+                    let cmd = Arc::clone(&cmd);
+                    let out_perm = Arc::clone(&out_perm);
 
-                // Spawn a job thread that will listen for and execute inputs.
-                let handle =
-                    thread::spawn(move || exec::job(rx, cmd, out_perm, show_filesystem_errors));
+                    // Spawn a job thread that will listen for and execute inputs.
+                    let handle =
+                        thread::spawn(move || exec::job(rx, cmd, out_perm, show_filesystem_errors));
 
-                // Push the handle of the spawned thread into the vector for later joining.
-                handles.push(handle);
-            }
+                    // Push the handle of the spawned thread into the vector for later joining.
+                    handles.push(handle);
+                }
 
-            // Wait for all threads to exit before exiting the program.
-            for h in handles {
-                h.join().unwrap();
+                // Wait for all threads to exit before exiting the program.
+                for h in handles {
+                    h.join().unwrap();
+                }
             }
         } else {
             let start = time::Instant::now();

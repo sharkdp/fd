@@ -142,7 +142,16 @@ fn main() {
         None
     };
 
-    let command = matches.values_of("exec").map(CommandTemplate::new);
+    let command = matches
+        .values_of("exec")
+        .map(CommandTemplate::new)
+        .or_else(|| {
+            matches.values_of("exec-batch").map(|m| {
+                CommandTemplate::new_batch(m).unwrap_or_else(|e| {
+                    print_error_and_exit!("{}", e);
+                })
+            })
+        });
 
     let size_limits: Vec<SizeFilter> = matches
         .values_of("size")
