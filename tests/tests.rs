@@ -987,13 +987,11 @@ fn assert_exec_output(exec_style: &str) {
     }
 }
 
-/// Shell script execution using -exec
 #[test]
 fn test_exec_batch() {
     assert_exec_batch_output("--exec-batch");
 }
 
-// Shell script execution using -x
 #[test]
 fn test_exec_batch_short_arg() {
     assert_exec_batch_output("-X");
@@ -1004,7 +1002,7 @@ fn assert_exec_batch_output(exec_style: &str) {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let te = te.normalize_line(true);
 
-    // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
+    // TODO Test for windows
     if !cfg!(windows) {
         te.assert_output(
             &["--absolute-path", "foo", exec_style, "echo"],
@@ -1034,6 +1032,16 @@ fn assert_exec_batch_output(exec_style: &str) {
         te.assert_error(
             &["foo", exec_style, "echo", "{/}", ";", "-x", "echo"],
             "error: The argument '--exec <cmd>' cannot be used with '--exec-batch <cmd>'",
+        );
+
+        te.assert_error(
+            &["foo", exec_style],
+            "error: The argument '--exec-batch <cmd>' requires a value but none was supplied",
+        );
+
+        te.assert_error(
+            &["foo", exec_style, "echo {}"],
+            "[fd error]: First argument of exec-batch is expected to be a fixed executable",
         );
     }
 }

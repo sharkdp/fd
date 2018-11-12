@@ -14,7 +14,7 @@ mod token;
 
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 use regex::Regex;
@@ -27,7 +27,7 @@ use self::token::Token;
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExecutionMode {
-    /// Command is executed for each path found
+    /// Command is executed for each search result
     OneByOne,
     /// Command is run for a batch of results at once
     Batch,
@@ -58,8 +58,11 @@ impl CommandTemplate {
         S: AsRef<str>,
     {
         let cmd = Self::build(input, ExecutionMode::Batch);
-        if cmd.tokens_number() > 1 {
+        if cmd.number_of_tokens() > 1 {
             return Err("Only one placeholder allowed for batch commands");
+        }
+        if cmd.args[0].has_tokens() {
+            return Err("First argument of exec-batch is expected to be a fixed executable");
         }
         Ok(cmd)
     }
@@ -124,7 +127,7 @@ impl CommandTemplate {
         CommandTemplate { args, mode }
     }
 
-    fn tokens_number(&self) -> usize {
+    fn number_of_tokens(&self) -> usize {
         self.args.iter().filter(|arg| arg.has_tokens()).count()
     }
 
@@ -151,7 +154,7 @@ impl CommandTemplate {
         execute_command(cmd, &out_perm)
     }
 
-    pub fn is_batch(&self) -> bool {
+    pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
     }
 
@@ -160,6 +163,10 @@ impl CommandTemplate {
         I: Iterator<Item = PathBuf>,
     {
         let mut cmd = Command::new(self.args[0].generate("").as_ref());
+        cmd.stdin(Stdio::inherit());
+        cmd.stdout(Stdio::inherit());
+        cmd.stderr(Stdio::inherit());
+
         let mut paths = paths.map(|p| Self::prepare_path(&p));
         let mut has_path = false;
 
@@ -194,10 +201,9 @@ enum ArgumentTemplate {
 
 impl ArgumentTemplate {
     pub fn has_tokens(&self) -> bool {
-        if let ArgumentTemplate::Tokens(_) = self {
-            true
-        } else {
-            false
+        match self {
+            ArgumentTemplate::Tokens(_) => true,
+            _ => false,
         }
     }
 
