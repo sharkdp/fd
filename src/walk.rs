@@ -126,7 +126,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let receiver_thread = thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = rx_config.command {
-            if cmd.is_batch() {
+            if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, show_filesystem_errors);
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));

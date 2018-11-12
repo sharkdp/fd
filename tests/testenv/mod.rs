@@ -33,7 +33,7 @@ pub struct TestEnv {
     /// Path to the *fd* executable.
     fd_exe: PathBuf,
 
-    /// Normalize each line by splitting and sorting by whitespace as well
+    /// Normalize each line by sorting the whitespace-separated words
     normalize_line: bool,
 }
 
@@ -133,9 +133,9 @@ fn normalize_output(s: &str, trim_left: bool, normalize_line: bool) -> String {
             let line = if trim_left { line.trim_left() } else { line };
             let line = line.replace('/', &std::path::MAIN_SEPARATOR.to_string());
             if normalize_line {
-                let mut worlds: Vec<_> = line.split_whitespace().collect();
-                worlds.sort();
-                return worlds.join(" ");
+                let mut words: Vec<_> = line.split_whitespace().collect();
+                words.sort();
+                return words.join(" ");
             }
             line
         })
@@ -234,15 +234,12 @@ impl TestEnv {
 
         // Check for exit status.
         if output.status.success() {
-            panic!(
-                "fd exited successfully. Expected error {} did not occur.",
-                expected
-            );
+            panic!("error '{}' did not occur.", expected);
         }
 
         // Compare actual output to expected output.
         let actual = String::from_utf8_lossy(&output.stderr);
-        if expected.len() <= actual.len() && expected != &actual[..expected.len()] {
+        if !actual.starts_with(expected) {
             panic!(format_output_error(args, &expected, &actual));
         }
     }
