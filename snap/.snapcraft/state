@@ -1,0 +1,11 @@
+!GlobalState
+assets:
+  build-packages: [libmpc3=1.0.3-1, libmpx0=5.4.0-6ubuntu1~16.04.10, libgcc-5-dev=5.4.0-6ubuntu1~16.04.10,
+    linux-libc-dev=4.4.0-138.164, libc6-dev=2.23-0ubuntu10, cpp-5=5.4.0-6ubuntu1~16.04.10,
+    binutils=2.26.1-1ubuntu1~16.04.7, 'cpp=4:5.3.1-1ubuntu1', libitm1=5.4.0-6ubuntu1~16.04.10,
+    'gcc=4:5.3.1-1ubuntu1', libcilkrts5=5.4.0-6ubuntu1~16.04.10, libasan2=5.4.0-6ubuntu1~16.04.10,
+    libquadmath0=5.4.0-6ubuntu1~16.04.10, libisl15=0.16.1-1, libtsan0=5.4.0-6ubuntu1~16.04.10,
+    libubsan0=5.4.0-6ubuntu1~16.04.10, gcc-5=5.4.0-6ubuntu1~16.04.10, liblsan0=5.4.0-6ubuntu1~16.04.10,
+    libgomp1=5.4.0-6ubuntu1~16.04.10, manpages-dev=4.04-2, libc-dev-bin=2.23-0ubuntu10,
+    libatomic1=5.4.0-6ubuntu1~16.04.10, libcc1-0=5.4.0-6ubuntu1~16.04.10]
+  build-snaps: []

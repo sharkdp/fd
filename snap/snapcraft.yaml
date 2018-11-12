@@ -1,0 +1,29 @@
+name: fd
+version: git
+summary: "A simple, fast and user-friendly alternative to 'find'"
+description: |
+  fd is a simple, fast and user-friendly alternative to find.
+    - While it does not seek to mirror all of find's powerful functionality, it provides sensible (opinionated) defaults for 80% of the use cases.
+  Features
+    Convenient syntax: fd PATTERN instead of find -iname '*PATTERN*'.
+    Colorized terminal output (similar to ls).
+    It's fast (see benchmarks below).
+    Smart case: the search is case-insensitive by default. It switches to case-sensitive if the pattern contains an uppercase character*.
+    Ignores hidden directories and files, by default.
+    Ignores patterns from your .gitignore, by default.
+    Regular expressions.
+    Unicode-awareness.
+    The command name is 50% shorter* than find :-).
+    Parallel command execution with a syntax similar to GNU Parallel.
+
+grade: stable
+confinement: classic
+
+parts:
+  fd:
+    plugin: rust
+    source: ./
+
+apps:
+  fd:
+    command: bin/fd
