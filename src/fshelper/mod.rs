@@ -13,7 +13,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use ignore::DirEntry;
+use walk::DirEntry;
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
@@ -33,8 +33,7 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
             .as_path()
             .to_string_lossy()
             .trim_left_matches(r"\\?\"),
-    )
-    .to_path_buf();
+    ).to_path_buf();
 
     Ok(path_buf)
 }
@@ -56,15 +55,17 @@ pub fn is_executable(_: &fs::Metadata) -> bool {
 }
 
 pub fn is_empty(entry: &DirEntry) -> bool {
-    if let Some(file_type) = entry.file_type() {
+    if let Some(file_type) = entry.file_type {
         if file_type.is_dir() {
-            if let Ok(mut entries) = fs::read_dir(entry.path()) {
+            if let Ok(mut entries) = fs::read_dir(&entry.path) {
                 entries.next().is_none()
             } else {
                 false
             }
         } else if file_type.is_file() {
-            entry.metadata().map(|m| m.len() == 0).unwrap_or(false)
+            fs::metadata(&entry.path)
+                .map(|m| m.len() == 0)
+                .unwrap_or(false)
         } else {
             false
         }

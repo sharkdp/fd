@@ -15,6 +15,7 @@ use internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
 use output;
 
 use std::error::Error;
+use std::fs::{self, FileType};
 use std::path::PathBuf;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -41,6 +42,12 @@ enum ReceiverMode {
 pub enum WorkerResult {
     Entry(PathBuf),
     Error(ignore::Error),
+}
+
+/// A representation of a directory entry, used by the Worker.
+pub struct DirEntry {
+    pub path: PathBuf,
+    pub file_type: Option<FileType>,
 }
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
@@ -117,8 +124,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         let wq = Arc::clone(&receiver_wtq);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
-        })
-        .unwrap();
+        }).unwrap();
     }
 
     // Spawn the thread that receives all results through the channel.
@@ -230,35 +236,55 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             let entry = match entry_o {
-                Ok(e) => e,
+                Ok(e) => {
+                    // Skip the root directory entry.
+                    if e.depth() == 0 {
+                        return ignore::WalkState::Continue;
+                    }
+
+                    // Transform ignore::DirEntry into our own DirEntry.
+                    DirEntry {
+                        file_type: e.file_type(),
+                        path: e.into_path(),
+                    }
+                }
                 Err(err) => {
-                    tx_thread.send(WorkerResult::Error(err)).unwrap();
-                    return ignore::WalkState::Continue;
+                    // Keep track of a possible broken symlink.
+                    let mut symlink_o = None;
+                    if let ignore::Error::WithPath { ref path, ref err } = err {
+                        // An I/O error when the path does not exist (should) indicate a dangling symlink.
+                        if err.is_io() && !path.exists() {
+                            symlink_o = Some(DirEntry {
+                                file_type: path.symlink_metadata().map(|s| s.file_type()).ok(),
+                                path: path.to_path_buf(),
+                            });
+                        }
+                    };
+
+                    if let Some(symlink) = symlink_o {
+                        symlink
+                    } else {
+                        tx_thread.send(WorkerResult::Error(err)).unwrap();
+                        return ignore::WalkState::Continue;
+                    }
                 }
             };
 
-            if entry.depth() == 0 {
-                return ignore::WalkState::Continue;
-            }
-
             // Filter out unwanted file types.
-
             if let Some(ref file_types) = config.file_types {
-                if let Some(ref entry_type) = entry.file_type() {
-                    if (!file_types.files && entry_type.is_file())
-                        || (!file_types.directories && entry_type.is_dir())
-                        || (!file_types.symlinks && entry_type.is_symlink())
-                        || (file_types.executables_only
-                            && !entry
-                                .metadata()
-                                .map(|m| fshelper::is_executable(&m))
-                                .unwrap_or(false))
+                if let Some(ref file_type) = entry.file_type {
+                    if (!file_types.files && file_type.is_file())
+                        || (!file_types.directories && file_type.is_dir())
+                        || (!file_types.symlinks && file_type.is_symlink())
+                        || (file_types.executables_only && !fs::metadata(&entry.path)
+                            .map(|m| fshelper::is_executable(&m))
+                            .unwrap_or(false))
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
                     {
                         return ignore::WalkState::Continue;
-                    } else if !(entry_type.is_file()
-                        || entry_type.is_dir()
-                        || entry_type.is_symlink())
+                    } else if !(file_type.is_file()
+                        || file_type.is_dir()
+                        || file_type.is_symlink())
                     {
                         // This is probably a block device, char device, fifo or socket. Skip it.
                         return ignore::WalkState::Continue;
@@ -268,11 +294,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 }
             }
 
-            let entry_path = entry.path();
-
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().map_or(None, |s| s.to_str()) {
+                if let Some(path_str) = entry.path.file_name().map_or(None, |s| s.to_str()) {
                     if !exts_regex.is_match(path_str) {
                         return ignore::WalkState::Continue;
                     }
@@ -283,8 +307,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
             if config.size_constraints.len() > 0 {
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
+                if entry.path.is_file() {
+                    if let Ok(metadata) = entry.path.metadata() {
                         let file_size = metadata.len();
                         if config
                             .size_constraints
@@ -304,8 +328,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             // Filter out unwanted modification times
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
+                if entry.path.is_file() {
+                    if let Ok(metadata) = entry.path.metadata() {
                         if let Ok(modified) = metadata.modified() {
                             matched = config
                                 .time_constraints
@@ -320,22 +344,20 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             }
 
             let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                match fshelper::path_absolute_form(&entry.path) {
+                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned()),
                     Err(_) => {
                         print_error_and_exit!("Unable to retrieve absolute path.");
                     }
                 }
             } else {
-                entry_path.file_name().map(|f| f.to_string_lossy())
+                entry.path.file_name().map(|f| f.to_string_lossy().into_owned())
             };
 
             if let Some(search_str) = search_str_o {
                 if pattern.is_match(&*search_str) {
                     // TODO: take care of the unwrap call
-                    tx_thread
-                        .send(WorkerResult::Entry(entry_path.to_owned()))
-                        .unwrap()
+                    tx_thread.send(WorkerResult::Entry(entry.path)).unwrap()
                 }
             }
 
