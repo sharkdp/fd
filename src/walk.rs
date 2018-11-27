@@ -124,7 +124,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         let wq = Arc::clone(&receiver_wtq);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
-        }).unwrap();
+        })
+        .unwrap();
     }
 
     // Spawn the thread that receives all results through the channel.
@@ -276,15 +277,14 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     if (!file_types.files && file_type.is_file())
                         || (!file_types.directories && file_type.is_dir())
                         || (!file_types.symlinks && file_type.is_symlink())
-                        || (file_types.executables_only && !fs::metadata(&entry.path)
-                            .map(|m| fshelper::is_executable(&m))
-                            .unwrap_or(false))
+                        || (file_types.executables_only
+                            && !fs::metadata(&entry.path)
+                                .map(|m| fshelper::is_executable(&m))
+                                .unwrap_or(false))
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
                     {
                         return ignore::WalkState::Continue;
-                    } else if !(file_type.is_file()
-                        || file_type.is_dir()
-                        || file_type.is_symlink())
+                    } else if !(file_type.is_file() || file_type.is_dir() || file_type.is_symlink())
                     {
                         // This is probably a block device, char device, fifo or socket. Skip it.
                         return ignore::WalkState::Continue;
@@ -351,7 +351,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                     }
                 }
             } else {
-                entry.path.file_name().map(|f| f.to_string_lossy().into_owned())
+                entry
+                    .path
+                    .file_name()
+                    .map(|f| f.to_string_lossy().into_owned())
             };
 
             if let Some(search_str) = search_str_o {

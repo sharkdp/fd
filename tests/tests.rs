@@ -863,10 +863,7 @@ fn test_symlink_and_full_path_abs_path() {
 fn test_dereference_dangling_symlink() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    te.assert_output(
-        &["--follow", "--type", "l"],
-        "symlink-broken",
-    );
+    te.assert_output(&["--follow", "--type", "l"], "symlink-broken");
 }
 
 /// Exclude patterns (--exclude)
