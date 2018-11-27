@@ -95,7 +95,8 @@ fn test_simple() {
         one/two/three
         one/two/three/d.foo
         one/two/three/directory_foo
-        symlink",
+        symlink
+        symlink-broken",
     );
 }
 
@@ -485,7 +486,8 @@ fn test_max_depth() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three
-        symlink",
+        symlink
+        symlink-broken",
     );
 
     te.assert_output(
@@ -495,7 +497,8 @@ fn test_max_depth() {
         one
         one/b.foo
         one/two
-        symlink",
+        symlink
+        symlink-broken",
     );
 
     te.assert_output(
@@ -503,7 +506,8 @@ fn test_max_depth() {
         "a.foo
         e1 e2
         one
-        symlink",
+        symlink
+        symlink-broken",
     );
 }
 
@@ -525,7 +529,8 @@ fn test_absolute_path() {
             {abs_path}/one/two/three
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo
-            {abs_path}/symlink",
+            {abs_path}/symlink
+            {abs_path}/symlink-broken",
             abs_path = &abs_path
         ),
     );
@@ -614,10 +619,15 @@ fn test_type() {
         one/two
         one/two/three
         one/two/three/directory_foo
-        symlink",
+        symlink
+        symlink-broken",
     );
 
-    te.assert_output(&["--type", "l"], "symlink");
+    te.assert_output(
+        &["--type", "l"],
+        "symlink
+        symlink-broken",
+    );
 }
 
 /// Test `--type executable`
@@ -764,7 +774,8 @@ fn test_symlink_as_root() {
             {dir}/one/two/three
             {dir}/one/two/three/d.foo
             {dir}/one/two/three/directory_foo
-            {dir}/symlink",
+            {dir}/symlink
+            {dir}/symlink-broken",
             dir = &parent_parent
         ),
     );
@@ -847,6 +858,17 @@ fn test_symlink_and_full_path_abs_path() {
     );
 }
 
+/// Test filtering broken symlinks (--follow & --type l)
+#[test]
+fn test_dereference_dangling_symlink() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--follow", "--type", "l"],
+        "symlink-broken",
+    );
+}
+
 /// Exclude patterns (--exclude)
 #[test]
 fn test_excludes() {
@@ -860,7 +882,8 @@ fn test_excludes() {
         one/two/three
         one/two/three/directory_foo
         e1 e2
-        symlink",
+        symlink
+        symlink-broken",
     );
 
     te.assert_output(
@@ -870,7 +893,8 @@ fn test_excludes() {
         one/two/three
         one/two/three/directory_foo
         e1 e2
-        symlink",
+        symlink
+        symlink-broken",
     );
 
     te.assert_output(
@@ -893,7 +917,8 @@ fn test_excludes() {
         one/two/C.Foo2
         one/two/three
         one/two/three/directory_foo
-        symlink",
+        symlink
+        symlink-broken",
     );
 }
 

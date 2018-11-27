@@ -59,12 +59,18 @@ fn create_working_directory(
         }
 
         #[cfg(unix)]
-        unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
+        {
+            unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
+            unix::fs::symlink(root.join("one/nine"), root.join("symlink-broken"))?;
+        }
 
         // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
         // is by default only granted for administrators.
         #[cfg(windows)]
-        windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+        {
+            windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+            windows::fs::symlink_dir(root.join("one/nine"), root.join("symlink-broken"))?;
+        }
 
         fs::File::create(root.join(".fdignore"))?.write_all(b"fdignored.foo")?;
 
