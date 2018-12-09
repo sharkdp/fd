@@ -16,6 +16,7 @@ extern crate lazy_static;
 extern crate humantime;
 #[cfg(all(unix, not(target_os = "redox")))]
 extern crate libc;
+extern crate lscolors;
 extern crate num_cpus;
 extern crate regex;
 extern crate regex_syntax;
@@ -27,7 +28,6 @@ mod app;
 mod exec;
 mod exit_codes;
 pub mod fshelper;
-pub mod lscolors;
 mod output;
 mod walk;
 
@@ -38,6 +38,7 @@ use std::sync::Arc;
 use std::time;
 
 use atty::Stream;
+use lscolors::LsColors;
 use regex::{RegexBuilder, RegexSetBuilder};
 
 use exec::CommandTemplate;
@@ -46,7 +47,6 @@ use internal::{
     opts::FdOptions,
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
-use lscolors::LsColors;
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
@@ -132,12 +132,7 @@ fn main() {
     let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
 
     let ls_colors = if colored_output {
-        Some(
-            env::var("LS_COLORS")
-                .ok()
-                .map(|val| LsColors::from_string(&val))
-                .unwrap_or_default(),
-        )
+        Some(LsColors::from_env().unwrap_or_default())
     } else {
         None
     };

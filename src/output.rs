@@ -7,9 +7,8 @@
 // according to those terms.
 
 use exit_codes::ExitCode;
-use fshelper::is_executable;
 use internal::opts::FdOptions;
-use lscolors::LsColors;
+use lscolors::{LsColors, Style};
 
 use std::io::{self, Write};
 use std::ops::Deref;
@@ -71,7 +70,10 @@ fn print_entry_colorized(
         let comp_str = component.as_os_str().to_string_lossy();
         component_path.push(Path::new(comp_str.deref()));
 
-        let style = get_path_style(&component_path, ls_colors).unwrap_or(&default_style);
+        let style = ls_colors.style_for_path(&component_path);
+        let style = style
+            .map(Style::to_ansi_term_style)
+            .unwrap_or(default_style);
 
         write!(handle, "{}{}", separator, style.paint(comp_str))?;
 
@@ -103,36 +105,4 @@ fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
 
     let path_str = path.to_string_lossy();
     write!(&mut io::stdout(), "{}{}", path_str, separator)
-}
-
-fn get_path_style<'a>(path: &Path, ls_colors: &'a LsColors) -> Option<&'a ansi_term::Style> {
-    if path
-        .symlink_metadata()
-        .map(|md| md.file_type().is_symlink())
-        .unwrap_or(false)
-    {
-        return Some(&ls_colors.symlink);
-    }
-
-    let metadata = path.metadata();
-
-    if metadata.as_ref().map(|md| md.is_dir()).unwrap_or(false) {
-        Some(&ls_colors.directory)
-    } else if metadata.map(|md| is_executable(&md)).unwrap_or(false) {
-        Some(&ls_colors.executable)
-    } else if let Some(filename_style) = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .and_then(|n| ls_colors.filenames.get(n))
-    {
-        Some(filename_style)
-    } else if let Some(extension_style) = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .and_then(|e| ls_colors.extensions.get(e))
-    {
-        Some(extension_style)
-    } else {
-        None
-    }
 }
