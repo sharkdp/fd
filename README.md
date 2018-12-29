@@ -257,9 +257,16 @@ USAGE:
     fd [FLAGS/OPTIONS] [<pattern>] [<path>...]
 
 FLAGS:
-    -H, --hidden            Search hidden files and directories
+    -H, --hidden            Search hidden files and directories (those whose names
+                            start with a `.`). Note that if a hidden file or directory
+                            name is also mentioned in a .(git|fd)ignore file (including
+                            above the current directory), the name will not be printed
+                            unless `-I` is also used.
     -I, --no-ignore         Do not respect .(git|fd)ignore files
         --no-ignore-vcs     Do not respect .gitignore files
+                            Note that if a file or directory name starts with a `.` (and
+                            is therefore considered hidden), the name will not be printed
+                            unless `-H` is also used.
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
     -F, --fixed-strings     Treat the pattern as a literal string
@@ -359,7 +366,8 @@ tests/testenv/mod.rs
 
 ### Hidden and ignored files
 By default, *fd* does not search hidden directories and does not show hidden files in the
-search results. To disable this behavior, we can use the `-H` (or `--hidden`) option:
+search results. A file or directory is considered hidden if its name starts with a `.`.
+To disable this behavior, we can use the `-H` (or `--hidden`) option:
 ``` bash
 > fd pre-commit
 > fd -H pre-commit
@@ -375,8 +383,10 @@ this behavior, we can use the `-I` (or `--no-ignore`) option:
 target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
 
-To really search *all* files and directories, simply combine the hidden and ignore features to show
-everything (`-HI`).
+To really search *all* files and directories, simply combine the hidden and
+ignore features to show everything (`-HI`). This should always result in
+same set of results that `find` produces (`find` has no concept of files or
+directories that might be considered hidden or worth ignoring by default).
 
 ### Excluding specific files or directories
 
