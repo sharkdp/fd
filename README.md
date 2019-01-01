@@ -133,18 +133,18 @@ Download the latest `.deb` package from the [release page](https://github.com/sh
 sudo dpkg -i fd_7.2.0_amd64.deb  # adapt version number and architecture
 ```
 
-fd will be available from Ubuntu Disco Dingo (19.04).
+Note: `fd` will be officially available in Ubuntu Disco Dingo (19.04).
 
 ### On Debian
 
-If you run Debian sid and Buster, fd is
-[officially maintained by Debian](https://tracker.debian.org/pkg/rust-fd-find).
+If you run Debian Buster or newer, you can install the
+[officially maintained Debian package](https://tracker.debian.org/pkg/rust-fd-find):
 ```
 sudo apt-get install fd-find
 ```
-The binary is called `fdfind` as the binary name `fd` is already used by another package.
-It is recommended that you add an `alias fd=fdfind` to your shells initialization file,
-in order to use `fd` in the same way as in this documentation.
+Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
+It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
+use `fd` in the same way as in this documentation.
 
 ### On Fedora
 
