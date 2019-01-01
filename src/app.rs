@@ -221,7 +221,8 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "hidden"
         , "Search hidden files and directories"
         , "Include hidden directories and files in the search results (default: hidden files \
-           and directories are skipped).");
+           and directories are skipped). Files and directories are considered to be hidden if \
+           their name starts with a `.` sign (dot).");
     doc!(h, "no-ignore"
         , "Do not respect .(git|fd)ignore files"
         , "Show search results from files and directories that would otherwise be ignored by \
