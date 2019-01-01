@@ -11,8 +11,7 @@ use crate::internal::opts::FdOptions;
 use lscolors::{LsColors, Style};
 
 use std::io::{self, Write};
-use std::ops::Deref;
-use std::path::{self, Component, Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -59,33 +58,13 @@ fn print_entry_colorized(
     let stdout = io::stdout();
     let mut handle = stdout.lock();
 
-    // Separator to use before the current component.
-    let mut separator = String::new();
-
-    // Full path to the current component.
-    let mut component_path = PathBuf::new();
-
     // Traverse the path and colorize each component
-    for component in path.components() {
-        let comp_str = component.as_os_str().to_string_lossy();
-        component_path.push(Path::new(comp_str.deref()));
-
-        let style = ls_colors.style_for_path(&component_path);
+    for (component, style) in ls_colors.style_for_path_components(path) {
         let style = style
             .map(Style::to_ansi_term_style)
             .unwrap_or(default_style);
 
-        write!(handle, "{}{}", separator, style.paint(comp_str))?;
-
-        // Determine separator to print before next component.
-        separator = match component {
-            // Prefix needs no separator, as it is always followed by RootDir.
-            Component::Prefix(_) => String::new(),
-            // RootDir is already a separator.
-            Component::RootDir => String::new(),
-            // Everything else uses a separator that is painted the same way as the component.
-            _ => style.paint(path::MAIN_SEPARATOR.to_string()).to_string(),
-        };
+        write!(handle, "{}", style.paint(component.to_string_lossy()))?;
 
         if wants_to_quit.load(Ordering::Relaxed) {
             write!(handle, "\n")?;
