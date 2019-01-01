@@ -42,6 +42,8 @@ pub fn build_app() -> App<'static, 'static> {
         .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>...]")
         .setting(AppSettings::ColoredHelp)
         .setting(AppSettings::DeriveDisplayOrder)
+        .after_help("Note: `fd -h` prints a short and concise overview while `fd --help` \
+                     gives all details.")
         .arg(arg("hidden").long("hidden").short("H"))
         .arg(arg("no-ignore").long("no-ignore").short("I"))
         .arg(arg("no-ignore-vcs").long("no-ignore-vcs"))
