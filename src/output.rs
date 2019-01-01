@@ -10,7 +10,7 @@ use crate::exit_codes::ExitCode;
 use crate::internal::opts::FdOptions;
 use lscolors::{LsColors, Style};
 
-use std::io::{self, Write};
+use std::io::{self, StdoutLock, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -28,7 +28,12 @@ fn strip_current_dir<'a>(pathbuf: &'a PathBuf) -> &'a Path {
     iter.as_path()
 }
 
-pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<AtomicBool>) {
+pub fn print_entry(
+    stdout: &mut StdoutLock,
+    entry: &PathBuf,
+    config: &FdOptions,
+    wants_to_quit: &Arc<AtomicBool>,
+) {
     let path = if entry.is_absolute() {
         entry.as_path()
     } else {
@@ -36,9 +41,9 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
     };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(path, config, ls_colors, &wants_to_quit)
+        print_entry_colorized(stdout, path, config, ls_colors, &wants_to_quit)
     } else {
-        print_entry_uncolorized(path, config)
+        print_entry_uncolorized(stdout, path, config)
     };
 
     if r.is_err() {
@@ -48,6 +53,7 @@ pub fn print_entry(entry: &PathBuf, config: &FdOptions, wants_to_quit: &Arc<Atom
 }
 
 fn print_entry_colorized(
+    stdout: &mut StdoutLock,
     path: &Path,
     config: &FdOptions,
     ls_colors: &LsColors,
@@ -55,33 +61,34 @@ fn print_entry_colorized(
 ) -> io::Result<()> {
     let default_style = ansi_term::Style::default();
 
-    let stdout = io::stdout();
-    let mut handle = stdout.lock();
-
     // Traverse the path and colorize each component
     for (component, style) in ls_colors.style_for_path_components(path) {
         let style = style
             .map(Style::to_ansi_term_style)
             .unwrap_or(default_style);
 
-        write!(handle, "{}", style.paint(component.to_string_lossy()))?;
+        write!(stdout, "{}", style.paint(component.to_string_lossy()))?;
 
         if wants_to_quit.load(Ordering::Relaxed) {
-            write!(handle, "\n")?;
+            write!(stdout, "\n")?;
             process::exit(ExitCode::KilledBySigint.into());
         }
     }
 
     if config.null_separator {
-        write!(handle, "\0")
+        write!(stdout, "\0")
     } else {
-        writeln!(handle, "")
+        writeln!(stdout, "")
     }
 }
 
-fn print_entry_uncolorized(path: &Path, config: &FdOptions) -> io::Result<()> {
+fn print_entry_uncolorized(
+    stdout: &mut StdoutLock,
+    path: &Path,
+    config: &FdOptions,
+) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let path_str = path.to_string_lossy();
-    write!(&mut io::stdout(), "{}{}", path_str, separator)
+    write!(stdout, "{}{}", path_str, separator)
 }

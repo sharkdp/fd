@@ -13,6 +13,7 @@ use crate::internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
 use crate::output;
 
 use std::error::Error;
+use std::io;
 use std::path::PathBuf;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -170,6 +171,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                 .max_buffer_time
                 .unwrap_or_else(|| time::Duration::from_millis(100));
 
+            let stdout = io::stdout();
+            let mut stdout = stdout.lock();
+
             for worker_result in rx {
                 match worker_result {
                     WorkerResult::Entry(value) => {
@@ -183,7 +187,12 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                                 {
                                     // Flush the buffer
                                     for v in &buffer {
-                                        output::print_entry(v, &rx_config, &receiver_wtq);
+                                        output::print_entry(
+                                            &mut stdout,
+                                            v,
+                                            &rx_config,
+                                            &receiver_wtq,
+                                        );
                                     }
                                     buffer.clear();
 
@@ -192,7 +201,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
                                 }
                             }
                             ReceiverMode::Streaming => {
-                                output::print_entry(&value, &rx_config, &receiver_wtq);
+                                output::print_entry(&mut stdout, &value, &rx_config, &receiver_wtq);
                             }
                         }
                     }
@@ -209,7 +218,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&value, &rx_config, &receiver_wtq);
+                    output::print_entry(&mut stdout, &value, &rx_config, &receiver_wtq);
                 }
             }
         }
