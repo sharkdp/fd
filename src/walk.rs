@@ -8,11 +8,11 @@
 
 extern crate ctrlc;
 
-use exec;
-use exit_codes::ExitCode;
-use fshelper;
-use internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
-use output;
+use crate::exec;
+use crate::exit_codes::ExitCode;
+use crate::fshelper;
+use crate::internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
+use crate::output;
 
 use std::error::Error;
 use std::path::PathBuf;
