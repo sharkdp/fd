@@ -17,6 +17,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+use lazy_static::lazy_static;
 use regex::Regex;
 
 use self::command::execute_command;

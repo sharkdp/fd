@@ -6,10 +6,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-#[macro_use]
-extern crate clap;
-extern crate version_check;
-
 use clap::Shell;
 use std::fs;
 use std::io::{self, Write};

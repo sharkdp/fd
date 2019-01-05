@@ -7,10 +7,10 @@
 // according to those terms.
 
 use super::CommandTemplate;
+use crate::walk::WorkerResult;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-use crate::walk::WorkerResult;
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then

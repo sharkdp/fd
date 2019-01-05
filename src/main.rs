@@ -6,21 +6,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate ansi_term;
-extern crate atty;
-#[macro_use]
-extern crate clap;
-extern crate ignore;
-#[macro_use]
-extern crate lazy_static;
-extern crate humantime;
-#[cfg(all(unix, not(target_os = "redox")))]
-extern crate libc;
-extern crate lscolors;
-extern crate num_cpus;
-extern crate regex;
-extern crate regex_syntax;
-
 #[macro_use]
 mod internal;
 

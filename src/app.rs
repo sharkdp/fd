@@ -7,7 +7,7 @@
 // according to those terms.
 use std::collections::HashMap;
 
-use clap::{App, AppSettings, Arg};
+use clap::{crate_version, App, AppSettings, Arg};
 
 struct Help {
     short: &'static str,

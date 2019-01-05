@@ -20,10 +20,7 @@ use std::os::unix;
 #[cfg(windows)]
 use std::os::windows;
 
-extern crate diff;
-extern crate tempdir;
-
-use self::tempdir::TempDir;
+use tempdir::TempDir;
 
 /// Environment for the integration tests.
 pub struct TestEnv {
