@@ -6,8 +6,8 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-use exit_codes::ExitCode;
-use internal::opts::FdOptions;
+use crate::exit_codes::ExitCode;
+use crate::internal::opts::FdOptions;
 use lscolors::{LsColors, Style};
 
 use std::io::{self, Write};

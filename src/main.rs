@@ -41,8 +41,8 @@ use atty::Stream;
 use lscolors::LsColors;
 use regex::{RegexBuilder, RegexSetBuilder};
 
-use exec::CommandTemplate;
-use internal::{
+use crate::exec::CommandTemplate;
+use crate::internal::{
     filter::{SizeFilter, TimeFilter},
     opts::FdOptions,
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,

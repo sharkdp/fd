@@ -19,7 +19,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use testenv::TestEnv;
+use crate::testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
