@@ -6,8 +6,6 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
-extern crate ctrlc;
-
 use crate::exec;
 use crate::exit_codes::ExitCode;
 use crate::fshelper;

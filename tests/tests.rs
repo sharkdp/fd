@@ -8,18 +8,14 @@
 
 //! Integration tests for the CLI interface of fd.
 
-extern crate filetime;
-extern crate humantime;
-extern crate regex;
-
 mod testenv;
 
+use crate::testenv::TestEnv;
 use regex::escape;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
-use crate::testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
