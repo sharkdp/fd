@@ -17,6 +17,7 @@ name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
 version = "7.2.0"
+edition= "2018"
 
 [[bin]]
 name = "fd"
