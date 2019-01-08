@@ -136,6 +136,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .conflicts_with("exec"),
         )
         .arg(
+            arg("delete")
+                .long("delete")
+                .short("D")
+                .conflicts_with_all(&["exec", "exec-batch"]),
+        )
+        .arg(
             arg("exclude")
                 .long("exclude")
                 .short("E")
@@ -304,6 +310,9 @@ fn usage() -> HashMap<&'static str, Help> {
              '{//}': parent directory\n  \
              '{.}':  path without file extension\n  \
              '{/.}': basename without file extension");
+    doc!(h, "delete"
+        , "Delete the matched files"
+        , "Delete the matched files.");
     doc!(h, "exclude"
         , "Exclude entries that match the given glob pattern"
         , "Exclude files/directories that match the given glob pattern. This overrides any \

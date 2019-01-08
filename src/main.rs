@@ -130,6 +130,10 @@ fn main() {
                 CommandTemplate::new_batch(m).unwrap_or_else(|e| {
                     print_error_and_exit!("{}", e);
                 })
+            }).or_else(|| {
+                matches.values_of("delete").map(|_m| {
+                    CommandTemplate::new(&["rm", "-r", "{}"])
+                })
             })
         });
 
