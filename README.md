@@ -340,6 +340,15 @@ testenv/mod.rs
 tests.rs
 ```
 
+If you want to use this functionality to list all files in a given directory, you have to use
+a catch-all pattern such as `.` or `^`:
+``` bash
+> fd . fd/tests/
+testenv
+testenv/mod.rs
+tests.rs
+```
+
 ### Searching for a particular file extension
 
 Often, we are interested in all files of a particular type. This can be done with the `-e` (or
