@@ -427,6 +427,35 @@ If we want to run a command on all search results, we can pipe the output to `xa
 Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
 newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
+### Troubleshooting
+
+#### `fd` does not find my file!
+
+Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
+from `.gitignore` files. If you want to make sure to find absolutely every possible file, always
+use the options `-H` and `-I` to disable these two features:
+``` bash
+> fd -HI …
+```
+
+#### `fd` doesn't seem to interpret my regex pattern correctly
+
+A lot of special regex characters (like `[]`, `^`, `$`, ..) are also special characters in your
+shell. If in doubt, always make sure to put single quotes around the regex pattern:
+
+``` bash
+> fd '^[A-Z][0-9]+$'
+```
+
+If your pattern starts with a dash, you have to add `--` to signal the end of command line
+options. Otherwise, the pattern will be interpreted as a command-line option. Alternatively,
+use a character class with a single hyphen character:
+
+``` bash
+> fd -- '-pattern'
+> fd '[-]pattern'
+```
+
 ### Integration with other programs
 
 #### Using fd with `fzf`
