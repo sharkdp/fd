@@ -26,6 +26,9 @@ use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::Regex;
 
+mod lazy;
+use self::lazy::Lazy;
+
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
     /// Receiver is still buffering in order to sort the results, if the search finishes fast
@@ -273,6 +276,8 @@ fn spawn_senders(
                 return ignore::WalkState::Continue;
             }
 
+            let mut entry_metadata = Lazy::new(|| entry.metadata());
+
             // Filter out unwanted file types.
 
             if let Some(ref file_types) = config.file_types {
@@ -281,8 +286,9 @@ fn spawn_senders(
                         || (!file_types.directories && entry_type.is_dir())
                         || (!file_types.symlinks && entry_type.is_symlink())
                         || (file_types.executables_only
-                            && !entry
-                                .metadata()
+                            && !entry_metadata
+                                .get()
+                                .as_ref()
                                 .map(|m| fshelper::is_executable(&m))
                                 .unwrap_or(false))
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
@@ -316,7 +322,7 @@ fn spawn_senders(
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
             if !config.size_constraints.is_empty() {
                 if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
+                    if let Ok(metadata) = entry_metadata.get() {
                         let file_size = metadata.len();
                         if config
                             .size_constraints
@@ -337,7 +343,7 @@ fn spawn_senders(
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
                 if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
+                    if let Ok(metadata) = entry_metadata.get() {
                         if let Ok(modified) = metadata.modified() {
                             matched = config
                                 .time_constraints
