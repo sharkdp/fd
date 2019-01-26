@@ -8,6 +8,15 @@
 
 // inspired by https://www.reddit.com/r/rust/comments/9406rl/once_cell_a_lazy_static_without_macros_and_more/
 
+// There are several crates out there dealing with lazy initialization
+// in different ways. Pretty much all seem to use some form of additional
+// locking or atomic operations, or other kinds of overhead.
+//
+// For this usecase, what was needed was a low-overhead solution,
+// that only needed to support a single thread.
+//
+// TODO: maybe this should be polished/expanded and pulled out in a crate ?
+
 pub struct Lazy<T, F>
 where
     F: FnOnce() -> T,
