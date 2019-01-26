@@ -84,20 +84,19 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 
     for ignore_file in &config.ignore_files {
         let result = walker.add_ignore(ignore_file);
-        if let Some(err) = result {
-            match err {
-                ignore::Error::Partial(_) => (),
-                _ => {
-                    print_error!(
-                        "{}",
-                        format!(
-                            "Malformed pattern in custom ignore file '{}': {}.",
-                            ignore_file.to_string_lossy(),
-                            err.description()
-                        )
-                    );
-                }
+        match result {
+            Some(ignore::Error::Partial(_)) => (),
+            Some(err) => {
+                print_error!(
+                    "{}",
+                    format!(
+                        "Malformed pattern in custom ignore file '{}': {}.",
+                        ignore_file.to_string_lossy(),
+                        err.description()
+                    )
+                );
             }
+            None => (),
         }
     }
 
