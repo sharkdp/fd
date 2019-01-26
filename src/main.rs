@@ -49,7 +49,7 @@ fn main() {
     // Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches
         .values_of("path")
-        .or(matches.values_of("search-path"))
+        .or_else(|| matches.values_of("search-path"))
     {
         Some(paths) => paths
             .map(|path| {

@@ -24,7 +24,7 @@ const GIBI: u64 = MEBI * 1024;
 const TEBI: u64 = GIBI * 1024;
 
 impl SizeFilter {
-    pub fn from_string<'a>(s: &str) -> Option<Self> {
+    pub fn from_string(s: &str) -> Option<Self> {
         if !SIZE_CAPTURES.is_match(s) {
             return None;
         }
@@ -56,9 +56,9 @@ impl SizeFilter {
     }
 
     pub fn is_within(&self, size: u64) -> bool {
-        match self {
-            &SizeFilter::Max(limit) => size <= limit,
-            &SizeFilter::Min(limit) => size >= limit,
+        match *self {
+            SizeFilter::Max(limit) => size <= limit,
+            SizeFilter::Min(limit) => size >= limit,
         }
     }
 }

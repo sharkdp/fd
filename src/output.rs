@@ -19,7 +19,7 @@ use std::sync::Arc;
 use ansi_term;
 
 /// Remove the `./` prefix from a path.
-fn strip_current_dir<'a>(pathbuf: &'a PathBuf) -> &'a Path {
+fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
     let mut iter = pathbuf.components();
     let mut iter_next = iter.clone();
     if iter_next.next() == Some(Component::CurDir) {
@@ -70,7 +70,7 @@ fn print_entry_colorized(
         write!(stdout, "{}", style.paint(component.to_string_lossy()))?;
 
         if wants_to_quit.load(Ordering::Relaxed) {
-            write!(stdout, "\n")?;
+            writeln!(stdout)?;
             process::exit(ExitCode::KilledBySigint.into());
         }
     }
@@ -78,7 +78,7 @@ fn print_entry_colorized(
     if config.null_separator {
         write!(stdout, "\0")
     } else {
-        writeln!(stdout, "")
+        writeln!(stdout)
     }
 }
 
