@@ -53,7 +53,6 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         .next()
         .expect("Error: Path vector can not be empty");
     let (tx, rx) = channel();
-    let threads = config.threads;
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -106,7 +105,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
         walker.add(path_entry.as_path());
     }
 
-    let parallel_walker = walker.threads(threads).build_parallel();
+    let parallel_walker = walker.threads(config.threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
     if config.ls_colors.is_some() && config.command.is_none() {
