@@ -219,7 +219,7 @@ pub fn build_app() -> App<'static, 'static> {
         )
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 fn usage() -> HashMap<&'static str, Help> {
     let mut h = HashMap::new();
     doc!(h, "hidden"

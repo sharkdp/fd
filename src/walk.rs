@@ -304,7 +304,7 @@ fn spawn_senders(
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().map_or(None, |s| s.to_str()) {
+                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
                     if !exts_regex.is_match(path_str) {
                         return ignore::WalkState::Continue;
                     }
@@ -314,7 +314,7 @@ fn spawn_senders(
             }
 
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
-            if config.size_constraints.len() > 0 {
+            if !config.size_constraints.is_empty() {
                 if entry_path.is_file() {
                     if let Ok(metadata) = entry_path.metadata() {
                         let file_size = metadata.len();
