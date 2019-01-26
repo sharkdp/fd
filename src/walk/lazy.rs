@@ -7,6 +7,7 @@
 // according to those terms.
 
 // inspired by https://www.reddit.com/r/rust/comments/9406rl/once_cell_a_lazy_static_without_macros_and_more/
+
 pub struct Lazy<T, F>
 where
     F: FnOnce() -> T,
@@ -42,4 +43,25 @@ where
 {
     Pending(Option<F>),
     Data(T),
+}
+
+#[test]
+fn evaluates_only_once() {
+    let mut x = 2;
+    let mut l = Lazy::new(|| {
+        x += 1;
+        x
+    });
+
+    assert_eq!(*l.get(), 3);
+    assert_eq!(*l.get(), 3);
+}
+
+#[test]
+fn no_evaluation_before_get() {
+    #[allow(unreachable_code)]
+    let _l = Lazy::new(|| {
+        panic!("must not call this");
+        3
+    });
 }
