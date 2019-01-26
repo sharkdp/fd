@@ -109,10 +109,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     let parallel_walker = walker.threads(threads).build_parallel();
 
     let wants_to_quit = Arc::new(AtomicBool::new(false));
-    let receiver_wtq = Arc::clone(&wants_to_quit);
-    let sender_wtq = Arc::clone(&wants_to_quit);
     if config.ls_colors.is_some() && config.command.is_none() {
-        let wq = Arc::clone(&receiver_wtq);
+        let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || {
             wq.store(true, Ordering::Relaxed);
         })
@@ -120,16 +118,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     }
 
     // Spawn the thread that receives all results through the channel.
-    let receiver_thread = spawn_receiver(Arc::clone(&config), receiver_wtq, rx);
+    let receiver_thread = spawn_receiver(&config, &wants_to_quit, rx);
 
     // Spawn the sender threads.
-    spawn_senders(
-        Arc::clone(&config),
-        pattern,
-        sender_wtq,
-        parallel_walker,
-        tx,
-    );
+    spawn_senders(&config, &wants_to_quit, pattern, parallel_walker, tx);
 
     // Wait for the receiver thread to print out all results.
     receiver_thread.join().unwrap();
@@ -140,16 +132,19 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
 }
 
 fn spawn_receiver(
-    rx_config: Arc<FdOptions>,
-    receiver_wtq: Arc<AtomicBool>,
+    config: &Arc<FdOptions>,
+    wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
 ) -> thread::JoinHandle<()> {
-    let show_filesystem_errors = rx_config.show_filesystem_errors;
-    let threads = rx_config.threads;
+    let config = Arc::clone(config);
+    let wants_to_quit = Arc::clone(wants_to_quit);
+
+    let show_filesystem_errors = config.show_filesystem_errors;
+    let threads = config.threads;
 
     thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
-        if let Some(ref cmd) = rx_config.command {
+        if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, show_filesystem_errors);
             } else {
@@ -192,7 +187,7 @@ fn spawn_receiver(
             let mut mode = ReceiverMode::Buffering;
 
             // Maximum time to wait before we start streaming to the console.
-            let max_buffer_time = rx_config
+            let max_buffer_time = config
                 .max_buffer_time
                 .unwrap_or_else(|| time::Duration::from_millis(100));
 
@@ -215,8 +210,8 @@ fn spawn_receiver(
                                         output::print_entry(
                                             &mut stdout,
                                             v,
-                                            &rx_config,
-                                            &receiver_wtq,
+                                            &config,
+                                            &wants_to_quit,
                                         );
                                     }
                                     buffer.clear();
@@ -226,7 +221,7 @@ fn spawn_receiver(
                                 }
                             }
                             ReceiverMode::Streaming => {
-                                output::print_entry(&mut stdout, &value, &rx_config, &receiver_wtq);
+                                output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                             }
                         }
                     }
@@ -243,7 +238,7 @@ fn spawn_receiver(
             if !buffer.is_empty() {
                 buffer.sort();
                 for value in buffer {
-                    output::print_entry(&mut stdout, &value, &rx_config, &receiver_wtq);
+                    output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                 }
             }
         }
@@ -251,17 +246,17 @@ fn spawn_receiver(
 }
 
 fn spawn_senders(
-    config: Arc<FdOptions>,
+    config: &Arc<FdOptions>,
+    wants_to_quit: &Arc<AtomicBool>,
     pattern: Arc<Regex>,
-    sender_wtq: Arc<AtomicBool>,
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
 ) {
     parallel_walker.run(|| {
-        let config = Arc::clone(&config);
+        let config = Arc::clone(config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
-        let wants_to_quit = Arc::clone(&sender_wtq);
+        let wants_to_quit = Arc::clone(wants_to_quit);
 
         Box::new(move |entry_o| {
             if wants_to_quit.load(Ordering::Relaxed) {
