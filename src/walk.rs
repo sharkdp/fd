@@ -281,7 +281,9 @@ fn spawn_senders(
             // Filter out unwanted file types.
 
             if let Some(ref file_types) = config.file_types {
-                if let Some(ref entry_type) = entry.file_type() {
+                if let Ok(metadata) = entry_metadata.get() {
+                    let entry_type = metadata.file_type();
+
                     if (!file_types.files && entry_type.is_file())
                         || (!file_types.directories && entry_type.is_dir())
                         || (!file_types.symlinks && entry_type.is_symlink())
@@ -321,8 +323,8 @@ fn spawn_senders(
 
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
             if !config.size_constraints.is_empty() {
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_metadata.get() {
+                if let Ok(metadata) = entry_metadata.get() {
+                    if metadata.is_file() {
                         let file_size = metadata.len();
                         if config
                             .size_constraints
@@ -342,8 +344,8 @@ fn spawn_senders(
             // Filter out unwanted modification times
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_metadata.get() {
+                if let Ok(metadata) = entry_metadata.get() {
+                    if metadata.is_file() {
                         if let Ok(modified) = metadata.modified() {
                             matched = config
                                 .time_constraints
