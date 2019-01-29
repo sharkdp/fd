@@ -150,17 +150,11 @@ fn spawn_receiver(
 
                 let out_perm = Arc::new(Mutex::new(()));
 
-                // TODO: the following line is a workaround to replace the `unsafe` block that was
-                // previously used here to avoid the (unnecessary?) cloning of the command. The
-                // `unsafe` block caused problems on some platforms (SIGILL instructions on Linux) and
-                // therefore had to be removed.
-                let cmd = Arc::new(cmd.clone());
-
                 // Each spawned job will store it's thread handle in here.
                 let mut handles = Vec::with_capacity(threads);
                 for _ in 0..threads {
                     let rx = Arc::clone(&shared_rx);
-                    let cmd = Arc::clone(&cmd);
+                    let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
 
                     // Spawn a job thread that will listen for and execute inputs.

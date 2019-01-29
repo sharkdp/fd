@@ -231,7 +231,7 @@ fn main() {
                 }
             }
         }),
-        command,
+        command: command.map(Arc::new),
         exclude_patterns: matches
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())

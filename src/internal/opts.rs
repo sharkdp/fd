@@ -5,7 +5,7 @@ use crate::internal::{
 };
 use lscolors::LsColors;
 use regex::RegexSet;
-use std::{path::PathBuf, time::Duration};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 /// Configuration options for *fd*.
 pub struct FdOptions {
@@ -59,7 +59,7 @@ pub struct FdOptions {
     pub extensions: Option<RegexSet>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
-    pub command: Option<CommandTemplate>,
+    pub command: Option<Arc<CommandTemplate>>,
 
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
