@@ -278,6 +278,7 @@ OPTIONS:
                                        executable (x), empty (e)
     -e, --extension <ext>...           Filter by file extension
     -x, --exec <cmd>                   Execute a command for each search result
+    -X, --exec-batch <cmd>             Execute a command with all search results at once
     -E, --exclude <pattern>...         Exclude entries that match the given glob pattern
     -c, --color <when>                 When to use colors: never, *auto*, always
     -S, --size <size>...               Limit results based on the size of files.
@@ -288,6 +289,9 @@ ARGS:
     <pattern>    the search pattern, a regular expression (optional)
     <path>...    the root directory for the filesystem search (optional)
 ```
+
+This is the output of `fd -h`. To see the full set of command-line options, use `fd --help` which
+also includes a much more detailed help text.
 
 ## Tutorial
 
