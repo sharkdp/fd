@@ -190,10 +190,28 @@ Examples:
   \-\-changed-before "2018-10-27 10:00:00"
   \-\-change-older-than 2weeks
 .TP
-.BI "\-x, \-\-exec " command "\fR [args...] ;"
+.BI "\-x, \-\-exec " command
 Execute
 .I command
 for each search result. The following placeholders are substituted by a path derived from the current search result:
+.RS
+.IP {}
+path
+.IP {/}
+basename
+.IP {//}
+parent directory
+.IP {.}
+path without file extension
+.IP {/.}
+basename without file extension
+.RE
+.TP
+.BI "\-X, \-\-exec-batch " command
+Execute
+.I command
+with all search results at once.
+A single occurence of the following placeholders is authorized and substituted by the paths derived from the search results before the command is executed:
 .RS
 .IP {}
 path
@@ -221,5 +239,8 @@ $ fd nginx /var/log
 .TP
 .RI "Find all Python files (all files with the extention " .py ") in the current directory:"
 $ fd -e py
+.TP
+.RI "Open all search results with vim:"
+$ fd pattern -X vim
 .SH SEE ALSO
 .BR find (1)
