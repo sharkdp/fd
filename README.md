@@ -221,9 +221,9 @@ nix-env -i fd
 
 ### On FreeBSD
 
-You can install `sysutils/fd` via portmaster:
+You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
 ```
-portmaster sysutils/fd
+pkg install fd-find
 ```
 
 ### From source
