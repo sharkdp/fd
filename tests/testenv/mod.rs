@@ -121,13 +121,13 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
 }
 
 /// Normalize the output for comparison.
-fn normalize_output(s: &str, trim_left: bool, normalize_line: bool) -> String {
+fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
     // Split into lines and normalize separators.
     let mut lines = s
         .replace('\0', "NULL\n")
         .lines()
         .map(|line| {
-            let line = if trim_left { line.trim_left() } else { line };
+            let line = if trim_start { line.trim_start() } else { line };
             let line = line.replace('/', &std::path::MAIN_SEPARATOR.to_string());
             if normalize_line {
                 let mut words: Vec<_> = line.split_whitespace().collect();
