@@ -32,7 +32,7 @@ pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
         path_buf
             .as_path()
             .to_string_lossy()
-            .trim_left_matches(r"\\?\"),
+            .trim_start_matches(r"\\?\"),
     )
     .to_path_buf();
 

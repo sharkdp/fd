@@ -219,7 +219,7 @@ fn main() {
         }),
         extensions: matches.values_of("extension").map(|exts| {
             let patterns = exts
-                .map(|e| e.trim_left_matches('.'))
+                .map(|e| e.trim_start_matches('.'))
                 .map(|e| format!(r".\.{}$", regex::escape(e)));
             match RegexSetBuilder::new(patterns)
                 .case_insensitive(true)

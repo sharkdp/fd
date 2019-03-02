@@ -41,7 +41,7 @@ fn get_absolute_root_path(env: &TestEnv) -> String {
         .to_string();
 
     #[cfg(windows)]
-    let path = path.trim_left_matches(r"\\?\").to_string();
+    let path = path.trim_start_matches(r"\\?\").to_string();
 
     path
 }
