@@ -55,6 +55,11 @@ make_deb() {
     local version
     local dpkgname
     local conflictname
+    local homepage
+    local maintainer
+
+    homepage="https://github.com/sharkdp/fd"
+    maintainer="David Peter <mail@david-peter.de>"
 
     case $TARGET in
         x86_64*)
@@ -91,6 +96,15 @@ make_deb() {
     install -Dm644 README.md "$tempdir/usr/share/doc/$PROJECT_NAME/README.md"
     install -Dm644 LICENSE-MIT "$tempdir/usr/share/doc/$PROJECT_NAME/LICENSE-MIT"
     install -Dm644 LICENSE-APACHE "$tempdir/usr/share/doc/$PROJECT_NAME/LICENSE-APACHE"
+    cat > "$tempdir/usr/share/doc/$PROJECT_NAME/copyright" <<EOF
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: $PROJECT_NAME
+Source: $homepage
+
+Files: *
+Copyright: $maintainer
+License: Apache-2.0
+EOF
 
     # completions
     install -Dm644 target/$TARGET/release/build/$PROJECT_NAME-*/out/$PROJECT_NAME.bash "$tempdir/usr/share/bash-completion/completions/${PROJECT_NAME}"
@@ -104,10 +118,11 @@ Package: $dpkgname
 Version: $version
 Section: utils
 Priority: optional
-Maintainer: David Peter <mail@david-peter.de>
+Maintainer: $maintainer
 Architecture: $architecture
 Provides: $PROJECT_NAME
 Conflicts: $conflictname
+Homepage: $homepage
 Description: Simple, fast and user-friendly alternative to find
  While fd does not seek to mirror all of find's powerful functionality, it
  provides sensible (opinionated) defaults for 80% of the use cases.
