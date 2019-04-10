@@ -207,6 +207,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true),
         )
         .arg(arg("pattern"))
+        .arg(
+            arg("path-separator")
+                .takes_value(true)
+                .long("path-separator")
+                .number_of_values(1),
+        )
         .arg(arg("path").multiple(true))
         .arg(
             arg("search-path")
@@ -249,6 +255,10 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");
+    doc!(h, "path-separator"
+        , "Set the path separator to use when printing file paths."
+        , "Set the path separator to use when printing file paths. \
+           A path separator is limited to a single byte.");
     doc!(h, "follow"
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \

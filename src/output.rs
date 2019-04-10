@@ -67,7 +67,21 @@ fn print_entry_colorized(
             .map(Style::to_ansi_term_style)
             .unwrap_or(default_style);
 
-        write!(stdout, "{}", style.paint(component.to_string_lossy()))?;
+        let path_string = component.to_string_lossy();
+
+        match config.path_separator {
+            None => write!(stdout, "{}", style.paint(path_string))?,
+            Some(sep) => {
+                let mut path_bytes = path_string.as_bytes().to_vec();
+                for b in &mut path_bytes {
+                    if *b == b'/' || (cfg!(windows) && *b == b'\\') {
+                        *b = sep;
+                    }
+                }
+                let path_string = String::from_utf8_lossy(&path_bytes);
+                write!(stdout, "{}", style.paint(path_string))?
+            }
+        }
 
         if wants_to_quit.load(Ordering::Relaxed) {
             writeln!(stdout)?;
