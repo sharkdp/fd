@@ -210,8 +210,9 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             arg("path-separator")
                 .takes_value(true)
+                .value_name("separator")
                 .long("path-separator")
-                .number_of_values(1),
+                .hidden_short_help(true),
         )
         .arg(arg("path").multiple(true))
         .arg(
