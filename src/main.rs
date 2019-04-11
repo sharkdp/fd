@@ -113,19 +113,8 @@ fn main() {
         _ => atty::is(Stream::Stdout),
     };
 
-    let path_separator: Option<u8> = match matches.value_of("path-separator") {
-        Some(sep_str) => {
-            let sep = sep_str.as_bytes();
-            if sep.len() != 1 {
-                print_error_and_exit!(
-                    "'{}' is not a valid path separator. See 'fd --help'.",
-                    sep_str
-                );
-            }
-            Some(sep[0])
-        }
-        None => None,
-    };
+    let path_separator: Option<String> =
+        matches.value_of("path-separator").map(|str| str.to_owned());
 
     #[cfg(windows)]
     let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();

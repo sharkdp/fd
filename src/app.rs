@@ -258,8 +258,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Shows the full path starting from the root as opposed to relative paths.");
     doc!(h, "path-separator"
         , "Set the path separator to use when printing file paths."
-        , "Set the path separator to use when printing file paths. \
-           A path separator is limited to a single byte.");
+        , "Set the path separator to use when printing file paths.");
     doc!(h, "follow"
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \

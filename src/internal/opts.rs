@@ -77,5 +77,5 @@ pub struct FdOptions {
     pub show_filesystem_errors: bool,
 
     /// The separator used to print file paths.
-    pub path_separator: Option<u8>,
+    pub path_separator: Option<String>,
 }

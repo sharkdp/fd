@@ -69,16 +69,10 @@ fn print_entry_colorized(
 
         let path_string = component.to_string_lossy();
 
-        match config.path_separator {
+        match &config.path_separator {
             None => write!(stdout, "{}", style.paint(path_string))?,
             Some(sep) => {
-                let mut path_bytes = path_string.as_bytes().to_vec();
-                for b in &mut path_bytes {
-                    if *b == b'/' || (cfg!(windows) && *b == b'\\') {
-                        *b = sep;
-                    }
-                }
-                let path_string = String::from_utf8_lossy(&path_bytes);
+                let path_string = path_string.replace(std::path::MAIN_SEPARATOR, &sep);
                 write!(stdout, "{}", style.paint(path_string))?
             }
         }
