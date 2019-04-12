@@ -113,8 +113,7 @@ fn main() {
         _ => atty::is(Stream::Stdout),
     };
 
-    let path_separator: Option<String> =
-        matches.value_of("path-separator").map(|str| str.to_owned());
+    let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
 
     #[cfg(windows)]
     let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
