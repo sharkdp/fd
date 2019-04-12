@@ -10,6 +10,7 @@ use crate::exit_codes::ExitCode;
 use crate::internal::opts::FdOptions;
 use lscolors::{LsColors, Style};
 
+use std::borrow::Cow;
 use std::io::{self, StdoutLock, Write};
 use std::path::{Component, Path, PathBuf};
 use std::process;
@@ -52,6 +53,13 @@ pub fn print_entry(
     }
 }
 
+fn replace_path_separator<'a>(config: &FdOptions, str: Cow<'a, str>) -> Cow<'a, str> {
+    match &config.path_separator {
+        None => str,
+        Some(sep) => Cow::from(str.replace(std::path::MAIN_SEPARATOR, &sep)),
+    }
+}
+
 fn print_entry_colorized(
     stdout: &mut StdoutLock,
     path: &Path,
@@ -68,14 +76,8 @@ fn print_entry_colorized(
             .unwrap_or(default_style);
 
         let path_string = component.to_string_lossy();
-
-        match &config.path_separator {
-            None => write!(stdout, "{}", style.paint(path_string))?,
-            Some(sep) => {
-                let path_string = path_string.replace(std::path::MAIN_SEPARATOR, &sep);
-                write!(stdout, "{}", style.paint(path_string))?
-            }
-        }
+        let path_string = replace_path_separator(&config, path_string);
+        write!(stdout, "{}", style.paint(path_string))?;
 
         if wants_to_quit.load(Ordering::Relaxed) {
             writeln!(stdout)?;
@@ -98,5 +100,6 @@ fn print_entry_uncolorized(
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let path_str = path.to_string_lossy();
+    let path_str = replace_path_separator(&config, path_str);
     write!(stdout, "{}{}", path_str, separator)
 }
