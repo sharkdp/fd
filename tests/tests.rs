@@ -1231,3 +1231,17 @@ fn test_modified_asolute() {
         "30dec2017",
     );
 }
+
+#[test]
+fn test_custom_path_separator() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["foo", "one", "--path-separator", "="],
+        "one=b.foo
+        one=two=c.foo
+        one=two=C.Foo2
+        one=two=three=d.foo
+        one=two=three=directory_foo",
+    );
+}
