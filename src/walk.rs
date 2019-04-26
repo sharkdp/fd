@@ -267,6 +267,38 @@ fn spawn_senders(
                 return ignore::WalkState::Continue;
             }
 
+            // Check the name first, since it doesn't require metadata
+
+            let entry_path = entry.path();
+
+            let search_str_o = if config.search_full_path {
+                match fshelper::path_absolute_form(entry_path) {
+                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                    Err(_) => {
+                        print_error_and_exit!("Unable to retrieve absolute path.");
+                    }
+                }
+            } else {
+                entry_path.file_name().map(|f| f.to_string_lossy())
+            };
+
+            if let Some(search_str) = search_str_o {
+                if !pattern.is_match(&*search_str) {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
+            // Filter out unwanted extensions.
+            if let Some(ref exts_regex) = config.extensions {
+                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
+                    if !exts_regex.is_match(path_str) {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
             // Filter out unwanted file types.
 
             if let Some(ref file_types) = config.file_types {
@@ -287,19 +319,6 @@ fn spawn_senders(
                         || entry_type.is_symlink())
                     {
                         // This is probably a block device, char device, fifo or socket. Skip it.
-                        return ignore::WalkState::Continue;
-                    }
-                } else {
-                    return ignore::WalkState::Continue;
-                }
-            }
-
-            let entry_path = entry.path();
-
-            // Filter out unwanted extensions.
-            if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
-                    if !exts_regex.is_match(path_str) {
                         return ignore::WalkState::Continue;
                     }
                 } else {
@@ -345,25 +364,10 @@ fn spawn_senders(
                 }
             }
 
-            let search_str_o = if config.search_full_path {
-                match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
-                    Err(_) => {
-                        print_error_and_exit!("Unable to retrieve absolute path.");
-                    }
-                }
-            } else {
-                entry_path.file_name().map(|f| f.to_string_lossy())
-            };
-
-            if let Some(search_str) = search_str_o {
-                if pattern.is_match(&*search_str) {
-                    // TODO: take care of the unwrap call
-                    tx_thread
-                        .send(WorkerResult::Entry(entry_path.to_owned()))
-                        .unwrap()
-                }
-            }
+            // TODO: take care of the unwrap call
+            tx_thread
+                .send(WorkerResult::Entry(entry_path.to_owned()))
+                .unwrap();
 
             ignore::WalkState::Continue
         })
