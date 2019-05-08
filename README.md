@@ -41,7 +41,7 @@ Let's start with `find`:
 Benchmark #1: find ~ -iregex '.*[0-9]\.jpg$'
 
   Time (mean ± σ):      7.236 s ±  0.090 s
- 
+
   Range (min … max):    7.133 s …  7.385 s
 ```
 
@@ -50,7 +50,7 @@ Benchmark #1: find ~ -iregex '.*[0-9]\.jpg$'
 Benchmark #2: find ~ -iname '*[0-9].jpg'
 
   Time (mean ± σ):      3.914 s ±  0.027 s
- 
+
   Range (min … max):    3.876 s …  3.964 s
 ```
 
@@ -61,7 +61,7 @@ otherwise `fd` does not have to traverse hidden folders and ignored paths (see b
 Benchmark #3: fd -HI '.*[0-9]\.jpg$' ~
 
   Time (mean ± σ):     811.6 ms ±  26.9 ms
- 
+
   Range (min … max):   786.0 ms … 870.7 ms
 ```
 For this particular example, `fd` is approximately nine times faster than `find -iregex`
@@ -75,13 +75,13 @@ folders, it is almost an order of magnitude faster:
 Benchmark #4: fd '[0-9]\.jpg$' ~
 
   Time (mean ± σ):     123.7 ms ±   6.0 ms
- 
+
   Range (min … max):   118.8 ms … 140.0 ms
 ```
 
 **Note**: This is *one particular* benchmark on *one particular* machine. While I have
 performed quite a lot of different tests (and found consistent results), things might
-be different for you! I encourage everyone to try it out on their own. See 
+be different for you! I encourage everyone to try it out on their own. See
 [this repository](https://github.com/sharkdp/fd-benchmarks) for all necessary scripts.
 
 Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
@@ -198,6 +198,12 @@ brew install fd
 sudo port install fd
 ```
 
+… or with npm:
+```
+npm install -g fd-find
+```
+
+
 ### On Windows
 
 You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
@@ -232,6 +238,14 @@ You can install the [fd-find](https://gitlab.com/epbsd/ports/tree/master/sysutil
 ftp -o /etc/signify/epbsd-pkg.pub https://epbsd.org/epbsd-pkg.pub
 export PKG_PATH=https://repo.epbsd.org/pub/OpenBSD/$(arch -s):${PKG_PATH}
 pkg_add fd
+```
+
+### From NPM
+
+On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
+
+```
+npm install -g fd-find
 ```
 
 ### From source
