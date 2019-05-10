@@ -198,11 +198,6 @@ brew install fd
 sudo port install fd
 ```
 
-… or with npm:
-```
-npm install -g fd-find
-```
-
 ### On Windows
 
 You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
