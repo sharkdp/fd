@@ -128,12 +128,20 @@ fd -x wc -l \; -e rs
 ### On Ubuntu
 *... and other Debian-based Linux distributions.*
 
-Download the latest `.deb` package from the [release page](https://github.com/sharkdp/fd/releases) and install it via:
+If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
+[officially maintained package](https://packages.ubuntu.com/disco/fd-find):
+```
+sudo apt install fd-find
+```
+Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
+It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
+use `fd` in the same way as in this documentation.
+
+If you use an older version of Ubuntu, you can download the latest `.deb` package from the
+[release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
 sudo dpkg -i fd_7.3.0_amd64.deb  # adapt version number and architecture
 ```
-
-Note: `fd` will be officially available in Ubuntu Disco Dingo (19.04).
 
 ### On Debian
 
