@@ -447,6 +447,28 @@ If we want to run a command on all search results, we can pipe the output to `xa
 Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
 newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
+### Deleting files
+
+You can use `fd` to remove all files and directories that are matched by your search pattern.
+If you only want to remove files, you can use the `--exec-batch`/`-X` option to call `rm`. For
+example, to recursively remove all `.DS_Store` files, run:
+``` bash
+> fd -H '^\.DS_Store$' -tf -X rm
+```
+If you are unsure, always call `fd` without `-X rm` first. Alternatively, use `rm`s "interactive"
+option:
+``` bash
+> fd -H '^\.DS_Store$' -tf -X rm -i
+```
+
+If you also want to remove a certain class of directories, you can use the same technique. You will
+have to use `rm`s `--recursive`/`-r` flag to remove directories.
+
+Note: there are scenarios where using `fd … -X rm -r` can cause race conditions: if you have a
+path like `…/foo/bar/foo/…` and want to remove all directories named `foo`, you can end up in a
+situation where the outer `foo` directory is removed first, leading to (harmless) *"'foo/bar/foo':
+No such file or directory"* errors in the `rm` call.
+
 ### Troubleshooting
 
 #### `fd` does not find my file!
