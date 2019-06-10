@@ -167,6 +167,14 @@ dnf copr enable keefle/fd
 dnf install fd
 ```
 
+### On Alpine Linux
+
+You can install [the fd package](https://pkgs.alpinelinux.org/packages?name=fd)
+from the official sources, provided you have the appropriate repository enabled:
+```
+apk add fd
+```
+
 ### On Arch Linux
 
 You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
