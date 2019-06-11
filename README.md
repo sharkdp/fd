@@ -123,6 +123,8 @@ fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
 fd -x wc -l \; -e rs
 ```
 
+The number of jobs in the job pool is set with the `-j` option.
+
 ## Installation
 
 ### On Ubuntu
