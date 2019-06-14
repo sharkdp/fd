@@ -258,6 +258,15 @@ On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) packag
 npm install -g fd-find
 ```
 
+### From habitat
+
+On linux, you can install the [core/fd](https://bldr.habitat.sh/#/pkgs/core/fd/latest) package:
+
+```
+hab pkg install core/fd
+hab pkg binlink core/fd
+```
+
 ### From source
 
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
