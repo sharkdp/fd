@@ -24,6 +24,7 @@ matrix:
       rust: stable
       env:
         - TARGET=arm-unknown-linux-gnueabihf
+        - CC_arm_unknown_linux_gnueabihf=/usr/bin/arm-linux-gnueabihf-gcc-4.8
         - CARGO_TARGET_ARM_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc-4.8
     - os: linux
       rust: stable
