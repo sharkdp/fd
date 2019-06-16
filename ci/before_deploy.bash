@@ -68,6 +68,10 @@ make_deb() {
         i686*)
             architecture=i386
             ;;
+        arm*hf)
+            architecture=armhf
+            gcc_prefix="arm-linux-gnueabihf-"
+            ;;
         *)
             echo "make_deb: skipping target '${TARGET}'" >&2
             return 0
