@@ -123,7 +123,7 @@ fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
 fd -x wc -l \; -e rs
 ```
 
-The number of jobs in the job pool is set with the `-j` option.
+The number of threads used for command execution can be set with the `--threads`/`-j` option.
 
 ## Installation
 
