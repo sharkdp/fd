@@ -24,6 +24,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 * Parallel command execution with a syntax similar to GNU Parallel.
+* Completion with bash, zsh, PowerShell and fish
 
 ## Demo
 
