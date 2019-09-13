@@ -19,6 +19,7 @@ mod walk;
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use std::process;
 use std::sync::Arc;
 use std::time;
 
@@ -250,7 +251,10 @@ fn main() {
         .dot_matches_new_line(true)
         .build()
     {
-        Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
+        Ok(re) => {
+            let exit_code = walk::scan(&dir_vec, Arc::new(re), Arc::new(config));
+            process::exit(exit_code.into());
+        }
         Err(err) => {
             print_error_and_exit!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \

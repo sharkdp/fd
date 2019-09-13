@@ -20,6 +20,8 @@ use std::sync::{Arc, Mutex};
 use lazy_static::lazy_static;
 use regex::Regex;
 
+use crate::exit_codes::ExitCode;
+
 use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
@@ -152,14 +154,14 @@ impl CommandTemplate {
             cmd.arg(arg.generate(&input).as_ref());
         }
 
-        execute_command(cmd, &out_perm)
+        execute_command(cmd, &out_perm);
     }
 
     pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
     }
 
-    pub fn generate_and_execute_batch<I>(&self, paths: I)
+    pub fn generate_and_execute_batch<I>(&self, paths: I) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
@@ -185,7 +187,9 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()));
+            execute_command(cmd, &Mutex::new(()))
+        } else {
+            ExitCode::Success
         }
     }
 }

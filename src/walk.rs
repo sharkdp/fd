@@ -47,7 +47,7 @@ pub enum WorkerResult {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -> ExitCode {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -122,18 +122,20 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     spawn_senders(&config, &wants_to_quit, pattern, parallel_walker, tx);
 
     // Wait for the receiver thread to print out all results.
-    receiver_thread.join().unwrap();
+    let exit_code = receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
         process::exit(ExitCode::KilledBySigint.into());
     }
+
+    exit_code
 }
 
 fn spawn_receiver(
     config: &Arc<FdOptions>,
     wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
-) -> thread::JoinHandle<()> {
+) -> thread::JoinHandle<ExitCode> {
     let config = Arc::clone(config);
     let wants_to_quit = Arc::clone(wants_to_quit);
 
@@ -144,7 +146,7 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors);
+                exec::batch(rx, cmd, show_filesystem_errors)
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 
@@ -169,6 +171,8 @@ fn spawn_receiver(
                 for h in handles {
                     h.join().unwrap();
                 }
+
+                ExitCode::Success
             }
         } else {
             let start = time::Instant::now();
@@ -233,6 +237,8 @@ fn spawn_receiver(
                     output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                 }
             }
+
+            ExitCode::Success
         }
     })
 }
