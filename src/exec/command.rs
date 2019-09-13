@@ -11,8 +11,10 @@ use std::io::Write;
 use std::process::Command;
 use std::sync::Mutex;
 
+use crate::exit_codes::ExitCode;
+
 /// Executes a command.
-pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) {
+pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) -> ExitCode {
     // Spawn the supplied command.
     let output = cmd.output();
 
@@ -28,12 +30,20 @@ pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) {
 
             let _ = stdout.lock().write_all(&output.stdout);
             let _ = stderr.lock().write_all(&output.stderr);
+
+            if output.status.code() == Some(0) {
+                ExitCode::Success
+            } else {
+                ExitCode::GeneralError
+            }
         }
         Err(ref why) if why.kind() == io::ErrorKind::NotFound => {
             print_error!("Command not found: {:?}", cmd);
+            ExitCode::GeneralError
         }
         Err(why) => {
             print_error!("Problem while executing command: {}", why);
+            ExitCode::GeneralError
         }
     }
 }
