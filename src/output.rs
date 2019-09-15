@@ -53,10 +53,12 @@ pub fn print_entry(
     }
 }
 
-fn replace_path_separator<'a>(config: &FdOptions, str: Cow<'a, str>) -> Cow<'a, str> {
+fn replace_path_separator<'a>(config: &FdOptions, path: &mut Cow<'a, str>) {
     match &config.path_separator {
-        None => str,
-        Some(sep) => Cow::from(str.replace(std::path::MAIN_SEPARATOR, &sep)),
+        None => {}
+        Some(sep) => {
+            *path.to_mut() = path.replace(std::path::MAIN_SEPARATOR, &sep);
+        }
     }
 }
 
@@ -75,8 +77,8 @@ fn print_entry_colorized(
             .map(Style::to_ansi_term_style)
             .unwrap_or(default_style);
 
-        let path_string = component.to_string_lossy();
-        let path_string = replace_path_separator(&config, path_string);
+        let mut path_string = component.to_string_lossy();
+        replace_path_separator(&config, &mut path_string);
         write!(stdout, "{}", style.paint(path_string))?;
 
         if wants_to_quit.load(Ordering::Relaxed) {
@@ -99,7 +101,7 @@ fn print_entry_uncolorized(
 ) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
-    let path_str = path.to_string_lossy();
-    let path_str = replace_path_separator(&config, path_str);
+    let mut path_str = path.to_string_lossy();
+    replace_path_separator(&config, &mut path_str);
     write!(stdout, "{}{}", path_str, separator)
 }
