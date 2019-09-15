@@ -273,8 +273,14 @@ fn test_glob_searches() {
 fn test_full_path_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
+    #[cfg(not(windows))]
+    let pattern = "**/one/**/*.foo";
+
+    #[cfg(windows)]
+    let pattern = "**\\one\\**\\*.foo";
+
     te.assert_output(
-        &["--glob", "--full-path", "**/one/**/*.foo"],
+        &["--glob", "--full-path", pattern],
         "one/b.foo
         one/two/c.foo
         one/two/three/d.foo",
