@@ -74,6 +74,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .conflicts_with("fixed-strings"),
         )
         .arg(
+            arg("regex")
+                .long("regex")
+                .overrides_with("glob")
+                .hidden_short_help(true),
+        )
+        .arg(
             arg("fixed-strings")
                 .long("fixed-strings")
                 .short("F")
@@ -259,6 +265,9 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "glob"
         , "Glob-based search (default: regular expression)"
         , "Perform a glob-based search instead of a regular expression search.");
+    doc!(h, "regex"
+        , "Perform a regex-based search"
+        , "Perform a regular-expression based seach (default). This can be used to override --glob.");
     doc!(h, "fixed-strings"
         , "Treat the pattern as a literal string"
         , "Treat the pattern as a literal string instead of a regular expression.");
@@ -346,7 +355,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Amount of time in milliseconds to buffer, before streaming the search results to \
            the console.");
     doc!(h, "pattern"
-        , "the search pattern, a regular expression (optional)");
+        , "the search pattern: a regular expression unless '--glob' is used (optional)");
     doc!(h, "path"
         , "the root directory for the filesystem search (optional)"
         , "The directory where the filesystem search is rooted (optional). \
