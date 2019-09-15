@@ -44,6 +44,7 @@ ctrlc = "3.1"
 humantime = "1.1.1"
 lscolors = "0.6"
 globset = "0.4"
+jemallocator = "0.3.0"
 
 [dependencies.clap]
 version = "2.31.2"
