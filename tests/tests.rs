@@ -278,6 +278,8 @@ fn test_hidden() {
 #[cfg(windows)]
 #[test]
 fn test_hidden_file_attribute() {
+    use std::os::windows::fs::OpenOptionsExt;
+
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileattributesa
