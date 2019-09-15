@@ -35,7 +35,8 @@ use crate::internal::{
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
 
-// We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/480
+// We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
+#[cfg(not(windows))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
