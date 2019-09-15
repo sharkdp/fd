@@ -313,6 +313,14 @@ fn test_glob_searches_with_extension() {
     );
 }
 
+/// Make sure that --regex overrides --glob
+#[test]
+fn test_regex_overrides_glob() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--glob", "--regex", "Foo2$"], "one/two/C.Foo2");
+}
+
 /// Full path search (--full-path)
 #[test]
 fn test_full_path() {
