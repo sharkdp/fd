@@ -9,10 +9,12 @@
 use crate::exec;
 use crate::exit_codes::ExitCode;
 use crate::fshelper;
-use crate::internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
+use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
 
+use std::borrow::Cow;
 use std::error::Error;
+use std::ffi::OsStr;
 use std::io;
 use std::path::PathBuf;
 use std::process;
@@ -24,7 +26,7 @@ use std::time;
 
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
-use regex::Regex;
+use regex::bytes::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -279,30 +281,34 @@ fn spawn_senders(
             }
 
             // Check the name first, since it doesn't require metadata
-
             let entry_path = entry.path();
 
-            let search_str_o = if config.search_full_path {
+            let search_str: Cow<OsStr> = if config.search_full_path {
                 match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                    Ok(path_abs_buf) => Cow::Owned(path_abs_buf.as_os_str().to_os_string()),
                     Err(_) => {
                         print_error_and_exit!("Unable to retrieve absolute path.");
                     }
                 }
             } else {
-                entry_path.file_name().map(|f| f.to_string_lossy())
+                match entry_path.file_name() {
+                    Some(filename) => Cow::Borrowed(filename),
+                    None => unreachable!(
+                        "Encountered file system entry without a file name. This should only \
+                         happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                         appear in a file system traversal."
+                    ),
+                }
             };
 
-            if let Some(search_str) = search_str_o {
-                if !pattern.is_match(&*search_str) {
-                    return ignore::WalkState::Continue;
-                }
+            if !pattern.is_match(&osstr_to_bytes(search_str.as_ref())) {
+                return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
-                    if !exts_regex.is_match(path_str) {
+                if let Some(path_str) = entry_path.file_name() {
+                    if !exts_regex.is_match(&osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;
                     }
                 } else {
@@ -311,7 +317,6 @@ fn spawn_senders(
             }
 
             // Filter out unwanted file types.
-
             if let Some(ref file_types) = config.file_types {
                 if let Some(ref entry_type) = entry.file_type() {
                     if (!file_types.files && entry_type.is_file())

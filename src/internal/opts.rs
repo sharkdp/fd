@@ -4,7 +4,7 @@ use crate::internal::{
     FileTypes,
 };
 use lscolors::LsColors;
-use regex::RegexSet;
+use regex::bytes::RegexSet;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 /// Configuration options for *fd*.

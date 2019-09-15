@@ -25,7 +25,7 @@ use std::time;
 
 use atty::Stream;
 use lscolors::LsColors;
-use regex::{RegexBuilder, RegexSetBuilder};
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::exec::CommandTemplate;
 use crate::internal::{
