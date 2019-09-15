@@ -298,6 +298,7 @@ FLAGS:
         --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
+    -g, --glob              Glob-based search (default: regular expression)
     -F, --fixed-strings     Treat the pattern as a literal string
     -a, --absolute-path     Show absolute instead of relative paths
     -L, --follow            Follow symbolic links
@@ -320,7 +321,7 @@ OPTIONS:
         --changed-before <date|dur>    Filter by file modification time (older than)
 
 ARGS:
-    <pattern>    the search pattern, a regular expression (optional)
+    <pattern>    the search pattern: a regular expression unless '--glob' is used (optional)
     <path>...    the root directory for the filesystem search (optional)
 ```
 
