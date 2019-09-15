@@ -44,7 +44,6 @@ ctrlc = "3.1"
 humantime = "1.1.1"
 lscolors = "0.6"
 globset = "0.4"
-jemallocator = "0.3.0"
 
 [dependencies.clap]
 version = "2.31.2"
@@ -52,6 +51,9 @@ features = ["suggestions", "color", "wrap_help"]
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
+
+[target.'cfg(all(unix, not(target_os = "redox"), not(target_env = "musl")))'.dependencies]
+jemallocator = "0.3.0"
 
 [dev-dependencies]
 diff = "0.1"
