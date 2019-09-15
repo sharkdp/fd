@@ -280,10 +280,13 @@ fn test_hidden() {
 fn test_hidden_file_attribute() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
+    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileattributesa
+    const FILE_ATTRIBUTE_HIDDEN: u32 = 2;
+
     fs::OpenOptions::new()
         .create(true)
         .write(true)
-        .attributes(winapi::FILE_ATTRIBUTE_HIDDEN)
+        .attributes(FILE_ATTRIBUTE_HIDDEN)
         .open(te.test_root().join("hidden-file.txt"))
         .unwrap();
 
