@@ -365,14 +365,12 @@ fn spawn_senders(
             // Filter out unwanted modification times
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
-                        if let Ok(modified) = metadata.modified() {
-                            matched = config
-                                .time_constraints
-                                .iter()
-                                .all(|tf| tf.applies_to(&modified));
-                        }
+                if let Ok(metadata) = entry_path.metadata() {
+                    if let Ok(modified) = metadata.modified() {
+                        matched = config
+                            .time_constraints
+                            .iter()
+                            .all(|tf| tf.applies_to(&modified));
                     }
                 }
                 if !matched {
