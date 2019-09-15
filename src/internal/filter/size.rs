@@ -80,8 +80,8 @@ mod tests {
         };
     }
 
-    /// Parsing and size conversion tests data. Ensure that each type gets properly interpreted.
-    /// Call with higher base values to ensure expected multiplication (only need a couple)
+    // Parsing and size conversion tests data. Ensure that each type gets properly interpreted.
+    // Call with higher base values to ensure expected multiplication (only need a couple)
     gen_size_filter_parse_test! {
         byte_plus:                ("+1b",     SizeFilter::Min(1)),
         byte_plus_multiplier:     ("+10b",    SizeFilter::Min(10)),
@@ -168,7 +168,7 @@ mod tests {
         };
     }
 
-    /// Invalid parse data
+    // Invalid parse data
     gen_size_filter_failure! {
         ensure_missing_symbol_returns_none: "10M",
         ensure_missing_number_returns_none: "+g",
