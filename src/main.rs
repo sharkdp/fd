@@ -24,6 +24,7 @@ use std::sync::Arc;
 use std::time;
 
 use atty::Stream;
+use globset::Glob;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
@@ -96,8 +97,16 @@ fn main() {
         );
     }
 
-    // Treat pattern as literal string if '--fixed-strings' is used
-    let pattern_regex = if matches.is_present("fixed-strings") {
+    let pattern_regex = if matches.is_present("glob") {
+        let glob = match Glob::new(pattern) {
+            Ok(glob) => glob,
+            Err(e) => {
+                print_error_and_exit!("{}", e);
+            }
+        };
+        glob.regex().to_owned()
+    } else if matches.is_present("fixed-strings") {
+        // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
     } else {
         String::from(pattern)

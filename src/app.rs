@@ -68,6 +68,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("case-sensitive"),
         )
         .arg(
+            arg("glob")
+                .long("glob")
+                .short("g")
+                .conflicts_with("fixed-strings"),
+        )
+        .arg(
             arg("fixed-strings")
                 .long("fixed-strings")
                 .short("F")
@@ -250,6 +256,9 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Case-insensitive search (default: smart case)"
         , "Perform a case-insensitive search. By default, fd uses case-insensitive searches, \
            unless the pattern contains an uppercase character (smart case).");
+    doc!(h, "glob"
+        , "Glob-based search (default: regular expression)"
+        , "Perform a glob-based search instead of a regular expression search.");
     doc!(h, "fixed-strings"
         , "Treat the pattern as a literal string"
         , "Treat the pattern as a literal string instead of a regular expression.");
