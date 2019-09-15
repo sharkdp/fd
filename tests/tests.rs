@@ -274,6 +274,23 @@ fn test_hidden() {
     );
 }
 
+/// Hidden file attribute on Windows
+#[cfg(windows)]
+#[test]
+fn test_hidden_file_attribute() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .attributes(winapi::FILE_ATTRIBUTE_HIDDEN)
+        .open(te.test_root().join("hidden-file.txt"))
+        .unwrap();
+
+    te.assert_output(&["--hidden", "hidden-file.txt"], "hidden-file.txt");
+    te.assert_output(&["hidden-file.txt"], "");
+}
+
 /// Ignored files (--no-ignore)
 #[test]
 fn test_no_ignore() {
