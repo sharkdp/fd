@@ -110,7 +110,12 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
     if config.ls_colors.is_some() && config.command.is_none() {
         let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || {
-            wq.store(true, Ordering::Relaxed);
+            if wq.load(Ordering::Relaxed) {
+                // Ctrl-C has been pressed twice, exit NOW
+                process::exit(ExitCode::KilledBySigint.into());
+            } else {
+                wq.store(true, Ordering::Relaxed);
+            }
         })
         .unwrap();
     }
