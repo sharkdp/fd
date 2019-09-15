@@ -37,6 +37,7 @@ use crate::internal::{
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 #[cfg(not(windows))]
+#[cfg(not(target_env = "musl"))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
