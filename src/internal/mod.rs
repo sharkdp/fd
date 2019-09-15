@@ -6,9 +6,11 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+use std::borrow::Cow;
+use std::ffi::{OsStr, OsString};
+
 use regex_syntax::hir::Hir;
 use regex_syntax::Parser;
-use std::ffi::OsString;
 
 pub use self::file_types::FileTypes;
 
@@ -25,6 +27,22 @@ macro_rules! print_error_and_exit {
         print_error!($($arg)*);
         ::std::process::exit(1);
     };
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+    use std::os::unix::ffi::OsStrExt;
+    Cow::Borrowed(input.as_bytes())
+}
+
+#[cfg(windows)]
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+    let string = input.to_string_lossy();
+
+    match string {
+        Cow::Owned(string) => Cow::Owned(string.into_bytes()),
+        Cow::Borrowed(string) => Cow::Borrowed(string.as_bytes()),
+    }
 }
 
 /// Determine if a regex pattern contains a literal uppercase character.
