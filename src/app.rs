@@ -258,7 +258,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Shows the full path starting from the root as opposed to relative paths.");
     doc!(h, "path-separator"
         , "Set the path separator to use when printing file paths."
-        , "Set the path separator to use when printing file paths.");
+        , "Set the path separator to use when printing file paths. The default is the OS-specific \
+           separator ('/' on Unix, '\\' on Windows).");
     doc!(h, "follow"
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \
