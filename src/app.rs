@@ -53,7 +53,7 @@ pub fn build_app() -> App<'static, 'static> {
             arg("rg-alias-hidden-ignore")
                 .short("u")
                 .multiple(true)
-                .hidden(true),
+                .hidden_short_help(true),
         )
         .arg(
             arg("case-sensitive")
