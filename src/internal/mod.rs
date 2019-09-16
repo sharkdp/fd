@@ -6,9 +6,11 @@
 // notice may not be copied, modified, or distributed except
 // according to those terms.
 
+use std::borrow::Cow;
+use std::ffi::{OsStr, OsString};
+
 use regex_syntax::hir::Hir;
-use regex_syntax::Parser;
-use std::ffi::OsString;
+use regex_syntax::ParserBuilder;
 
 pub use self::file_types::FileTypes;
 
@@ -27,9 +29,27 @@ macro_rules! print_error_and_exit {
     };
 }
 
+#[cfg(any(unix, target_os = "redox"))]
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+    use std::os::unix::ffi::OsStrExt;
+    Cow::Borrowed(input.as_bytes())
+}
+
+#[cfg(windows)]
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+    let string = input.to_string_lossy();
+
+    match string {
+        Cow::Owned(string) => Cow::Owned(string.into_bytes()),
+        Cow::Borrowed(string) => Cow::Borrowed(string.as_bytes()),
+    }
+}
+
 /// Determine if a regex pattern contains a literal uppercase character.
 pub fn pattern_has_uppercase_char(pattern: &str) -> bool {
-    Parser::new()
+    let mut parser = ParserBuilder::new().allow_invalid_utf8(true).build();
+
+    parser
         .parse(pattern)
         .map(|hir| hir_has_uppercase_char(&hir))
         .unwrap_or(false)
@@ -41,9 +61,13 @@ fn hir_has_uppercase_char(hir: &Hir) -> bool {
 
     match *hir.kind() {
         HirKind::Literal(Literal::Unicode(c)) => c.is_uppercase(),
+        HirKind::Literal(Literal::Byte(b)) => char::from(b).is_uppercase(),
         HirKind::Class(Class::Unicode(ref ranges)) => ranges
             .iter()
             .any(|r| r.start().is_uppercase() || r.end().is_uppercase()),
+        HirKind::Class(Class::Bytes(ref ranges)) => ranges
+            .iter()
+            .any(|r| char::from(r.start()).is_uppercase() || char::from(r.end()).is_uppercase()),
         HirKind::Group(Group { ref hir, .. }) | HirKind::Repetition(Repetition { ref hir, .. }) => {
             hir_has_uppercase_char(hir)
         }

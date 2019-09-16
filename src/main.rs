@@ -19,12 +19,14 @@ mod walk;
 use std::env;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use std::process;
 use std::sync::Arc;
 use std::time;
 
 use atty::Stream;
+use globset::Glob;
 use lscolors::LsColors;
-use regex::{RegexBuilder, RegexSetBuilder};
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::exec::CommandTemplate;
 use crate::internal::{
@@ -32,6 +34,11 @@ use crate::internal::{
     opts::FdOptions,
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
+
+// We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
+#[cfg(all(not(windows), not(target_env = "musl")))]
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
@@ -95,8 +102,16 @@ fn main() {
         );
     }
 
-    // Treat pattern as literal string if '--fixed-strings' is used
-    let pattern_regex = if matches.is_present("fixed-strings") {
+    let pattern_regex = if matches.is_present("glob") {
+        let glob = match Glob::new(pattern) {
+            Ok(glob) => glob,
+            Err(e) => {
+                print_error_and_exit!("{}", e);
+            }
+        };
+        glob.regex().to_owned()
+    } else if matches.is_present("fixed-strings") {
+        // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
     } else {
         String::from(pattern)
@@ -112,6 +127,8 @@ fn main() {
         Some("never") => false,
         _ => atty::is(Stream::Stdout),
     };
+
+    let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
 
     #[cfg(windows)]
     let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
@@ -243,6 +260,7 @@ fn main() {
         size_constraints: size_limits,
         time_constraints,
         show_filesystem_errors: matches.is_present("show-errors"),
+        path_separator,
     };
 
     match RegexBuilder::new(&pattern_regex)
@@ -250,7 +268,10 @@ fn main() {
         .dot_matches_new_line(true)
         .build()
     {
-        Ok(re) => walk::scan(&dir_vec, Arc::new(re), Arc::new(config)),
+        Ok(re) => {
+            let exit_code = walk::scan(&dir_vec, Arc::new(re), Arc::new(config));
+            process::exit(exit_code.into());
+        }
         Err(err) => {
             print_error_and_exit!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \

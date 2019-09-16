@@ -7,6 +7,7 @@
 // according to those terms.
 
 use super::CommandTemplate;
+use crate::exit_codes::ExitCode;
 use crate::walk::WorkerResult;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
@@ -45,7 +46,11 @@ pub fn job(
     }
 }
 
-pub fn batch(rx: Receiver<WorkerResult>, cmd: &CommandTemplate, show_filesystem_errors: bool) {
+pub fn batch(
+    rx: Receiver<WorkerResult>,
+    cmd: &CommandTemplate,
+    show_filesystem_errors: bool,
+) -> ExitCode {
     let paths = rx.iter().filter_map(|value| match value {
         WorkerResult::Entry(val) => Some(val),
         WorkerResult::Error(err) => {
@@ -55,5 +60,5 @@ pub fn batch(rx: Receiver<WorkerResult>, cmd: &CommandTemplate, show_filesystem_
             None
         }
     });
-    cmd.generate_and_execute_batch(paths);
+    cmd.generate_and_execute_batch(paths)
 }

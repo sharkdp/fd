@@ -142,7 +142,7 @@ use `fd` in the same way as in this documentation.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_7.3.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i fd_7.4.0_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Debian
@@ -298,6 +298,7 @@ FLAGS:
         --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
+    -g, --glob              Glob-based search (default: regular expression)
     -F, --fixed-strings     Treat the pattern as a literal string
     -a, --absolute-path     Show absolute instead of relative paths
     -L, --follow            Follow symbolic links
@@ -320,7 +321,7 @@ OPTIONS:
         --changed-before <date|dur>    Filter by file modification time (older than)
 
 ARGS:
-    <pattern>    the search pattern, a regular expression (optional)
+    <pattern>    the search pattern: a regular expression unless '--glob' is used (optional)
     <path>...    the root directory for the filesystem search (optional)
 ```
 

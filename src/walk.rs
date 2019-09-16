@@ -9,10 +9,12 @@
 use crate::exec;
 use crate::exit_codes::ExitCode;
 use crate::fshelper;
-use crate::internal::{opts::FdOptions, MAX_BUFFER_LENGTH};
+use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
 
+use std::borrow::Cow;
 use std::error::Error;
+use std::ffi::OsStr;
 use std::io;
 use std::path::PathBuf;
 use std::process;
@@ -24,7 +26,7 @@ use std::time;
 
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
-use regex::Regex;
+use regex::bytes::Regex;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -47,7 +49,7 @@ pub enum WorkerResult {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -> ExitCode {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -110,7 +112,12 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     if config.ls_colors.is_some() && config.command.is_none() {
         let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || {
-            wq.store(true, Ordering::Relaxed);
+            if wq.load(Ordering::Relaxed) {
+                // Ctrl-C has been pressed twice, exit NOW
+                process::exit(ExitCode::KilledBySigint.into());
+            } else {
+                wq.store(true, Ordering::Relaxed);
+            }
         })
         .unwrap();
     }
@@ -122,18 +129,20 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) {
     spawn_senders(&config, &wants_to_quit, pattern, parallel_walker, tx);
 
     // Wait for the receiver thread to print out all results.
-    receiver_thread.join().unwrap();
+    let exit_code = receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
         process::exit(ExitCode::KilledBySigint.into());
     }
+
+    exit_code
 }
 
 fn spawn_receiver(
     config: &Arc<FdOptions>,
     wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
-) -> thread::JoinHandle<()> {
+) -> thread::JoinHandle<ExitCode> {
     let config = Arc::clone(config);
     let wants_to_quit = Arc::clone(wants_to_quit);
 
@@ -144,7 +153,7 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors);
+                exec::batch(rx, cmd, show_filesystem_errors)
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 
@@ -169,6 +178,8 @@ fn spawn_receiver(
                 for h in handles {
                     h.join().unwrap();
                 }
+
+                ExitCode::Success
             }
         } else {
             let start = time::Instant::now();
@@ -233,6 +244,8 @@ fn spawn_receiver(
                     output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                 }
             }
+
+            ExitCode::Success
         }
     })
 }
@@ -268,30 +281,34 @@ fn spawn_senders(
             }
 
             // Check the name first, since it doesn't require metadata
-
             let entry_path = entry.path();
 
-            let search_str_o = if config.search_full_path {
+            let search_str: Cow<OsStr> = if config.search_full_path {
                 match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Some(path_abs_buf.to_string_lossy().into_owned().into()),
+                    Ok(path_abs_buf) => Cow::Owned(path_abs_buf.as_os_str().to_os_string()),
                     Err(_) => {
                         print_error_and_exit!("Unable to retrieve absolute path.");
                     }
                 }
             } else {
-                entry_path.file_name().map(|f| f.to_string_lossy())
+                match entry_path.file_name() {
+                    Some(filename) => Cow::Borrowed(filename),
+                    None => unreachable!(
+                        "Encountered file system entry without a file name. This should only \
+                         happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                         appear in a file system traversal."
+                    ),
+                }
             };
 
-            if let Some(search_str) = search_str_o {
-                if !pattern.is_match(&*search_str) {
-                    return ignore::WalkState::Continue;
-                }
+            if !pattern.is_match(&osstr_to_bytes(search_str.as_ref())) {
+                return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name().and_then(|s| s.to_str()) {
-                    if !exts_regex.is_match(path_str) {
+                if let Some(path_str) = entry_path.file_name() {
+                    if !exts_regex.is_match(&osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;
                     }
                 } else {
@@ -300,7 +317,6 @@ fn spawn_senders(
             }
 
             // Filter out unwanted file types.
-
             if let Some(ref file_types) = config.file_types {
                 if let Some(ref entry_type) = entry.file_type() {
                     if (!file_types.files && entry_type.is_file())
@@ -349,14 +365,12 @@ fn spawn_senders(
             // Filter out unwanted modification times
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
-                if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
-                        if let Ok(modified) = metadata.modified() {
-                            matched = config
-                                .time_constraints
-                                .iter()
-                                .all(|tf| tf.applies_to(&modified));
-                        }
+                if let Ok(metadata) = entry_path.metadata() {
+                    if let Ok(modified) = metadata.modified() {
+                        matched = config
+                            .time_constraints
+                            .iter()
+                            .all(|tf| tf.applies_to(&modified));
                     }
                 }
                 if !matched {

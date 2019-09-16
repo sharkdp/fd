@@ -68,6 +68,18 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("case-sensitive"),
         )
         .arg(
+            arg("glob")
+                .long("glob")
+                .short("g")
+                .conflicts_with("fixed-strings"),
+        )
+        .arg(
+            arg("regex")
+                .long("regex")
+                .overrides_with("glob")
+                .hidden_short_help(true),
+        )
+        .arg(
             arg("fixed-strings")
                 .long("fixed-strings")
                 .short("F")
@@ -207,6 +219,13 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true),
         )
         .arg(arg("pattern"))
+        .arg(
+            arg("path-separator")
+                .takes_value(true)
+                .value_name("separator")
+                .long("path-separator")
+                .hidden_short_help(true),
+        )
         .arg(arg("path").multiple(true))
         .arg(
             arg("search-path")
@@ -243,12 +262,22 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Case-insensitive search (default: smart case)"
         , "Perform a case-insensitive search. By default, fd uses case-insensitive searches, \
            unless the pattern contains an uppercase character (smart case).");
+    doc!(h, "glob"
+        , "Glob-based search (default: regular expression)"
+        , "Perform a glob-based search instead of a regular expression search.");
+    doc!(h, "regex"
+        , "Perform a regex-based search"
+        , "Perform a regular-expression based seach (default). This can be used to override --glob.");
     doc!(h, "fixed-strings"
         , "Treat the pattern as a literal string"
         , "Treat the pattern as a literal string instead of a regular expression.");
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");
+    doc!(h, "path-separator"
+        , "Set the path separator to use when printing file paths."
+        , "Set the path separator to use when printing file paths. The default is the OS-specific \
+           separator ('/' on Unix, '\\' on Windows).");
     doc!(h, "follow"
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \
@@ -326,7 +355,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Amount of time in milliseconds to buffer, before streaming the search results to \
            the console.");
     doc!(h, "pattern"
-        , "the search pattern, a regular expression (optional)");
+        , "the search pattern: a regular expression unless '--glob' is used (optional)");
     doc!(h, "path"
         , "the root directory for the filesystem search (optional)"
         , "The directory where the filesystem search is rooted (optional). \

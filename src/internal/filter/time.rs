@@ -9,7 +9,6 @@ pub enum TimeFilter {
 
 impl TimeFilter {
     fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
-        use humantime;
         humantime::parse_duration(s)
             .map(|duration| *ref_time - duration)
             .or_else(|_| humantime::parse_rfc3339_weak(s))
@@ -39,8 +38,6 @@ mod tests {
 
     #[test]
     fn is_time_filter_applicable() {
-        use humantime;
-
         let ref_time = humantime::parse_rfc3339("2010-10-10T10:10:10Z").unwrap();
         assert!(TimeFilter::after(&ref_time, "1min")
             .unwrap()

@@ -239,6 +239,89 @@ fn test_case_insensitive() {
     );
 }
 
+/// Glob-based searches (--glob)
+#[test]
+fn test_glob_searches() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--glob", "*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--glob", "[a-c].foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo",
+    );
+
+    te.assert_output(
+        &["--glob", "[a-c].foo*"],
+        "a.foo
+        one/b.foo
+        one/two/C.Foo2
+        one/two/c.foo",
+    );
+}
+
+/// Glob-based searches (--glob) in combination with full path searches (--full-path)
+#[cfg(not(windows))] // TODO: make this work on Windows
+#[test]
+fn test_full_path_glob_searches() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--glob", "--full-path", "**/one/**/*.foo"],
+        "one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+}
+
+#[test]
+fn test_smart_case_glob_searches() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--glob", "c.foo*"],
+        "one/two/C.Foo2
+        one/two/c.foo",
+    );
+
+    te.assert_output(&["--glob", "C.Foo*"], "one/two/C.Foo2");
+}
+
+/// Glob-based searches (--glob) in combination with --case-sensitive
+#[test]
+fn test_case_sensitive_glob_searches() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--glob", "--case-sensitive", "c.foo*"], "one/two/c.foo");
+}
+
+/// Glob-based searches (--glob) in combination with --extension
+#[test]
+fn test_glob_searches_with_extension() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--glob", "--extension", "foo2", "[a-z].*"],
+        "one/two/C.Foo2",
+    );
+}
+
+/// Make sure that --regex overrides --glob
+#[test]
+fn test_regex_overrides_glob() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--glob", "--regex", "Foo2$"], "one/two/C.Foo2");
+}
+
 /// Full path search (--full-path)
 #[test]
 fn test_full_path() {
@@ -272,6 +355,28 @@ fn test_hidden() {
         one/two/three/d.foo
         one/two/three/directory_foo",
     );
+}
+
+/// Hidden file attribute on Windows
+#[cfg(windows)]
+#[test]
+fn test_hidden_file_attribute() {
+    use std::os::windows::fs::OpenOptionsExt;
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfileattributesa
+    const FILE_ATTRIBUTE_HIDDEN: u32 = 2;
+
+    fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .attributes(FILE_ATTRIBUTE_HIDDEN)
+        .open(te.test_root().join("hidden-file.txt"))
+        .unwrap();
+
+    te.assert_output(&["--hidden", "hidden-file.txt"], "hidden-file.txt");
+    te.assert_output(&["hidden-file.txt"], "");
 }
 
 /// Ignored files (--no-ignore)
@@ -1229,5 +1334,19 @@ fn test_modified_asolute() {
     te.assert_output(
         &["", "--changed-before", "2018-01-01 00:00:00"],
         "30dec2017",
+    );
+}
+
+#[test]
+fn test_custom_path_separator() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["foo", "one", "--path-separator", "="],
+        "one=b.foo
+        one=two=c.foo
+        one=two=C.Foo2
+        one=two=three=d.foo
+        one=two=three=directory_foo",
     );
 }

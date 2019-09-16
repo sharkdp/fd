@@ -51,6 +51,12 @@ pattern contains an uppercase character (smart case).
 Perform a case-insensitive search. By default, fd uses case-insensitive searches, unless the
 pattern contains an uppercase character (smart case).
 .TP
+.B \-g, \-\-glob
+Perform a glob-based search instead of a regular expression search.
+.TP
+.B \-\-regex
+Perform a regular-expression based seach (default). This can be used to override --glob.
+.TP
 .B \-F, \-\-fixed\-strings
 Treat the pattern as a literal string instead of a regular expression.
 .TP

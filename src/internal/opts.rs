@@ -4,7 +4,7 @@ use crate::internal::{
     FileTypes,
 };
 use lscolors::LsColors;
-use regex::RegexSet;
+use regex::bytes::RegexSet;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 /// Configuration options for *fd*.
@@ -75,4 +75,7 @@ pub struct FdOptions {
 
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,
+
+    /// The separator used to print file paths.
+    pub path_separator: Option<String>,
 }
