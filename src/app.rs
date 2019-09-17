@@ -52,6 +52,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             arg("rg-alias-hidden-ignore")
                 .short("u")
+                .long("unrestricted")
                 .multiple(true)
                 .hidden_short_help(true),
         )
@@ -361,8 +362,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "The directory where the filesystem search is rooted (optional). \
            If omitted, search the current working directory.");
     doc!(h, "rg-alias-hidden-ignore"
-        , "Alias for no-ignore and/or hidden"
-        , "Alias for no-ignore ('u') and no-ignore and hidden ('uu')");
+        , ""
+        , "Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.");
     doc!(h, "size"
         , "Limit results based on the size of files."
         , "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
