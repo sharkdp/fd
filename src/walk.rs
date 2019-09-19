@@ -19,11 +19,11 @@ use std::io;
 use std::path::PathBuf;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
+use crossbeam_channel::{bounded, Receiver, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
@@ -54,7 +54,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = channel();
+    let (tx, rx) = bounded(MAX_BUFFER_LENGTH);
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -155,14 +155,12 @@ fn spawn_receiver(
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, show_filesystem_errors)
             } else {
-                let shared_rx = Arc::new(Mutex::new(rx));
-
                 let out_perm = Arc::new(Mutex::new(()));
 
                 // Each spawned job will store it's thread handle in here.
                 let mut handles = Vec::with_capacity(threads);
                 for _ in 0..threads {
-                    let rx = Arc::clone(&shared_rx);
+                    let rx = rx.clone();
                     let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
 

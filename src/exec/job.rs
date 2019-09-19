@@ -9,49 +9,14 @@
 use super::CommandTemplate;
 use crate::exit_codes::ExitCode;
 use crate::walk::WorkerResult;
-use std::path::PathBuf;
-use std::sync::mpsc::Receiver;
+use crossbeam_channel::Receiver;
 use std::sync::{Arc, Mutex};
 
-/// An event loop that listens for inputs from the `rx` receiver. Each received input will
-/// generate a command with the supplied command template. The generated command will then
-/// be executed, and this process will continue until the receiver's sender has closed.
-pub fn job(
-    rx: Arc<Mutex<Receiver<WorkerResult>>>,
-    cmd: Arc<CommandTemplate>,
-    out_perm: Arc<Mutex<()>>,
-    show_filesystem_errors: bool,
-) {
-    loop {
-        // Create a lock on the shared receiver for this thread.
-        let lock = rx.lock().unwrap();
-
-        // Obtain the next result from the receiver, else if the channel
-        // has closed, exit from the loop
-        let value: PathBuf = match lock.recv() {
-            Ok(WorkerResult::Entry(val)) => val,
-            Ok(WorkerResult::Error(err)) => {
-                if show_filesystem_errors {
-                    print_error!("{}", err);
-                }
-                continue;
-            }
-            Err(_) => break,
-        };
-
-        // Drop the lock so that other threads can read from the the receiver.
-        drop(lock);
-        // Generate a command and execute it.
-        cmd.generate_and_execute(&value, Arc::clone(&out_perm));
-    }
-}
-
-pub fn batch(
+fn read_values(
     rx: Receiver<WorkerResult>,
-    cmd: &CommandTemplate,
     show_filesystem_errors: bool,
-) -> ExitCode {
-    let paths = rx.iter().filter_map(|value| match value {
+) -> impl Iterator<Item = std::path::PathBuf> {
+    rx.into_iter().filter_map(move |value| match value {
         WorkerResult::Entry(val) => Some(val),
         WorkerResult::Error(err) => {
             if show_filesystem_errors {
@@ -59,6 +24,26 @@ pub fn batch(
             }
             None
         }
-    });
-    cmd.generate_and_execute_batch(paths)
+    })
+}
+
+/// An event loop that listens for inputs from the `rx` receiver. Each received input will
+/// generate a command with the supplied command template. The generated command will then
+/// be executed, and this process will continue until the receiver's sender has closed.
+pub fn job(
+    rx: Receiver<WorkerResult>,
+    cmd: Arc<CommandTemplate>,
+    out_perm: Arc<Mutex<()>>,
+    show_filesystem_errors: bool,
+) {
+    read_values(rx, show_filesystem_errors)
+        .for_each(|value| cmd.generate_and_execute(&value, Arc::clone(&out_perm)));
+}
+
+pub fn batch(
+    rx: Receiver<WorkerResult>,
+    cmd: &CommandTemplate,
+    show_filesystem_errors: bool,
+) -> ExitCode {
+    cmd.generate_and_execute_batch(read_values(rx, show_filesystem_errors))
 }
