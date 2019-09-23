@@ -328,13 +328,8 @@ fn spawn_senders(
                                 .map(|m| fshelper::is_executable(&m))
                                 .unwrap_or(false))
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
+                        || !(entry_type.is_file() || entry_type.is_dir() || entry_type.is_symlink())
                     {
-                        return ignore::WalkState::Continue;
-                    } else if !(entry_type.is_file()
-                        || entry_type.is_dir()
-                        || entry_type.is_symlink())
-                    {
-                        // This is probably a block device, char device, fifo or socket. Skip it.
                         return ignore::WalkState::Continue;
                     }
                 } else {

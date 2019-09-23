@@ -37,13 +37,13 @@ impl SizeFilter {
 
         let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
             v if v.starts_with("ki") => KIBI,
-            v if v.starts_with("k") => KILO,
+            v if v.starts_with('k') => KILO,
             v if v.starts_with("mi") => MEBI,
-            v if v.starts_with("m") => MEGA,
+            v if v.starts_with('m') => MEGA,
             v if v.starts_with("gi") => GIBI,
-            v if v.starts_with("g") => GIGA,
+            v if v.starts_with('g') => GIGA,
             v if v.starts_with("ti") => TEBI,
-            v if v.starts_with("t") => TERA,
+            v if v.starts_with('t') => TERA,
             "b" => 1,
             _ => return None,
         };
