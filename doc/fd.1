@@ -233,6 +233,89 @@ path without file extension
 .IP {/.}
 basename without file extension
 .RE
+.SH PATTERN SYNTAX
+.TP
+.B Matching one character
+.RS
+.IP '.'
+Match any character
+.IP '\\\d'
+Match a digit
+.IP '\\\D'
+Match a non-digit character
+.IP '\\\pN'
+One-letter name Unicode character class
+.IP '\\\p{Greek}'
+Unicode character class (general category or script)
+.IP '\\\PN'
+Negated one-letter name Unicode character class
+.IP '\\\P{Greek}'
+Negated Unicode character class (general category or script)
+.RE
+.TP
+.B Character classes
+.RS
+.IP '[xyz]'
+A character class matching either x, y or z (union)
+.IP '[^xyz]'
+A character class matching any character except x, y and z
+.IP '[a-z]'
+A character class matching any character in range a-z
+.IP '[[:alpha:]]'
+ASCII Character class ([A-Za-z])
+.IP '[[:^alpha:]]'
+Negated ASCII character class ([^A-Za-z])
+.IP '[x[^xyz]]'
+Nested/grouping character class (matching any character except y and z)
+.IP '[a-y&&xyz]'
+Intersection (matching x or y)
+.IP '[0-9&&[^4]]'
+Subtraction using intersection and negation (matching 0-9 except 4)
+.IP '[0-9--4]'
+Direct subtraction (matching 0-9 except 4)
+.IP '[a-g~~b-h]'
+Symmetric difference (matching `a` and `h` only)
+.IP '[\\[\\]]'
+Escaping in character classes (matching [ or ])
+.RE  
+.TP 
+.B Composites
+.RS
+.IP 'xy'
+Concatenation (x followed by y)
+.IP 'x|y'
+Alternation (x or y, prefer x)
+.RE
+.TP
+.B Repetitions
+.RS
+.IP 'x*'
+Zero or more of x (greedy)
+.IP 'x+'
+One or more of x (greedy)
+.IP 'x?'
+Zero or one of x (greedy)
+.IP 'x*?'
+Zero or more of x (ungreedy/lazy)
+.IP 'x+?'
+One or more of x (ungreedy/lazy)
+.IP 'x??'
+Zero or one of x (ungreedy/lazy)
+.IP 'x{n,m}'
+At least n x and at most m x (greedy)
+.IP 'x{n,}'
+At least n x (greedy)
+.IP 'x{n}'
+Exactlt n x
+.IP 'x{n,m}?'
+At least n x and at most m x (ungreedy/lazy)
+.IP 'x{n,?}'
+At least n x (ungreedy/lazy)
+.IP 'x{n}?'
+Exactly n x
+.RE
+.TP
+For more information see, <https://www.docs.rs/regex/1.1.0/regex/#syntax>
 .SH ENVIRONMENT
 .TP
 .B LS_COLORS
