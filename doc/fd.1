@@ -233,23 +233,23 @@ path without file extension
 .IP {/.}
 basename without file extension
 .RE
-.SH PATTERN SYNTAX
+.SH [PATTERN] SYNTAX
 .TP
 .B Matching one character
 .RS
 .IP '.'
 Match any character
-.IP '\\\d'
+.IP '\ed'
 Match a digit
-.IP '\\\D'
+.IP '\eD'
 Match a non-digit character
-.IP '\\\pN'
+.IP '\epN'
 One-letter name Unicode character class
-.IP '\\\p{Greek}'
+.IP '\ep{Greek}'
 Unicode character class (general category or script)
-.IP '\\\PN'
+.IP '\ePN'
 Negated one-letter name Unicode character class
-.IP '\\\P{Greek}'
+.IP '\eP{Greek}'
 Negated Unicode character class (general category or script)
 .RE
 .TP
@@ -275,7 +275,7 @@ Subtraction using intersection and negation (matching 0-9 except 4)
 Direct subtraction (matching 0-9 except 4)
 .IP '[a-g~~b-h]'
 Symmetric difference (matching `a` and `h` only)
-.IP '[\\[\\]]'
+.IP '[\e[\e]]'
 Escaping in character classes (matching [ or ])
 .RE  
 .TP 
@@ -290,32 +290,47 @@ Alternation (x or y, prefer x)
 .B Repetitions
 .RS
 .IP 'x*'
-Zero or more of x (greedy)
+Match zero or more of x (greedy)
 .IP 'x+'
-One or more of x (greedy)
+Match one or more of x (greedy)
 .IP 'x?'
-Zero or one of x (greedy)
+Match zero or one of x (greedy)
 .IP 'x*?'
-Zero or more of x (ungreedy/lazy)
+Match zero or more of x (ungreedy/lazy)
 .IP 'x+?'
-One or more of x (ungreedy/lazy)
+Match one or more of x (ungreedy/lazy)
 .IP 'x??'
-Zero or one of x (ungreedy/lazy)
+Match zero or one of x (ungreedy/lazy)
 .IP 'x{n,m}'
-At least n x and at most m x (greedy)
+Match at least n x and at most m x (greedy)
 .IP 'x{n,}'
-At least n x (greedy)
+Match at least n x (greedy)
 .IP 'x{n}'
-Exactlt n x
+Match exactly n x
 .IP 'x{n,m}?'
-At least n x and at most m x (ungreedy/lazy)
+Match at least n x and at most m x (ungreedy/lazy)
 .IP 'x{n,?}'
-At least n x (ungreedy/lazy)
+Match at least n x (ungreedy/lazy)
 .IP 'x{n}?'
-Exactly n x
+Match exactly n x
 .RE
 .TP
-For more information see, <https://www.docs.rs/regex/1.1.0/regex/#syntax>
+.B Empty matches
+.IP '^'
+Match the beginning of text
+.IP '\(Do'
+Match the end of text
+.IP '\eA'
+Match only the beginning of text
+.IP '\ez'
+Match only the end of text
+.IP '\eb'
+Match a unicode word boundary (\ew on one side and \eW, \eA, or \ez on other)
+.IP '\eB'
+not a Unicode word boundary
+.RE
+.TP
+For more information, please see: https://docs.rs/regex/1.1.0/regex/#syntax
 .SH ENVIRONMENT
 .TP
 .B LS_COLORS
@@ -333,6 +348,21 @@ $ fd nginx /var/log
 $ fd -e py
 .TP
 .RI "Open all search results with vim:"
-$ fd pattern -X vim
+$ fd [pattern] -X vim
+.TP
+.RI "Find all files and sub-directories with matching (aa) in the current directory:"
+$ fd "aa" 
+.TP
+.RI "Find all files and sub-directories with matching date patterns (YYYY-MM-DD) in the current direcotry:"
+$ fd "\ed{1,4}-\ed{1,2}-\ed{1,2}"
+.TP
+.RI "Find all the files and sub-directories containing digits in the current directory:"
+$ fd "[0-9]" 
+.TP
+.RI "Find all files with matching digit at the beginning (1 in this case) within the current directory:"
+$ fd "^1"
+.TP
+.RI "Find all files with matching character at the end (a in this case) in a given directory (" /usr/local/bin "):"
+$ fd "a$" /usr/local/bin
 .SH SEE ALSO
 .BR find (1)
