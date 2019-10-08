@@ -52,8 +52,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("H")
                 .overrides_with("hidden")
         )
-        .arg(arg("no-ignore").long("no-ignore").short("I"))
-        .arg(arg("no-ignore-vcs").long("no-ignore-vcs"))
+        .arg(arg("no-ignore").long("no-ignore").short("I").overrides_with("no-ignore"))
+        .arg(arg("no-ignore-vcs").long("no-ignore-vcs").overrides_with("no-ignore-vcs"))
         .arg(
             arg("rg-alias-hidden-ignore")
                 .short("u")
@@ -65,36 +65,38 @@ pub fn build_app() -> App<'static, 'static> {
             arg("case-sensitive")
                 .long("case-sensitive")
                 .short("s")
-                .overrides_with("ignore-case"),
+                .overrides_with_all(&["ignore-case", "case-sensitive"]),
         )
         .arg(
             arg("ignore-case")
                 .long("ignore-case")
                 .short("i")
-                .overrides_with("case-sensitive"),
+                .overrides_with_all(&["case-sensitive", "ignore-case"]),
         )
         .arg(
             arg("glob")
                 .long("glob")
                 .short("g")
-                .conflicts_with("fixed-strings"),
+                .conflicts_with("fixed-strings")
+                .overrides_with("glob"),
         )
         .arg(
             arg("regex")
                 .long("regex")
-                .overrides_with("glob")
+                .overrides_with_all(&["glob", "regex"])
                 .hidden_short_help(true),
         )
         .arg(
             arg("fixed-strings")
                 .long("fixed-strings")
                 .short("F")
-                .alias("literal"),
+                .alias("literal")
+                .overrides_with("fixed-strings"),
         )
-        .arg(arg("absolute-path").long("absolute-path").short("a"))
-        .arg(arg("follow").long("follow").short("L").alias("dereference"))
-        .arg(arg("full-path").long("full-path").short("p"))
-        .arg(arg("null_separator").long("print0").short("0"))
+        .arg(arg("absolute-path").long("absolute-path").short("a").overrides_with("absolute-path"))
+        .arg(arg("follow").long("follow").short("L").alias("dereference").overrides_with("follow"))
+        .arg(arg("full-path").long("full-path").short("p").overrides_with("full-path"))
+        .arg(arg("null_separator").long("print0").short("0").overrides_with("print0"))
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
         .arg(
@@ -222,7 +224,8 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             arg("show-errors")
                 .long("show-errors")
-                .hidden_short_help(true),
+                .hidden_short_help(true)
+                .overrides_with("show-errors"),
         )
         .arg(arg("pattern"))
         .arg(
