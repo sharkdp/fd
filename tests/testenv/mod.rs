@@ -162,6 +162,25 @@ impl TestEnv {
         }
     }
 
+    /// Create a broken symlink at the given path in the temp_dir.
+    pub fn create_broken_symlink<P: AsRef<Path>>(
+        &mut self,
+        link_path: P,
+    ) -> Result<PathBuf, io::Error> {
+        let root = self.test_root();
+        let broken_symlink_link = root.join(link_path);
+        {
+            let temp_target_dir = TempDir::new("fd-tests-broken-symlink")?;
+            let broken_symlink_target = temp_target_dir.path().join("broken_symlink_target");
+            fs::File::create(&broken_symlink_target)?;
+            #[cfg(unix)]
+            unix::fs::symlink(&broken_symlink_target, &broken_symlink_link)?;
+            #[cfg(windows)]
+            windows::fs::symlink_file(&broken_symlink_target, &broken_symlink_link)?;
+        }
+        Ok(broken_symlink_link)
+    }
+
     /// Get the root directory for the tests.
     pub fn test_root(&self) -> PathBuf {
         self.temp_dir.path().to_path_buf()

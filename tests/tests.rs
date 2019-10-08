@@ -598,6 +598,15 @@ fn test_file_system_boundaries() {
     );
 }
 
+#[test]
+fn test_follow_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    te.assert_output(&["--follow", "--type", "f", "symlink"], "broken_symlink");
+}
+
 /// Null separator (--print0)
 #[test]
 fn test_print0() {
@@ -878,7 +887,9 @@ fn test_extension() {
 /// Symlink as search directory
 #[test]
 fn test_symlink_as_root() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("broken_symlink")
+        .expect("Failed to create broken symlink.");
 
     // From: http://pubs.opengroup.org/onlinepubs/9699919799/functions/getcwd.html
     // The getcwd() function shall place an absolute pathname of the current working directory in
@@ -899,6 +910,7 @@ fn test_symlink_as_root() {
         &["", parent_parent],
         &format!(
             "{dir}/a.foo
+            {dir}/broken_symlink
             {dir}/e1 e2
             {dir}/one
             {dir}/one/b.foo
@@ -990,7 +1002,6 @@ fn test_symlink_and_full_path_abs_path() {
         ),
     );
 }
-
 /// Exclude patterns (--exclude)
 #[test]
 fn test_excludes() {
