@@ -50,10 +50,19 @@ pub fn build_app() -> App<'static, 'static> {
             arg("hidden")
                 .long("hidden")
                 .short("H")
-                .overrides_with("hidden")
+                .overrides_with("hidden"),
         )
-        .arg(arg("no-ignore").long("no-ignore").short("I").overrides_with("no-ignore"))
-        .arg(arg("no-ignore-vcs").long("no-ignore-vcs").overrides_with("no-ignore-vcs"))
+        .arg(
+            arg("no-ignore")
+                .long("no-ignore")
+                .short("I")
+                .overrides_with("no-ignore"),
+        )
+        .arg(
+            arg("no-ignore-vcs")
+                .long("no-ignore-vcs")
+                .overrides_with("no-ignore-vcs"),
+        )
         .arg(
             arg("rg-alias-hidden-ignore")
                 .short("u")
@@ -93,10 +102,31 @@ pub fn build_app() -> App<'static, 'static> {
                 .alias("literal")
                 .overrides_with("fixed-strings"),
         )
-        .arg(arg("absolute-path").long("absolute-path").short("a").overrides_with("absolute-path"))
-        .arg(arg("follow").long("follow").short("L").alias("dereference").overrides_with("follow"))
-        .arg(arg("full-path").long("full-path").short("p").overrides_with("full-path"))
-        .arg(arg("null_separator").long("print0").short("0").overrides_with("print0"))
+        .arg(
+            arg("absolute-path")
+                .long("absolute-path")
+                .short("a")
+                .overrides_with("absolute-path"),
+        )
+        .arg(
+            arg("follow")
+                .long("follow")
+                .short("L")
+                .alias("dereference")
+                .overrides_with("follow"),
+        )
+        .arg(
+            arg("full-path")
+                .long("full-path")
+                .short("p")
+                .overrides_with("full-path"),
+        )
+        .arg(
+            arg("null_separator")
+                .long("print0")
+                .short("0")
+                .overrides_with("print0"),
+        )
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
         .arg(
