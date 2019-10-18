@@ -260,6 +260,16 @@ On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) packag
 npm install -g fd-find
 ```
 
+### From Scarf
+
+If you would like to support this project, please consider installing `fd`
+with the [Scarf package manager](https://scarf.sh/package/scarf/fd), which will
+send anonymized usage statistics to help with development:
+
+```
+scarf install fd
+```
+
 ### From source
 
 With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
