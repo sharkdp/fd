@@ -50,10 +50,11 @@ matrix:
     #   rust: beta
     #   env: TARGET=x86_64-apple-darwin
 
-    # Nightly channel.
-    - os: linux
-      rust: nightly
-      env: TARGET=x86_64-unknown-linux-gnu
+    # switch off nightly due to crossbeam errors
+    # # Nightly channel.
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=x86_64-unknown-linux-gnu
     # Disabled to reduce total CI time
     # - os: linux
     #   rust: nightly
@@ -86,12 +87,12 @@ matrix:
       env: TARGET=x86_64-apple-darwin
 
     # Code formatting check
-    - os: linux
-      rust: nightly
-      # skip the global install step
-      install:
-        - cargo install --debug --force rustfmt-nightly
-      script: cargo fmt -- --check
+    # - os: linux
+    #   rust: nightly
+    #   # skip the global install step
+    #   install:
+    #     - cargo install --debug --force rustfmt-nightly
+    #   script: cargo fmt -- --check
 
 sudo: required
 
