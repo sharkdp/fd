@@ -555,6 +555,23 @@ fn test_follow() {
     );
 }
 
+// File system boundaries (--same-file-system)
+// Limited to Unix because, to the best of my knowledge, there is no easy way to test a use case
+// file systems mounted into the tree on Windows.
+#[test]
+#[cfg(unix)]
+fn test_file_system_boundaries() {
+    // Can't simulate file system boundaries
+    let te = TestEnv::new(&[], &[]);
+
+    // /dev/null should exist in all sane Unixes
+    te.assert_output(&["--full-path", "^/dev/null$", "/"], "/dev/null");
+    te.assert_output(
+        &["--same-file-system", "--full-path", "^/dev/null$", "/"],
+        "",
+    );
+}
+
 /// Null separator (--print0)
 #[test]
 fn test_print0() {
