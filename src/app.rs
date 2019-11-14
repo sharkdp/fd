@@ -115,6 +115,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .alias("dereference")
                 .overrides_with("follow"),
         )
+        .arg(arg("same-file-system").long("same-file-system"))
         .arg(
             arg("full-path")
                 .long("full-path")
@@ -329,6 +330,11 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \
            links are also traversed.");
+    doc!(h, "same-file-system"
+        , "Don't cross file system boundaries (only Unix/Windows)"
+        , "By default, fd will traverse the file system tree as far as other options dictate. \
+           With this flag, fd ensures that it does not descend into a different file system than \
+           the one it started in. Does nothing if not on Unix or Windows.");
     doc!(h, "full-path"
         , "Search full path (default: file-/dirname only)"
         , "By default, the search pattern is only matched against the filename (or directory \

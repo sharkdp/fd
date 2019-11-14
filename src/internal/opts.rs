@@ -28,6 +28,9 @@ pub struct FdOptions {
     /// Whether to follow symlinks or not.
     pub follow_links: bool,
 
+    /// Whether to limit the search to starting file system or not.
+    pub same_file_system: bool,
+
     /// Whether elements of output should be separated by a null character
     pub null_separator: bool,
 
