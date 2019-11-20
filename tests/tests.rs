@@ -1350,3 +1350,53 @@ fn test_custom_path_separator() {
         one=two=three=directory_foo",
     );
 }
+
+#[test]
+fn test_base_directory() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--base-directory", "one"],
+        "b.foo
+        two
+        two/c.foo
+        two/C.Foo2
+        two/three
+        two/three/d.foo
+        two/three/directory_foo",
+    );
+    
+    te.assert_output(
+        &["--base-directory", "one/two", "foo"],
+        "c.foo
+        C.Foo2
+        three/d.foo
+        three/directory_foo",
+    );
+
+    // Explicit root path
+    te.assert_output(
+        &["--base-directory", "one", "foo", "two"],
+        "two/c.foo
+        two/C.Foo2
+        two/three/d.foo
+        two/three/directory_foo",
+    );
+
+    // Ignore base directory when absolute path is used
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let abs_base_dir = &format!("{abs_path}/one/two", abs_path = &abs_path);
+    te.assert_output(
+        &["--base-directory", &abs_base_dir, "foo", &abs_path],
+        &format!(
+            "{abs_path}/a.foo
+            {abs_path}/one/b.foo
+            {abs_path}/one/two/c.foo
+            {abs_path}/one/two/C.Foo2
+            {abs_path}/one/two/three/d.foo
+            {abs_path}/one/two/three/directory_foo",
+            abs_path = &abs_path
+        ),
+    );
+
+}

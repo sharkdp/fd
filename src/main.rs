@@ -44,6 +44,23 @@ fn main() {
     let checked_args = transform_args_with_exec(env::args_os());
     let matches = app::build_app().get_matches_from(checked_args);
 
+    // Set the current working directory of the process
+    if let Some(base_directory) = matches.value_of("base-directory") {
+        let basedir = Path::new(base_directory);
+        if !fshelper::is_dir(basedir) {
+            print_error_and_exit!(
+                "The '--base-directory' path ('{}') is not a directory.",
+                basedir.to_string_lossy()
+            );
+        }
+        if let Err(e) = env::set_current_dir(basedir) {
+            print_error_and_exit!(
+                "Could not set '{}' as the current working directory: {}", 
+                basedir.to_string_lossy(), e
+            );
+        }
+    }
+
     // Get the search pattern
     let pattern = matches.value_of("pattern").unwrap_or("");
 
