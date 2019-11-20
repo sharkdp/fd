@@ -257,6 +257,14 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true)
                 .overrides_with("show-errors"),
         )
+        .arg(
+            arg("base-directory")
+                .long("base-directory")
+                .takes_value(true)
+                .value_name("path")
+                .number_of_values(1)
+                .hidden_short_help(true),
+        )
         .arg(arg("pattern"))
         .arg(
             arg("path-separator")
@@ -443,5 +451,10 @@ fn usage() -> HashMap<&'static str, Help> {
         , "(hidden)"
         , "Provide paths to search as an alternative to the positional <path> argument. \
            Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`");
+    doc!(h, "base-directory"
+        , "(hidden)"
+        , "Change current working directory of the fd process to provided path. \
+           Non-absolute paths passsed to positional <path> argument or '--search-path' will be \
+           resolved relative to this directory instead of directory where fd was executed.");
     h
 }
