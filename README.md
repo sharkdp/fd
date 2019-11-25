@@ -244,14 +244,6 @@ You can install [the fd-find package](https://www.freshports.org/sysutils/fd) fr
 pkg install fd-find
 ```
 
-### On OpenBSD
-You can install the [fd-find](https://gitlab.com/epbsd/ports/tree/master/sysutils/fd) package from the [EPBSD](https://epbsd.org/) repo:
-```
-ftp -o /etc/signify/epbsd-pkg.pub https://epbsd.org/epbsd-pkg.pub
-export PKG_PATH=https://repo.epbsd.org/pub/OpenBSD/$(arch -s):${PKG_PATH}
-pkg_add fd
-```
-
 ### From NPM
 
 On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
