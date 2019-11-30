@@ -27,6 +27,10 @@ use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
 use self::token::Token;
 
+/// When `ExecutionMode` is `Batch` and number of results is less
+/// than this value, results will be sorted
+const SORT_THRESHOLD: usize = 100;
+
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExecutionMode {
@@ -176,10 +180,16 @@ impl CommandTemplate {
         for arg in &self.args[1..] {
             if arg.has_tokens() {
                 // A single `Tokens` is expected
-                // So we can directy consume the iterator once and for all
-                for path in &mut paths {
-                    cmd.arg(arg.generate(&path).as_ref());
-                    has_path = true;
+                // So we can directly consume the iterator once and for all
+                let mut first_paths = take(&mut paths, SORT_THRESHOLD);
+                has_path = !first_paths.is_empty();
+
+                if first_paths.len() < SORT_THRESHOLD {
+                    first_paths.sort();
+                    CommandTemplate::add_to_cmd(&mut cmd, arg, &mut first_paths.into_iter());
+                } else {
+                    CommandTemplate::add_to_cmd(&mut cmd, arg, &mut first_paths.into_iter());
+                    CommandTemplate::add_to_cmd(&mut cmd, arg, &mut paths);
                 }
             } else {
                 cmd.arg(arg.generate("").as_ref());
@@ -192,6 +202,33 @@ impl CommandTemplate {
             ExitCode::Success
         }
     }
+
+    /// Helper function to add found paths as arguments to `cmd`.
+    fn add_to_cmd<I>(cmd: &mut Command, arg: &ArgumentTemplate, paths: &mut I)
+        where
+            I: Iterator<Item = String>,
+    {
+        for path in paths {
+            cmd.arg(arg.generate(&path).as_ref());
+        }
+    }
+}
+
+/// This function behaves exactly like the standard library `take` for iterators,
+/// except that the original iterator is not consumed in the process.
+fn take<I,J>(iterator: &mut I, num: usize) -> Vec<J>
+    where I: Iterator<Item = J>
+{
+    let mut first_elements = Vec::with_capacity(num);
+    let mut current_size = 0;
+    for element in iterator {
+        first_elements.push(element);
+        current_size += 1;
+        if current_size >= num {
+            break;
+        }
+    }
+    first_elements
 }
 
 /// Represents a template for a single command argument.
