@@ -417,6 +417,10 @@ this behavior, we can use the `-I` (or `--no-ignore`) option:
 target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
 
+*fd* respects the global git-ignore file as well. But as said above: Only when the directory belongs to a git repository.
+
+*fd* reads and uses ignore-files (`.ignore` and `.fdignore`), for the directory containing the ignore-file and its sub-directories. But a global `~/.ignore-file` or `~/.fdignore` are not used.
+
 To really search *all* files and directories, simply combine the hidden and ignore features to show
 everything (`-HI`).
 
