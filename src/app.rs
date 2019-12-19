@@ -306,7 +306,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Perform a glob-based search instead of a regular expression search.");
     doc!(h, "regex"
         , "Perform a regex-based search"
-        , "Perform a regular-expression based seach (default). This can be used to override --glob.");
+        , "Perform a regular-expression based search (default). This can be used to override --glob.");
     doc!(h, "fixed-strings"
         , "Treat the pattern as a literal string"
         , "Treat the pattern as a literal string instead of a regular expression.");
@@ -365,7 +365,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Execute a command with all search results at once.\n\
            All arguments following --exec-batch are taken to be arguments to the command until the \
            argument ';' is encountered.\n\
-           A single occurence of the following placeholders is authorized and substituted by the paths derived from the \
+           A single occurrence of the following placeholders is authorized and substituted by the paths derived from the \
            search results before the command is executed:\n  \
              '{}':   path\n  \
              '{/}':  basename\n  \
