@@ -373,10 +373,12 @@ fn spawn_senders(
                 }
             }
 
-            // TODO: take care of the unwrap call
-            tx_thread
-                .send(WorkerResult::Entry(entry_path.to_owned()))
-                .unwrap();
+            let send_result = tx_thread
+                .send(WorkerResult::Entry(entry_path.to_owned()));
+
+            if !send_result.is_ok() {
+                return ignore::WalkState::Quit;
+            }
 
             ignore::WalkState::Continue
         })
