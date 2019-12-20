@@ -182,13 +182,13 @@ impl CommandTemplate {
                 // A single `Tokens` is expected
                 // So we can directly consume the iterator once and for all
 
-                // It would be too expansive to collect all the paths at once, so we take
+                // It would be too expensive to collect all the paths at once, so we take
                 // only the first ones.
                 let mut first_paths = take(&mut paths, SORT_THRESHOLD);
                 has_path = !first_paths.is_empty();
 
                 if first_paths.len() < SORT_THRESHOLD {
-                    // sort the paths because they are not too much
+                    // sort the paths because they are not too many
                     first_paths.sort();
                     CommandTemplate::add_to_cmd(&mut cmd, arg, &mut first_paths.into_iter());
                 } else {
