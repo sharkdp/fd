@@ -453,8 +453,9 @@ fn usage() -> HashMap<&'static str, Help> {
            Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`");
     doc!(h, "base-directory"
         , "(hidden)"
-        , "Change current working directory of the fd process to provided path. \
-           Non-absolute paths passsed to positional <path> argument or '--search-path' will be \
-           resolved relative to this directory instead of directory where fd was executed.");
+        , "Change the current working directory of fd to the provided path. The means that search \
+           results will be shown with respect to the given base path. Note that relative paths \
+           which are passed to fd via the positional <path> argument or the '--search-path' option \
+           will also be resolved relative to this directory.");
     h
 }
