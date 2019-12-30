@@ -288,7 +288,7 @@ pub fn build_app() -> App<'static, 'static> {
     // restrictions on the corresponding option in the `ignore` crate.
     // Provide aliases `mount` and `xdev` for people coming from `find`.
     // It's not pretty, but I'm unaware of a way to make just part of a builder chain conditional
-    if cfg!(unix) || cfg!(windows) {
+    if cfg!(any(unix, windows)) {
         app.arg(
             arg("one-file-system")
                 .long("one-file-system")
@@ -472,7 +472,7 @@ fn usage() -> HashMap<&'static str, Help> {
            which are passed to fd via the positional <path> argument or the '--search-path' option \
            will also be resolved relative to this directory.");
 
-    if cfg!(unix) || cfg!(windows) {
+    if cfg!(any(unix, windows)) {
         doc!(h, "one-file-system"
             , "Don't cross file system boundaries"
             , "By default, fd will traverse the file system tree as far as other options dictate. \
