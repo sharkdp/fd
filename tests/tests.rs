@@ -562,10 +562,24 @@ fn test_follow() {
 #[test]
 #[cfg(unix)]
 fn test_file_system_boundaries() {
+    // Helper function to get the device ID for a given path
+    fn device_num(path: impl AsRef<Path>) -> u64 {
+        use std::os::unix::fs::MetadataExt;
+
+        path.as_ref().metadata().map(|md| md.dev()).unwrap()
+    }
+
     // Can't simulate file system boundaries
     let te = TestEnv::new(&[], &[]);
 
-    // /dev/null should exist in all sane Unixes
+    let dev_null = Path::new("/dev/null");
+
+    // /dev/null should exist in all sane Unixes. Skip if it doesn't exist for some reason.
+    // Also skip should it be on the same device as the root partition for some reason.
+    if !dev_null.is_file() || device_num(dev_null) == device_num("/") {
+        return;
+    }
+
     te.assert_output(
         &["--full-path", "--max-depth", "2", "^/dev/null$", "/"],
         "/dev/null",
