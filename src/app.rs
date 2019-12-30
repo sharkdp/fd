@@ -477,7 +477,7 @@ fn usage() -> HashMap<&'static str, Help> {
             , "Don't cross file system boundaries"
             , "By default, fd will traverse the file system tree as far as other options dictate. \
                With this flag, fd ensures that it does not descend into a different file system \
-               than the one it started in.");
+               than the one it started in. Comparable to the -mount or -xdev filters of find(1).");
     }
 
     h
