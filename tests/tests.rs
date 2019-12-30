@@ -563,6 +563,7 @@ fn test_follow() {
 #[cfg(unix)]
 fn test_file_system_boundaries() {
     // Helper function to get the device ID for a given path
+    // Inspired by https://github.com/BurntSushi/ripgrep/blob/8892bf648cfec111e6e7ddd9f30e932b0371db68/ignore/src/walk.rs#L1693
     fn device_num(path: impl AsRef<Path>) -> u64 {
         use std::os::unix::fs::MetadataExt;
 
