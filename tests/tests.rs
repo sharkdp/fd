@@ -555,7 +555,7 @@ fn test_follow() {
     );
 }
 
-// File system boundaries (--same-file-system)
+// File system boundaries (--one-file-system)
 // Limited to Unix because, to the best of my knowledge, there is no easy way to test a use case
 // file systems mounted into the tree on Windows.
 // Not limiting depth causes massive delay under Darwin, see BurntSushi/ripgrep#1429
@@ -572,7 +572,7 @@ fn test_file_system_boundaries() {
     );
     te.assert_output(
         &[
-            "--same-file-system",
+            "--one-file-system",
             "--full-path",
             "--max-depth",
             "2",

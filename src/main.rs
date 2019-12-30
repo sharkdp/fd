@@ -208,7 +208,7 @@ fn main() {
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-ignore-vcs")),
         follow_links: matches.is_present("follow"),
-        same_file_system: matches.is_present("same-file-system"),
+        one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
         max_depth: matches
             .value_of("depth")
