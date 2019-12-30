@@ -37,7 +37,7 @@ pub fn build_app() -> App<'static, 'static> {
             .long_help(helps[name].long)
     };
 
-    App::new("fd")
+    let app = App::new("fd")
         .version(crate_version!())
         .usage("fd [FLAGS/OPTIONS] [<pattern>] [<path>...]")
         .setting(AppSettings::ColoredHelp)
@@ -115,7 +115,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .alias("dereference")
                 .overrides_with("follow"),
         )
-        .arg(arg("one-file-system").long("one-file-system"))
         .arg(
             arg("full-path")
                 .long("full-path")
@@ -283,7 +282,16 @@ pub fn build_app() -> App<'static, 'static> {
                 .multiple(true)
                 .hidden_short_help(true)
                 .number_of_values(1),
-        )
+        );
+
+    // Make `--one-file-system` available only on Unix and Windows platforms, as per the
+    // restrictions on the corresponding option in the `ignore` crate.
+    // It's not pretty, but I'm unaware of a way to make just part of a builder chain conditional
+    if cfg!(unix) || cfg!(windows) {
+        app.arg(arg("one-file-system").long("one-file-system"))
+    } else {
+        app
+    }
 }
 
 #[rustfmt::skip]
@@ -330,11 +338,6 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Follow symbolic links"
         , "By default, fd does not descend into symlinked directories. Using this flag, symbolic \
            links are also traversed.");
-    doc!(h, "one-file-system"
-        , "Don't cross file system boundaries (only Unix/Windows)"
-        , "By default, fd will traverse the file system tree as far as other options dictate. \
-           With this flag, fd ensures that it does not descend into a different file system than \
-           the one it started in. Does nothing if not on Unix or Windows.");
     doc!(h, "full-path"
         , "Search full path (default: file-/dirname only)"
         , "By default, the search pattern is only matched against the filename (or directory \
@@ -463,5 +466,14 @@ fn usage() -> HashMap<&'static str, Help> {
            results will be shown with respect to the given base path. Note that relative paths \
            which are passed to fd via the positional <path> argument or the '--search-path' option \
            will also be resolved relative to this directory.");
+
+    if cfg!(unix) || cfg!(windows) {
+        doc!(h, "one-file-system"
+            , "Don't cross file system boundaries"
+            , "By default, fd will traverse the file system tree as far as other options dictate. \
+               With this flag, fd ensures that it does not descend into a different file system \
+               than the one it started in.");
+    }
+
     h
 }
