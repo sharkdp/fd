@@ -286,9 +286,14 @@ pub fn build_app() -> App<'static, 'static> {
 
     // Make `--one-file-system` available only on Unix and Windows platforms, as per the
     // restrictions on the corresponding option in the `ignore` crate.
+    // Provide aliases `mount` and `xdev` for people coming from `find`.
     // It's not pretty, but I'm unaware of a way to make just part of a builder chain conditional
     if cfg!(unix) || cfg!(windows) {
-        app.arg(arg("one-file-system").long("one-file-system"))
+        app.arg(
+            arg("one-file-system")
+                .long("one-file-system")
+                .aliases(&["mount", "xdev"]),
+        )
     } else {
         app
     }
