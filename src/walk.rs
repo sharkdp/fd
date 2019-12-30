@@ -79,7 +79,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
         .overrides(overrides)
         .follow_links(config.follow_links)
         // Same file system is only supported on Unix and Windows platforms
-        .same_file_system(config.same_file_system && (cfg!(unix) || cfg!(windows)))
+        .same_file_system(config.one_file_system && (cfg!(unix) || cfg!(windows)))
         .max_depth(config.max_depth);
 
     if config.read_fdignore {
