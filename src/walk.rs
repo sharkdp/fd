@@ -375,8 +375,7 @@ fn spawn_senders(
                 }
             }
 
-            let send_result = tx_thread
-                .send(WorkerResult::Entry(entry_path.to_owned()));
+            let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
 
             if !send_result.is_ok() {
                 return ignore::WalkState::Quit;
