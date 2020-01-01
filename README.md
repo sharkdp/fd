@@ -294,7 +294,6 @@ FLAGS:
     -F, --fixed-strings      Treat the pattern as a literal string
     -a, --absolute-path      Show absolute instead of relative paths
     -L, --follow             Follow symbolic links
-        --one-file-system    Don't cross file system boundaries (only Unix/Windows)
     -p, --full-path          Search full path (default: file-/dirname only)
     -0, --print0             Separate results by the null character
     -h, --help               Prints help information

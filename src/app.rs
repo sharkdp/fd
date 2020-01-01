@@ -291,7 +291,8 @@ pub fn build_app() -> App<'static, 'static> {
         app = app.arg(
             arg("one-file-system")
                 .long("one-file-system")
-                .aliases(&["mount", "xdev"]),
+                .aliases(&["mount", "xdev"])
+                .hidden_short_help(true),
         );
     }
 
