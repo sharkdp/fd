@@ -55,8 +55,9 @@ fn main() {
         }
         if let Err(e) = env::set_current_dir(basedir) {
             print_error_and_exit!(
-                "Could not set '{}' as the current working directory: {}", 
-                basedir.to_string_lossy(), e
+                "Could not set '{}' as the current working directory: {}",
+                basedir.to_string_lossy(),
+                e
             );
         }
     }

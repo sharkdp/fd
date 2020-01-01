@@ -1408,7 +1408,7 @@ fn test_base_directory() {
         two/three/d.foo
         two/three/directory_foo",
     );
-    
+
     te.assert_output(
         &["--base-directory", "one/two", "foo"],
         "c.foo
@@ -1441,5 +1441,4 @@ fn test_base_directory() {
             abs_path = &abs_path
         ),
     );
-
 }
