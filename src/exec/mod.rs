@@ -170,13 +170,15 @@ impl CommandTemplate {
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
 
-        let mut paths = paths.map(|p| Self::prepare_path(&p));
+        let mut paths: Vec<String> = paths.map(|p| Self::prepare_path(&p)).collect();
         let mut has_path = false;
 
         for arg in &self.args[1..] {
             if arg.has_tokens() {
+                paths.sort();
+
                 // A single `Tokens` is expected
-                // So we can directy consume the iterator once and for all
+                // So we can directly consume the iterator once and for all
                 for path in &mut paths {
                     cmd.arg(arg.generate(&path).as_ref());
                     has_path = true;
