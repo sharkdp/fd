@@ -544,3 +544,10 @@ After installing `find-file-in-project`, add the line `(setq ffip-use-rust-fd t)
 
 In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alternatively, run
 `M-x find-file-in-project` to list all available files in the project.
+
+## License
+Copyright (c) 2017-2020 The fd developers
+
+`fd` is distributed under the terms of both the MIT License and the Apache License 2.0.
+
+See the [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT) files for license details.
