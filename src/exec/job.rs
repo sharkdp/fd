@@ -21,7 +21,8 @@ pub fn job(
     cmd: Arc<CommandTemplate>,
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
-) {
+) -> ExitCode {
+    let mut results: Vec<ExitCode> = Vec::new();
     loop {
         // Create a lock on the shared receiver for this thread.
         let lock = rx.lock().unwrap();
@@ -39,11 +40,13 @@ pub fn job(
             Err(_) => break,
         };
 
-        // Drop the lock so that other threads can read from the the receiver.
+        // Drop the lock so that other threads can read from the receiver.
         drop(lock);
-        // Generate a command and execute it.
-        cmd.generate_and_execute(&value, Arc::clone(&out_perm));
+        // Generate a command, executes it and store its exit code.
+        results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm)))
     }
+    // Returns error in case of any error.
+    ExitCode::error_if_any_error(results)
 }
 
 pub fn batch(
