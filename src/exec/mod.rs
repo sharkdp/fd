@@ -146,7 +146,7 @@ impl CommandTemplate {
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build. Once all arguments have been processed, the command is executed.
-    pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) {
+    pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> ExitCode {
         let input = Self::prepare_path(input);
 
         let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
@@ -154,7 +154,7 @@ impl CommandTemplate {
             cmd.arg(arg.generate(&input).as_ref());
         }
 
-        execute_command(cmd, &out_perm);
+        execute_command(cmd, &out_perm)
     }
 
     pub fn in_batch_mode(&self) -> bool {
