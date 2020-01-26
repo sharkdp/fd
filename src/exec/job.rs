@@ -42,7 +42,7 @@ pub fn job(
 
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
-        // Generate a command, executes it and store its exit code.
+        // Generate a command, execute it and store its exit code.
         results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm)))
     }
     // Returns error in case of any error.
