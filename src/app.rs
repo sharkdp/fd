@@ -416,7 +416,7 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Amount of time in milliseconds to buffer, before streaming the search results to \
            the console.");
     doc!(h, "pattern"
-        , "the search pattern: a regular expression unless '--glob' is used (optional)");
+        , "the search pattern - a regular expression unless '--glob' is used (optional)");
     doc!(h, "path"
         , "the root directory for the filesystem search (optional)"
         , "The directory where the filesystem search is rooted (optional). \
