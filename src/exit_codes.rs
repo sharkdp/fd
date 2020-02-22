@@ -7,9 +7,9 @@ pub enum ExitCode {
 impl Into<i32> for ExitCode {
     fn into(self) -> i32 {
         match self {
-            Self::Success => 0,
-            Self::GeneralError => 1,
-            Self::KilledBySigint => 130,
+            ExitCode::Success => 0,
+            ExitCode::GeneralError => 1,
+            ExitCode::KilledBySigint => 130,
         }
     }
 }
@@ -17,11 +17,11 @@ impl Into<i32> for ExitCode {
 impl ExitCode {
     pub fn error_if_any_error(results: Vec<Self>) -> Self {
         if results.iter().any(|s| match s {
-            Self::GeneralError => true,
+            ExitCode::GeneralError => true,
             _ => false,
         }) {
-            return Self::GeneralError;
+            return ExitCode::GeneralError;
         }
-        Self::Success
+        ExitCode::Success
     }
 }
