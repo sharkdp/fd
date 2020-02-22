@@ -7,7 +7,7 @@
 // according to those terms.
 
 use super::CommandTemplate;
-use crate::exit_codes::{ExitCode, error_if_any_error};
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::walk::WorkerResult;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
@@ -46,7 +46,7 @@ pub fn job(
         results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm)))
     }
     // Returns error in case of any error.
-    error_if_any_error(results)
+    merge_exitcodes(results)
 }
 
 pub fn batch(

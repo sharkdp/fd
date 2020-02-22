@@ -23,7 +23,7 @@ impl ExitCode {
     }
 }
 
-pub fn error_if_any_error(results: Vec<ExitCode>) -> ExitCode {
+pub fn merge_exitcodes(results: Vec<ExitCode>) -> ExitCode {
     if results.iter().any(ExitCode::is_error) {
         return ExitCode::GeneralError;
     }
