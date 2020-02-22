@@ -7,7 +7,7 @@
 // according to those terms.
 
 use crate::exec;
-use crate::exit_codes::ExitCode;
+use crate::exit_codes::{ExitCode, error_if_any_error};
 use crate::fshelper;
 use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
@@ -182,7 +182,7 @@ fn spawn_receiver(
                     results.push(h.join().unwrap());
                 }
 
-                ExitCode::error_if_any_error(results)
+                error_if_any_error(results)
             }
         } else {
             let start = time::Instant::now();

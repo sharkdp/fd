@@ -15,17 +15,17 @@ impl Into<i32> for ExitCode {
 }
 
 impl ExitCode {
-    pub fn error_if_any_error(results: Vec<Self>) -> Self {
-        if results.iter().any(ExitCode::is_error) {
-            return ExitCode::GeneralError;
-        }
-        ExitCode::Success
-    }
-
     fn is_error(&self) -> bool {
         match self {
             ExitCode::GeneralError | ExitCode::KilledBySigint => true,
             _ => false,
         }
     }
+}
+
+pub fn error_if_any_error(results: Vec<ExitCode>) -> ExitCode {
+    if results.iter().any(ExitCode::is_error) {
+        return ExitCode::GeneralError;
+    }
+    ExitCode::Success
 }
