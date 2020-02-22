@@ -1,3 +1,4 @@
+#[derive(PartialEq, Debug)]
 pub enum ExitCode {
     Success,
     GeneralError,
@@ -28,4 +29,31 @@ pub fn merge_exitcodes(results: Vec<ExitCode>) -> ExitCode {
         return ExitCode::GeneralError;
     }
     ExitCode::Success
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn success_with_empty_vec() {
+        assert_eq!(merge_exitcodes(vec![]), ExitCode::Success);
+    }
+
+    #[test]
+    fn general_error_with_at_least_a_matching_error() {
+        assert_eq!(
+            merge_exitcodes(vec![ExitCode::KilledBySigint, ExitCode::Success]),
+            ExitCode::GeneralError
+        );
+        assert_eq!(
+            merge_exitcodes(vec![ExitCode::GeneralError, ExitCode::Success]),
+            ExitCode::GeneralError
+        );
+    }
+
+    #[test]
+    fn success_with_no_error() {
+        assert_eq!(merge_exitcodes(vec![ExitCode::Success]), ExitCode::Success);
+    }
 }

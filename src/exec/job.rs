@@ -7,7 +7,7 @@
 // according to those terms.
 
 use super::CommandTemplate;
-use crate::exit_codes::{ExitCode, merge_exitcodes};
+use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::walk::WorkerResult;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
