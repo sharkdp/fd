@@ -7,7 +7,7 @@
 // according to those terms.
 
 use crate::exec;
-use crate::exit_codes::{ExitCode, merge_exitcodes};
+use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::fshelper;
 use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
