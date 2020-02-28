@@ -303,7 +303,7 @@ fn spawn_senders(
             }
 
             let entry = match entry_o {
-                Ok(e) if e.depth() == 0 => {
+                Ok(ref e) if e.depth() == 0 => {
                     // Skip the root directory entry.
                     return ignore::WalkState::Continue;
                 }
@@ -316,6 +316,7 @@ fn spawn_senders(
                         if io_error.kind() == io::ErrorKind::NotFound
                             && path
                                 .symlink_metadata()
+                                .ok()
                                 .map_or(false, |m| m.file_type().is_symlink()) =>
                     {
                         DirEntry::BrokenSymlink(path.to_owned())
