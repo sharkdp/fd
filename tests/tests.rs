@@ -604,7 +604,24 @@ fn test_follow_broken_symlink() {
     te.create_broken_symlink("broken_symlink")
         .expect("Failed to create broken symlink.");
 
-    te.assert_output(&["--follow", "--type", "f", "symlink"], "broken_symlink");
+    te.assert_output(
+        &["symlink"],
+        "broken_symlink
+        symlink",
+    );
+    te.assert_output(
+        &["--type", "symlink", "symlink"],
+        "broken_symlink
+        symlink",
+    );
+
+    te.assert_output(&["--type", "file", "symlink"], "");
+
+    te.assert_output(
+        &["--follow", "--type", "symlink", "symlink"],
+        "broken_symlink",
+    );
+    te.assert_output(&["--follow", "--type", "file", "symlink"], "");
 }
 
 /// Null separator (--print0)
