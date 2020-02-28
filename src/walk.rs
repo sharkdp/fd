@@ -13,10 +13,8 @@ use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
 
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::OsStr;
-use std::fs;
 use std::io;
 use std::path::PathBuf;
 use std::process;
@@ -44,36 +42,6 @@ enum ReceiverMode {
 pub enum WorkerResult {
     Entry(PathBuf),
     Error(ignore::Error),
-}
-
-/// Converts a WorkerResult to a PathBuf. This is required as in some cases,
-/// the underlying `ignore` libary will return an error when we actually
-/// still want to show the path.
-///
-/// Currently, the cases supported are:
-///   - a broken symlink should still be found and the path returned
-impl TryFrom<WorkerResult> for PathBuf {
-    type Error = ignore::Error;
-
-    fn try_from(worker_result: WorkerResult) -> Result<PathBuf, Self::Error> {
-        match worker_result {
-            WorkerResult::Entry(value) => return Ok(value),
-            WorkerResult::Error(ignore_error) => {
-                if let ignore::Error::WithPath { path, err } = &ignore_error {
-                    if let ignore::Error::Io(ref io_err) = **err {
-                        if io_err.kind() == io::ErrorKind::NotFound
-                            && fs::symlink_metadata(&path)
-                                .map_or(false, |m| m.file_type().is_symlink())
-                        {
-                            // Broken symlink
-                            return Ok(path.to_path_buf());
-                        }
-                    }
-                }
-                return Err(ignore_error);
-            }
-        }
-    }
 }
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
@@ -233,8 +201,8 @@ fn spawn_receiver(
             let mut stdout = stdout.lock();
 
             for worker_result in rx {
-                match PathBuf::try_from(worker_result) {
-                    Ok(value) => {
+                match worker_result {
+                    WorkerResult::Entry(value) => {
                         match mode {
                             ReceiverMode::Buffering => {
                                 buffer.push(value);
@@ -263,7 +231,7 @@ fn spawn_receiver(
                             }
                         }
                     }
-                    Err(err) => {
+                    WorkerResult::Error(err) => {
                         if show_filesystem_errors {
                             print_error!("{}", err);
                         }
