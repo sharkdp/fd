@@ -312,7 +312,12 @@ fn spawn_senders(
                     path,
                     err: inner_err,
                 }) => match inner_err.as_ref() {
-                    ignore::Error::Io(io_error) if io_error.kind() == io::ErrorKind::NotFound => {
+                    ignore::Error::Io(io_error)
+                        if io_error.kind() == io::ErrorKind::NotFound
+                            && path
+                                .symlink_metadata()
+                                .map_or(false, |m| m.file_type().is_symlink()) =>
+                    {
                         DirEntry::BrokenSymlink(path.to_owned())
                     }
                     _ => {
