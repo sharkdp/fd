@@ -15,8 +15,9 @@ use crate::output;
 use std::borrow::Cow;
 use std::error::Error;
 use std::ffi::OsStr;
+use std::fs::{FileType, Metadata};
 use std::io;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -253,6 +254,36 @@ fn spawn_receiver(
     })
 }
 
+pub enum DirEntry {
+    Normal(ignore::DirEntry),
+    BrokenSymlink(PathBuf),
+}
+
+impl DirEntry {
+    pub fn path(&self) -> &Path {
+        match self {
+            DirEntry::Normal(e) => e.path(),
+            DirEntry::BrokenSymlink(pathbuf) => pathbuf.as_path(),
+        }
+    }
+
+    pub fn file_type(&self) -> Option<FileType> {
+        match self {
+            DirEntry::Normal(e) => e.file_type(),
+            DirEntry::BrokenSymlink(pathbuf) => {
+                pathbuf.symlink_metadata().map(|m| m.file_type()).ok()
+            }
+        }
+    }
+
+    pub fn metadata(&self) -> Option<Metadata> {
+        match self {
+            DirEntry::Normal(e) => e.metadata().ok(),
+            DirEntry::BrokenSymlink(_) => None,
+        }
+    }
+}
+
 fn spawn_senders(
     config: &Arc<FdOptions>,
     wants_to_quit: &Arc<AtomicBool>,
@@ -272,16 +303,33 @@ fn spawn_senders(
             }
 
             let entry = match entry_o {
-                Ok(e) => e,
+                Ok(e) if e.depth() == 0 => {
+                    // Skip the root directory entry.
+                    return ignore::WalkState::Continue;
+                }
+                Ok(e) => DirEntry::Normal(e),
+                Err(ignore::Error::WithPath {
+                    path,
+                    err: inner_err,
+                }) => match inner_err.as_ref() {
+                    ignore::Error::Io(io_error) if io_error.kind() == io::ErrorKind::NotFound => {
+                        DirEntry::BrokenSymlink(path.to_owned())
+                    }
+                    _ => {
+                        tx_thread
+                            .send(WorkerResult::Error(ignore::Error::WithPath {
+                                path,
+                                err: inner_err,
+                            }))
+                            .unwrap();
+                        return ignore::WalkState::Continue;
+                    }
+                },
                 Err(err) => {
                     tx_thread.send(WorkerResult::Error(err)).unwrap();
                     return ignore::WalkState::Continue;
                 }
             };
-
-            if entry.depth() == 0 {
-                return ignore::WalkState::Continue;
-            }
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();

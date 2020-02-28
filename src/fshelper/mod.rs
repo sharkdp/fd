@@ -13,7 +13,7 @@ use std::io;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
-use ignore::DirEntry;
+use crate::walk;
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
@@ -55,7 +55,7 @@ pub fn is_executable(_: &fs::Metadata) -> bool {
     false
 }
 
-pub fn is_empty(entry: &DirEntry) -> bool {
+pub fn is_empty(entry: &walk::DirEntry) -> bool {
     if let Some(file_type) = entry.file_type() {
         if file_type.is_dir() {
             if let Ok(mut entries) = fs::read_dir(entry.path()) {
