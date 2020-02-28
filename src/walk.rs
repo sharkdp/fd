@@ -58,13 +58,9 @@ impl TryFrom<WorkerResult> for PathBuf {
     fn try_from(worker_result: WorkerResult) -> Result<PathBuf, Self::Error> {
         match worker_result {
             WorkerResult::Entry(value) => return Ok(value),
-            WorkerResult::Error(err) => {
-                if let ignore::Error::WithPath {
-                    path,
-                    err: path_err,
-                } = &err
-                {
-                    if let ignore::Error::Io(io_err) = &**path_err {
+            WorkerResult::Error(ignore_error) => {
+                if let ignore::Error::WithPath { path, err } = &ignore_error {
+                    if let ignore::Error::Io(ref io_err) = **err {
                         if io_err.kind() == io::ErrorKind::NotFound {
                             if let Ok(metadata) = fs::symlink_metadata(&path) {
                                 if metadata.file_type().is_symlink() {
@@ -74,7 +70,7 @@ impl TryFrom<WorkerResult> for PathBuf {
                         }
                     }
                 }
-                return Err(err);
+                return Err(ignore_error);
             }
         }
     }
