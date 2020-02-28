@@ -61,12 +61,11 @@ impl TryFrom<WorkerResult> for PathBuf {
             WorkerResult::Error(ignore_error) => {
                 if let ignore::Error::WithPath { path, err } = &ignore_error {
                     if let ignore::Error::Io(ref io_err) = **err {
-                        if io_err.kind() == io::ErrorKind::NotFound {
-                            if let Ok(metadata) = fs::symlink_metadata(&path) {
-                                if metadata.file_type().is_symlink() {
-                                    return Ok(path.to_path_buf());
-                                }
-                            }
+                        if io_err.kind() == io::ErrorKind::NotFound
+                            && fs::symlink_metadata(&path)
+                                .map_or(false, |m| m.file_type().is_symlink())
+                        {
+                            return Ok(path.to_path_buf());
                         }
                     }
                 }
