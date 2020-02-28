@@ -65,6 +65,7 @@ impl TryFrom<WorkerResult> for PathBuf {
                             && fs::symlink_metadata(&path)
                                 .map_or(false, |m| m.file_type().is_symlink())
                         {
+                            // Broken symlink
                             return Ok(path.to_path_buf());
                         }
                     }
