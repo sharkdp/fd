@@ -127,6 +127,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("0")
                 .overrides_with("print0"),
         )
+        .arg(arg("prune").long("prune").short("P"))
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
         .arg(
@@ -351,6 +352,10 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Separate results by the null character"
         , "Separate search results by the null character (instead of newlines). Useful for \
            piping results to 'xargs'.");
+    doc!(h, "prune"
+        , "Do not descend into matched directories"
+        , "When a directory matches the pattern, fd does not descend into it but still shows \
+           all matches at the same level as that directory.");
     doc!(h, "depth"
         , "Set maximum search depth (default: none)"
         , "Limit the directory traversal to a given depth. By default, there is no limit \

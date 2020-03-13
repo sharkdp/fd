@@ -211,6 +211,7 @@ fn main() {
         follow_links: matches.is_present("follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
+        prune: matches.is_present("prune"),
         max_depth: matches
             .value_of("depth")
             .or_else(|| matches.value_of("rg-depth"))

@@ -1470,3 +1470,21 @@ fn test_base_directory() {
         ),
     );
 }
+
+#[test]
+fn test_prune() {
+    let dirs = &["foo", "bar/zap/foo"];
+    let files = &[
+        "foo/a.foo",
+        "foo/b.bar",
+        "bar/zap/c.foo",
+        "bar/zap/foo/d.foo",
+    ];
+    let te = TestEnv::new(dirs, files);
+    te.assert_output(
+        &["--prune", "foo"],
+        "bar/zap/c.foo
+         bar/zap/foo
+         foo",
+    );
+}

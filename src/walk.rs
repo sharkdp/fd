@@ -436,6 +436,15 @@ fn spawn_senders(
                 return ignore::WalkState::Quit;
             }
 
+            // when pruning, don't descend into matching dirs
+            if config.prune {
+                if let Some(ref entry_type) = entry.file_type() {
+                    if entry_type.is_dir() {
+                        return ignore::WalkState::Skip;
+                    }
+                }
+            }
+
             ignore::WalkState::Continue
         })
     });
