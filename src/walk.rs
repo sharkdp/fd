@@ -362,6 +362,16 @@ fn spawn_senders(
                 return ignore::WalkState::Continue;
             }
 
+            let mut ret_state = ignore::WalkState::Continue;
+            // when pruning, don't descend into matching dirs
+            // note that prune requires pattern
+            if config.prune
+                && pattern.as_str().len() != 0
+                && entry.file_type().map_or(false, |e| e.is_dir())
+            {
+                ret_state = ignore::WalkState::Skip;
+            }
+
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
@@ -387,10 +397,10 @@ fn spawn_senders(
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
                         || !(entry_type.is_file() || entry_type.is_dir() || entry_type.is_symlink())
                     {
-                        return ignore::WalkState::Continue;
+                        return ret_state;
                     }
                 } else {
-                    return ignore::WalkState::Continue;
+                    return ret_state;
                 }
             }
 
@@ -404,13 +414,13 @@ fn spawn_senders(
                             .iter()
                             .any(|sc| !sc.is_within(file_size))
                         {
-                            return ignore::WalkState::Continue;
+                            return ret_state;
                         }
                     } else {
-                        return ignore::WalkState::Continue;
+                        return ret_state;
                     }
                 } else {
-                    return ignore::WalkState::Continue;
+                    return ret_state;
                 }
             }
 
@@ -426,7 +436,7 @@ fn spawn_senders(
                     }
                 }
                 if !matched {
-                    return ignore::WalkState::Continue;
+                    return ret_state;
                 }
             }
 
@@ -436,16 +446,7 @@ fn spawn_senders(
                 return ignore::WalkState::Quit;
             }
 
-            // when pruning, don't descend into matching dirs
-            if config.prune {
-                if let Some(ref entry_type) = entry.file_type() {
-                    if entry_type.is_dir() {
-                        return ignore::WalkState::Skip;
-                    }
-                }
-            }
-
-            ignore::WalkState::Continue
+            ret_state
         })
     });
 }

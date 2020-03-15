@@ -1471,6 +1471,7 @@ fn test_base_directory() {
     );
 }
 
+/// --prune
 #[test]
 fn test_prune() {
     let dirs = &["foo", "bar/zap/foo"];
@@ -1481,10 +1482,174 @@ fn test_prune() {
         "bar/zap/foo/d.foo",
     ];
     let te = TestEnv::new(dirs, files);
+
+    // without pruning
+    te.assert_output(
+        &["foo"],
+        "bar/zap/foo/d.foo
+         bar/zap/c.foo
+         bar/zap/foo
+         foo/a.foo
+         foo",
+    );
+    // with pruning
     te.assert_output(
         &["--prune", "foo"],
         "bar/zap/c.foo
          bar/zap/foo
          foo",
+    );
+
+    // with --full-path
+    let root = te.system_root();
+    let prefix = escape(&root.to_string_lossy());
+    // before prune
+    te.assert_output(
+        &[
+            "--full-path",
+            &format!("^{prefix}.*zap.*foo$", prefix = prefix),
+        ],
+        "bar/zap/c.foo
+         bar/zap/foo/d.foo
+         bar/zap/foo",
+    );
+    // after prune
+    te.assert_output(
+        &[
+            "--prune",
+            "--full-path",
+            &format!("^{prefix}.*zap.*foo$", prefix = prefix),
+        ],
+        "bar/zap/c.foo
+         bar/zap/foo",
+    );
+
+    // --type f
+    te.assert_output(&["--prune", "--type", "f", "foo"], "bar/zap/c.foo");
+    // --type d
+    te.assert_output(
+        &["--prune", "--type", "d", "foo"],
+        "bar/zap/foo
+        foo",
+    );
+    // --prune with other options but no pattern
+    te.assert_output(
+        &["--prune", "--type", "d"],
+        "bar/zap/foo
+         bar/zap
+         bar
+         foo",
+    );
+
+    // --extention
+    // before prune
+    te.assert_output(&["--extension", "bar"], "foo/b.bar");
+    // after prune
+    te.assert_output(&["--prune", "--extension", "bar", "foo"], "");
+
+    // --max-depth
+    // before prune
+    te.assert_output(
+        &["--max-depth", "3", "foo"],
+        "bar/zap/foo
+         bar/zap/c.foo
+         foo/a.foo
+         foo",
+    );
+    // after prune
+    te.assert_output(
+        &["--prune", "--max-depth", "3", "foo"],
+        "bar/zap/foo
+         bar/zap/c.foo
+         foo",
+    );
+
+    // --exclude
+    // before prune
+    te.assert_output(
+        &["foo", "--exclude", "zap"],
+        "foo
+         foo/a.foo",
+    );
+    // after prune
+    te.assert_output(&["foo", "--prune", "--exclude", "zap"], "foo");
+
+    // --follow
+    // TODO
+    //te.assert_output(
+    //    &["--follow", "c.foo"],
+    //    "bar/zap/c.foo
+    //    symlink/c.foo",
+    //);
+
+    // --size
+    let te2 = TestEnv::new(&["foo", "bar"], &[]);
+    create_file_with_size(te2.test_root().join("foo/0_bytes.foo"), 0);
+    create_file_with_size(te2.test_root().join("bar/11_bytes.foo"), 11);
+    // before prune
+    te2.assert_output(
+        &["--size", "+0B"],
+        "foo/0_bytes.foo
+        bar/11_bytes.foo",
+    );
+    // after prune
+    te2.assert_output(&["--prune", "--size", "+0B", "foo"], "bar/11_bytes.foo");
+
+    // --changed-within
+    let te3 = TestEnv::new(&["foo", "bar"], &[]);
+    create_file_with_modified(te3.test_root().join("bar/foo_0_now"), 0);
+    create_file_with_modified(te3.test_root().join("foo/bar_1_min"), 60);
+    create_file_with_modified(te3.test_root().join("foo_10_min"), 600);
+    // before prune
+    te3.assert_output(
+        &["--changed-within", "15min"],
+        "foo
+         bar/foo_0_now
+         bar
+         foo/bar_1_min
+         foo_10_min",
+    );
+    // after prune
+    te3.assert_output(
+        &["--prune", "--changed-within", "15min", "foo"],
+        "bar/foo_0_now
+         foo
+         foo_10_min",
+    );
+
+    // --changed-before and --change-newer-than
+    let te4 = TestEnv::new(&["foo", "bar"], &["foo/15mar2018", "bar/30dec2017"]);
+    change_file_modified(
+        te4.test_root().join("foo/15mar2018"),
+        "2018-03-15T12:00:00Z",
+    );
+    change_file_modified(
+        te4.test_root().join("bar/30dec2017"),
+        "2017-12-30T23:59:00Z",
+    );
+    // before prune
+    te4.assert_output(
+        &["", "--change-newer-than", "2018-01-01 00:00:00"],
+        "foo
+        foo/15mar2018
+        bar",
+    );
+    te4.assert_output(
+        &["", "--changed-before", "2018-01-01 00:00:00"],
+        "bar/30dec2017",
+    );
+    // after prune
+    te4.assert_output(
+        &[
+            "--prune",
+            "--change-newer-than",
+            "2018-01-01 00:00:00",
+            "foo",
+        ],
+        "foo",
+    );
+    te4.assert_output(
+        &["--prune", "--changed-before", "2018-01-01 00:00:00", "bar"],
+        "",
     );
 }

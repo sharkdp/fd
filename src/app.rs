@@ -127,7 +127,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("0")
                 .overrides_with("print0"),
         )
-        .arg(arg("prune").long("prune").short("P"))
+        .arg(arg("prune").long("prune").hidden_short_help(true))
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
         .arg(
