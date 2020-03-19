@@ -143,7 +143,7 @@ fn main() {
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
         Some("never") => false,
-        _ => atty::is(Stream::Stdout),
+        _ => env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout),
     };
 
     let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
