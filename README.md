@@ -97,6 +97,8 @@ complete (and more colorful) variants, see
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
 
+`fd` also honors the [NO_COLOR](https://no-color.org/) environment variable.
+
 ## Parallel command execution
 If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
 for executing commands in parallel for each discovered path as the input. The syntax for generating
