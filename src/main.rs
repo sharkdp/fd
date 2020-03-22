@@ -17,7 +17,6 @@ mod output;
 mod walk;
 
 use std::env;
-use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
@@ -263,7 +262,7 @@ fn main() {
             {
                 Ok(re) => re,
                 Err(err) => {
-                    print_error_and_exit!("{}", err.description());
+                    print_error_and_exit!("{}", err.to_string());
                 }
             }
         }),
@@ -295,7 +294,7 @@ fn main() {
             print_error_and_exit!(
                 "{}\nHint: You can use the '--fixed-strings' option to search for a \
                  literal string instead of a regular expression",
-                err.description()
+                err.to_string()
             );
         }
     }

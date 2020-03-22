@@ -13,7 +13,6 @@ use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
 use crate::output;
 
 use std::borrow::Cow;
-use std::error::Error;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
@@ -95,9 +94,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
                 print_error!(
                     "{}",
                     format!(
-                        "Malformed pattern in custom ignore file '{}': {}.",
-                        ignore_file.to_string_lossy(),
-                        err.description()
+                        "Malformed pattern in custom ignore file. {}.",
+                        err.to_string()
                     )
                 );
             }
