@@ -362,15 +362,16 @@ fn spawn_senders(
                 return ignore::WalkState::Continue;
             }
 
-            let mut ret_state = ignore::WalkState::Continue;
             // when pruning, don't descend into matching dirs
             // note that prune requires pattern
-            if config.prune
+            let walk_action = if config.prune
                 && pattern.as_str().len() != 0
                 && entry.file_type().map_or(false, |e| e.is_dir())
             {
-                ret_state = ignore::WalkState::Skip;
-            }
+                ignore::WalkState::Skip
+            } else {
+                ignore::WalkState::Continue
+            };
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
@@ -397,10 +398,10 @@ fn spawn_senders(
                         || (file_types.empty_only && !fshelper::is_empty(&entry))
                         || !(entry_type.is_file() || entry_type.is_dir() || entry_type.is_symlink())
                     {
-                        return ret_state;
+                        return walk_action;
                     }
                 } else {
-                    return ret_state;
+                    return walk_action;
                 }
             }
 
@@ -414,13 +415,13 @@ fn spawn_senders(
                             .iter()
                             .any(|sc| !sc.is_within(file_size))
                         {
-                            return ret_state;
+                            return walk_action;
                         }
                     } else {
-                        return ret_state;
+                        return walk_action;
                     }
                 } else {
-                    return ret_state;
+                    return walk_action;
                 }
             }
 
@@ -436,7 +437,7 @@ fn spawn_senders(
                     }
                 }
                 if !matched {
-                    return ret_state;
+                    return walk_action;
                 }
             }
 
@@ -446,7 +447,7 @@ fn spawn_senders(
                 return ignore::WalkState::Quit;
             }
 
-            ret_state
+            walk_action
         })
     });
 }
