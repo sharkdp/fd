@@ -3,6 +3,7 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/21c4p5fwggc5gy3j/branch/master?svg=true)](https://ci.appveyor.com/project/sharkdp/fd/branch/master)
 [![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
 [中文](https://github.com/chinanf-boy/fd-zh)
+[한국어](https://github.com/spearkkk/fd-kor)
 
 *fd* is a simple, fast and user-friendly alternative to
 [*find*](https://www.gnu.org/software/findutils/).
