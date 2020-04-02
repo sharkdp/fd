@@ -1493,5 +1493,6 @@ fn test_max_results() {
     let output = te.assert_success_and_get_output(".", &["--max-results=1", "c.foo"]);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stdout = stdout.trim();
+    let stdout = stdout.replace(&std::path::MAIN_SEPARATOR.to_string(), "/");
     assert!(stdout == "one/two/C.Foo2" || stdout == "one/two/c.foo");
 }
