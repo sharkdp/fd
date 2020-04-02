@@ -16,6 +16,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
+use std::os::unix::fs::PermissionsExt;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -58,6 +59,14 @@ fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
     let content = "#".repeat(size_in_bytes);
     let mut f = fs::File::create::<P>(path).unwrap();
     f.write(content.as_bytes()).unwrap();
+}
+
+#[cfg(test)]
+fn create_file_with_perm<P: AsRef<Path>>(path: P, mode: u32) {
+    let mut f = fs::File::create::<P>(path).unwrap();
+    let metadata = f.metadata().unwrap();
+    let mut permissions = metadata.permissions();
+    permissions.set_mode(mode);
 }
 
 /// Simple tests
@@ -1469,4 +1478,36 @@ fn test_base_directory() {
             abs_path = &abs_path
         ),
     );
+}
+
+/// Filtering for file permissions (--perm)
+#[test]
+fn test_permissions() {
+    let te = TestEnv::new(&[], &[]);
+
+    create_file_with_perm(te.test_root().join("777.foo"), 0o777);
+    create_file_with_perm(te.test_root().join("744.foo"), 0o744);
+    create_file_with_perm(te.test_root().join("444.foo"), 0o444);
+    create_file_with_perm(te.test_root().join("0_000.foo"), 0o000);
+    create_file_with_perm(te.test_root().join("1_000.foo"), 0o000);
+
+    // All access files
+    te.assert_output(&["", "--perm", "777"], "777.foo");
+
+    // Read + Write + Execute for owner, Read for the rest
+    te.assert_output(&["", "--perm", "744"], "744.foo");
+
+    // Read only file for everybody
+    te.assert_output(&["", "--perm", "444"], "444.foo");
+
+    // No permission files
+    te.assert_output(
+        &["", "--perm", "000"],
+        "0_000.foo
+        1_000.foo",
+    );
+
+    // Combine with a search pattern
+    te.assert_output(&["^0_", "--perm", "000"], "0_000.foo");
+
 }
