@@ -199,6 +199,8 @@ fn spawn_receiver(
             let stdout = io::stdout();
             let mut stdout = stdout.lock();
 
+            let mut num_results = 0;
+
             for worker_result in rx {
                 match worker_result {
                     WorkerResult::Entry(value) => {
@@ -229,11 +231,19 @@ fn spawn_receiver(
                                 output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                             }
                         }
+
+                        num_results += 1;
                     }
                     WorkerResult::Error(err) => {
                         if show_filesystem_errors {
                             print_error!("{}", err);
                         }
+                    }
+                }
+
+                if let Some(max_results) = config.max_results {
+                    if num_results >= max_results {
+                        break;
                     }
                 }
             }

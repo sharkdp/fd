@@ -279,6 +279,10 @@ fn main() {
         time_constraints,
         show_filesystem_errors: matches.is_present("show-errors"),
         path_separator,
+        max_results: matches
+            .value_of("max-results")
+            .and_then(|n| usize::from_str_radix(n, 10).ok())
+            .filter(|&n| n != 0),
     };
 
     match RegexBuilder::new(&pattern_regex)

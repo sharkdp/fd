@@ -2,6 +2,10 @@
 
 ## Features
 
+- Added `--max-results=<count>` option to limit the number of search results, see #472 and #476
+  This can be useful to speed up searches in cases where you know that there are only N results.
+  Using this option is also (slightly) faster than piping to `head -n <count>` where `fd` can only
+  exit when it finds the search results `<count> + 1`.
 - Support additional ANSI font styles in `LS_COLORS`: faint, slow blink, rapid blink, dimmed, hidden and strikethrough.
 
 ## Bugfixes

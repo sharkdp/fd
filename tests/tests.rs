@@ -1470,3 +1470,28 @@ fn test_base_directory() {
         ),
     );
 }
+
+#[test]
+fn test_max_results() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Unrestricted
+    te.assert_output(
+        &["--max-results=0", "c.foo"],
+        "one/two/C.Foo2
+         one/two/c.foo",
+    );
+
+    // Limited to two results
+    te.assert_output(
+        &["--max-results=2", "c.foo"],
+        "one/two/C.Foo2
+         one/two/c.foo",
+    );
+
+    // Limited to one result. We could find either C.Foo2 or c.foo
+    let output = te.assert_success_and_get_output(".", &["--max-results=1", "c.foo"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = stdout.trim();
+    assert!(stdout == "one/two/C.Foo2" || stdout == "one/two/c.foo");
+}
