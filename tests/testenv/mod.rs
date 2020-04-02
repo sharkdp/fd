@@ -192,6 +192,29 @@ impl TestEnv {
         PathBuf::from(components.next().expect("root directory").as_os_str())
     }
 
+    /// Assert that calling *fd* in the specified path under the root working directory,
+    /// and with the specified arguments produces the expected output.
+    pub fn assert_success_and_get_output<P: AsRef<Path>>(
+        &self,
+        path: P,
+        args: &[&str],
+    ) -> process::Output {
+        // Setup *fd* command.
+        let mut cmd = process::Command::new(&self.fd_exe);
+        cmd.current_dir(self.temp_dir.path().join(path));
+        cmd.args(args);
+
+        // Run *fd*.
+        let output = cmd.output().expect("fd output");
+
+        // Check for exit status.
+        if !output.status.success() {
+            panic!(format_exit_error(args, &output));
+        }
+
+        output
+    }
+
     /// Assert that calling *fd* with the specified arguments produces the expected output.
     pub fn assert_output(&self, args: &[&str], expected: &str) {
         self.assert_output_subdirectory(".", args, expected)
@@ -205,18 +228,7 @@ impl TestEnv {
         args: &[&str],
         expected: &str,
     ) {
-        // Setup *fd* command.
-        let mut cmd = process::Command::new(&self.fd_exe);
-        cmd.current_dir(self.temp_dir.path().join(path));
-        cmd.args(args);
-
-        // Run *fd*.
-        let output = cmd.output().expect("fd output");
-
-        // Check for exit status.
-        if !output.status.success() {
-            panic!(format_exit_error(args, &output));
-        }
+        let output = self.assert_success_and_get_output(path, args);
 
         // Normalize both expected and actual output.
         let expected = normalize_output(expected, true, self.normalize_line);

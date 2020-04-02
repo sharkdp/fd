@@ -81,4 +81,7 @@ pub struct FdOptions {
 
     /// The separator used to print file paths.
     pub path_separator: Option<String>,
+
+    /// The maximum number of search results
+    pub max_results: Option<usize>,
 }

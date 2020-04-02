@@ -252,6 +252,14 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1),
         )
         .arg(
+            arg("max-results")
+                .long("max-results")
+                .takes_value(true)
+                .value_name("count")
+                .conflicts_with_all(&["exec", "exec-batch"])
+                .hidden_short_help(true),
+        )
+        .arg(
             arg("show-errors")
                 .long("show-errors")
                 .hidden_short_help(true)
@@ -457,6 +465,9 @@ fn usage() -> HashMap<&'static str, Help> {
            Examples:\n    \
                --changed-before '2018-10-27 10:00:00'\n    \
                --change-older-than 2weeks");
+    doc!(h, "max-results"
+        , "(hidden)"
+        , "Limit the number of search results to 'count' and quit immediately.");
     doc!(h, "show-errors"
         , "Enable display of filesystem errors"
         , "Enable the display of filesystem errors for situations such as insufficient permissions \
