@@ -230,6 +230,15 @@ pub fn build_app() -> App<'static, 'static> {
                 .multiple(true),
         )
         .arg(
+            arg("perm")
+                .long("perm")
+                .short("P")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(false)
+                .multiple(false),
+        )
+        .arg(
             arg("max-buffer-time")
                 .long("max-buffer-time")
                 .takes_value(true)
@@ -441,6 +450,9 @@ fn usage() -> HashMap<&'static str, Help> {
                 'mi': mebibytes\n   \
                 'gi': gibibytes\n   \
                 'ti': tebibytes");
+    doc!(h, "perm"
+        , "Limit results based on the files permissions."
+        , "Limit results based on the files permissions using the 3 digits numeric notation.");
     doc!(h, "changed-within"
         , "Filter by file modification time (newer than)"
         , "Filter results based on the file modification time. The argument can be provided \
