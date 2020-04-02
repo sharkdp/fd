@@ -165,6 +165,25 @@ fn main() {
                     print_error_and_exit!("{}", e);
                 })
             })
+        })
+        .or_else(|| {
+            if matches.is_present("list") {
+                let color = matches.value_of("color").unwrap_or("auto");
+                let color_arg = ["--color=", color].concat();
+
+                Some(
+                    CommandTemplate::new_batch(&[
+                        "ls",
+                        "-l",               // long listing format
+                        "--human-readable", // human readable file sizes
+                        "--directory",      // list directories themselves, not their contents
+                        &color_arg,         // enable colorized output, if enabled
+                    ])
+                    .unwrap(),
+                )
+            } else {
+                None
+            }
         });
 
     let size_limits: Vec<SizeFilter> = matches
