@@ -1,3 +1,22 @@
+# Upcoming release
+
+## Features
+
+- Support additional ANSI font styles in `LS_COLORS`: faint, slow blink, rapid blink, dimmed, hidden and strikethrough.
+
+## Bugfixes
+
+- `LS_COLORS` entries with unsupported font styles are not completely ignored, see #552
+
+## Changes
+
+
+
+## Other
+
+- Korean translation of the README, see: [한국어](https://github.com/spearkkk/fd-kor) (@spearkkk)
+
+
 # v7.5.0
 
 ## Features
