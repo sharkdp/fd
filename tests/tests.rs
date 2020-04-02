@@ -63,7 +63,7 @@ fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
 
 #[cfg(test)]
 fn create_file_with_perm<P: AsRef<Path>>(path: P, mode: u32) {
-    let mut f = fs::File::create::<P>(path).unwrap();
+    let f = fs::File::create::<P>(path).unwrap();
     let metadata = f.metadata().unwrap();
     let mut permissions = metadata.permissions();
     permissions.set_mode(mode);
