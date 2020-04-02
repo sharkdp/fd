@@ -109,6 +109,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("absolute-path"),
         )
         .arg(
+            arg("list")
+                .long("list")
+                .short("l")
+                .conflicts_with("absolute-path"),
+        )
+        .arg(
             arg("follow")
                 .long("follow")
                 .short("L")
@@ -125,7 +131,8 @@ pub fn build_app() -> App<'static, 'static> {
             arg("null_separator")
                 .long("print0")
                 .short("0")
-                .overrides_with("print0"),
+                .overrides_with("print0")
+                .conflicts_with("list"),
         )
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
@@ -173,7 +180,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .min_values(1)
                 .allow_hyphen_values(true)
                 .value_terminator(";")
-                .value_name("cmd"),
+                .value_name("cmd")
+                .conflicts_with("list"),
         )
         .arg(
             arg("exec-batch")
@@ -183,7 +191,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with("exec"),
+                .conflicts_with_all(&["exec", "list"]),
         )
         .arg(
             arg("exclude")
@@ -343,6 +351,12 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");
+    doc!(h, "list"
+        , "Use a detailed listing format"
+        , "Use a detailed listing format like 'ls -l'. This is basically an alias \
+           for '--exec-batch ls -l' with some additional 'ls' options. This can be used \
+           to see more metadata, to show symlink targets, to achieve a deterministic \
+           sort order and to avoid duplicate search results when using multiple search paths.");
     doc!(h, "path-separator"
         , "Set the path separator to use when printing file paths."
         , "Set the path separator to use when printing file paths. The default is the OS-specific \

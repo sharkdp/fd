@@ -2,7 +2,14 @@
 
 ## Features
 
-- Added `--max-results=<count>` option to limit the number of search results, see #472 and #476
+- Add a new `-l`/`--list` option to show more details about the search results. This is basically
+  an alias for `--exec-batch ls -l` with some additional `ls` options.
+  This can be used in order to:
+    * see metadata like permissions, owner, file size, modification times (#491)
+    * see symlink targets (#482)
+    * achieve a deterministic output order (#324, #196, #159)
+    * avoid duplicate search results when multiple search paths are given (#405)
+- Add a new `--max-results=<count>` option to limit the number of search results, see #472 and #476
   This can be useful to speed up searches in cases where you know that there are only N results.
   Using this option is also (slightly) faster than piping to `head -n <count>` where `fd` can only
   exit when it finds the search results `<count> + 1`.
