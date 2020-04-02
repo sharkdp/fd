@@ -1,4 +1,4 @@
-## v7.5.0
+# v7.5.0
 
 ## Features
 
@@ -19,7 +19,7 @@
 - Search results are sorted when using the `-X` option to match the behaviour of piping to `xargs`, see #441 and #524 (@Marcoleni @crash-g).
 
 
-## v7.4.0
+# v7.4.0
 
 ## Performance improvements
 
@@ -54,7 +54,7 @@
 - `fd` can be installed via npm, see #438 (@pablopunk)
 
 
-## v7.3.0
+# v7.3.0
 
 ## Features
 
@@ -84,7 +84,7 @@
 
 Special thanks to @alexmaco for his awesome work on refactoring and code improvements! (see #401, #398, and #383)
 
-## v7.2.0
+# v7.2.0
 
 ## Features
 
@@ -114,7 +114,7 @@ A special thanks goes to @joshleeb for his amazing improvements throughout
 the code base (new tests, refactoring work and various other things)!
 
 
-## v7.1.0
+# v7.1.0
 
 ## Features
 
@@ -134,7 +134,7 @@ the code base (new tests, refactoring work and various other things)!
 * `fd` is now available via MacPorts, see #291 (@raimue)
 
 
-## v7.0.0
+# v7.0.0
 
 ## Features
 
@@ -166,7 +166,7 @@ the code base (new tests, refactoring work and various other things)!
     * There is a Fedora `copr` package for `fd`.
 
 
-## v6.3.0
+# v6.3.0
 
 ## Features
 
@@ -195,7 +195,7 @@ the code base (new tests, refactoring work and various other things)!
 * Updated [benchmark results](https://github.com/sharkdp/fd#benchmark) (fd has become faster in the meantime!). There is a new repository that hosts several benchmarking scripts for fd: https://github.com/sharkdp/fd-benchmarks
 
 
-## v6.2.0
+# v6.2.0
 
 ## Features
 
@@ -225,7 +225,7 @@ the code base (new tests, refactoring work and various other things)!
   [README](https://github.com/sharkdp/fd#using-fd-with-fzf), see #168.
 
 
-## v6.1.0
+# v6.1.0
 
 ## Features
 
@@ -252,7 +252,7 @@ for the support in ticket discussions and concerning Travis CI fixes. Thank you 
 
 Thanks also go out to @tmccombs for the work on Debian packages and for reviewing a lot of pull requests!
 
-## v6.0.0
+# v6.0.0
 
 ## Changes
 
@@ -273,7 +273,7 @@ Thanks also go out to @tmccombs for the work on Debian packages and for reviewin
 * The output directory for the shell completion files is created if it does not exist (@andoriyu)
 
 
-## v5.0.0
+# v5.0.0
 
 ## Features
 
@@ -322,7 +322,7 @@ A *lot* of things have happened since the last release and I'd like to thank all
 I'd also like to take this chance to say a special Thank You to a few people that have stood out in one way or another: To @iology, for contributing a multitude of bugfixes, improvements and new features. To @reima and @Detegr for their continuing great support. To @mmstick, for implementing the most advanced new feature of *fd*. And to @matematikaadit for the CI/tooling upgrades.
 
 
-## v4.0.0
+# v4.0.0
 
 ## Features
 
@@ -339,12 +339,12 @@ I'd also like to take this chance to say a special Thank You to a few people tha
 * Reduced number of `stat` syscalls for each result from 3 to 1, see #36.
 * Enabled Appveyor CI
 
-## v3.1.0
+# v3.1.0
 
 ## Features
 - Added file type filtering, e.g. `find --type directory` or `find -t f` (@exitium)
 
-## v3.0.0
+# v3.0.0
 
 ## Features
 - Directories are now traversed in parallel, leading to significant performance improvements (see [benchmarks](https://github.com/sharkdp/fd#benchmark))
@@ -354,7 +354,7 @@ I'd also like to take this chance to say a special Thank You to a few people tha
 ## Changes
 - Changed short flag for `--follow` from `-f` to `-L` (consistency with `ripgrep`)
 
-## v2.0.0
+# v2.0.0
 
 * Changed `--sensitive` to `--case-sensitive`
 * Changed `--absolute` to `--absolute-path`
@@ -366,26 +366,26 @@ I'd also like to take this chance to say a special Thank You to a few people tha
 Misc:
 * It's now possible to install `fd` via homebrew on macOS: `brew install fd`.
 
-## v1.1.0
+# v1.1.0
 
 - Windows compatibility (@sebasv), see #29 #35 
 - Safely exit on broken output pipes (e.g.: usage with `head`, `tail`, ..), see #24 
 - Backport for rust 1.16, see #23
 
-## v1.0.0
+# v1.0.0
 
 * Respect `.(git)ignore` files
 * Use `LS_COLORS` environment variable directly, instead of `~/.dir_colors` file.
 * Added unit and integration tests
 * Added optional second argument (search path)
 
-## v0.3.0
+# v0.3.0
 
 -  Parse dircolors files, closes #20 
 -  Colorize each path component, closes #19 
 -  Add short command line option for --hidden, see #18 
 
-## v0.2.0
+# v0.2.0
 
 -  Option to follow symlinks, disable colors, closes #16, closes #17 
 - `--filename` instead of `--full-path`
@@ -393,6 +393,6 @@ Misc:
 -  Configurable search depth, closes #13 
 -  Detect interactive terminal, closes #11 
 
-## v0.1.0
+# v0.1.0
 
 Initial release
