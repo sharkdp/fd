@@ -17,9 +17,6 @@ pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
     }
 }
 
-/// Maximum size of the output buffer before flushing results to the console
-pub const MAX_BUFFER_LENGTH: usize = 1000;
-
 /// Traverse args_os, looking for -exec and replacing it with --exec.
 ///
 /// # Returns
