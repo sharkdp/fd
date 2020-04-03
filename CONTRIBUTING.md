@@ -17,4 +17,3 @@ give us the chance to discuss any potential changes first.
   * [Development section in the README](https://github.com/sharkdp/fd#development)
   * [fd on crates.io](https://crates.io/crates/fd-find)
   * [LICENSE-APACHE](https://github.com/sharkdp/fd/blob/master/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/sharkdp/fd/blob/master/LICENSE-MIT)
-  
