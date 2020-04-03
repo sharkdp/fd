@@ -2,8 +2,8 @@
 
 ## Features
 
-- Add a new `-l`/`--list` option to show more details about the search results. This is basically
-  an alias for `--exec-batch ls -l` with some additional `ls` options.
+- Add a new `-l`/`--list-details` option to show more details about the search results. This is
+  basically an alias for `--exec-batch ls -l` with some additional `ls` options.
   This can be used in order to:
     * see metadata like permissions, owner, file size, modification times (#491)
     * see symlink targets (#482)
