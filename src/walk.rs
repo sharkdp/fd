@@ -1,7 +1,8 @@
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::fshelper;
-use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
+use crate::internal::{osstr_to_bytes, MAX_BUFFER_LENGTH};
+use crate::options::Options;
 use crate::output;
 
 use std::borrow::Cow;
@@ -41,7 +42,7 @@ pub enum WorkerResult {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -> ExitCode {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> ExitCode {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -132,7 +133,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
 }
 
 fn spawn_receiver(
-    config: &Arc<FdOptions>,
+    config: &Arc<Options>,
     wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
 ) -> thread::JoinHandle<ExitCode> {
@@ -285,7 +286,7 @@ impl DirEntry {
 }
 
 fn spawn_senders(
-    config: &Arc<FdOptions>,
+    config: &Arc<Options>,
     wants_to_quit: &Arc<AtomicBool>,
     pattern: Arc<Regex>,
     parallel_walker: ignore::WalkParallel,
