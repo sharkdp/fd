@@ -92,7 +92,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("regex")
                 .overrides_with_all(&["glob", "regex"])
                 .hidden_short_help(true)
-                .help("Perform a regex-based search")
                 .long_help(
                     "Perform a regular-expression based search (default). This can be used to \
                          override --glob.",
@@ -185,8 +184,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("maxdepth")
                 .hidden(true)
                 .takes_value(true)
-                .help("See --max-depth")
-                .long_help("See --max-depth"),
         )
         .arg(
             Arg::with_name("file-type")
@@ -305,7 +302,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .multiple(true)
                 .hidden_short_help(true)
-                .help("Add a custom ignore-file in .gitignore format")
                 .long_help(
                     "Add a custom ignore-file in '.gitignore' format. These files have a low \
                          precedence.",
@@ -334,7 +330,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("num")
                 .hidden_short_help(true)
-                .help("Set number of threads to use for searching & executing")
                 .long_help(
                     "Set number of threads to use for searching & executing (default: number \
                          of available CPU cores)",
@@ -372,7 +367,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("max-buffer-time")
                 .takes_value(true)
                 .hidden(true)
-                .help("the time (in ms) to buffer, before streaming to the console")
                 .long_help(
                     "Amount of time in milliseconds to buffer, before streaming the search \
                          results to the console.",
@@ -426,7 +420,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("show-errors")
                 .hidden_short_help(true)
                 .overrides_with("show-errors")
-                .help("Enable display of filesystem errors")
                 .long_help(
                     "Enable the display of filesystem errors for situations such as \
                          insufficient permissions or dead symlinks.",
@@ -458,7 +451,6 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("separator")
                 .long("path-separator")
                 .hidden_short_help(true)
-                .help("Set the path separator to use when printing file paths.")
                 .long_help(
                     "Set the path separator to use when printing file paths. The default is \
                          the OS-specific separator ('/' on Unix, '\\' on Windows).",
