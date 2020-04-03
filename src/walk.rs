@@ -1,9 +1,3 @@
-use crate::exec;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::filesystem;
-use crate::options::Options;
-use crate::output;
-
 use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
@@ -16,9 +10,17 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
 
+use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
+
+use crate::error::print_error;
+use crate::exec;
+use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::filesystem;
+use crate::options::Options;
+use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -44,7 +46,7 @@ pub const MAX_BUFFER_LENGTH: usize = 1000;
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> ExitCode {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> Result<ExitCode> {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -54,14 +56,13 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
     for pattern in &config.exclude_patterns {
-        let res = override_builder.add(pattern);
-        if res.is_err() {
-            print_error_and_exit!("Malformed exclude pattern '{}'", pattern);
-        }
+        override_builder
+            .add(pattern)
+            .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
     }
-    let overrides = override_builder.build().unwrap_or_else(|_| {
-        print_error_and_exit!("Mismatch in exclude patterns");
-    });
+    let overrides = override_builder
+        .build()
+        .map_err(|_| anyhow!("Mismatch in exclude patterns"))?;
 
     let mut walker = WalkBuilder::new(first_path_buf.as_path());
     walker
@@ -86,13 +87,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
         match result {
             Some(ignore::Error::Partial(_)) => (),
             Some(err) => {
-                print_error!(
-                    "{}",
-                    format!(
-                        "Malformed pattern in custom ignore file. {}.",
-                        err.to_string()
-                    )
-                );
+                print_error(format!(
+                    "Malformed pattern in custom ignore file. {}.",
+                    err.to_string()
+                ));
             }
             None => (),
         }
@@ -131,7 +129,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
         process::exit(ExitCode::KilledBySigint.into());
     }
 
-    exit_code
+    Ok(exit_code)
 }
 
 fn spawn_receiver(
@@ -231,7 +229,7 @@ fn spawn_receiver(
                     }
                     WorkerResult::Error(err) => {
                         if show_filesystem_errors {
-                            print_error!("{}", err);
+                            print_error(err.to_string());
                         }
                     }
                 }
@@ -344,12 +342,9 @@ fn spawn_senders(
             let entry_path = entry.path();
 
             let search_str: Cow<OsStr> = if config.search_full_path {
-                match filesystem::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Cow::Owned(path_abs_buf.as_os_str().to_os_string()),
-                    Err(_) => {
-                        print_error_and_exit!("Unable to retrieve absolute path.");
-                    }
-                }
+                let path_abs_buf = filesystem::path_absolute_form(entry_path)
+                    .expect("Retrieving absolute path succeeds");
+                Cow::Owned(path_abs_buf.as_os_str().to_os_string())
             } else {
                 match entry_path.file_name() {
                     Some(filename) => Cow::Borrowed(filename),

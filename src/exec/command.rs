@@ -3,6 +3,7 @@ use std::io::Write;
 use std::process::Command;
 use std::sync::Mutex;
 
+use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 
 /// Executes a command.
@@ -30,11 +31,11 @@ pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) -> ExitCode {
             }
         }
         Err(ref why) if why.kind() == io::ErrorKind::NotFound => {
-            print_error!("Command not found: {:?}", cmd);
+            print_error(format!("Command not found: {:?}", cmd));
             ExitCode::GeneralError
         }
         Err(why) => {
-            print_error!("Problem while executing command: {}", why);
+            print_error(format!("Problem while executing command: {}", why));
             ExitCode::GeneralError
         }
     }
