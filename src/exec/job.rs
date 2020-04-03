@@ -1,9 +1,12 @@
-use super::CommandTemplate;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::walk::WorkerResult;
 use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
+
+use crate::error::print_error;
+use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::walk::WorkerResult;
+
+use super::CommandTemplate;
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then
@@ -25,7 +28,7 @@ pub fn job(
             Ok(WorkerResult::Entry(val)) => val,
             Ok(WorkerResult::Error(err)) => {
                 if show_filesystem_errors {
-                    print_error!("{}", err);
+                    print_error(err.to_string());
                 }
                 continue;
             }
@@ -50,7 +53,7 @@ pub fn batch(
         WorkerResult::Entry(val) => Some(val),
         WorkerResult::Error(err) => {
             if show_filesystem_errors {
-                print_error!("{}", err);
+                print_error(err.to_string());
             }
             None
         }

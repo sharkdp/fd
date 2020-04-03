@@ -303,9 +303,7 @@ fn run() -> Result<ExitCode> {
             )
         })?;
 
-    let exit_code = walk::scan(&dir_vec, Arc::new(re), Arc::new(config));
-
-    Ok(exit_code)
+    walk::scan(&dir_vec, Arc::new(re), Arc::new(config))
 }
 
 fn main() {
