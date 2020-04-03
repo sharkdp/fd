@@ -123,7 +123,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("list-details")
                 .short("l")
                 .conflicts_with("absolute-path")
-                .help("Show details like permissions, owner, size and modification time.")
+                .help("Use a long listing format with file metadata")
                 .long_help(
                     "Use a detailed listing format like 'ls -l'. This is basically an alias \
                          for '--exec-batch ls -l' with some additional 'ls' options. This can be \
