@@ -1,5 +1,5 @@
 use crate::exit_codes::ExitCode;
-use crate::internal::opts::FdOptions;
+use crate::options::Options;
 use lscolors::{LsColors, Style};
 
 use std::borrow::Cow;
@@ -24,7 +24,7 @@ fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
 pub fn print_entry(
     stdout: &mut StdoutLock,
     entry: &PathBuf,
-    config: &FdOptions,
+    config: &Options,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
     let path = if entry.is_absolute() {
@@ -45,7 +45,7 @@ pub fn print_entry(
     }
 }
 
-fn replace_path_separator<'a>(config: &FdOptions, path: &mut Cow<'a, str>) {
+fn replace_path_separator<'a>(config: &Options, path: &mut Cow<'a, str>) {
     match &config.path_separator {
         None => {}
         Some(sep) => {
@@ -57,7 +57,7 @@ fn replace_path_separator<'a>(config: &FdOptions, path: &mut Cow<'a, str>) {
 fn print_entry_colorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &FdOptions,
+    config: &Options,
     ls_colors: &LsColors,
     wants_to_quit: &Arc<AtomicBool>,
 ) -> io::Result<()> {
@@ -89,7 +89,7 @@ fn print_entry_colorized(
 fn print_entry_uncolorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &FdOptions,
+    config: &Options,
 ) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 

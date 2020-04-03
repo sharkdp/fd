@@ -7,6 +7,7 @@ mod exit_codes;
 mod filetypes;
 mod filter;
 mod fshelper;
+mod options;
 mod output;
 mod walk;
 
@@ -24,7 +25,8 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use crate::exec::CommandTemplate;
 use crate::filetypes::FileTypes;
 use crate::filter::{SizeFilter, TimeFilter};
-use crate::internal::{opts::FdOptions, pattern_has_uppercase_char, transform_args_with_exec};
+use crate::internal::{pattern_has_uppercase_char, transform_args_with_exec};
+use crate::options::Options;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 #[cfg(all(not(windows), not(target_env = "musl")))]
@@ -208,7 +210,7 @@ fn main() {
         }
     }
 
-    let config = FdOptions {
+    let config = Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden")

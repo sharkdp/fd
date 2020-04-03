@@ -6,7 +6,7 @@ use regex::bytes::RegexSet;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
 /// Configuration options for *fd*.
-pub struct FdOptions {
+pub struct Options {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 

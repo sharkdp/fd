@@ -4,8 +4,6 @@ use std::ffi::{OsStr, OsString};
 use regex_syntax::hir::Hir;
 use regex_syntax::ParserBuilder;
 
-pub mod opts;
-
 macro_rules! print_error {
     ($($arg:tt)*) => (eprintln!("[fd error]: {}", format!($($arg)*)))
 }
