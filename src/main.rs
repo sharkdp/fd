@@ -1,7 +1,5 @@
-#[macro_use]
-mod error;
-
 mod app;
+mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;

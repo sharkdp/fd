@@ -1,7 +1,8 @@
-use clap::Shell;
 use std::fs;
 use std::io::{self, Write};
 use std::process::exit;
+
+use clap::Shell;
 
 include!("src/app.rs");
 
