@@ -95,12 +95,11 @@ pub fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
 
 #[cfg(test)]
 mod tests {
+    use super::strip_current_dir;
+    use std::path::{Path, PathBuf};
+
     #[test]
     fn strip_current_dir_basic() {
-        use std::path::{Path, PathBuf};
-
-        use super::strip_current_dir;
-
         assert_eq!(strip_current_dir(&PathBuf::from("./foo")), Path::new("foo"));
         assert_eq!(strip_current_dir(&PathBuf::from("foo")), Path::new("foo"));
         assert_eq!(
