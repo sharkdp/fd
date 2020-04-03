@@ -312,7 +312,7 @@ fn main() {
         }
         Err(err) => {
             eprintln!("[fd error]: {}", err);
-            process::exit(1);
+            process::exit(ExitCode::GeneralError.into());
         }
     }
 }
