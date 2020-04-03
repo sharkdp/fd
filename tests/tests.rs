@@ -1,13 +1,13 @@
-//! Integration tests for the CLI interface of fd.
-
 mod testenv;
 
-use crate::testenv::TestEnv;
-use regex::escape;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
+
+use regex::escape;
+
+use crate::testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
