@@ -1,4 +1,4 @@
-#[derive(PartialEq, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExitCode {
     Success,
     GeneralError,
@@ -17,14 +17,11 @@ impl Into<i32> for ExitCode {
 
 impl ExitCode {
     fn is_error(&self) -> bool {
-        match self {
-            ExitCode::GeneralError | ExitCode::KilledBySigint => true,
-            _ => false,
-        }
+        *self != ExitCode::Success
     }
 }
 
-pub fn merge_exitcodes(results: Vec<ExitCode>) -> ExitCode {
+pub fn merge_exitcodes(results: &[ExitCode]) -> ExitCode {
     if results.iter().any(ExitCode::is_error) {
         return ExitCode::GeneralError;
     }
@@ -36,24 +33,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn success_with_empty_vec() {
-        assert_eq!(merge_exitcodes(vec![]), ExitCode::Success);
+    fn success_when_no_results() {
+        assert_eq!(merge_exitcodes(&[]), ExitCode::Success);
     }
 
     #[test]
-    fn general_error_with_at_least_a_matching_error() {
+    fn general_error_if_at_least_one_error() {
         assert_eq!(
-            merge_exitcodes(vec![ExitCode::KilledBySigint, ExitCode::Success]),
+            merge_exitcodes(&[ExitCode::GeneralError]),
             ExitCode::GeneralError
         );
         assert_eq!(
-            merge_exitcodes(vec![ExitCode::GeneralError, ExitCode::Success]),
+            merge_exitcodes(&[ExitCode::KilledBySigint]),
+            ExitCode::GeneralError
+        );
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::KilledBySigint, ExitCode::Success]),
+            ExitCode::GeneralError
+        );
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::Success, ExitCode::GeneralError]),
+            ExitCode::GeneralError
+        );
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::GeneralError, ExitCode::KilledBySigint]),
             ExitCode::GeneralError
         );
     }
 
     #[test]
-    fn success_with_no_error() {
-        assert_eq!(merge_exitcodes(vec![ExitCode::Success]), ExitCode::Success);
+    fn success_if_no_error() {
+        assert_eq!(merge_exitcodes(&[ExitCode::Success]), ExitCode::Success);
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::Success, ExitCode::Success]),
+            ExitCode::Success
+        );
     }
 }

@@ -38,7 +38,7 @@ pub fn job(
         results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm)))
     }
     // Returns error in case of any error.
-    merge_exitcodes(results)
+    merge_exitcodes(&results)
 }
 
 pub fn batch(

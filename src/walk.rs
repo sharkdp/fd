@@ -173,7 +173,7 @@ fn spawn_receiver(
                     results.push(h.join().unwrap());
                 }
 
-                merge_exitcodes(results)
+                merge_exitcodes(&results)
             }
         } else {
             let start = time::Instant::now();
