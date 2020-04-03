@@ -5,7 +5,7 @@ use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use crate::walk;
 
@@ -81,4 +81,14 @@ pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
         Cow::Owned(string) => Cow::Owned(string.into_bytes()),
         Cow::Borrowed(string) => Cow::Borrowed(string.as_bytes()),
     }
+}
+
+/// Remove the `./` prefix from a path.
+pub fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
+    let mut iter = pathbuf.components();
+    let mut iter_next = iter.clone();
+    if iter_next.next() == Some(Component::CurDir) {
+        iter.next();
+    }
+    iter.as_path()
 }

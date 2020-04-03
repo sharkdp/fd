@@ -1,25 +1,16 @@
-use crate::exit_codes::ExitCode;
-use crate::options::Options;
-use lscolors::{LsColors, Style};
-
 use std::borrow::Cow;
 use std::io::{self, StdoutLock, Write};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use ansi_term;
+use lscolors::{LsColors, Style};
 
-/// Remove the `./` prefix from a path.
-fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
-    let mut iter = pathbuf.components();
-    let mut iter_next = iter.clone();
-    if iter_next.next() == Some(Component::CurDir) {
-        iter.next();
-    }
-    iter.as_path()
-}
+use crate::exit_codes::ExitCode;
+use crate::filesystem::strip_current_dir;
+use crate::options::Options;
 
 pub fn print_entry(
     stdout: &mut StdoutLock,
