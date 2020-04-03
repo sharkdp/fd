@@ -33,3 +33,20 @@ fn hir_has_uppercase_char(hir: &Hir) -> bool {
         _ => false,
     }
 }
+
+#[test]
+fn pattern_has_uppercase_char_simple() {
+    assert!(pattern_has_uppercase_char("A"));
+    assert!(pattern_has_uppercase_char("foo.EXE"));
+
+    assert!(!pattern_has_uppercase_char("a"));
+    assert!(!pattern_has_uppercase_char("foo.exe123"));
+}
+
+#[test]
+fn pattern_has_uppercase_char_advanced() {
+    assert!(pattern_has_uppercase_char("foo.[a-zA-Z]"));
+
+    assert!(!pattern_has_uppercase_char(r"\Acargo"));
+    assert!(!pattern_has_uppercase_char(r"carg\x6F"));
+}
