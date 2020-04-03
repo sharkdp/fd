@@ -39,30 +39,29 @@ fn main() {
 
     // Set the current working directory of the process
     if let Some(base_directory) = matches.value_of("base-directory") {
-        let basedir = Path::new(base_directory);
-        if !filesystem::is_dir(basedir) {
+        let base_directory = Path::new(base_directory);
+        if !filesystem::is_dir(base_directory) {
             print_error_and_exit!(
                 "The '--base-directory' path ('{}') is not a directory.",
-                basedir.to_string_lossy()
+                base_directory.to_string_lossy()
             );
         }
-        if let Err(e) = env::set_current_dir(basedir) {
+        if let Err(e) = env::set_current_dir(base_directory) {
             print_error_and_exit!(
                 "Could not set '{}' as the current working directory: {}",
-                basedir.to_string_lossy(),
+                base_directory.to_string_lossy(),
                 e
             );
         }
     }
 
-    // Get the search pattern
-    let pattern = matches.value_of("pattern").unwrap_or("");
-
-    // Get the current working directory
-    let current_dir = Path::new(".");
-    if !filesystem::is_dir(current_dir) {
+    let current_directory = Path::new(".");
+    if !filesystem::is_dir(current_directory) {
         print_error_and_exit!("Could not get current directory.");
     }
+
+    // Get the search pattern
+    let pattern = matches.value_of("pattern").unwrap_or("");
 
     // Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches
@@ -81,7 +80,7 @@ fn main() {
                 path_buffer
             })
             .collect::<Vec<_>>(),
-        None => vec![current_dir.to_path_buf()],
+        None => vec![current_directory.to_path_buf()],
     };
 
     if matches.is_present("absolute-path") {
