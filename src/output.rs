@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::io::{self, StdoutLock, Write};
 use std::path::{Path, PathBuf};
 use std::process;
@@ -9,9 +8,10 @@ use ansi_term;
 use lscolors::{LsColors, Style};
 
 use crate::exit_codes::ExitCode;
-use crate::filesystem::strip_current_dir;
+use crate::filesystem::{replace_path_separator, strip_current_dir};
 use crate::options::Options;
 
+// TODO: this function is performance critical and can probably be optimized
 pub fn print_entry(
     stdout: &mut StdoutLock,
     entry: &PathBuf,
@@ -36,15 +36,7 @@ pub fn print_entry(
     }
 }
 
-fn replace_path_separator<'a>(config: &Options, path: &mut Cow<'a, str>) {
-    match &config.path_separator {
-        None => {}
-        Some(sep) => {
-            *path.to_mut() = path.replace(std::path::MAIN_SEPARATOR, &sep);
-        }
-    }
-}
-
+// TODO: this function is performance critical and can probably be optimized
 fn print_entry_colorized(
     stdout: &mut StdoutLock,
     path: &Path,
@@ -61,9 +53,10 @@ fn print_entry_colorized(
             .unwrap_or(default_style);
 
         let mut path_string = component.to_string_lossy();
-        replace_path_separator(&config, &mut path_string);
+        replace_path_separator(&config.path_separator, &mut path_string);
         write!(stdout, "{}", style.paint(path_string))?;
 
+        // TODO: can we move this out of the if-statement? Why do we call it that often?
         if wants_to_quit.load(Ordering::Relaxed) {
             writeln!(stdout)?;
             process::exit(ExitCode::KilledBySigint.into());
@@ -77,6 +70,7 @@ fn print_entry_colorized(
     }
 }
 
+// TODO: this function is performance critical and can probably be optimized
 fn print_entry_uncolorized(
     stdout: &mut StdoutLock,
     path: &Path,
@@ -85,6 +79,6 @@ fn print_entry_uncolorized(
     let separator = if config.null_separator { "\0" } else { "\n" };
 
     let mut path_str = path.to_string_lossy();
-    replace_path_separator(&config, &mut path_str);
+    replace_path_separator(&config.path_separator, &mut path_str);
     write!(stdout, "{}{}", path_str, separator)
 }
