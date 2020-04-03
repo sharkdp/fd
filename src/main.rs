@@ -57,7 +57,7 @@ fn main() {
 
     let current_directory = Path::new(".");
     if !filesystem::is_dir(current_directory) {
-        print_error_and_exit!("Could not get current directory.");
+        print_error_and_exit!("Could not retrieve current directory (has it been deleted?).");
     }
 
     // Get the search pattern
