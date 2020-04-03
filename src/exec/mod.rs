@@ -1,4 +1,3 @@
-// TODO: Possible optimization could avoid pushing characters on a buffer.
 mod command;
 mod input;
 mod job;
