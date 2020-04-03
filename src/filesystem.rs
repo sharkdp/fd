@@ -93,13 +93,8 @@ pub fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
     iter.as_path()
 }
 
-pub fn replace_path_separator<'a>(path_separator: &Option<String>, path: &mut Cow<'a, str>) {
-    match &path_separator {
-        None => {}
-        Some(sep) => {
-            *path.to_mut() = path.replace(std::path::MAIN_SEPARATOR, &sep);
-        }
-    }
+pub fn replace_path_separator<'a>(path: &str, new_path_separator: &str) -> String {
+    path.replace(std::path::MAIN_SEPARATOR, &new_path_separator)
 }
 
 #[cfg(test)]
