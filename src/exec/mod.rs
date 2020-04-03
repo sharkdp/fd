@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 
@@ -47,17 +48,19 @@ impl CommandTemplate {
         Self::build(input, ExecutionMode::OneByOne)
     }
 
-    pub fn new_batch<I, S>(input: I) -> Result<CommandTemplate, &'static str>
+    pub fn new_batch<I, S>(input: I) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
         let cmd = Self::build(input, ExecutionMode::Batch);
         if cmd.number_of_tokens() > 1 {
-            return Err("Only one placeholder allowed for batch commands");
+            return Err(anyhow!("Only one placeholder allowed for batch commands"));
         }
         if cmd.args[0].has_tokens() {
-            return Err("First argument of exec-batch is expected to be a fixed executable");
+            return Err(anyhow!(
+                "First argument of exec-batch is expected to be a fixed executable"
+            ));
         }
         Ok(cmd)
     }
