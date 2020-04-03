@@ -1,8 +1,6 @@
 use crate::exec::CommandTemplate;
-use crate::internal::{
-    filter::{SizeFilter, TimeFilter},
-    FileTypes,
-};
+use crate::filetypes::FileTypes;
+use crate::internal::filter::{SizeFilter, TimeFilter};
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 use std::{path::PathBuf, sync::Arc, time::Duration};

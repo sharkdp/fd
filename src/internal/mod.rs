@@ -4,9 +4,6 @@ use std::ffi::{OsStr, OsString};
 use regex_syntax::hir::Hir;
 use regex_syntax::ParserBuilder;
 
-pub use self::file_types::FileTypes;
-
-mod file_types;
 pub mod filter;
 pub mod opts;
 

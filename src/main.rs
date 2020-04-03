@@ -4,6 +4,7 @@ mod internal;
 mod app;
 mod exec;
 mod exit_codes;
+mod filetypes;
 pub mod fshelper;
 mod output;
 mod walk;
@@ -20,10 +21,11 @@ use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::exec::CommandTemplate;
+use crate::filetypes::FileTypes;
 use crate::internal::{
     filter::{SizeFilter, TimeFilter},
     opts::FdOptions,
-    pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
+    pattern_has_uppercase_char, transform_args_with_exec,
 };
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
