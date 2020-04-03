@@ -8,7 +8,6 @@
     * see metadata like permissions, owner, file size, modification times (#491)
     * see symlink targets (#482)
     * achieve a deterministic output order (#324, #196, #159)
-    * avoid duplicate search results when multiple search paths are given (#405)
 - Add a new `--max-results=<count>` option to limit the number of search results, see #472 and #476
   This can be useful to speed up searches in cases where you know that there are only N results.
   Using this option is also (slightly) faster than piping to `head -n <count>` where `fd` can only

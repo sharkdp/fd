@@ -355,8 +355,8 @@ fn usage() -> HashMap<&'static str, Help> {
         , "Show details like permissions, owner, size and modification time."
         , "Use a detailed listing format like 'ls -l'. This is basically an alias \
            for '--exec-batch ls -l' with some additional 'ls' options. This can be used \
-           to see more metadata, to show symlink targets, to achieve a deterministic \
-           sort order and to avoid duplicate search results when using multiple search paths.");
+           to see more metadata, to show symlink targets and to achieve a deterministic \
+           sort order.");
     doc!(h, "path-separator"
         , "Set the path separator to use when printing file paths."
         , "Set the path separator to use when printing file paths. The default is the OS-specific \
