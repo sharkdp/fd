@@ -10,6 +10,7 @@ mod fshelper;
 mod internal;
 mod options;
 mod output;
+mod regex_helper;
 mod walk;
 
 use std::env;
@@ -26,8 +27,9 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use crate::exec::CommandTemplate;
 use crate::filetypes::FileTypes;
 use crate::filter::{SizeFilter, TimeFilter};
-use crate::internal::{pattern_has_uppercase_char, transform_args_with_exec};
+use crate::internal::transform_args_with_exec;
 use crate::options::Options;
+use crate::regex_helper::pattern_has_uppercase_char;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 #[cfg(all(not(windows), not(target_env = "musl")))]
