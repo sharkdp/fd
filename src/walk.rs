@@ -327,7 +327,7 @@ fn spawn_senders(
                                 .ok()
                                 .map_or(false, |m| m.file_type().is_symlink()) =>
                     {
-                        DirEntry::BrokenSymlink(path.to_owned())
+                        DirEntry::BrokenSymlink(path)
                     }
                     _ => {
                         tx_thread
@@ -440,7 +440,7 @@ fn spawn_senders(
 
             let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
 
-            if !send_result.is_ok() {
+            if send_result.is_err() {
                 return ignore::WalkState::Quit;
             }
 
