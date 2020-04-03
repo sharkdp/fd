@@ -1,6 +1,6 @@
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::fshelper;
+use crate::filesystem;
 use crate::options::Options;
 use crate::output;
 
@@ -344,7 +344,7 @@ fn spawn_senders(
             let entry_path = entry.path();
 
             let search_str: Cow<OsStr> = if config.search_full_path {
-                match fshelper::path_absolute_form(entry_path) {
+                match filesystem::path_absolute_form(entry_path) {
                     Ok(path_abs_buf) => Cow::Owned(path_abs_buf.as_os_str().to_os_string()),
                     Err(_) => {
                         print_error_and_exit!("Unable to retrieve absolute path.");
@@ -361,14 +361,14 @@ fn spawn_senders(
                 }
             };
 
-            if !pattern.is_match(&fshelper::osstr_to_bytes(search_str.as_ref())) {
+            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
                 return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
-                    if !exts_regex.is_match(&fshelper::osstr_to_bytes(path_str)) {
+                    if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;
                     }
                 } else {
@@ -385,9 +385,9 @@ fn spawn_senders(
                         || (file_types.executables_only
                             && !entry
                                 .metadata()
-                                .map(|m| fshelper::is_executable(&m))
+                                .map(|m| filesystem::is_executable(&m))
                                 .unwrap_or(false))
-                        || (file_types.empty_only && !fshelper::is_empty(&entry))
+                        || (file_types.empty_only && !filesystem::is_empty(&entry))
                         || !(entry_type.is_file() || entry_type.is_dir() || entry_type.is_symlink())
                     {
                         return ignore::WalkState::Continue;
