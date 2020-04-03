@@ -92,3 +92,24 @@ pub fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
     }
     iter.as_path()
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn strip_current_dir_basic() {
+        use std::path::{Path, PathBuf};
+
+        use super::strip_current_dir;
+
+        assert_eq!(strip_current_dir(&PathBuf::from("./foo")), Path::new("foo"));
+        assert_eq!(strip_current_dir(&PathBuf::from("foo")), Path::new("foo"));
+        assert_eq!(
+            strip_current_dir(&PathBuf::from("./foo/bar/baz")),
+            Path::new("foo/bar/baz")
+        );
+        assert_eq!(
+            strip_current_dir(&PathBuf::from("foo/bar/baz")),
+            Path::new("foo/bar/baz")
+        );
+    }
+}
