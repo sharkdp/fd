@@ -1,18 +1,18 @@
 use std::fs;
-use std::io::{self, Write};
-use std::process::exit;
 
 use clap::Shell;
 
 include!("src/app.rs");
 
 fn main() {
-    match version_check::is_min_version("1.36") {
+    let min_version = "1.36";
+
+    match version_check::is_min_version(min_version) {
         Some(true) => {}
         // rustc version too small or can't figure it out
         _ => {
-            writeln!(&mut io::stderr(), "'fd' requires rustc >= 1.36").unwrap();
-            exit(1);
+            eprintln!("'fd' requires rustc >= {}", min_version);
+            std::process::exit(1);
         }
     }
 
