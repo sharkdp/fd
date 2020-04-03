@@ -4,9 +4,9 @@ mod error;
 mod app;
 mod exec;
 mod exit_codes;
+mod filesystem;
 mod filetypes;
 mod filter;
-mod fshelper;
 mod options;
 mod output;
 mod regex_helper;
@@ -40,7 +40,7 @@ fn main() {
     // Set the current working directory of the process
     if let Some(base_directory) = matches.value_of("base-directory") {
         let basedir = Path::new(base_directory);
-        if !fshelper::is_dir(basedir) {
+        if !filesystem::is_dir(basedir) {
             print_error_and_exit!(
                 "The '--base-directory' path ('{}') is not a directory.",
                 basedir.to_string_lossy()
@@ -60,7 +60,7 @@ fn main() {
 
     // Get the current working directory
     let current_dir = Path::new(".");
-    if !fshelper::is_dir(current_dir) {
+    if !filesystem::is_dir(current_dir) {
         print_error_and_exit!("Could not get current directory.");
     }
 
@@ -72,7 +72,7 @@ fn main() {
         Some(paths) => paths
             .map(|path| {
                 let path_buffer = PathBuf::from(path);
-                if !fshelper::is_dir(&path_buffer) {
+                if !filesystem::is_dir(&path_buffer) {
                     print_error_and_exit!(
                         "'{}' is not a directory.",
                         path_buffer.to_string_lossy()
@@ -90,7 +90,7 @@ fn main() {
             .map(|path_buffer| {
                 path_buffer
                     .canonicalize()
-                    .and_then(|pb| fshelper::absolute_path(pb.as_path()))
+                    .and_then(|pb| filesystem::absolute_path(pb.as_path()))
                     .unwrap()
             })
             .collect();
@@ -99,7 +99,7 @@ fn main() {
     // Detect if the user accidentally supplied a path instead of a search pattern
     if !matches.is_present("full-path")
         && pattern.contains(std::path::MAIN_SEPARATOR)
-        && fshelper::is_dir(Path::new(pattern))
+        && filesystem::is_dir(Path::new(pattern))
     {
         print_error_and_exit!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
