@@ -49,7 +49,7 @@ fn get_test_env_with_abs_path(dirs: &[&'static str], files: &[&'static str]) -> 
 fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
     let content = "#".repeat(size_in_bytes);
     let mut f = fs::File::create::<P>(path).unwrap();
-    f.write(content.as_bytes()).unwrap();
+    f.write_all(content.as_bytes()).unwrap();
 }
 
 /// Simple tests
