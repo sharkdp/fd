@@ -1,7 +1,7 @@
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::fshelper;
-use crate::internal::{osstr_to_bytes, MAX_BUFFER_LENGTH};
+use crate::internal::osstr_to_bytes;
 use crate::options::Options;
 use crate::output;
 
@@ -36,6 +36,9 @@ pub enum WorkerResult {
     Entry(PathBuf),
     Error(ignore::Error),
 }
+
+/// Maximum size of the output buffer before flushing results to the console
+pub const MAX_BUFFER_LENGTH: usize = 1000;
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
