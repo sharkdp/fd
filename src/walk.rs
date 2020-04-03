@@ -1,7 +1,6 @@
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::fshelper;
-use crate::internal::osstr_to_bytes;
 use crate::options::Options;
 use crate::output;
 
@@ -362,14 +361,14 @@ fn spawn_senders(
                 }
             };
 
-            if !pattern.is_match(&osstr_to_bytes(search_str.as_ref())) {
+            if !pattern.is_match(&fshelper::osstr_to_bytes(search_str.as_ref())) {
                 return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
-                    if !exts_regex.is_match(&osstr_to_bytes(path_str)) {
+                    if !exts_regex.is_match(&fshelper::osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;
                     }
                 } else {

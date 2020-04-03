@@ -7,7 +7,6 @@ mod exit_codes;
 mod filetypes;
 mod filter;
 mod fshelper;
-mod internal;
 mod options;
 mod output;
 mod regex_helper;
