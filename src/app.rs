@@ -109,8 +109,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("absolute-path"),
         )
         .arg(
-            arg("list")
-                .long("list")
+            arg("list-details")
+                .long("list-details")
                 .short("l")
                 .conflicts_with("absolute-path"),
         )
@@ -132,7 +132,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("print0")
                 .short("0")
                 .overrides_with("print0")
-                .conflicts_with("list"),
+                .conflicts_with("list-details"),
         )
         .arg(arg("depth").long("max-depth").short("d").takes_value(true))
         // support --maxdepth as well, for compatibility with rg
@@ -181,7 +181,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with("list"),
+                .conflicts_with("list-details"),
         )
         .arg(
             arg("exec-batch")
@@ -191,7 +191,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with_all(&["exec", "list"]),
+                .conflicts_with_all(&["exec", "list-details"]),
         )
         .arg(
             arg("exclude")
@@ -351,8 +351,8 @@ fn usage() -> HashMap<&'static str, Help> {
     doc!(h, "absolute-path"
         , "Show absolute instead of relative paths"
         , "Shows the full path starting from the root as opposed to relative paths.");
-    doc!(h, "list"
-        , "Use a detailed listing format"
+    doc!(h, "list-details"
+        , "Show details like permissions, owner, size and modification time."
         , "Use a detailed listing format like 'ls -l'. This is basically an alias \
            for '--exec-batch ls -l' with some additional 'ls' options. This can be used \
            to see more metadata, to show symlink targets, to achieve a deterministic \

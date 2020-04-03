@@ -167,7 +167,7 @@ fn main() {
             })
         })
         .or_else(|| {
-            if matches.is_present("list") {
+            if matches.is_present("list-details") {
                 let color = matches.value_of("color").unwrap_or("auto");
                 let color_arg = ["--color=", color].concat();
 
