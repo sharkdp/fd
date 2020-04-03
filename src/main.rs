@@ -27,7 +27,6 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use crate::exec::CommandTemplate;
 use crate::filetypes::FileTypes;
 use crate::filter::{SizeFilter, TimeFilter};
-use crate::internal::transform_args_with_exec;
 use crate::options::Options;
 use crate::regex_helper::pattern_has_uppercase_char;
 
@@ -37,8 +36,7 @@ use crate::regex_helper::pattern_has_uppercase_char;
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 fn main() {
-    let checked_args = transform_args_with_exec(env::args_os());
-    let matches = app::build_app().get_matches_from(checked_args);
+    let matches = app::build_app().get_matches_from(env::args_os());
 
     // Set the current working directory of the process
     if let Some(base_directory) = matches.value_of("base-directory") {
