@@ -209,9 +209,11 @@ impl TestEnv {
     }
 
     /// Similar to assert_output, but able to handle non-utf8 output
+    #[cfg(all(unix, not(target_os = "macos")))]
     pub fn assert_output_raw(&self, args: &[&str], expected: &[u8]) {
-        let actual = self.raw_output_subdirectory(".", args);
-        assert_eq!(expected, actual.as_ref());
+        let output = self.assert_success_and_get_output(".", args);
+
+        assert_eq!(expected, &output.stdout[..]);
     }
 
     /// Assert that calling *fd* in the specified path under the root working directory,
@@ -236,23 +238,6 @@ impl TestEnv {
         if expected != actual {
             panic!(format_output_error(args, &expected, &actual));
         }
-    }
-
-    fn raw_output_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str]) -> Box<[u8]> {
-        // Setup *fd* command.
-        let mut cmd = process::Command::new(&self.fd_exe);
-        cmd.current_dir(self.temp_dir.path().join(path));
-        cmd.args(args);
-
-        // Run *fd*.
-        let output = cmd.output().expect("fd output");
-
-        // Check for exit status.
-        if !output.status.success() {
-            panic!(format_exit_error(args, &output));
-        }
-
-        output.stdout.into_boxed_slice()
     }
 
     /// Assert that calling *fd* with the specified arguments produces the expected error.
