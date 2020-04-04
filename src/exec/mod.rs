@@ -13,6 +13,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
+use crate::filesystem::strip_current_dir;
 
 use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
@@ -128,20 +129,12 @@ impl CommandTemplate {
         self.args.iter().filter(|arg| arg.has_tokens()).count()
     }
 
-    fn prepare_path(input: &Path) -> String {
-        input
-            .strip_prefix(".")
-            .unwrap_or(input)
-            .to_string_lossy()
-            .into_owned()
-    }
-
     /// Generates and executes a command.
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build. Once all arguments have been processed, the command is executed.
     pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> ExitCode {
-        let input = Self::prepare_path(input);
+        let input = strip_current_dir(input);
 
         let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
         for arg in &self.args[1..] {
@@ -164,7 +157,7 @@ impl CommandTemplate {
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
 
-        let mut paths: Vec<String> = paths.map(|p| Self::prepare_path(&p)).collect();
+        let mut paths: Vec<_> = paths.collect();
         let mut has_path = false;
 
         for arg in &self.args[1..] {
@@ -174,7 +167,7 @@ impl CommandTemplate {
                 // A single `Tokens` is expected
                 // So we can directly consume the iterator once and for all
                 for path in &mut paths {
-                    cmd.arg(arg.generate(&path).as_ref());
+                    cmd.arg(arg.generate(strip_current_dir(path)).as_ref());
                     has_path = true;
                 }
             } else {
@@ -208,19 +201,21 @@ impl ArgumentTemplate {
         }
     }
 
-    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
+    pub fn generate<'a>(&'a self, path: impl AsRef<Path>) -> Cow<'a, str> {
         use self::Token::*;
+
+        let path = path.as_ref().to_string_lossy(); // TODO
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
                 let mut s = String::new();
                 for token in tokens {
                     match *token {
-                        Basename => s += basename(path),
-                        BasenameNoExt => s += remove_extension(basename(path)),
-                        NoExt => s += remove_extension(path),
-                        Parent => s += dirname(path),
-                        Placeholder => s += path,
+                        Basename => s += basename(&path),
+                        BasenameNoExt => s += remove_extension(basename(&path)),
+                        NoExt => s += remove_extension(&path),
+                        Parent => s += dirname(&path),
+                        Placeholder => s += &path,
                         Text(ref string) => s += string,
                     }
                 }
