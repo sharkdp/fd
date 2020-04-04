@@ -52,6 +52,9 @@ pub struct Options {
     /// how to style different filetypes.
     pub ls_colors: Option<LsColors>,
 
+    /// Whether or not we are writing to an interactive terminal
+    pub interactive_terminal: bool,
+
     /// The type of file to search for. If set to `None`, all file types are displayed. If
     /// set to `Some(..)`, only the types that are specified are shown.
     pub file_types: Option<FileTypes>,
