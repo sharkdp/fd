@@ -1458,11 +1458,15 @@ fn test_max_results() {
     );
 
     // Limited to one result. We could find either C.Foo2 or c.foo
-    let output = te.assert_success_and_get_output(".", &["--max-results=1", "c.foo"]);
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let stdout = stdout.trim();
-    let stdout = stdout.replace(&std::path::MAIN_SEPARATOR.to_string(), "/");
-    assert!(stdout == "one/two/C.Foo2" || stdout == "one/two/c.foo");
+    let assert_just_one_result_with_option = |option| {
+        let output = te.assert_success_and_get_output(".", &[option, "c.foo"]);
+        let stdout = String::from_utf8_lossy(&output.stdout)
+            .trim()
+            .replace(&std::path::MAIN_SEPARATOR.to_string(), "/");
+        assert!(stdout == "one/two/C.Foo2" || stdout == "one/two/c.foo");
+    };
+    assert_just_one_result_with_option("--max-results=1");
+    assert_just_one_result_with_option("-1");
 }
 
 /// Filenames with non-utf8 paths are passed to the executed program unchanged
