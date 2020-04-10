@@ -23,10 +23,12 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
+use std::os::unix::fs::PermissionsExt;
 
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
+use crate::internal::filter::PermFilter;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -405,6 +407,24 @@ fn spawn_senders(
                             return ignore::WalkState::Continue;
                         }
                     } else {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
+            // Filter out unwanted permission configurations if we have been given perm constraints.
+            if !config.perm_constraints.is_empty() {
+                if let Ok(metadata) = entry_path.metadata() {
+                    let file_perm = metadata.permissions();
+                    if config
+                        .perm_constraints
+                        .iter()
+                        .any(|PermFilter::Permission(pc)| {
+                            !(*pc == file_perm.mode() % 0o1000)
+                        })
+                    {
                         return ignore::WalkState::Continue;
                     }
                 } else {

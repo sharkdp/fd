@@ -1,6 +1,6 @@
 use crate::exec::CommandTemplate;
 use crate::internal::{
-    filter::{SizeFilter, TimeFilter},
+    filter::{SizeFilter, PermFilter, TimeFilter},
     FileTypes,
 };
 use lscolors::LsColors;
@@ -72,6 +72,9 @@ pub struct FdOptions {
 
     /// The given constraints on the size of returned files
     pub size_constraints: Vec<SizeFilter>,
+
+    /// The given constraints on the permissions of returned files
+    pub perm_constraints: Vec<PermFilter>,
 
     /// Constraints on last modification time of files
     pub time_constraints: Vec<TimeFilter>,

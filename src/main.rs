@@ -29,7 +29,7 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::exec::CommandTemplate;
 use crate::internal::{
-    filter::{SizeFilter, TimeFilter},
+    filter::{SizeFilter, PermFilter, TimeFilter},
     opts::FdOptions,
     pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
 };
@@ -180,6 +180,19 @@ fn main() {
         })
         .unwrap_or_else(|| vec![]);
 
+    let perm_options: Vec<PermFilter> = matches
+        .values_of("perm")
+        .map(|v| {
+            v.map(|pf| {
+                if let Some(f) = PermFilter::from_string(pf) {
+                    return f;
+                }
+                print_error_and_exit!("'{}' is not a valid numeric Permission string. See 'fd --help'.", pf);
+            })
+                .collect()
+        })
+        .unwrap_or_else(|| vec![]);
+
     let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(t) = matches.value_of("changed-within") {
@@ -276,6 +289,7 @@ fn main() {
             .map(|vs| vs.map(PathBuf::from).collect())
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
+        perm_constraints: perm_options,
         time_constraints,
         show_filesystem_errors: matches.is_present("show-errors"),
         path_separator,
