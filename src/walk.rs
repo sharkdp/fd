@@ -416,7 +416,7 @@ fn spawn_senders(
             }
 
             // Filter out unwanted permission configurations if we have been given perm constraints.
-            if !config.perm_constraints.is_empty() && cfg!(unix) {
+            if !config.perm_constraints.is_empty() && cfg!(any(unix)) {
                 if let Ok(metadata) = entry_path.metadata() {
                     let file_perm = metadata.permissions();
                     if config
