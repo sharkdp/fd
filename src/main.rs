@@ -308,7 +308,8 @@ fn run() -> Result<ExitCode> {
         max_results: matches
             .value_of("max-results")
             .and_then(|n| usize::from_str_radix(n, 10).ok())
-            .filter(|&n| n != 0),
+            .filter(|&n| n != 0)
+            .or_else(|| if matches.is_present("max-one-result") { Some(1) } else { None }),
     };
 
     let re = RegexBuilder::new(&pattern_regex)

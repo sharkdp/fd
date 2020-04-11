@@ -427,6 +427,15 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help("Limit the number of search results to 'count' and quit immediately."),
         )
         .arg(
+            Arg::with_name("max-one-result")
+                .short("1")
+                .hidden_short_help(true)
+                .overrides_with("max-results")
+                .conflicts_with_all(&["exec", "exec-batch"])
+                .long_help("Limit the search to a single result and quit immediately. \
+                                This is an alias for '--max-results=1'.")
+        )
+        .arg(
             Arg::with_name("show-errors")
                 .long("show-errors")
                 .hidden_short_help(true)
