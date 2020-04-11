@@ -1,14 +1,14 @@
-use crate::exec::CommandTemplate;
-use crate::internal::{
-    filter::{SizeFilter, PermFilter, TimeFilter},
-    FileTypes,
-};
-use lscolors::LsColors;
-use regex::bytes::RegexSet;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
+use lscolors::LsColors;
+use regex::bytes::RegexSet;
+
+use crate::exec::CommandTemplate;
+use crate::filetypes::FileTypes;
+use crate::filter::{SizeFilter, PermFilter, TimeFilter};
+
 /// Configuration options for *fd*.
-pub struct FdOptions {
+pub struct Options {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 
@@ -52,6 +52,9 @@ pub struct FdOptions {
     /// how to style different filetypes.
     pub ls_colors: Option<LsColors>,
 
+    /// Whether or not we are writing to an interactive terminal
+    pub interactive_terminal: bool,
+
     /// The type of file to search for. If set to `None`, all file types are displayed. If
     /// set to `Some(..)`, only the types that are specified are shown.
     pub file_types: Option<FileTypes>,
@@ -84,4 +87,7 @@ pub struct FdOptions {
 
     /// The separator used to print file paths.
     pub path_separator: Option<String>,
+
+    /// The maximum number of search results
+    pub max_results: Option<usize>,
 }

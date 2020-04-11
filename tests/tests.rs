@@ -1,22 +1,14 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-//! Integration tests for the CLI interface of fd.
-
 mod testenv;
 
-use crate::testenv::TestEnv;
-use regex::escape;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 use std::os::unix::fs::OpenOptionsExt;
+
+use regex::escape;
+
+use crate::testenv::TestEnv;
 
 static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -58,7 +50,7 @@ fn get_test_env_with_abs_path(dirs: &[&'static str], files: &[&'static str]) -> 
 fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
     let content = "#".repeat(size_in_bytes);
     let mut f = fs::File::create::<P>(path).unwrap();
-    f.write(content.as_bytes()).unwrap();
+    f.write_all(content.as_bytes()).unwrap();
 }
 
 #[cfg(test)]
@@ -1083,28 +1075,11 @@ fn test_excludes() {
 /// Shell script execution (--exec)
 #[test]
 fn test_exec() {
-    assert_exec_output("--exec");
-}
-
-/// Shell script execution using -exec
-#[test]
-fn test_exec_substitution() {
-    assert_exec_output("-exec");
-}
-
-// Shell script execution using -x
-#[test]
-fn test_exec_short_arg() {
-    assert_exec_output("-x");
-}
-
-#[cfg(test)]
-fn assert_exec_output(exec_style: &str) {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
     if !cfg!(windows) {
         te.assert_output(
-            &["--absolute-path", "foo", exec_style, "echo"],
+            &["--absolute-path", "foo", "--exec", "echo"],
             &format!(
                 "{abs_path}/a.foo
                 {abs_path}/one/b.foo
@@ -1117,7 +1092,7 @@ fn assert_exec_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{}"],
+            &["foo", "--exec", "echo", "{}"],
             "a.foo
             one/b.foo
             one/two/C.Foo2
@@ -1127,7 +1102,7 @@ fn assert_exec_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{.}"],
+            &["foo", "--exec", "echo", "{.}"],
             "a
             one/b
             one/two/C
@@ -1137,7 +1112,7 @@ fn assert_exec_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{/}"],
+            &["foo", "--exec", "echo", "{/}"],
             "a.foo
             b.foo
             C.Foo2
@@ -1147,7 +1122,7 @@ fn assert_exec_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{/.}"],
+            &["foo", "--exec", "echo", "{/.}"],
             "a
             b
             C
@@ -1157,7 +1132,7 @@ fn assert_exec_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{//}"],
+            &["foo", "--exec", "echo", "{//}"],
             ".
             one
             one/two
@@ -1166,29 +1141,19 @@ fn assert_exec_output(exec_style: &str) {
             one/two/three",
         );
 
-        te.assert_output(&["e1", exec_style, "printf", "%s.%s\n"], "e1 e2.");
+        te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "e1 e2.");
     }
 }
 
 #[test]
 fn test_exec_batch() {
-    assert_exec_batch_output("--exec-batch");
-}
-
-#[test]
-fn test_exec_batch_short_arg() {
-    assert_exec_batch_output("-X");
-}
-
-#[cfg(test)]
-fn assert_exec_batch_output(exec_style: &str) {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let te = te.normalize_line(true);
 
     // TODO Test for windows
     if !cfg!(windows) {
         te.assert_output(
-            &["--absolute-path", "foo", exec_style, "echo"],
+            &["--absolute-path", "foo", "--exec-batch", "echo"],
             &format!(
                 "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo",
                 abs_path = &abs_path
@@ -1196,34 +1161,37 @@ fn assert_exec_batch_output(exec_style: &str) {
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{}"],
+            &["foo", "--exec-batch", "echo", "{}"],
             "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
         );
 
         te.assert_output(
-            &["foo", exec_style, "echo", "{/}"],
+            &["foo", "--exec-batch", "echo", "{/}"],
             "a.foo b.foo C.Foo2 c.foo d.foo directory_foo",
         );
 
-        te.assert_output(&["no_match", exec_style, "echo", "Matched: ", "{/}"], "");
+        te.assert_output(
+            &["no_match", "--exec-batch", "echo", "Matched: ", "{/}"],
+            "",
+        );
 
         te.assert_error(
-            &["foo", exec_style, "echo", "{}", "{}"],
+            &["foo", "--exec-batch", "echo", "{}", "{}"],
             "[fd error]: Only one placeholder allowed for batch commands",
         );
 
         te.assert_error(
-            &["foo", exec_style, "echo", "{/}", ";", "-x", "echo"],
+            &["foo", "--exec-batch", "echo", "{/}", ";", "-x", "echo"],
             "error: The argument '--exec <cmd>' cannot be used with '--exec-batch <cmd>'",
         );
 
         te.assert_error(
-            &["foo", exec_style],
+            &["foo", "--exec-batch"],
             "error: The argument '--exec-batch <cmd>' requires a value but none was supplied",
         );
 
         te.assert_error(
-            &["foo", exec_style, "echo {}"],
+            &["foo", "--exec-batch", "echo {}"],
             "[fd error]: First argument of exec-batch is expected to be a fixed executable",
         );
     }
@@ -1515,5 +1483,76 @@ fn test_permissions() {
 
     // Combine with a search pattern
     te.assert_output(&["^0_", "--perm", "000"], "0_000.foo");
+}
 
+#[test]
+fn test_max_results() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Unrestricted
+    te.assert_output(
+        &["--max-results=0", "c.foo"],
+        "one/two/C.Foo2
+         one/two/c.foo",
+    );
+
+    // Limited to two results
+    te.assert_output(
+        &["--max-results=2", "c.foo"],
+        "one/two/C.Foo2
+         one/two/c.foo",
+    );
+
+    // Limited to one result. We could find either C.Foo2 or c.foo
+    let output = te.assert_success_and_get_output(".", &["--max-results=1", "c.foo"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stdout = stdout.trim();
+    let stdout = stdout.replace(&std::path::MAIN_SEPARATOR.to_string(), "/");
+    assert!(stdout == "one/two/C.Foo2" || stdout == "one/two/c.foo");
+}
+
+/// Filenames with non-utf8 paths are passed to the executed program unchanged
+///
+/// Note:
+/// - the test is disabled on Darwin/OSX, since it coerces file names to UTF-8,
+///   even when the requested file name is not valid UTF-8.
+/// - the test is currently disabled on Windows because I'm not sure how to create
+///   invalid UTF-8 files on Windows
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
+fn test_exec_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    )
+    .unwrap();
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{}"],
+        b"test1/test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{/}"],
+        b"test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--exec", "echo", "{//}"], b"test1\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{.}"],
+        b"test1/test_\xFEinvalid\n",
+    );
+
+    te.assert_output_raw(
+        &["", "test1/", "--exec", "echo", "{/.}"],
+        b"test_\xFEinvalid\n",
+    );
 }

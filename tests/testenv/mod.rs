@@ -1,24 +1,12 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-use std;
 use std::env;
 use std::fs;
-use std::io;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process;
-
+use std::io::{self, Write};
 #[cfg(unix)]
 use std::os::unix;
-
 #[cfg(windows)]
 use std::os::windows;
+use std::path::{Path, PathBuf};
+use std::process;
 
 use tempdir::TempDir;
 
@@ -192,19 +180,13 @@ impl TestEnv {
         PathBuf::from(components.next().expect("root directory").as_os_str())
     }
 
-    /// Assert that calling *fd* with the specified arguments produces the expected output.
-    pub fn assert_output(&self, args: &[&str], expected: &str) {
-        self.assert_output_subdirectory(".", args, expected)
-    }
-
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces the expected output.
-    pub fn assert_output_subdirectory<P: AsRef<Path>>(
+    pub fn assert_success_and_get_output<P: AsRef<Path>>(
         &self,
         path: P,
         args: &[&str],
-        expected: &str,
-    ) {
+    ) -> process::Output {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
@@ -217,6 +199,32 @@ impl TestEnv {
         if !output.status.success() {
             panic!(format_exit_error(args, &output));
         }
+
+        output
+    }
+
+    /// Assert that calling *fd* with the specified arguments produces the expected output.
+    pub fn assert_output(&self, args: &[&str], expected: &str) {
+        self.assert_output_subdirectory(".", args, expected)
+    }
+
+    /// Similar to assert_output, but able to handle non-utf8 output
+    #[cfg(all(unix, not(target_os = "macos")))]
+    pub fn assert_output_raw(&self, args: &[&str], expected: &[u8]) {
+        let output = self.assert_success_and_get_output(".", args);
+
+        assert_eq!(expected, &output.stdout[..]);
+    }
+
+    /// Assert that calling *fd* in the specified path under the root working directory,
+    /// and with the specified arguments produces the expected output.
+    pub fn assert_output_subdirectory<P: AsRef<Path>>(
+        &self,
+        path: P,
+        args: &[&str],
+        expected: &str,
+    ) {
+        let output = self.assert_success_and_get_output(path, args);
 
         // Normalize both expected and actual output.
         let expected = normalize_output(expected, true, self.normalize_line);

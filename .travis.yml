@@ -1,8 +1,6 @@
 language: rust
 cache: cargo
 matrix:
-  # allow_failures:
-  #   - rust: nightly
   include:
     # Stable channel.
     - os: linux
@@ -36,38 +34,6 @@ matrix:
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
-    # Disabled to reduce total CI time
-    # - os: linux
-    #   rust: beta
-    #   env: TARGET=x86_64-unknown-linux-musl
-    # - os: linux
-    #   rust: beta
-    #   env: TARGET=i686-unknown-linux-gnu
-    # - os: linux
-    #   rust: beta
-    #   env: TARGET=i686-unknown-linux-musl
-    # - os: osx
-    #   rust: beta
-    #   env: TARGET=x86_64-apple-darwin
-
-    # switch off nightly due to crossbeam errors
-    # # Nightly channel.
-    # - os: linux
-    #   rust: nightly
-    #   env: TARGET=x86_64-unknown-linux-gnu
-    # Disabled to reduce total CI time
-    # - os: linux
-    #   rust: nightly
-    #   env: TARGET=x86_64-unknown-linux-musl
-    # - os: linux
-    #   rust: nightly
-    #   env: TARGET=i686-unknown-linux-gnu
-    # - os: linux
-    #   rust: nightly
-    #   env: TARGET=i686-unknown-linux-musl
-    # - os: osx
-    #   rust: nightly
-    #   env: TARGET=x86_64-apple-darwin
 
     # Minimum Rust supported channel.
     - os: linux
@@ -85,14 +51,6 @@ matrix:
     - os: osx
       rust: 1.36.0
       env: TARGET=x86_64-apple-darwin
-
-    # Code formatting check
-    # - os: linux
-    #   rust: nightly
-    #   # skip the global install step
-    #   install:
-    #     - cargo install --debug --force rustfmt-nightly
-    #   script: cargo fmt -- --check
 
 sudo: required
 

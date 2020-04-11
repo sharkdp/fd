@@ -1,17 +1,3 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-use crate::exec;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::fshelper;
-use crate::internal::{opts::FdOptions, osstr_to_bytes, MAX_BUFFER_LENGTH};
-use crate::output;
-
 use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
@@ -25,10 +11,18 @@ use std::thread;
 use std::time;
 use std::os::unix::fs::PermissionsExt;
 
+use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
-use crate::internal::filter::PermFilter;
+
+use crate::error::print_error;
+use crate::exec;
+use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::filesystem;
+use crate::options::Options;
+use crate::output;
+use crate::filter::PermFilter;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -46,12 +40,15 @@ pub enum WorkerResult {
     Error(ignore::Error),
 }
 
+/// Maximum size of the output buffer before flushing results to the console
+pub const MAX_BUFFER_LENGTH: usize = 1000;
+
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -> ExitCode {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> Result<ExitCode> {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -61,14 +58,13 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
     for pattern in &config.exclude_patterns {
-        let res = override_builder.add(pattern);
-        if res.is_err() {
-            print_error_and_exit!("Malformed exclude pattern '{}'", pattern);
-        }
+        override_builder
+            .add(pattern)
+            .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
     }
-    let overrides = override_builder.build().unwrap_or_else(|_| {
-        print_error_and_exit!("Mismatch in exclude patterns");
-    });
+    let overrides = override_builder
+        .build()
+        .map_err(|_| anyhow!("Mismatch in exclude patterns"))?;
 
     let mut walker = WalkBuilder::new(first_path_buf.as_path());
     walker
@@ -93,13 +89,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
         match result {
             Some(ignore::Error::Partial(_)) => (),
             Some(err) => {
-                print_error!(
-                    "{}",
-                    format!(
-                        "Malformed pattern in custom ignore file. {}.",
-                        err.to_string()
-                    )
-                );
+                print_error(format!(
+                    "Malformed pattern in custom ignore file. {}.",
+                    err.to_string()
+                ));
             }
             None => (),
         }
@@ -135,14 +128,14 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<FdOptions>) -
     let exit_code = receiver_thread.join().unwrap();
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        process::exit(ExitCode::KilledBySigint.into());
+        Ok(ExitCode::KilledBySigint)
+    } else {
+        Ok(exit_code)
     }
-
-    exit_code
 }
 
 fn spawn_receiver(
-    config: &Arc<FdOptions>,
+    config: &Arc<Options>,
     wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
 ) -> thread::JoinHandle<ExitCode> {
@@ -183,7 +176,7 @@ fn spawn_receiver(
                     results.push(h.join().unwrap());
                 }
 
-                merge_exitcodes(results)
+                merge_exitcodes(&results)
             }
         } else {
             let start = time::Instant::now();
@@ -200,6 +193,8 @@ fn spawn_receiver(
 
             let stdout = io::stdout();
             let mut stdout = stdout.lock();
+
+            let mut num_results = 0;
 
             for worker_result in rx {
                 match worker_result {
@@ -231,11 +226,19 @@ fn spawn_receiver(
                                 output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                             }
                         }
+
+                        num_results += 1;
                     }
                     WorkerResult::Error(err) => {
                         if show_filesystem_errors {
-                            print_error!("{}", err);
+                            print_error(err.to_string());
                         }
+                    }
+                }
+
+                if let Some(max_results) = config.max_results {
+                    if num_results >= max_results {
+                        break;
                     }
                 }
             }
@@ -285,7 +288,7 @@ impl DirEntry {
 }
 
 fn spawn_senders(
-    config: &Arc<FdOptions>,
+    config: &Arc<Options>,
     wants_to_quit: &Arc<AtomicBool>,
     pattern: Arc<Regex>,
     parallel_walker: ignore::WalkParallel,
@@ -319,7 +322,7 @@ fn spawn_senders(
                                 .ok()
                                 .map_or(false, |m| m.file_type().is_symlink()) =>
                     {
-                        DirEntry::BrokenSymlink(path.to_owned())
+                        DirEntry::BrokenSymlink(path)
                     }
                     _ => {
                         tx_thread
@@ -341,12 +344,9 @@ fn spawn_senders(
             let entry_path = entry.path();
 
             let search_str: Cow<OsStr> = if config.search_full_path {
-                match fshelper::path_absolute_form(entry_path) {
-                    Ok(path_abs_buf) => Cow::Owned(path_abs_buf.as_os_str().to_os_string()),
-                    Err(_) => {
-                        print_error_and_exit!("Unable to retrieve absolute path.");
-                    }
-                }
+                let path_abs_buf = filesystem::path_absolute_form(entry_path)
+                    .expect("Retrieving absolute path succeeds");
+                Cow::Owned(path_abs_buf.as_os_str().to_os_string())
             } else {
                 match entry_path.file_name() {
                     Some(filename) => Cow::Borrowed(filename),
@@ -358,14 +358,14 @@ fn spawn_senders(
                 }
             };
 
-            if !pattern.is_match(&osstr_to_bytes(search_str.as_ref())) {
+            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
                 return ignore::WalkState::Continue;
             }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
-                    if !exts_regex.is_match(&osstr_to_bytes(path_str)) {
+                    if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;
                     }
                 } else {
@@ -382,9 +382,9 @@ fn spawn_senders(
                         || (file_types.executables_only
                             && !entry
                                 .metadata()
-                                .map(|m| fshelper::is_executable(&m))
+                                .map(|m| filesystem::is_executable(&m))
                                 .unwrap_or(false))
-                        || (file_types.empty_only && !fshelper::is_empty(&entry))
+                        || (file_types.empty_only && !filesystem::is_empty(&entry))
                         || !(entry_type.is_file() || entry_type.is_dir() || entry_type.is_symlink())
                     {
                         return ignore::WalkState::Continue;
@@ -450,7 +450,7 @@ fn spawn_senders(
 
             let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
 
-            if !send_result.is_ok() {
+            if send_result.is_err() {
                 return ignore::WalkState::Quit;
             }
 

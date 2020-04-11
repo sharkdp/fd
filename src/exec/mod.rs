@@ -1,26 +1,19 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-// TODO: Possible optimization could avoid pushing characters on a buffer.
 mod command;
 mod input;
 mod job;
 mod token;
 
-use std::borrow::Cow;
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
+use anyhow::{anyhow, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
+use crate::filesystem::strip_current_dir;
 
 use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
@@ -55,17 +48,19 @@ impl CommandTemplate {
         Self::build(input, ExecutionMode::OneByOne)
     }
 
-    pub fn new_batch<I, S>(input: I) -> Result<CommandTemplate, &'static str>
+    pub fn new_batch<I, S>(input: I) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
         let cmd = Self::build(input, ExecutionMode::Batch);
         if cmd.number_of_tokens() > 1 {
-            return Err("Only one placeholder allowed for batch commands");
+            return Err(anyhow!("Only one placeholder allowed for batch commands"));
         }
         if cmd.args[0].has_tokens() {
-            return Err("First argument of exec-batch is expected to be a fixed executable");
+            return Err(anyhow!(
+                "First argument of exec-batch is expected to be a fixed executable"
+            ));
         }
         Ok(cmd)
     }
@@ -102,7 +97,7 @@ impl CommandTemplate {
                     "{/}" => tokens.push(Token::Basename),
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
-                    _ => panic!("Unhandled placeholder"),
+                    _ => unreachable!("Unhandled placeholder"),
                 }
 
                 has_placeholder = true;
@@ -134,24 +129,16 @@ impl CommandTemplate {
         self.args.iter().filter(|arg| arg.has_tokens()).count()
     }
 
-    fn prepare_path(input: &Path) -> String {
-        input
-            .strip_prefix(".")
-            .unwrap_or(input)
-            .to_string_lossy()
-            .into_owned()
-    }
-
     /// Generates and executes a command.
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build. Once all arguments have been processed, the command is executed.
     pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> ExitCode {
-        let input = Self::prepare_path(input);
+        let input = strip_current_dir(input);
 
-        let mut cmd = Command::new(self.args[0].generate(&input).as_ref());
+        let mut cmd = Command::new(self.args[0].generate(&input));
         for arg in &self.args[1..] {
-            cmd.arg(arg.generate(&input).as_ref());
+            cmd.arg(arg.generate(&input));
         }
 
         execute_command(cmd, &out_perm)
@@ -165,12 +152,12 @@ impl CommandTemplate {
     where
         I: Iterator<Item = PathBuf>,
     {
-        let mut cmd = Command::new(self.args[0].generate("").as_ref());
+        let mut cmd = Command::new(self.args[0].generate(""));
         cmd.stdin(Stdio::inherit());
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
 
-        let mut paths: Vec<String> = paths.map(|p| Self::prepare_path(&p)).collect();
+        let mut paths: Vec<_> = paths.collect();
         let mut has_path = false;
 
         for arg in &self.args[1..] {
@@ -180,11 +167,11 @@ impl CommandTemplate {
                 // A single `Tokens` is expected
                 // So we can directly consume the iterator once and for all
                 for path in &mut paths {
-                    cmd.arg(arg.generate(&path).as_ref());
+                    cmd.arg(arg.generate(strip_current_dir(path)));
                     has_path = true;
                 }
             } else {
-                cmd.arg(arg.generate("").as_ref());
+                cmd.arg(arg.generate(""));
             }
         }
 
@@ -214,25 +201,27 @@ impl ArgumentTemplate {
         }
     }
 
-    pub fn generate<'a>(&'a self, path: &str) -> Cow<'a, str> {
+    pub fn generate<'a>(&'a self, path: impl AsRef<Path>) -> OsString {
         use self::Token::*;
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
-                let mut s = String::new();
+                let mut s = OsString::new();
                 for token in tokens {
                     match *token {
-                        Basename => s += basename(path),
-                        BasenameNoExt => s += remove_extension(basename(path)),
-                        NoExt => s += remove_extension(path),
-                        Parent => s += dirname(path),
-                        Placeholder => s += path,
-                        Text(ref string) => s += string,
+                        Basename => s.push(basename(path.as_ref())),
+                        BasenameNoExt => {
+                            s.push(remove_extension(&PathBuf::from(basename(path.as_ref()))))
+                        }
+                        NoExt => s.push(remove_extension(path.as_ref())),
+                        Parent => s.push(dirname(path.as_ref())),
+                        Placeholder => s.push(path.as_ref()),
+                        Text(ref string) => s.push(string),
                     }
                 }
-                Cow::Owned(s)
+                s
             }
-            ArgumentTemplate::Text(ref text) => Cow::Borrowed(text),
+            ArgumentTemplate::Text(ref text) => OsString::from(text),
         }
     }
 }

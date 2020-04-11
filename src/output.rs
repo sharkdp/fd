@@ -1,38 +1,25 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-use crate::exit_codes::ExitCode;
-use crate::internal::opts::FdOptions;
-use lscolors::{LsColors, Style};
-
-use std::borrow::Cow;
 use std::io::{self, StdoutLock, Write};
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use ansi_term;
+use lscolors::{LsColors, Style};
 
-/// Remove the `./` prefix from a path.
-fn strip_current_dir(pathbuf: &PathBuf) -> &Path {
-    let mut iter = pathbuf.components();
-    let mut iter_next = iter.clone();
-    if iter_next.next() == Some(Component::CurDir) {
-        iter.next();
-    }
-    iter.as_path()
+use crate::exit_codes::ExitCode;
+use crate::filesystem::strip_current_dir;
+use crate::options::Options;
+
+pub fn replace_path_separator<'a>(path: &str, new_path_separator: &str) -> String {
+    path.replace(std::path::MAIN_SEPARATOR, &new_path_separator)
 }
 
+// TODO: this function is performance critical and can probably be optimized
 pub fn print_entry(
     stdout: &mut StdoutLock,
     entry: &PathBuf,
-    config: &FdOptions,
+    config: &Options,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
     let path = if entry.is_absolute() {
@@ -53,19 +40,11 @@ pub fn print_entry(
     }
 }
 
-fn replace_path_separator<'a>(config: &FdOptions, path: &mut Cow<'a, str>) {
-    match &config.path_separator {
-        None => {}
-        Some(sep) => {
-            *path.to_mut() = path.replace(std::path::MAIN_SEPARATOR, &sep);
-        }
-    }
-}
-
+// TODO: this function is performance critical and can probably be optimized
 fn print_entry_colorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &FdOptions,
+    config: &Options,
     ls_colors: &LsColors,
     wants_to_quit: &Arc<AtomicBool>,
 ) -> io::Result<()> {
@@ -78,9 +57,12 @@ fn print_entry_colorized(
             .unwrap_or(default_style);
 
         let mut path_string = component.to_string_lossy();
-        replace_path_separator(&config, &mut path_string);
+        if let Some(ref separator) = config.path_separator {
+            *path_string.to_mut() = replace_path_separator(&path_string, &separator);
+        }
         write!(stdout, "{}", style.paint(path_string))?;
 
+        // TODO: can we move this out of the if-statement? Why do we call it that often?
         if wants_to_quit.load(Ordering::Relaxed) {
             writeln!(stdout)?;
             process::exit(ExitCode::KilledBySigint.into());
@@ -94,14 +76,45 @@ fn print_entry_colorized(
     }
 }
 
-fn print_entry_uncolorized(
+// TODO: this function is performance critical and can probably be optimized
+fn print_entry_uncolorized_base(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &FdOptions,
+    config: &Options,
 ) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
-    let mut path_str = path.to_string_lossy();
-    replace_path_separator(&config, &mut path_str);
-    write!(stdout, "{}{}", path_str, separator)
+    let mut path_string = path.to_string_lossy();
+    if let Some(ref separator) = config.path_separator {
+        *path_string.to_mut() = replace_path_separator(&path_string, &separator);
+    }
+    write!(stdout, "{}{}", path_string, separator)
+}
+
+#[cfg(not(unix))]
+fn print_entry_uncolorized(
+    stdout: &mut StdoutLock,
+    path: &Path,
+    config: &Options,
+) -> io::Result<()> {
+    print_entry_uncolorized_base(stdout, path, config)
+}
+
+#[cfg(unix)]
+fn print_entry_uncolorized(
+    stdout: &mut StdoutLock,
+    path: &Path,
+    config: &Options,
+) -> io::Result<()> {
+    use std::os::unix::ffi::OsStrExt;
+
+    if config.interactive_terminal || config.path_separator.is_some() {
+        // Fall back to the base implementation
+        print_entry_uncolorized_base(stdout, path, config)
+    } else {
+        // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
+        let separator = if config.null_separator { b"\0" } else { b"\n" };
+        stdout.write_all(path.as_os_str().as_bytes())?;
+        stdout.write_all(separator)
+    }
 }

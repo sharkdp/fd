@@ -19,14 +19,15 @@ repository = "https://github.com/sharkdp/fd"
 version = "7.5.0"
 edition= "2018"
 
-[[bin]]
-name = "fd"
-path = "src/main.rs"
 [badges.appveyor]
 repository = "sharkdp/fd"
 
 [badges.travis-ci]
 repository = "sharkdp/fd"
+
+[[bin]]
+name = "fd"
+path = "src/main.rs"
 
 [build-dependencies]
 clap = "2.31.2"
@@ -42,8 +43,9 @@ regex = "1.0.0"
 regex-syntax = "0.6"
 ctrlc = "3.1"
 humantime = "2.0"
-lscolors = "0.6"
+lscolors = "0.7"
 globset = "0.4"
+anyhow = "1.0"
 
 [dependencies.clap]
 version = "2.31.2"

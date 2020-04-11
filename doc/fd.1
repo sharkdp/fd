@@ -66,6 +66,12 @@ Treat the pattern as a literal string instead of a regular expression.
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
 .TP
+.B \-l, \-\-list\-details
+Use a detailed listing format like 'ls -l'. This is basically an alias
+for '--exec-batch ls -l' with some additional 'ls' options. This can be used
+to see more metadata, to show symlink targets and to achieve a deterministic
+sort order.
+.TP
 .B \-L, \-\-follow
 By default, fd does not descend into symlinked directories. Using this flag, symbolic links are
 also traversed.
@@ -79,6 +85,9 @@ is matched against the full path.
 .B \-0, \-\-print0
 Separate search results by the null character (instead of newlines). Useful for piping results to
 .IR xargs .
+.TP
+.B \-\-max\-results count
+Limit the number of search results to 'count' and quit immediately.
 .TP
 .B \-\-show-errors
 Enable the display of filesystem errors for situations such as insufficient

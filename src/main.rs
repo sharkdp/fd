@@ -1,19 +1,13 @@
-// Copyright (c) 2017 fd developers
-// Licensed under the Apache License, Version 2.0
-// <LICENSE-APACHE or http://www.apache.org/licenses/LICENSE-2.0>
-// or the MIT license <LICENSE-MIT or http://opensource.org/licenses/MIT>,
-// at your option. All files in the project carrying such
-// notice may not be copied, modified, or distributed except
-// according to those terms.
-
-#[macro_use]
-mod internal;
-
 mod app;
+mod error;
 mod exec;
 mod exit_codes;
-pub mod fshelper;
+mod filesystem;
+mod filetypes;
+mod filter;
+mod options;
 mod output;
+mod regex_helper;
 mod walk;
 
 use std::env;
@@ -22,72 +16,81 @@ use std::process;
 use std::sync::Arc;
 use std::time;
 
+use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::Glob;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::exec::CommandTemplate;
-use crate::internal::{
-    filter::{SizeFilter, PermFilter, TimeFilter},
-    opts::FdOptions,
-    pattern_has_uppercase_char, transform_args_with_exec, FileTypes,
-};
+use crate::exit_codes::ExitCode;
+use crate::filetypes::FileTypes;
+use crate::filter::{SizeFilter, PermFilter, TimeFilter};
+use crate::options::Options;
+use crate::regex_helper::pattern_has_uppercase_char;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 #[cfg(all(not(windows), not(target_env = "musl")))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
-fn main() {
-    let checked_args = transform_args_with_exec(env::args_os());
-    let matches = app::build_app().get_matches_from(checked_args);
+fn run() -> Result<ExitCode> {
+    let matches = app::build_app().get_matches_from(env::args_os());
 
     // Set the current working directory of the process
-    if let Some(base_directory) = matches.value_of("base-directory") {
-        let basedir = Path::new(base_directory);
-        if !fshelper::is_dir(basedir) {
-            print_error_and_exit!(
-                "The '--base-directory' path ('{}') is not a directory.",
-                basedir.to_string_lossy()
-            );
+    if let Some(base_directory) = matches.value_of_os("base-directory") {
+        let base_directory = Path::new(base_directory);
+        if !filesystem::is_dir(base_directory) {
+            return Err(anyhow!(
+                "The '--base-directory' path '{}' is not a directory.",
+                base_directory.to_string_lossy()
+            ));
         }
-        if let Err(e) = env::set_current_dir(basedir) {
-            print_error_and_exit!(
-                "Could not set '{}' as the current working directory: {}",
-                basedir.to_string_lossy(),
-                e
-            );
-        }
+        env::set_current_dir(base_directory).with_context(|| {
+            format!(
+                "Could not set '{}' as the current working directory.",
+                base_directory.to_string_lossy()
+            )
+        })?;
+    }
+
+    let current_directory = Path::new(".");
+    if !filesystem::is_dir(current_directory) {
+        return Err(anyhow!(
+            "Could not retrieve current directory (has it been deleted?)."
+        ));
     }
 
     // Get the search pattern
-    let pattern = matches.value_of("pattern").unwrap_or("");
-
-    // Get the current working directory
-    let current_dir = Path::new(".");
-    if !fshelper::is_dir(current_dir) {
-        print_error_and_exit!("Could not get current directory.");
-    }
+    let pattern = matches
+        .value_of_os("pattern")
+        .map(|p| {
+            p.to_str().ok_or(anyhow!(
+                "The search pattern includes invalid UTF-8 sequences."
+            ))
+        })
+        .transpose()?
+        .unwrap_or("");
 
     // Get one or more root directories to search.
     let mut dir_vec: Vec<_> = match matches
-        .values_of("path")
-        .or_else(|| matches.values_of("search-path"))
+        .values_of_os("path")
+        .or_else(|| matches.values_of_os("search-path"))
     {
         Some(paths) => paths
             .map(|path| {
                 let path_buffer = PathBuf::from(path);
-                if !fshelper::is_dir(&path_buffer) {
-                    print_error_and_exit!(
-                        "'{}' is not a directory.",
+                if filesystem::is_dir(&path_buffer) {
+                    Ok(path_buffer)
+                } else {
+                    Err(anyhow!(
+                        "Search path '{}' is not a directory.",
                         path_buffer.to_string_lossy()
-                    );
+                    ))
                 }
-                path_buffer
             })
-            .collect::<Vec<_>>(),
-        None => vec![current_dir.to_path_buf()],
+            .collect::<Result<Vec<_>>>()?,
+        None => vec![current_directory.to_path_buf()],
     };
 
     if matches.is_present("absolute-path") {
@@ -96,7 +99,7 @@ fn main() {
             .map(|path_buffer| {
                 path_buffer
                     .canonicalize()
-                    .and_then(|pb| fshelper::absolute_path(pb.as_path()))
+                    .and_then(|pb| filesystem::absolute_path(pb.as_path()))
                     .unwrap()
             })
             .collect();
@@ -105,27 +108,22 @@ fn main() {
     // Detect if the user accidentally supplied a path instead of a search pattern
     if !matches.is_present("full-path")
         && pattern.contains(std::path::MAIN_SEPARATOR)
-        && fshelper::is_dir(Path::new(pattern))
+        && filesystem::is_dir(Path::new(pattern))
     {
-        print_error_and_exit!(
+        return Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
-             Instead, if you want to search for the pattern in the full path, use:\n\n  \
+             Instead, if you want your pattern to match the full file path, use:\n\n  \
              fd --full-path '{pattern}'",
             pattern = pattern,
             sep = std::path::MAIN_SEPARATOR,
-        );
+        ));
     }
 
     let pattern_regex = if matches.is_present("glob") {
-        let glob = match Glob::new(pattern) {
-            Ok(glob) => glob,
-            Err(e) => {
-                print_error_and_exit!("{}", e);
-            }
-        };
+        let glob = Glob::new(pattern)?;
         glob.regex().to_owned()
     } else if matches.is_present("fixed-strings") {
         // Treat pattern as literal string if '--fixed-strings' is used
@@ -139,10 +137,11 @@ fn main() {
     let case_sensitive = !matches.is_present("ignore-case")
         && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
 
+    let interactive_terminal = atty::is(Stream::Stdout);
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
         Some("never") => false,
-        _ => env::var_os("NO_COLOR").is_none() && atty::is(Stream::Stdout),
+        _ => env::var_os("NO_COLOR").is_none() && interactive_terminal,
     };
 
     let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
@@ -156,42 +155,51 @@ fn main() {
         None
     };
 
-    let command = matches
-        .values_of("exec")
-        .map(CommandTemplate::new)
-        .or_else(|| {
-            matches.values_of("exec-batch").map(|m| {
-                CommandTemplate::new_batch(m).unwrap_or_else(|e| {
-                    print_error_and_exit!("{}", e);
-                })
-            })
-        });
+    let command = if let Some(args) = matches.values_of("exec") {
+        Some(CommandTemplate::new(args))
+    } else if let Some(args) = matches.values_of("exec-batch") {
+        Some(CommandTemplate::new_batch(args)?)
+    } else if matches.is_present("list-details") {
+        let color = matches.value_of("color").unwrap_or("auto");
+        let color_arg = ["--color=", color].concat();
 
-    let size_limits: Vec<SizeFilter> = matches
-        .values_of("size")
-        .map(|v| {
-            v.map(|sf| {
-                if let Some(f) = SizeFilter::from_string(sf) {
-                    return f;
-                }
-                print_error_and_exit!("'{}' is not a valid size constraint. See 'fd --help'.", sf);
-            })
-            .collect()
-        })
-        .unwrap_or_else(|| vec![]);
+        Some(
+            CommandTemplate::new_batch(&[
+                "ls",
+                "-l",               // long listing format
+                "--human-readable", // human readable file sizes
+                "--directory",      // list directories themselves, not their contents
+                &color_arg,         // enable colorized output, if enabled
+            ])
+            .unwrap(),
+        )
+    } else {
+        None
+    };
 
-    let perm_options: Vec<PermFilter> = matches
-        .values_of("perm")
-        .map(|v| {
-            v.map(|pf| {
-                if let Some(f) = PermFilter::from_string(pf) {
-                    return f;
-                }
-                print_error_and_exit!("'{}' is not a valid numeric Permission string. See 'fd --help'.", pf);
-            })
-                .collect()
+    let size_limits = if let Some(vs) = matches.values_of("size") {
+        vs.map(|sf| {
+            SizeFilter::from_string(sf).ok_or(anyhow!(
+                "'{}' is not a valid size constraint. See 'fd --help'.",
+                sf
+            ))
         })
-        .unwrap_or_else(|| vec![]);
+        .collect::<Result<Vec<_>>>()?
+    } else {
+        vec![]
+    };
+
+    let perm_options = if let Some(vs) = matches.values_of("perm") {
+        vs.map(|pf| {
+            PermFilter::from_string(pf).ok_or(anyhow!(
+                "'{}' is not a valid numeric Permission string. See 'fd --help'.",
+                pf
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?
+    } else {
+        vec![]
+    };
 
     let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
@@ -199,18 +207,24 @@ fn main() {
         if let Some(f) = TimeFilter::after(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit!("'{}' is not a valid date or duration. See 'fd --help'.", t);
+            return Err(anyhow!(
+                "'{}' is not a valid date or duration. See 'fd --help'.",
+                t
+            ));
         }
     }
     if let Some(t) = matches.value_of("changed-before") {
         if let Some(f) = TimeFilter::before(&now, t) {
             time_constraints.push(f);
         } else {
-            print_error_and_exit!("'{}' is not a valid date or duration. See 'fd --help'.", t);
+            return Err(anyhow!(
+                "'{}' is not a valid date or duration. See 'fd --help'.",
+                t
+            ));
         }
     }
 
-    let config = FdOptions {
+    let config = Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden")
@@ -239,6 +253,7 @@ fn main() {
             .and_then(|n| u64::from_str_radix(n, 10).ok())
             .map(time::Duration::from_millis),
         ls_colors,
+        interactive_terminal,
         file_types: matches.values_of("file-type").map(|values| {
             let mut file_types = FileTypes::default();
             for value in values {
@@ -265,20 +280,17 @@ fn main() {
 
             file_types
         }),
-        extensions: matches.values_of("extension").map(|exts| {
-            let patterns = exts
-                .map(|e| e.trim_start_matches('.'))
-                .map(|e| format!(r".\.{}$", regex::escape(e)));
-            match RegexSetBuilder::new(patterns)
-                .case_insensitive(true)
-                .build()
-            {
-                Ok(re) => re,
-                Err(err) => {
-                    print_error_and_exit!("{}", err.to_string());
-                }
-            }
-        }),
+        extensions: matches
+            .values_of("extension")
+            .map(|exts| {
+                let patterns = exts
+                    .map(|e| e.trim_start_matches('.'))
+                    .map(|e| format!(r".\.{}$", regex::escape(e)));
+                RegexSetBuilder::new(patterns)
+                    .case_insensitive(true)
+                    .build()
+            })
+            .transpose()?,
         command: command.map(Arc::new),
         exclude_patterns: matches
             .values_of("exclude")
@@ -293,23 +305,37 @@ fn main() {
         time_constraints,
         show_filesystem_errors: matches.is_present("show-errors"),
         path_separator,
+        max_results: matches
+            .value_of("max-results")
+            .and_then(|n| usize::from_str_radix(n, 10).ok())
+            .filter(|&n| n != 0),
     };
 
-    match RegexBuilder::new(&pattern_regex)
+    let re = RegexBuilder::new(&pattern_regex)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build()
-    {
-        Ok(re) => {
-            let exit_code = walk::scan(&dir_vec, Arc::new(re), Arc::new(config));
+        .map_err(|e| {
+            anyhow!(
+                "{}\n\nNote: You can use the '--fixed-strings' option to search for a \
+                 literal string instead of a regular expression. Alternatively, you can \
+                 also use the '--glob' option to match on a glob pattern.",
+                e.to_string()
+            )
+        })?;
+
+    walk::scan(&dir_vec, Arc::new(re), Arc::new(config))
+}
+
+fn main() {
+    let result = run();
+    match result {
+        Ok(exit_code) => {
             process::exit(exit_code.into());
         }
         Err(err) => {
-            print_error_and_exit!(
-                "{}\nHint: You can use the '--fixed-strings' option to search for a \
-                 literal string instead of a regular expression",
-                err.to_string()
-            );
+            eprintln!("[fd error]: {}", err);
+            process::exit(ExitCode::GeneralError.into());
         }
     }
 }
