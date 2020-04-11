@@ -9,6 +9,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
+#[cfg(any(unix))]
 use std::os::unix::fs::PermissionsExt;
 
 use anyhow::{anyhow, Result};
@@ -415,7 +416,7 @@ fn spawn_senders(
             }
 
             // Filter out unwanted permission configurations if we have been given perm constraints.
-            if !config.perm_constraints.is_empty() {
+            if !config.perm_constraints.is_empty() && cfg!(unix) {
                 if let Ok(metadata) = entry_path.metadata() {
                     let file_perm = metadata.permissions();
                     if config
