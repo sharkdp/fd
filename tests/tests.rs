@@ -1451,7 +1451,9 @@ fn test_base_directory() {
 }
 
 /// Filtering for file permissions (--perm)
+// Limited to Unix because the Windows permissions system has not been implemented yet
 #[test]
+#[cfg(unix)]
 fn test_permissions() {
     let te = TestEnv::new(&[], &[]);
 

@@ -363,17 +363,6 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
-            Arg::with_name("perm")
-                .long("perm")
-                .short("P")
-                .takes_value(true)
-                .number_of_values(1)
-                .allow_hyphen_values(false)
-                .multiple(false)
-                .help("Limit results based on the files permissions.")
-                .long_help("Limit results based on the files permissions using the 3 digits numeric notation."),
-        )
-        .arg(
             Arg::with_name("max-buffer-time")
                 .long("max-buffer-time")
                 .takes_value(true)
@@ -515,6 +504,21 @@ pub fn build_app() -> App<'static, 'static> {
                      different file system than the one it started in. Comparable to the -mount \
                      or -xdev filters of find(1).",
                 ),
+        );
+    }
+
+    // Make `--perm` available only on Unix, as per the different permissions systems in
+    // Unix and Windows.
+    if cfg!(any(unix)) {
+        app = app.arg(
+            Arg::with_name("perm")
+                .long("perm")
+                .takes_value(true)
+                .number_of_values(1)
+                .allow_hyphen_values(false)
+                .multiple(false)
+                .hidden_short_help(true)
+                .long_help("Limit results based on the files permissions using the 3 digits numeric notation."),
         );
     }
 
