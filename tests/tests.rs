@@ -1558,3 +1558,11 @@ fn test_exec_invalid_utf8() {
         b"test_\xFEinvalid\n",
     );
 }
+
+#[test]
+fn test_list_details() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Make sure we can execute 'fd --list-details' without any errors.
+    te.assert_success_and_get_output(".", &["--list-details"]);
+}
