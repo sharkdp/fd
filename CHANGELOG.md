@@ -8,7 +8,7 @@
     * see metadata like permissions, owner, file size, modification times (#491)
     * see symlink targets (#482)
     * achieve a deterministic output order (#324, #196, #159)
-- Add a new `--max-results=<count>` option to limit the number of search results, see #472 and #476
+- Add a new `--max-results=<count>` option to limit the number of search results, see #472, #476 and #555
   This can be useful to speed up searches in cases where you know that there are only N results.
   Using this option is also (slightly) faster than piping to `head -n <count>` where `fd` can only
   exit when it finds the search results `<count> + 1`.
@@ -19,6 +19,10 @@
 
 ## Bugfixes
 
+- Preserve non-UTF8 filenames: invalid UTF-8 filenames are now properly passed to child-processes
+  when using `--exec`, `--exec-batch` or `--list-details`. In `fd`'s output, we replace non-UTF-8
+  sequences with the "�" character. However, if the output of `fd` goes to another process, we
+  print the actual bytes of the filename. For more details, see #558 and #295.
 - `LS_COLORS` entries with unsupported font styles are not completely ignored, see #552
 
 ## Changes
