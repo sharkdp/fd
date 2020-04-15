@@ -176,10 +176,15 @@ fn run() -> Result<ExitCode> {
                 ]
             } else {
                 // MacOS
-                use std::process::Command;
+                use std::process::{Command, Stdio};
 
                 // Use GNU ls, if available
-                let gnu_ls_exists = Command::new("gls").arg("--version").status().is_ok();
+                let gnu_ls_exists = Command::new("gls")
+                    .arg("--version")
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .status()
+                    .is_ok();
 
                 if gnu_ls_exists {
                     vec![
