@@ -178,7 +178,7 @@ fn run() -> Result<ExitCode> {
                 // MacOS
                 use std::process::{Command, Stdio};
 
-                // Use GNU ls, if available
+                // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
                 let gnu_ls_exists = Command::new("gls")
                     .arg("--version")
                     .stdout(Stdio::null())
