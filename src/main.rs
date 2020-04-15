@@ -164,16 +164,20 @@ fn run() -> Result<ExitCode> {
         #[allow(unused)]
         let color_arg = ["--color=", color].concat();
 
+        let gnu_ls = |command_name| {
+            vec![
+                command_name,
+                "-l",               // long listing format
+                "--human-readable", // human readable file sizes
+                "--directory",      // list directories themselves, not their contents
+                &color_arg,
+            ]
+        };
+
         let cmd: Vec<&str> = if cfg!(unix) {
             if !cfg!(target_os = "macos") {
                 // Non-MacOS Unix
-                vec![
-                    "ls",
-                    "-l",               // long listing format
-                    "--human-readable", // human readable file sizes
-                    "--directory",      // list directories themselves, not their contents
-                    &color_arg,
-                ]
+                gnu_ls("ls")
             } else {
                 // MacOS
                 use std::process::{Command, Stdio};
@@ -187,13 +191,7 @@ fn run() -> Result<ExitCode> {
                     .is_ok();
 
                 if gnu_ls_exists {
-                    vec![
-                        "gls",
-                        "-l",               // long listing format
-                        "--human-readable", // human readable file sizes
-                        "--directory",      // list directories themselves, not their contents
-                        &color_arg,
-                    ]
+                    gnu_ls("gls")
                 } else {
                     let mut cmd = vec![
                         "ls", // MacOS version of ls
@@ -209,9 +207,27 @@ fn run() -> Result<ExitCode> {
                     cmd
                 }
             }
+        } else if cfg!(windows) {
+            use std::process::{Command, Stdio};
+
+            // Use GNU ls, if available
+            let gnu_ls_exists = Command::new("ls")
+                .arg("--version")
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .is_ok();
+
+            if gnu_ls_exists {
+                gnu_ls("ls")
+            } else {
+                return Err(anyhow!(
+                    "'fd --list-details' is not supported on this platform."
+                ));
+            }
         } else {
             return Err(anyhow!(
-                "'fd --list-details' is not supported on this platform."
+                "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
             ));
         };
 
