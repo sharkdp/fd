@@ -40,6 +40,9 @@ pub struct Options {
     /// all files under subdirectories of the current directory, etc.
     pub max_depth: Option<usize>,
 
+    /// The minimum depth for reported entries, or `None`.
+    pub min_depth: Option<usize>,
+
     /// The number of threads to use.
     pub threads: usize,
 

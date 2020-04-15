@@ -168,10 +168,11 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
-            Arg::with_name("depth")
+            Arg::with_name("max-depth")
                 .long("max-depth")
                 .short("d")
                 .takes_value(true)
+                .value_name("depth")
                 .help("Set maximum search depth (default: none)")
                 .long_help(
                     "Limit the directory traversal to a given depth. By default, there is no \
@@ -184,6 +185,29 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("maxdepth")
                 .hidden(true)
                 .takes_value(true)
+        )
+        .arg(
+            Arg::with_name("min-depth")
+                .long("min-depth")
+                .takes_value(true)
+                .value_name("depth")
+                .hidden_short_help(true)
+                .long_help(
+                    "Only show search results starting at the given depth. \
+                     See also: '--max-depth' and '--exact-depth'",
+                ),
+        )
+        .arg(
+            Arg::with_name("exact-depth")
+                .long("exact-depth")
+                .takes_value(true)
+                .value_name("depth")
+                .hidden_short_help(true)
+                .conflicts_with_all(&["max-depth", "min-depth"])
+                .long_help(
+                    "Only show search results at the exact given depth. This is an alias for \
+                     '--min-depth <depth> --max-depth <depth>'.",
+                ),
         )
         .arg(
             Arg::with_name("file-type")

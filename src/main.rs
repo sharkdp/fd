@@ -226,8 +226,13 @@ fn run() -> Result<ExitCode> {
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
         max_depth: matches
-            .value_of("depth")
+            .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
+            .or_else(|| matches.value_of("exact-depth"))
+            .and_then(|n| usize::from_str_radix(n, 10).ok()),
+        min_depth: matches
+            .value_of("min-depth")
+            .or_else(|| matches.value_of("exact-depth"))
             .and_then(|n| usize::from_str_radix(n, 10).ok()),
         threads: std::cmp::max(
             matches
