@@ -23,6 +23,13 @@
 
 ## Changes
 
+- Colored output will now be enabled by default on older Windows versions.
+  This allows the use of colored output if the terminal supports it (e.g.
+  MinTTY, Git Bash). On the other hand, this will be a regression for users
+  on older Windows versions with terminals that do not support ANSI escape
+  sequences. Affected users can use an alias `fd="fd --color=never"` to
+  continue using `fd` without colors. There is no change of behavior for
+  Windows 10. See #469.
 - When using `--glob` in combination with `--full-path`, a `*` character does not match a path
   separation character (`/` or `\\`) anymore. You can use `**` for that. This allows things like
   `fd -p -g '/some/base/path/*/*/*.txt'` which would previously match to arbitrary depths (instead
