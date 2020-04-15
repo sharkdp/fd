@@ -161,18 +161,56 @@ fn run() -> Result<ExitCode> {
         Some(CommandTemplate::new_batch(args)?)
     } else if matches.is_present("list-details") {
         let color = matches.value_of("color").unwrap_or("auto");
+        #[allow(unused)]
         let color_arg = ["--color=", color].concat();
 
-        Some(
-            CommandTemplate::new_batch(&[
-                "ls",
-                "-l",               // long listing format
-                "--human-readable", // human readable file sizes
-                "--directory",      // list directories themselves, not their contents
-                &color_arg,         // enable colorized output, if enabled
-            ])
-            .unwrap(),
-        )
+        let cmd: Vec<&str> = if cfg!(unix) {
+            if !cfg!(target_os = "macos") {
+                // Non-MacOS Unix
+                vec![
+                    "ls",
+                    "-l",               // long listing format
+                    "--human-readable", // human readable file sizes
+                    "--directory",      // list directories themselves, not their contents
+                    &color_arg,
+                ]
+            } else {
+                // MacOS
+                use std::process::Command;
+
+                // Use GNU ls, if available
+                let gnu_ls_exists = Command::new("gls").arg("--version").status().is_ok();
+
+                if gnu_ls_exists {
+                    vec![
+                        "gls",
+                        "-l",               // long listing format
+                        "--human-readable", // human readable file sizes
+                        "--directory",      // list directories themselves, not their contents
+                        &color_arg,
+                    ]
+                } else {
+                    let mut cmd = vec![
+                        "ls", // MacOS version of ls
+                        "-l", // long listing format
+                        "-h", // '--human-readable' is not available on MacOS, '-h' is
+                        "-d", // '--directory' is not available, but '-d' is
+                    ];
+
+                    if colored_output {
+                        cmd.push("-G");
+                    }
+
+                    cmd
+                }
+            }
+        } else {
+            return Err(anyhow!(
+                "'fd --list-details' is not supported on this platform."
+            ));
+        };
+
+        Some(CommandTemplate::new_batch(&cmd).unwrap())
     } else {
         None
     };
