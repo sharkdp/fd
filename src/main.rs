@@ -226,8 +226,13 @@ fn run() -> Result<ExitCode> {
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
         max_depth: matches
-            .value_of("depth")
+            .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
+            .or_else(|| matches.value_of("exact-depth"))
+            .and_then(|n| usize::from_str_radix(n, 10).ok()),
+        min_depth: matches
+            .value_of("min-depth")
+            .or_else(|| matches.value_of("exact-depth"))
             .and_then(|n| usize::from_str_radix(n, 10).ok()),
         threads: std::cmp::max(
             matches
@@ -296,7 +301,13 @@ fn run() -> Result<ExitCode> {
             .value_of("max-results")
             .and_then(|n| usize::from_str_radix(n, 10).ok())
             .filter(|&n| n != 0)
-            .or_else(|| if matches.is_present("max-one-result") { Some(1) } else { None }),
+            .or_else(|| {
+                if matches.is_present("max-one-result") {
+                    Some(1)
+                } else {
+                    None
+                }
+            }),
     };
 
     let re = RegexBuilder::new(&pattern_regex)

@@ -110,6 +110,12 @@ Limit directory traversal to at most
 .I d
 levels of depth. By default, there is no limit on the search depth.
 .TP
+.BI "\-\-min\-depth " d
+Only show search results starting at the given depth. See also: '--max-depth' and '--exact-depth'.
+.TP
+.BI "\-\-exact\-depth " d
+Only show search results at the exact given depth. This is an alias for '--min-depth <depth> --max-depth <depth>'.
+.TP
 .BI "\-t, \-\-type " filetype
 Filter search by type:
 .RS

@@ -669,6 +669,40 @@ fn test_max_depth() {
     );
 }
 
+/// Minimum depth (--min-depth)
+#[test]
+fn test_min_depth() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--min-depth", "3"],
+        "one/two/c.foo
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/d.foo
+        one/two/three/directory_foo",
+    );
+
+    te.assert_output(
+        &["--min-depth", "4"],
+        "one/two/three/d.foo
+        one/two/three/directory_foo",
+    );
+}
+
+/// Exact depth (--exact-depth)
+#[test]
+fn test_exact_depth() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--exact-depth", "3"],
+        "one/two/c.foo
+        one/two/C.Foo2
+        one/two/three",
+    );
+}
+
 /// Absolute paths (--absolute-path)
 #[test]
 fn test_absolute_path() {

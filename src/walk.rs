@@ -283,6 +283,13 @@ impl DirEntry {
             DirEntry::BrokenSymlink(_) => None,
         }
     }
+
+    pub fn depth(&self) -> Option<usize> {
+        match self {
+            DirEntry::Normal(e) => Some(e.depth()),
+            DirEntry::BrokenSymlink(_) => None,
+        }
+    }
 }
 
 fn spawn_senders(
@@ -337,6 +344,12 @@ fn spawn_senders(
                     return ignore::WalkState::Continue;
                 }
             };
+
+            if let Some(min_depth) = config.min_depth {
+                if entry.depth().map_or(true, |d| d < min_depth) {
+                    return ignore::WalkState::Continue;
+                }
+            }
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();
