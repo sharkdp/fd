@@ -161,9 +161,9 @@ fn run() -> Result<ExitCode> {
         Some(CommandTemplate::new_batch(args)?)
     } else if matches.is_present("list-details") {
         let color = matches.value_of("color").unwrap_or("auto");
-        #[allow(unused)]
         let color_arg = ["--color=", color].concat();
 
+        #[allow(unused)]
         let gnu_ls = |command_name| {
             vec![
                 command_name,
@@ -222,12 +222,12 @@ fn run() -> Result<ExitCode> {
                 gnu_ls("ls")
             } else {
                 return Err(anyhow!(
-                    "'fd --list-details' is not supported on this platform."
+                    "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
                 ));
             }
         } else {
             return Err(anyhow!(
-                "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
+                "'fd --list-details' is not supported on this platform."
             ));
         };
 
