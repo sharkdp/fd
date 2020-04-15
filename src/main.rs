@@ -18,7 +18,7 @@ use std::time;
 
 use anyhow::{anyhow, Context, Result};
 use atty::Stream;
-use globset::Glob;
+use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
@@ -123,7 +123,7 @@ fn run() -> Result<ExitCode> {
     }
 
     let pattern_regex = if matches.is_present("glob") {
-        let glob = Glob::new(pattern)?;
+        let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
     } else if matches.is_present("fixed-strings") {
         // Treat pattern as literal string if '--fixed-strings' is used
@@ -296,7 +296,13 @@ fn run() -> Result<ExitCode> {
             .value_of("max-results")
             .and_then(|n| usize::from_str_radix(n, 10).ok())
             .filter(|&n| n != 0)
-            .or_else(|| if matches.is_present("max-one-result") { Some(1) } else { None }),
+            .or_else(|| {
+                if matches.is_present("max-one-result") {
+                    Some(1)
+                } else {
+                    None
+                }
+            }),
     };
 
     let re = RegexBuilder::new(&pattern_regex)
