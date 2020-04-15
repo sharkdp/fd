@@ -21,6 +21,10 @@
 
 ## Changes
 
+- When using `--glob` in combination with `--full-path`, a `*` character does not match a path
+  separation character (`/` or `\\`) anymore. You can use `**` for that. This allows things like
+  `fd -p -g '/some/base/path/*/*/*.txt'` which would previously match to arbitrary depths (instead
+  of exactly two folders below `/some/base/path`. See #404.
 
 
 ## Other
