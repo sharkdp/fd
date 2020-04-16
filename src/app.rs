@@ -441,7 +441,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("max-results")
                 .takes_value(true)
                 .value_name("count")
-                .conflicts_with_all(&["exec", "exec-batch"])
+                // We currently do not support --max-results in combination with
+                // program execution because the results that come up in a --max-results
+                // search are non-deterministic. Users might think that they can run the
+                // same search with `--exec rm` attached and get a reliable removal of
+                // the files they saw in the previous search.
+                .conflicts_with_all(&["exec", "exec-batch", "list-details"])
                 .hidden_short_help(true)
                 .long_help("Limit the number of search results to 'count' and quit immediately."),
         )
@@ -450,7 +455,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("1")
                 .hidden_short_help(true)
                 .overrides_with("max-results")
-                .conflicts_with_all(&["exec", "exec-batch"])
+                .conflicts_with_all(&["exec", "exec-batch", "list-details"])
                 .long_help("Limit the search to a single result and quit immediately. \
                                 This is an alias for '--max-results=1'.")
         )

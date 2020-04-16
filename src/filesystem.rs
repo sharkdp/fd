@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::{PermissionsExt, FileTypeExt};
+use std::os::unix::fs::{FileTypeExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 use crate::walk;
