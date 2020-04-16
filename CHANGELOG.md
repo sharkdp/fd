@@ -1,6 +1,13 @@
 # Upcoming release
 
 ## Features
+## Bugfixes
+## Changes
+## Other
+
+# v8.0.0
+
+## Features
 
 - Add a new `-l`/`--list-details` option to show more details about the search results. This is
   basically an alias for `--exec-batch ls -l` with some additional `ls` options.
@@ -39,6 +46,9 @@
   separation character (`/` or `\\`) anymore. You can use `**` for that. This allows things like
   `fd -p -g '/some/base/path/*/*/*.txt'` which would previously match to arbitrary depths (instead
   of exactly two folders below `/some/base/path`. See #404.
+- "Legacy" support to use `fd -exec` (with a single dash) has been removed. Use `fd -x` or
+  `fd --exec` instead.
+- Overall improved error handling and error messages.
 
 
 ## Other
