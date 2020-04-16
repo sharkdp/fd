@@ -290,12 +290,11 @@ USAGE:
 FLAGS:
     -H, --hidden            Search hidden files and directories
     -I, --no-ignore         Do not respect .(git|fd)ignore files
-        --no-ignore-vcs     Do not respect .gitignore files
     -s, --case-sensitive    Case-sensitive search (default: smart case)
     -i, --ignore-case       Case-insensitive search (default: smart case)
     -g, --glob              Glob-based search (default: regular expression)
-    -F, --fixed-strings     Treat the pattern as a literal string
     -a, --absolute-path     Show absolute instead of relative paths
+    -l, --list-details      Use a long listing format with file metadata
     -L, --follow            Follow symbolic links
     -p, --full-path         Search full path (default: file-/dirname only)
     -0, --print0            Separate results by the null character
@@ -305,7 +304,7 @@ FLAGS:
 OPTIONS:
     -d, --max-depth <depth>            Set maximum search depth (default: none)
     -t, --type <filetype>...           Filter by type: file (f), directory (d), symlink (l),
-                                       executable (x), empty (e)
+                                       executable (x), empty (e), socket (s), pipe (p)
     -e, --extension <ext>...           Filter by file extension
     -x, --exec <cmd>                   Execute a command for each search result
     -X, --exec-batch <cmd>             Execute a command with all search results at once
