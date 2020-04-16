@@ -175,11 +175,11 @@ fn run() -> Result<ExitCode> {
         };
 
         let cmd: Vec<&str> = if cfg!(unix) {
-            if !cfg!(target_os = "macos") {
-                // Non-MacOS Unix
+            if !cfg!(any(target_os = "macos", target_os = "dragonfly", target_os = "freebsd")) {
+                // Assume ls is GNU ls
                 gnu_ls("ls")
             } else {
-                // MacOS
+                // MacOS, DragonFlyBSD, FreeBSD
                 use std::process::{Command, Stdio};
 
                 // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
@@ -194,9 +194,9 @@ fn run() -> Result<ExitCode> {
                     gnu_ls("gls")
                 } else {
                     let mut cmd = vec![
-                        "ls", // MacOS version of ls
+                        "ls", // BSD version of ls
                         "-l", // long listing format
-                        "-h", // '--human-readable' is not available on MacOS, '-h' is
+                        "-h", // '--human-readable' is not available, '-h' is
                         "-d", // '--directory' is not available, but '-d' is
                     ];
 
