@@ -37,7 +37,7 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("no-ignore-vcs")
                 .long("no-ignore-vcs")
                 .overrides_with("no-ignore-vcs")
-                .help("Do not respect .gitignore files")
+                .hidden_short_help(true)
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
                          ignored by '.gitignore' files.",
@@ -103,7 +103,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("F")
                 .alias("literal")
                 .overrides_with("fixed-strings")
-                .help("Treat the pattern as a literal string")
+                .hidden_short_help(true)
                 .long_help(
                     "Treat the pattern as a literal string instead of a regular expression.",
                 ),
