@@ -175,7 +175,7 @@ fn run() -> Result<ExitCode> {
         };
 
         let cmd: Vec<&str> = if cfg!(unix) {
-            if !cfg!(any(target_os = "macos", target_os = "dragonfly", target_os = "freebsd")) {
+            if !cfg!(any(target_os = "macos", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd")) {
                 // Assume ls is GNU ls
                 gnu_ls("ls")
             } else {
@@ -200,7 +200,8 @@ fn run() -> Result<ExitCode> {
                         "-d", // '--directory' is not available, but '-d' is
                     ];
 
-                    if colored_output {
+                    if !cfg!(any(target_os = "netbsd", target_os = "openbsd")) && colored_output {
+                        // -G is not available in NetBSD's and OpenBSD's ls
                         cmd.push("-G");
                     }
 
