@@ -228,11 +228,15 @@ pub fn build_app() -> App<'static, 'static> {
                     "executable",
                     "e",
                     "empty",
+                    "s",
+                    "socket",
+                    "p",
+                    "pipe",
                 ])
                 .hide_possible_values(true)
                 .help(
                     "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x), \
-                         empty (e)",
+                         empty (e), socket (s), pipe (p)",
                 )
                 .long_help(
                     "Filter the search by type (multiple allowable filetypes can be specified):\n  \
@@ -240,7 +244,9 @@ pub fn build_app() -> App<'static, 'static> {
                        'd' or 'directory':    directories\n  \
                        'l' or 'symlink':      symbolic links\n  \
                        'x' or 'executable':   executables\n  \
-                       'e' or 'empty':        empty files or directories",
+                       'e' or 'empty':        empty files or directories\n  \
+                       's' or 'socket':       socket\n  \
+                       'p' or 'pipe':         named pipe (FIFO)",
                 ),
         )
         .arg(

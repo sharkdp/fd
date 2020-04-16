@@ -12,9 +12,10 @@
   This can be useful to speed up searches in cases where you know that there are only N results.
   Using this option is also (slightly) faster than piping to `head -n <count>` where `fd` can only
   exit when it finds the search results `<count> + 1`.
+- Add the alias `-1` for `--max-results=1`, see #561. (@SimplyDanny).
+- Add new `--type socket` and `--type pipe` filters, see #511.
 - Add new `--min-depth <depth>` and `--exact-depth <depth>` options in addition to the existing option
   to limit the maximum depth. See #404.
-- Add the alias `-1` for `--max-results=1`, see #561. (@SimplyDanny).
 - Support additional ANSI font styles in `LS_COLORS`: faint, slow blink, rapid blink, dimmed, hidden and strikethrough.
 
 ## Bugfixes
