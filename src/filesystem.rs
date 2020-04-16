@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{PermissionsExt, FileTypeExt};
 use std::path::{Path, PathBuf};
 
 use crate::walk;
@@ -65,6 +65,26 @@ pub fn is_empty(entry: &walk::DirEntry) -> bool {
     } else {
         false
     }
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn is_socket(ft: &fs::FileType) -> bool {
+    ft.is_socket()
+}
+
+#[cfg(windows)]
+pub fn is_socket(_: &fs::FileType) -> bool {
+    false
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn is_pipe(ft: &fs::FileType) -> bool {
+    ft.is_fifo()
+}
+
+#[cfg(windows)]
+pub fn is_pipe(_: &fs::FileType) -> bool {
+    false
 }
 
 #[cfg(any(unix, target_os = "redox"))]
