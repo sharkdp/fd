@@ -1,9 +1,20 @@
 # Upcoming release
 
 ## Features
+
+
+
 ## Bugfixes
+
+- Fix `--list-details` on FreeBSD, DragonFly BSD, OpenBSD and NetBSD. See #573 (@t6)
+
 ## Changes
+
+
+
 ## Other
+
+
 
 # v8.0.0
 
