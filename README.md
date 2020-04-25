@@ -451,6 +451,10 @@ To make exclude-patterns like these permanent, you can create a `.fdignore` file
 ```
 Note: `fd` also supports `.ignore` files that are used by other programs such as `rg` or `ag`.
 
+If you want `fd` to ignore these patterns globally, you can put them in `fd`'s global ignore file.
+This is usually located in `~/.config/fd/ignore` in macOS or Linux, and `%APPDATA%\fd\ignore` in
+Windows.
+
 ### Using fd with `xargs` or `parallel`
 
 If we want to run a command on all search results, we can pipe the output to `xargs`:
