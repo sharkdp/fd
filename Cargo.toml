@@ -46,6 +46,7 @@ humantime = "2.0"
 lscolors = "0.7"
 globset = "0.4"
 anyhow = "1.0"
+dirs = "2.0"
 
 [dependencies.clap]
 version = "2.31.2"

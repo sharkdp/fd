@@ -33,10 +33,9 @@ Include hidden files and directories in the search results
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
 .IR .gitignore ,
-.I .ignore
-or
-.I .fdignore
-files.
+.IR .ignore ,
+.IR .fdignore ,
+or the global ignore file.
 .TP
 .B \-u, \-\-unrestricted
 Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
@@ -282,6 +281,14 @@ The glob syntax is documented here:
 .B LS_COLORS
 Determines how to colorize search results, see
 .BR dircolors (1) .
+.TP
+.B XDG_CONFIG_HOME, HOME
+Used to locate the global ignore file. If
+.B XDG_CONFIG_HOME
+is set, use
+.IR $XDG_CONFIG_HOME/fd/ignore .
+Otherwise, use
+.IR $HOME/.config/fd/ignore .
 .SH EXAMPLES
 .TP
 .RI "Find files and directories that match the pattern '" needle "':"

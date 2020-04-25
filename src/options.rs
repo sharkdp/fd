@@ -27,6 +27,9 @@ pub struct Options {
     /// Whether to respect VCS ignore files (`.gitignore`, ..) or not.
     pub read_vcsignore: bool,
 
+    /// Whether to respect the global ignore file or not.
+    pub read_global_ignore: bool,
+
     /// Whether to follow symlinks or not.
     pub follow_links: bool,
 

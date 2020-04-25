@@ -30,7 +30,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Do not respect .(git|fd)ignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore', '.ignore' or '.fdignore' files.",
+                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.",
                 ),
         )
         .arg(
@@ -42,6 +42,12 @@ pub fn build_app() -> App<'static, 'static> {
                     "Show search results from files and directories that would otherwise be \
                          ignored by '.gitignore' files.",
                 ),
+        )
+        .arg(
+            Arg::with_name("no-global-ignore-file")
+                .long("no-global-ignore-file")
+                .hidden(true)
+                .long_help("Do not respect the global ignore file."),
         )
         .arg(
             Arg::with_name("rg-alias-hidden-ignore")

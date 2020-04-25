@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::env;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
@@ -80,6 +81,34 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
 
     if config.read_fdignore {
         walker.add_custom_ignore_filename(".fdignore");
+    }
+
+    if config.read_global_ignore {
+        #[cfg(target_os = "macos")]
+        let config_dir_op = env::var_os("XDG_CONFIG_HOME")
+            .map(PathBuf::from)
+            .filter(|p| p.is_absolute())
+            .or_else(|| dirs::home_dir().map(|d| d.join(".config")));
+
+        #[cfg(not(target_os = "macos"))]
+        let config_dir_op = dirs::config_dir();
+
+        if let Some(global_ignore_file) = config_dir_op
+            .map(|p| p.join("fd").join("ignore"))
+            .filter(|p| p.is_file())
+        {
+            let result = walker.add_ignore(global_ignore_file);
+            match result {
+                Some(ignore::Error::Partial(_)) => (),
+                Some(err) => {
+                    print_error(format!(
+                        "Malformed pattern in global ignore file. {}.",
+                        err.to_string()
+                    ));
+                }
+                None => (),
+            }
+        }
     }
 
     for ignore_file in &config.ignore_files {
