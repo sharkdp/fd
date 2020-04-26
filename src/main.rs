@@ -122,7 +122,7 @@ fn run() -> Result<ExitCode> {
         ));
     }
 
-    let pattern_regex = if matches.is_present("glob") {
+    let pattern_regex = if matches.is_present("glob") && pattern.len() > 0 {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
     } else if matches.is_present("fixed-strings") {
