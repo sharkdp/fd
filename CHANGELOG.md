@@ -6,6 +6,7 @@
 
 ## Bugfixes
 
+- Fix `--glob` behavior with empty pattern, see #579 (@SeamusConnor)
 - Fix `--list-details` on FreeBSD, DragonFly BSD, OpenBSD and NetBSD. See #573 (@t6)
 
 ## Changes
