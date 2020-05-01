@@ -524,6 +524,15 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         );
 
+    if cfg!(unix) {
+        app = app.arg(
+            Arg::with_name("owner")
+                .long("owner")
+                .short("o")
+                .takes_value(true),
+        );
+    }
+
     // Make `--one-file-system` available only on Unix and Windows platforms, as per the
     // restrictions on the corresponding option in the `ignore` crate.
     // Provide aliases `mount` and `xdev` for people coming from `find`.
