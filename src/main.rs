@@ -25,6 +25,8 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use crate::exec::CommandTemplate;
 use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
+#[cfg(unix)]
+use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 use crate::options::Options;
 use crate::regex_helper::pattern_has_uppercase_char;
@@ -275,6 +277,13 @@ fn run() -> Result<ExitCode> {
         }
     }
 
+    #[cfg(unix)]
+    let owner_constraint = if let Some(s) = matches.value_of("owner") {
+        Some(OwnerFilter::from_string(s)?)
+    } else {
+        None
+    };
+
     let config = Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
@@ -358,6 +367,8 @@ fn run() -> Result<ExitCode> {
             .unwrap_or_else(|| vec![]),
         size_constraints: size_limits,
         time_constraints,
+        #[cfg(unix)]
+        owner_constraint,
         show_filesystem_errors: matches.is_present("show-errors"),
         path_separator,
         max_results: matches
