@@ -9,9 +9,9 @@ use regex::escape;
 
 use crate::testenv::TestEnv;
 
-static DEFAULT_DIRS: &'static [&'static str] = &["one/two/three", "one/two/three/directory_foo"];
+static DEFAULT_DIRS: &[&str] = &["one/two/three", "one/two/three/directory_foo"];
 
-static DEFAULT_FILES: &'static [&'static str] = &[
+static DEFAULT_FILES: &[&str] = &[
     "a.foo",
     "one/b.foo",
     "one/two/c.foo",
@@ -88,18 +88,9 @@ fn test_empty_pattern() {
     one/two/three/directory_foo
     symlink";
 
-    te.assert_output(
-        &["--regex"],
-        expected,
-    );
-    te.assert_output(
-        &["--fixed-strings"],
-        expected,
-    );
-    te.assert_output(
-        &["--glob"],
-        expected,
-    );
+    te.assert_output(&["--regex"], expected);
+    te.assert_output(&["--fixed-strings"], expected);
+    te.assert_output(&["--glob"], expected);
 }
 
 /// Test multiple directory searches

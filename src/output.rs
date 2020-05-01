@@ -11,7 +11,7 @@ use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
 use crate::options::Options;
 
-pub fn replace_path_separator<'a>(path: &str, new_path_separator: &str) -> String {
+pub fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, &new_path_separator)
 }
 
