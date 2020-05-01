@@ -201,7 +201,7 @@ impl ArgumentTemplate {
         }
     }
 
-    pub fn generate<'a>(&'a self, path: impl AsRef<Path>) -> OsString {
+    pub fn generate(&self, path: impl AsRef<Path>) -> OsString {
         use self::Token::*;
 
         match *self {

@@ -65,9 +65,8 @@ fn run() -> Result<ExitCode> {
     let pattern = matches
         .value_of_os("pattern")
         .map(|p| {
-            p.to_str().ok_or(anyhow!(
-                "The search pattern includes invalid UTF-8 sequences."
-            ))
+            p.to_str()
+                .ok_or_else(|| anyhow!("The search pattern includes invalid UTF-8 sequences."))
         })
         .transpose()?
         .unwrap_or("");
@@ -122,7 +121,7 @@ fn run() -> Result<ExitCode> {
         ));
     }
 
-    let pattern_regex = if matches.is_present("glob") && pattern.len() > 0 {
+    let pattern_regex = if matches.is_present("glob") && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
     } else if matches.is_present("fixed-strings") {
@@ -175,7 +174,13 @@ fn run() -> Result<ExitCode> {
         };
 
         let cmd: Vec<&str> = if cfg!(unix) {
-            if !cfg!(any(target_os = "macos", target_os = "dragonfly", target_os = "freebsd", target_os = "netbsd", target_os = "openbsd")) {
+            if !cfg!(any(
+                target_os = "macos",
+                target_os = "dragonfly",
+                target_os = "freebsd",
+                target_os = "netbsd",
+                target_os = "openbsd"
+            )) {
                 // Assume ls is GNU ls
                 gnu_ls("ls")
             } else {
@@ -239,10 +244,8 @@ fn run() -> Result<ExitCode> {
 
     let size_limits = if let Some(vs) = matches.values_of("size") {
         vs.map(|sf| {
-            SizeFilter::from_string(sf).ok_or(anyhow!(
-                "'{}' is not a valid size constraint. See 'fd --help'.",
-                sf
-            ))
+            SizeFilter::from_string(sf)
+                .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", sf))
         })
         .collect::<Result<Vec<_>>>()?
     } else {
