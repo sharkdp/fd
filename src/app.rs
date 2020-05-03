@@ -271,6 +271,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
+                .multiple(true)
                 .conflicts_with("list-details")
                 .help("Execute a command for each search result")
                 .long_help(
@@ -294,6 +295,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
+                .multiple(true)
                 .conflicts_with_all(&["exec", "list-details"])
                 .help("Execute a command with all search results at once")
                 .long_help(

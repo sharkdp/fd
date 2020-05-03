@@ -11,6 +11,7 @@ mod regex_helper;
 mod walk;
 
 use std::env;
+use std::iter::Peekable;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::Arc;
@@ -33,6 +34,53 @@ use crate::regex_helper::pattern_has_uppercase_char;
 #[cfg(all(not(windows), not(target_env = "musl")))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
+struct ContinuousRangeIterator<I>
+where
+    I: Iterator<Item = usize>,
+{
+    indices: Peekable<I>,
+    start: usize,
+    end: usize,
+}
+
+impl<'a, I> ContinuousRangeIterator<I>
+where
+    I: Iterator<Item = usize>,
+{
+    pub fn new(indices: Peekable<I>) -> ContinuousRangeIterator<I> {
+        ContinuousRangeIterator {
+            indices,
+            start: 0,
+            end: 1,
+        }
+    }
+}
+
+impl<I> Iterator for ContinuousRangeIterator<I>
+where
+    I: Iterator<Item = usize>,
+{
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(current) = self.indices.next() {
+            if let Some(next) = self.indices.peek() {
+                if current + 1 != *next {
+                    let rv = (self.start, self.end);
+                    self.start = self.end;
+                    self.end += 1;
+                    return Some(rv);
+                } else {
+                    self.end += 1;
+                }
+            } else {
+                return Some((self.start, self.end));
+            }
+        }
+        None
+    }
+}
 
 fn run() -> Result<ExitCode> {
     let matches = app::build_app().get_matches_from(env::args_os());
@@ -154,10 +202,20 @@ fn run() -> Result<ExitCode> {
         None
     };
 
-    let command = if let Some(args) = matches.values_of("exec") {
-        Some(CommandTemplate::new(args))
-    } else if let Some(args) = matches.values_of("exec-batch") {
-        Some(CommandTemplate::new_batch(args)?)
+    let mut commands: Vec<CommandTemplate> = vec![];
+
+    if matches.is_present("exec") {
+        let ranges = ContinuousRangeIterator::new(matches.indices_of("exec").unwrap().peekable());
+        let args: Vec<&str> = matches.values_of("exec").unwrap().collect();
+        for (start, end) in ranges {
+            commands.push(CommandTemplate::new(&args[start..end]));
+        }
+    } else if matches.is_present("exec-batch") {
+        let ranges = ContinuousRangeIterator::new(matches.indices_of("exec-batch").unwrap().peekable());
+        let args: Vec<&str> = matches.values_of("exec-batch").unwrap().collect();
+        for (start, end) in ranges {
+            commands.push(CommandTemplate::new_batch(&args[start..end])?);
+        }
     } else if matches.is_present("list-details") {
         let color = matches.value_of("color").unwrap_or("auto");
         let color_arg = ["--color=", color].concat();
@@ -237,10 +295,11 @@ fn run() -> Result<ExitCode> {
             ));
         };
 
-        Some(CommandTemplate::new_batch(&cmd).unwrap())
-    } else {
-        None
-    };
+        commands.push(CommandTemplate::new_batch(&cmd).unwrap());
+    }
+
+    // Just throw away all of the extra commands for now....
+    let command = commands.into_iter().next();
 
     let size_limits = if let Some(vs) = matches.values_of("size") {
         vs.map(|sf| {
