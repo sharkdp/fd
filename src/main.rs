@@ -279,7 +279,7 @@ fn run() -> Result<ExitCode> {
 
     #[cfg(unix)]
     let owner_constraint = if let Some(s) = matches.value_of("owner") {
-        Some(OwnerFilter::from_string(s)?)
+        OwnerFilter::from_string(s)?
     } else {
         None
     };
