@@ -117,6 +117,32 @@ fn test_multi_file() {
     te.assert_output(&["b.foo", "test1", "test2"], "test1/b.foo");
 }
 
+/// Test search over multiple directory with missing
+#[test]
+fn test_multi_file_with_missing() {
+    let dirs = &["real"];
+    let files = &["real/a.foo", "real/b.foo"];
+    let te = TestEnv::new(dirs, files);
+    te.assert_output(
+        &["a.foo", "real", "fake"],
+        "real/a.foo",
+    );
+
+    te.assert_output(
+        &["", "real", "fake"],
+        "real/a.foo
+        real/b.foo",
+    );
+
+    te.assert_output(&["a.foo", "real"], "real/a.foo");
+
+    te.assert_output(
+        &["", "real", "fake1", "fake2"],
+        "real/a.foo
+        real/b.foo",
+    );
+}
+
 /// Explicit root path
 #[test]
 fn test_explicit_root_path() {
