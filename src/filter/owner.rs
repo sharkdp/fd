@@ -15,9 +15,19 @@ enum Check<T> {
 }
 
 impl OwnerFilter {
-    pub fn from_string(input: &str) -> Result<Self> {
+    /// Parses an owner constraint
+    /// Returns an error if the string is invalid
+    /// Returns Ok(None) when string is acceptable but a noop (such as "" or ":")
+    pub fn from_string(input: &str) -> Result<Option<Self>> {
         let mut it = input.split(':');
         let (fst, snd) = (it.next(), it.next());
+
+        if it.next().is_some() {
+            return Err(anyhow!(
+                "more than one ':' present in owner string '{}'. See 'fd --help'.",
+                input
+            ));
+        }
 
         let uid = Check::parse(fst, |s| {
             s.parse()
@@ -33,12 +43,9 @@ impl OwnerFilter {
         })?;
 
         if let (Check::Ignore, Check::Ignore) = (uid, gid) {
-            Err(anyhow!(
-                "'{}' is not a valid user/group specifier. See 'fd --help'.",
-                input
-            ))
+            Ok(None)
         } else {
-            Ok(OwnerFilter { uid, gid })
+            Ok(Some(OwnerFilter { uid, gid }))
         }
     }
 
@@ -99,15 +106,18 @@ mod owner_parsing {
 
     use super::Check::*;
     owner_tests! {
-        empty:      ""      => Err(_),
-        uid_only:   "5"     => Ok(OwnerFilter { uid: Equal(5), gid: Ignore    }),
-        uid_gid:    "9:3"   => Ok(OwnerFilter { uid: Equal(9), gid: Equal(3)  }),
-        gid_only:   ":8"    => Ok(OwnerFilter { uid: Ignore,   gid: Equal(8)  }),
-        colon_only: ":"     => Err(_),
-        trailing:   "5:"    => Ok(OwnerFilter { uid: Equal(5), gid: Ignore    }),
+        empty:      ""      => Ok(None),
+        uid_only:   "5"     => Ok(Some(OwnerFilter { uid: Equal(5), gid: Ignore     })),
+        uid_gid:    "9:3"   => Ok(Some(OwnerFilter { uid: Equal(9), gid: Equal(3)   })),
+        gid_only:   ":8"    => Ok(Some(OwnerFilter { uid: Ignore,   gid: Equal(8)   })),
+        colon_only: ":"     => Ok(None),
+        trailing:   "5:"    => Ok(Some(OwnerFilter { uid: Equal(5), gid: Ignore     })),
 
-        uid_negate: "!5"    => Ok(OwnerFilter { uid: NotEq(5), gid: Ignore    }),
-        both_negate:"!4:!3" => Ok(OwnerFilter { uid: NotEq(4), gid: NotEq(3)  }),
-        uid_not_gid:"6:!8"  => Ok(OwnerFilter { uid: Equal(6), gid: NotEq(8)  }),
+        uid_negate: "!5"    => Ok(Some(OwnerFilter { uid: NotEq(5), gid: Ignore     })),
+        both_negate:"!4:!3" => Ok(Some(OwnerFilter { uid: NotEq(4), gid: NotEq(3)   })),
+        uid_not_gid:"6:!8"  => Ok(Some(OwnerFilter { uid: Equal(6), gid: NotEq(8)   })),
+
+        more_colons:"3:5:"  => Err(_),
+        only_colons:"::"    => Err(_),
     }
 }
