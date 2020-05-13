@@ -22,6 +22,7 @@ use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
+use crate::error::print_error;
 use crate::exec::CommandTemplate;
 use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
@@ -90,7 +91,13 @@ fn run() -> Result<ExitCode> {
                     ))
                 }
             })
-            .collect::<Result<Vec<_>>>()?,
+            .inspect(|res| {
+                if let Err(e) = res {
+                    print_error(format!("{}", e))
+                }
+            })
+            .filter_map(Result::ok)
+            .collect::<Vec<_>>(),
         None => vec![current_directory.to_path_buf()],
     };
 
