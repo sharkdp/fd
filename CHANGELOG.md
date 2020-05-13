@@ -2,7 +2,7 @@
 
 ## Features
 
-
+- Add new `--owner [user][:group]` filter. See #307 (pull #581) (@alexmaco)
 
 ## Bugfixes
 

@@ -224,6 +224,15 @@ Examples:
   \-\-changed-before "2018-10-27 10:00:00"
   \-\-change-older-than 2weeks
 .TP
+.BI "-o, \-\-owner " [user][:group]
+Filter files by their user and/or group. Format: [(user|uid)][:(group|gid)]. Either side
+is optional. Precede either side with a '!' to exclude files instead.
+
+Examples:
+  \-\-owner john
+  \-\-owner :students
+  \-\-owner "!john:students"
+.TP
 .BI "\-x, \-\-exec " command
 Execute
 .I command
