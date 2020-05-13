@@ -134,8 +134,6 @@ fn test_multi_file_with_missing() {
         real/b.foo",
     );
 
-    te.assert_output(&["a.foo", "real"], "real/a.foo");
-
     te.assert_output(
         &["", "real", "fake1", "fake2"],
         "real/a.foo
