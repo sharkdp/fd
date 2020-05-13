@@ -554,6 +554,29 @@ After installing `find-file-in-project`, add the line `(setq ffip-use-rust-fd t)
 In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alternatively, run
 `M-x find-file-in-project` to list all available files in the project.
 
+#### Printing fd's output as a tree
+
+To format the output of `fd` similar to the `tree` command, install [`as-tree`] and pipe the output
+of `fd` to `as-tree`:
+```bash
+fd | as-tree
+```
+
+This can be more useful than running `tree` by itself because `tree` does not ignore any files by
+default, nor does it support as rich a set of options as `fd` does to control what to print:
+```bash
+❯ fd --extension rs | as-tree
+.
+├── build.rs
+└── src
+    ├── app.rs
+    └── error.rs
+```
+
+For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
+
+[`as-tree`]: https://github.com/jez/as-tree
+
 ## License
 Copyright (c) 2017-2020 The fd developers
 
