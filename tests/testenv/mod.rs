@@ -240,14 +240,23 @@ impl TestEnv {
         }
     }
 
+    /// Assert that calling *fd* with the specified arguments produces the expected error,
+    /// and does not succeed.
+    pub fn assert_failure_with_error(&self, args: &[&str], expected: &str) {
+        let status = self.assert_error_subdirectory(".", args, expected);
+        if status.success() {
+            panic!("error '{}' did not occur.", expected);
+        }
+    }
+
     /// Assert that calling *fd* with the specified arguments produces the expected error.
-    pub fn assert_error(&self, args: &[&str], expected: &str) {
+    pub fn assert_error(&self, args: &[&str], expected: &str) -> process::ExitStatus {
         self.assert_error_subdirectory(".", args, expected)
     }
 
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces an error with the expected message.
-    fn assert_error_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) {
+    fn assert_error_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) -> process::ExitStatus {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
@@ -256,15 +265,22 @@ impl TestEnv {
         // Run *fd*.
         let output = cmd.output().expect("fd output");
 
-        // Check for exit status.
-        if output.status.success() {
-            panic!("error '{}' did not occur.", expected);
-        }
+
 
         // Compare actual output to expected output.
-        let actual = String::from_utf8_lossy(&output.stderr);
-        if !actual.starts_with(expected) {
-            panic!(format_output_error(args, &expected, &actual));
+        // Normalize both expected and actual output.
+        let expected_error = normalize_output(expected, true, self.normalize_line);
+        let actual_err = normalize_output(
+            &String::from_utf8_lossy(&output.stderr),
+            false,
+            self.normalize_line,
+        );
+
+        // Compare actual output to expected output.
+        if !actual_err.trim_start().starts_with(&expected_error) {
+            panic!(format_output_error(args, &expected_error, &actual_err));
         }
+
+        return output.status;
     }
 }
