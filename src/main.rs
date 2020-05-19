@@ -98,7 +98,7 @@ fn run() -> Result<ExitCode> {
 
     // Check if we have no valid search paths.
     if dir_vec.is_empty() {
-      anyhow!("No valid search paths given.");
+      return Err(anyhow!("No valid search paths given."));
     }
 
     if matches.is_present("absolute-path") {
