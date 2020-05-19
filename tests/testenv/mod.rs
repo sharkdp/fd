@@ -256,7 +256,12 @@ impl TestEnv {
 
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces an error with the expected message.
-    fn assert_error_subdirectory<P: AsRef<Path>>(&self, path: P, args: &[&str], expected: &str) -> process::ExitStatus {
+    fn assert_error_subdirectory<P: AsRef<Path>>(
+        &self,
+        path: P,
+        args: &[&str],
+        expected: &str,
+    ) -> process::ExitStatus {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
