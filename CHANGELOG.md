@@ -4,6 +4,7 @@
 
 - Add new `--owner [user][:group]` filter. See #307 (pull #581) (@alexmaco)
 - Add support for a global ignore file (`~/.config/fd/ignore` on Unix), see #575 (@soedirgo)
+- Do not exit immediately if one of the search paths is missing, see #587 (@DJRHails)
 
 ## Bugfixes
 
