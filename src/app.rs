@@ -386,15 +386,15 @@ pub fn build_app() -> App<'static, 'static> {
                         '-': file size must be less than or equal to this\n   \
                         'NUM':  The numeric size (e.g. 500)\n   \
                         'UNIT': The units for NUM. They are not case-sensitive.\n\
-                     Allowed unit values:\n   \
-                         'b':  bytes\n   \
-                         'k':  kilobytes\n   \
-                         'm':  megabytes\n   \
-                         'g':  gigabytes\n   \
-                         't':  terabytes\n   \
-                         'ki': kibibytes\n   \
-                         'mi': mebibytes\n   \
-                         'gi': gibibytes\n   \
+                     Allowed unit values:\n    \
+                         'b':  bytes\n    \
+                         'k':  kilobytes (base ten, 10^3 = 1000 bytes)\n    \
+                         'm':  megabytes\n    \
+                         'g':  gigabytes\n    \
+                         't':  terabytes\n    \
+                         'ki': kibibytes (base two, 2^10 = 1024 bytes)\n    \
+                         'mi': mebibytes\n    \
+                         'gi': gibibytes\n    \
                          'ti': tebibytes",
                 ),
         )
