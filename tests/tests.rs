@@ -128,6 +128,11 @@ fn test_multi_file_with_missing() {
         "real/a.foo",
     );
 
+    te.assert_error(
+        &["a.foo", "real", "fake"],
+        "[fd error]: Search path 'fake' is not a directory.",
+    );
+
     te.assert_output(
         &["", "real", "fake"],
         "real/a.foo
@@ -138,6 +143,19 @@ fn test_multi_file_with_missing() {
         &["", "real", "fake1", "fake2"],
         "real/a.foo
         real/b.foo",
+    );
+
+    te.assert_error(
+        &["", "real", "fake1", "fake2"],
+        "[fd error]: Search path 'fake1' is not a directory.
+        [fd error]: Search path 'fake2' is not a directory.",
+    );
+
+    te.assert_failure_with_error(
+        &["", "fake1", "fake2"],
+        "[fd error]: Search path 'fake1' is not a directory.
+        [fd error]: Search path 'fake2' is not a directory.
+        [fd error]: No valid search paths given.",
     );
 }
 
