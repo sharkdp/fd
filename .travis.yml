@@ -16,6 +16,7 @@ matrix:
       rust: stable
       env: TARGET=i686-unknown-linux-musl
     - os: osx
+      osx_image: xcode11.4 # Catalina
       rust: stable
       env: TARGET=x86_64-apple-darwin
     - os: linux
