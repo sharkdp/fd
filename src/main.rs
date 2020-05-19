@@ -91,14 +91,17 @@ fn run() -> Result<ExitCode> {
                 dir_vec.push(path_buffer);
             }
             else {
-                print_error(format!("Search path '{}' is not a directory.", path_buffer.to_string_lossy()));
+                print_error(format!(
+                    "Search path '{}' is not a directory.",
+                    path_buffer.to_string_lossy()
+                ));
             }
         }
     }
 
     // Check if we have no valid search paths.
     if dir_vec.is_empty() {
-      return Err(anyhow!("No valid search paths given."));
+        return Err(anyhow!("No valid search paths given."));
     }
 
     if matches.is_present("absolute-path") {

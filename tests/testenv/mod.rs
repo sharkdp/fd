@@ -265,9 +265,6 @@ impl TestEnv {
         // Run *fd*.
         let output = cmd.output().expect("fd output");
 
-
-
-        // Compare actual output to expected output.
         // Normalize both expected and actual output.
         let expected_error = normalize_output(expected, true, self.normalize_line);
         let actual_err = normalize_output(
