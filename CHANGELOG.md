@@ -1,6 +1,13 @@
 # Upcoming release
 
 ## Features
+## Bugfixes
+## Changes
+## Other
+
+# v8.1.0
+
+## Features
 
 - Add new `--owner [user][:group]` filter. See #307 (pull #581) (@alexmaco)
 - Add support for a global ignore file (`~/.config/fd/ignore` on Unix), see #575 (@soedirgo)
@@ -9,16 +16,13 @@
 ## Bugfixes
 
 - Reverted a change from fd 8.0 that enabled colors on all Windows terminals (see below) in order to support older Windows versions again, see #577. Unfortunately, this re-opens #469
+- Fix segfault caused by jemalloc on macOS Catalina, see #498
 - Fix `--glob` behavior with empty pattern, see #579 (@SeamusConnor)
 - Fix `--list-details` on FreeBSD, DragonFly BSD, OpenBSD and NetBSD. See #573 (@t6)
 
 ## Changes
 
-
-
-## Other
-
-
+- Updated documentation for `--size`, see #584
 
 # v8.0.0
 
