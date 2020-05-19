@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::env;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
@@ -85,7 +84,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
 
     if config.read_global_ignore {
         #[cfg(target_os = "macos")]
-        let config_dir_op = env::var_os("XDG_CONFIG_HOME")
+        let config_dir_op = std::env::var_os("XDG_CONFIG_HOME")
             .map(PathBuf::from)
             .filter(|p| p.is_absolute())
             .or_else(|| dirs::home_dir().map(|d| d.join(".config")));
