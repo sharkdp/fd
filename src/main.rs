@@ -79,33 +79,32 @@ fn run() -> Result<ExitCode> {
         .values_of_os("path")
         .or_else(|| matches.values_of_os("search-path"));
 
-    // Assign current directory to search vector.
-    let mut dir_vec: Vec<_> = vec![current_directory.to_path_buf()];
-
-    // Assign any valid arguments to search vector.
-    if let Some(paths) = passed_arguments {
-        dir_vec = vec![];
+    let mut search_paths = if let Some(paths) = passed_arguments {
+        let mut directories = vec![];
         for path in paths {
             let path_buffer = PathBuf::from(path);
             if filesystem::is_dir(&path_buffer) {
-                dir_vec.push(path_buffer);
-            }
-            else {
+                directories.push(path_buffer);
+            } else {
                 print_error(format!(
                     "Search path '{}' is not a directory.",
                     path_buffer.to_string_lossy()
                 ));
             }
         }
-    }
+
+        directories
+    } else {
+        vec![current_directory.to_path_buf()]
+    };
 
     // Check if we have no valid search paths.
-    if dir_vec.is_empty() {
+    if search_paths.is_empty() {
         return Err(anyhow!("No valid search paths given."));
     }
 
     if matches.is_present("absolute-path") {
-        dir_vec = dir_vec
+        search_paths = search_paths
             .iter()
             .map(|path_buffer| {
                 path_buffer
@@ -410,7 +409,7 @@ fn run() -> Result<ExitCode> {
             )
         })?;
 
-    walk::scan(&dir_vec, Arc::new(re), Arc::new(config))
+    walk::scan(&search_paths, Arc::new(re), Arc::new(config))
 }
 
 fn main() {
