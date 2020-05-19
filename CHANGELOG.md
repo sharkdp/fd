@@ -8,6 +8,7 @@
 
 ## Bugfixes
 
+- Reverted a change from fd 8.0 that enabled colors on all Windows terminals (see below) in order to support older Windows versions again, see #577. Unfortunately, this re-opens #469
 - Fix `--glob` behavior with empty pattern, see #579 (@SeamusConnor)
 - Fix `--list-details` on FreeBSD, DragonFly BSD, OpenBSD and NetBSD. See #573 (@t6)
 
