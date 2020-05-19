@@ -1238,22 +1238,22 @@ fn test_exec_batch() {
             "",
         );
 
-        te.assert_error(
+        te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo", "{}", "{}"],
             "[fd error]: Only one placeholder allowed for batch commands",
         );
 
-        te.assert_error(
+        te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo", "{/}", ";", "-x", "echo"],
             "error: The argument '--exec <cmd>' cannot be used with '--exec-batch <cmd>'",
         );
 
-        te.assert_error(
+        te.assert_failure_with_error(
             &["foo", "--exec-batch"],
             "error: The argument '--exec-batch <cmd>' requires a value but none was supplied",
         );
 
-        te.assert_error(
+        te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo {}"],
             "[fd error]: First argument of exec-batch is expected to be a fixed executable",
         );
