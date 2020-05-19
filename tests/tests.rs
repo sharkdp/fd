@@ -123,10 +123,7 @@ fn test_multi_file_with_missing() {
     let dirs = &["real"];
     let files = &["real/a.foo", "real/b.foo"];
     let te = TestEnv::new(dirs, files);
-    te.assert_output(
-        &["a.foo", "real", "fake"],
-        "real/a.foo",
-    );
+    te.assert_output(&["a.foo", "real", "fake"], "real/a.foo");
 
     te.assert_error(
         &["a.foo", "real", "fake"],
