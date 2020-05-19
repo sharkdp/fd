@@ -157,7 +157,7 @@ fn run() -> Result<ExitCode> {
     let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
 
     #[cfg(windows)]
-    ansi_term::enable_ansi_support().ok();
+    let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
 
     let ls_colors = if colored_output {
         Some(LsColors::from_env().unwrap_or_default())
