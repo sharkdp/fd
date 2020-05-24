@@ -148,17 +148,21 @@ fn run() -> Result<ExitCode> {
     let case_sensitive = !matches.is_present("ignore-case")
         && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
 
+
+    #[cfg(windows)]
+    let ansi_colors_support = ansi_term::enable_ansi_support().is_ok();
+
+    #[cfg(not(windows))]
+    let ansi_colors_support = true;
+
     let interactive_terminal = atty::is(Stream::Stdout);
     let colored_output = match matches.value_of("color") {
         Some("always") => true,
         Some("never") => false,
-        _ => env::var_os("NO_COLOR").is_none() && interactive_terminal,
+        _ => ansi_colors_support && env::var_os("NO_COLOR").is_none() && interactive_terminal,
     };
 
     let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
-
-    #[cfg(windows)]
-    let colored_output = colored_output && ansi_term::enable_ansi_support().is_ok();
 
     let ls_colors = if colored_output {
         Some(LsColors::from_env().unwrap_or_default())
