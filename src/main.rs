@@ -148,9 +148,9 @@ fn run() -> Result<ExitCode> {
     let case_sensitive = !matches.is_present("ignore-case")
         && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
 
-
     #[cfg(windows)]
-    let ansi_colors_support = ansi_term::enable_ansi_support().is_ok();
+    let ansi_colors_support =
+        ansi_term::enable_ansi_support().is_ok() || std::env::var_os("TERM").is_some();
 
     #[cfg(not(windows))]
     let ansi_colors_support = true;
