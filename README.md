@@ -130,11 +130,6 @@ The number of threads used for command execution can be set with the `--threads`
 
 ## Installation
 
-[![Packaging status](https://repology.org/badge/vertical-allrepos/fd.svg)](https://repology.org/project/fd/versions)
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/rust:fd-find.svg)](https://repology.org/project/rust:fd-find/versions)
-
-
 [![Packaging status](https://repology.org/badge/vertical-allrepos/fd-find.svg)](https://repology.org/project/fd-find/versions)
 
 ### On Ubuntu
