@@ -93,8 +93,8 @@ in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
 variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
 of this variable is set by the `dircolors` command which provides a convenient configuration format
 to define colors for different file formats.
-On most distributions, `LS_COLORS` should be set already. If you are looking for alternative, more
-complete (and more colorful) variants, see
+On most distributions, `LS_COLORS` should be set already. If you are on Windows or if you are looking
+for alternative, more complete (or more colorful) variants, see [here](https://github.com/sharkdp/vivid),
 [here](https://github.com/seebi/dircolors-solarized) or
 [here](https://github.com/trapd00r/LS_COLORS).
 
