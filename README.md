@@ -182,6 +182,12 @@ from the official sources, provided you have the appropriate repository enabled:
 apk add fd
 ```
 
+### On Void Linux
+You can install `fd` from the official repository:
+```
+xbps-install fd
+```
+
 ### On Arch Linux
 
 You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
