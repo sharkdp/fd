@@ -576,6 +576,11 @@ For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
 
 [`as-tree`]: https://github.com/jez/as-tree
 
+## Maintainers
+
+- [sharkdp](https://github.com/sharkdp)
+- [tmccombs](https://github.com/tmccombs)
+
 ## License
 Copyright (c) 2017-2020 The fd developers
 
