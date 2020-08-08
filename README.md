@@ -136,7 +136,7 @@ The number of threads used for command execution can be set with the `--threads`
 *... and other Debian-based Linux distributions.*
 
 If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
-[officially maintained package](https://packages.ubuntu.com/disco/fd-find):
+[officially maintained package](https://packages.ubuntu.com/fd-find):
 ```
 sudo apt install fd-find
 ```
