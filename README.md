@@ -249,6 +249,13 @@ You can install [the fd-find package](https://www.freshports.org/sysutils/fd) fr
 pkg install fd-find
 ```
 
+### On OpenBSD
+
+You can install the [fd-find](https://openports.se/sysutils/fd) package from the official repo:
+```
+pkg_add fd
+```
+
 ### From NPM
 
 On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
