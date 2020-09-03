@@ -12,6 +12,7 @@ impl TimeFilter {
         humantime::parse_duration(s)
             .map(|duration| *ref_time - duration)
             .or_else(|_| humantime::parse_rfc3339_weak(s))
+            .or_else(|_| humantime::parse_rfc3339_weak(&(s.to_owned() + " 00:00:00")))
             .ok()
     }
 
