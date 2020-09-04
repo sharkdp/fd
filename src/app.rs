@@ -411,6 +411,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("changed-within")
                 .long("changed-within")
+                .alias("change-newer-than")
                 .alias("newer")
                 .takes_value(true)
                 .value_name("date|dur")
@@ -428,6 +429,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("changed-before")
                 .long("changed-before")
+                .alias("change-older-than")
                 .alias("older")
                 .takes_value(true)
                 .value_name("date|dur")
