@@ -52,8 +52,6 @@ matrix:
       rust: 1.36.0
       env: TARGET=x86_64-apple-darwin
 
-sudo: required
-
 before_install:
   - ci/before_install.bash
 
@@ -94,7 +92,7 @@ deploy:
     - $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
     - $PROJECT_NAME*.deb
   # don't delete artifacts from previous stage
-  skip_cleanup: true
+  cleanup: false
   on:
     # deploy only if we push a tag
     tags: true
