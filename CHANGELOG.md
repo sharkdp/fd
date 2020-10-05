@@ -1,9 +1,14 @@
 # Upcoming release
 
 ## Features
+
+- Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
+
 ## Bugfixes
 ## Changes
 ## Other
+
+- Added `zsh` completion files, see #654 and #189 (@smancill)
 
 # v8.1.1
 
