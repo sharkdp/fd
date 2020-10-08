@@ -5,6 +5,9 @@
 - Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
 
 ## Bugfixes
+
+- Disable jemalloc on Android, see #662
+
 ## Changes
 ## Other
 

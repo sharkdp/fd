@@ -34,7 +34,7 @@ use crate::regex_helper::pattern_has_uppercase_char;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
-#[cfg(all(not(windows), not(target_os = "macos"), not(target_env = "musl")))]
+#[cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_env = "musl")))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
