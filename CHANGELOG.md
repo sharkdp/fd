@@ -1,6 +1,9 @@
 # Upcoming release
 
 ## Features
+
+- Add new `--prune` flag, see #535 (@reima)
+
 ## Bugfixes
 ## Changes
 ## Other
