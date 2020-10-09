@@ -102,6 +102,9 @@ _fd() {
     '(--exact-depth --min-depth)--min-depth=[set directory depth to descend before start searching]:depth'
     '(--exact-depth -d --max-depth --maxdepth --min-depth)--exact-depth=[only search at the exact given directory depth]:depth'
 
+    + prune # pruning
+    "--prune[don't traverse into matching directories]"
+
     + filter-misc # filter search
     '*'{-t+,--type=}"[filter search by type]:type:(($fd_types))"
     '*'{-e+,--extension=}'[filter search by file extension]:extension'
