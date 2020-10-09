@@ -137,20 +137,21 @@ version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
-name = "dirs"
-version = "2.0.2"
+name = "dirs-next"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1cbcf9241d9e8d106295bd496bbe2e9cffd5fa098f2a8c9e2bbcbf09773c11a8"
 dependencies = [
  "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
- "dirs-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dirs-sys-next 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "dirs-sys"
-version = "0.3.4"
+name = "dirs-sys-next"
+version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c60f7b8a8953926148223260454befb50c751d3c50e1c178c4fd1ace4083c9a"
 dependencies = [
- "cfg-if 0.1.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.70 (registry+https://github.com/rust-lang/crates.io-index)",
  "redox_users 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
