@@ -353,6 +353,8 @@ X11/xinit/xinitrc
 X11/xinit/xserverrc
 ```
 
+The regular expression syntax used is that of the [rust regex library](https://docs.rs/regex/1.0.0/regex/#syntax).
+
 ### Specifying the root directory
 
 If we want to search a specific directory, it can be given as a second argument to *fd*:
