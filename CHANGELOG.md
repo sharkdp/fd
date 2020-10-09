@@ -2,11 +2,17 @@
 
 ## Features
 
+- Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
 - Add new `--prune` flag, see #535 (@reima)
 
 ## Bugfixes
+
+- Disable jemalloc on Android, see #662
+
 ## Changes
 ## Other
+
+- Added `zsh` completion files, see #654 and #189 (@smancill)
 
 # v8.1.1
 

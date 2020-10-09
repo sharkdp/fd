@@ -1,5 +1,5 @@
 language: rust
-matrix:
+jobs:
   include:
     # Stable channel.
     - os: linux
@@ -52,8 +52,6 @@ matrix:
       rust: 1.36.0
       env: TARGET=x86_64-apple-darwin
 
-sudo: required
-
 before_install:
   - ci/before_install.bash
 
@@ -77,12 +75,12 @@ before_deploy:
 
 deploy:
   provider: releases
-  # NOTE updating the `api_key.secure`
+  # NOTE updating the `token.secure`
   # - go to: https://github.com/settings/tokens/new
   # - generate new token using `public_repo` scope
   # - encrypt it using: `travis encrypt API_KEY_HERE`
   # - paste the output below
-  api_key:
+  token:
     secure: "RyFdh2lpDmaNhPar7ezsb18Xz+6XFM40y7cZCDRML+Sk+eYK1xtDNfEhDRJU5Qo1ReVsByds/QJTSXr2KmZPk3lXwG3SiN7UtrLUxCxFr6qrcM/iujlKTf5UxeRklkzPXxnH95DEyEgxvgbVhWTGVDWoyMnrVQXZKDy6z1iAiYB5h2Zl1rs+MRb/Enlt5q6XIKAlG0ppGtl8CfYudq5ZiqfJaMWTt9SWm2YskC8FeMc0S3IM6/EhTvaNYLdaarFqVWQEVql+6oCuL3ayPzmGyxLdxM37tIMNQ0f97zxqWodacXTG5ULdRD8if1l/SmTujrtjbZ0KWRjsjOq4vBtxBJKGdprcSiB0xH/hToqqtTSO0z5FPXi5cB8UlK6YLDDHcP3kXNer8CYMLI1VPaUDLTF57/0/RPi2DZiiGfZsIAS6PsICbHdTQVzxQckM4lN1vnAGgkhXIMbztml21pv+QrGy98OZJ0ubf5ztgQhpT0WPH4JXT8M6htsoo8dZf8lQ5aLfmW9RKePJDqixQwPqmimPIkrlxRDTDGII0ZAZws7l779eOLmEcM2tH2HbsUKUCZIG/pRHLSlP45Jn2bULGzuXZ2daq70z6zvIbom0CUzSXIvdTXEZI2AM5RBvPYGGaKI8YlxgRdQvJp3h0BzPdFOXI3RAxscCY7PJpa/RdIg="
   # for uploading multiple files
   file_glob: true
@@ -94,7 +92,7 @@ deploy:
     - $PROJECT_NAME-$TRAVIS_TAG-$TARGET.*
     - $PROJECT_NAME*.deb
   # don't delete artifacts from previous stage
-  skip_cleanup: true
+  cleanup: false
   on:
     # deploy only if we push a tag
     tags: true
