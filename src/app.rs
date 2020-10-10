@@ -483,7 +483,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .hidden_short_help(true)
                 .long_help(
-                    "Change the current working directory of fd to the provided path. The \
+                    "Change the current working directory of fd to the provided path. This \
                          means that search results will be shown with respect to the given base \
                          path. Note that relative paths which are passed to fd via the positional \
                          <path> argument or the '--search-path' option will also be resolved \
