@@ -1100,6 +1100,7 @@ fn test_symlink_and_full_path_abs_path() {
         ),
     );
 }
+
 /// Exclude patterns (--exclude)
 #[test]
 fn test_excludes() {
@@ -1146,6 +1147,71 @@ fn test_excludes() {
         one/two/C.Foo2
         one/two/three
         one/two/three/directory_foo
+        symlink",
+    );
+}
+
+/// Exclude regex patterns (--exclude-regex)
+#[test]
+fn test_regex_excludes() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--exclude-regex", r"\.foo$"],
+        "one
+        one/two
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/directory_foo
+        e1 e2
+        symlink",
+    );
+
+    te.assert_output(
+        &["--exclude-regex", r"\.foo$", "--exclude-regex", r"\.Foo2$"],
+        "one
+        one/two
+        one/two/three
+        one/two/three/directory_foo
+        e1 e2
+        symlink",
+    );
+
+    te.assert_output(
+        &[
+            "--exclude-regex",
+            r"\.foo$",
+            "--exclude-regex",
+            r"\.Foo2$",
+            "foo",
+        ],
+        "one/two/three/directory_foo",
+    );
+
+    te.assert_output(
+        &["--exclude-regex", r"one/two", "foo"],
+        "a.foo
+        one/b.foo",
+    );
+
+    te.assert_output(
+        &["--exclude-regex", r"one/.+\.foo$"],
+        "a.foo
+        e1 e2
+        one
+        one/two
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["--exclude-regex", r"foo"],
+        "one
+        one/two
+        one/two/three
+        e1 e2
         symlink",
     );
 }
