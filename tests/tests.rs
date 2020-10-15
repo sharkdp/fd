@@ -1214,6 +1214,20 @@ fn test_regex_excludes() {
         e1 e2
         symlink",
     );
+
+    te.assert_output(
+        &["--exclude-regex", r"Foo"],
+        "a.foo
+        e1 e2
+        one
+        one/b.foo
+        one/two
+        one/two/c.foo
+        one/two/three/d.foo
+        one/two/three
+        one/two/three/directory_foo
+        symlink"
+    );
 }
 
 /// Shell script execution (--exec)

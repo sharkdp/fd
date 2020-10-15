@@ -80,6 +80,20 @@ fn run() -> Result<ExitCode> {
         .transpose()?
         .unwrap_or("");
 
+    // Get the exclude regex patterns
+    let exclude_regex_patterns = matches
+        .values_of_os("exclude-regex")
+        .map(|ps| -> Result<Vec<&str>> {
+            let mut str_ps = Vec::new();
+            for p in ps {
+                str_ps.push(p.to_str().ok_or_else(|| {
+                    anyhow!("The exclude regex pattern includes invalid UTF-8 sequences.")
+                })?);
+            }
+            Ok(str_ps)
+        })
+        .transpose()?;
+
     // Get one or more root directories to search.
     let passed_arguments = matches
         .values_of_os("path")
@@ -149,9 +163,14 @@ fn run() -> Result<ExitCode> {
     };
 
     // The search will be case-sensitive if the command line flag is set or
-    // if the pattern has an uppercase character (smart case).
+    // if the pattern or the exclude regex pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
-        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
+        && (matches.is_present("case-sensitive")
+            || pattern_has_uppercase_char(&pattern_regex)
+            || exclude_regex_patterns
+                .as_ref()
+                .map(|ps| ps.iter().any(|s| pattern_has_uppercase_char(s)))
+                .unwrap_or(false));
 
     #[cfg(windows)]
     let ansi_colors_support =
@@ -383,10 +402,9 @@ fn run() -> Result<ExitCode> {
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())
             .unwrap_or_else(|| vec![]),
-        exclude_regex_patterns: matches
-            .values_of("exclude-regex")
+        exclude_regex_patterns: exclude_regex_patterns
             .map(|ps| {
-                RegexSetBuilder::new(ps)
+                RegexSetBuilder::new(ps.iter())
                     .case_insensitive(!case_sensitive)
                     .dot_matches_new_line(true)
                     .build()
