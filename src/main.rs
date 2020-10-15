@@ -34,7 +34,12 @@ use crate::regex_helper::pattern_has_uppercase_char;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
-#[cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_env = "musl")))]
+#[cfg(all(
+    not(windows),
+    not(target_os = "android"),
+    not(target_os = "macos"),
+    not(target_env = "musl")
+))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
@@ -378,6 +383,15 @@ fn run() -> Result<ExitCode> {
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())
             .unwrap_or_else(|| vec![]),
+        exclude_regex_patterns: matches
+            .values_of("exclude-regex")
+            .map(|ps| {
+                RegexSetBuilder::new(ps)
+                    .case_insensitive(!case_sensitive)
+                    .dot_matches_new_line(true)
+                    .build()
+            })
+            .transpose()?,
         ignore_files: matches
             .values_of("ignore-file")
             .map(|vs| vs.map(PathBuf::from).collect())

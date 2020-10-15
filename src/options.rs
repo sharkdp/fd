@@ -78,6 +78,9 @@ pub struct Options {
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
 
+    /// A set of regex patterns that should be excluded from the search.
+    pub exclude_regex_patterns: Option<RegexSet>,
+
     /// A list of custom ignore files.
     pub ignore_files: Vec<PathBuf>,
 

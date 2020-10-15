@@ -331,6 +331,20 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("exclude-regex")
+                .long("exclude-regex")
+                .takes_value(true)
+                .value_name("pattern")
+                .number_of_values(1)
+                .multiple(true)
+                .help("Exclude entries that match the given regex pattern")
+                .long_help(
+                    "Exclude files/directories with a path that match the given regex \
+                        pattern. This overrides any other ignore logic. Multiple exclude \
+                        patterns can be specified.",
+                ),
+        )
+        .arg(
             Arg::with_name("ignore-file")
                 .long("ignore-file")
                 .takes_value(true)

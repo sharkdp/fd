@@ -397,8 +397,18 @@ fn spawn_senders(
                 }
             };
 
+            // Filter out unwanted file names.
             if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
                 return ignore::WalkState::Continue;
+            }
+
+            // Filter out unwanted entries, by `--exclude-regex` option.
+            if let Some(ref exclude_regex_patterns) = config.exclude_regex_patterns {
+                let stripped_entry_path =
+                    filesystem::osstr_to_bytes(filesystem::strip_current_dir(entry_path).as_ref());
+                if exclude_regex_patterns.is_match(&stripped_entry_path) {
+                    return ignore::WalkState::Continue;
+                }
             }
 
             // Filter out unwanted extensions.
