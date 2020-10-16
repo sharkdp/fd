@@ -4,7 +4,6 @@ use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use ansi_term;
 use lscolors::{LsColors, Style};
 
 use crate::exit_codes::ExitCode;
