@@ -218,7 +218,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("prune")
                 .long("prune")
-                .conflicts_with("size")
+                .conflicts_with_all(&["size", "exact-depth"])
                 .hidden_short_help(true)
                 .long_help("Do not traverse into matching directories.")
         )
