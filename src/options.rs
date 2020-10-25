@@ -48,6 +48,9 @@ pub struct Options {
     /// The minimum depth for reported entries, or `None`.
     pub min_depth: Option<usize>,
 
+    /// Whether to stop traversing into matching directories.
+    pub prune: bool,
+
     /// The number of threads to use.
     pub threads: usize,
 

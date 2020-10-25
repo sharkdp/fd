@@ -3,6 +3,7 @@
 ## Features
 
 - Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
+- Add new `--prune` flag, see #535 (@reima)
 
 ## Bugfixes
 

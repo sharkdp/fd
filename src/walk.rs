@@ -494,6 +494,11 @@ fn spawn_senders(
                 return ignore::WalkState::Quit;
             }
 
+            // Apply pruning.
+            if config.prune {
+                return ignore::WalkState::Skip;
+            }
+
             ignore::WalkState::Continue
         })
     });

@@ -758,6 +758,40 @@ fn test_exact_depth() {
     );
 }
 
+/// Pruning (--prune)
+#[test]
+fn test_prune() {
+    let dirs = &["foo/bar", "bar/foo", "baz"];
+    let files = &[
+        "foo/foo.file",
+        "foo/bar/foo.file",
+        "bar/foo.file",
+        "bar/foo/foo.file",
+        "baz/foo.file",
+    ];
+
+    let te = TestEnv::new(dirs, files);
+
+    te.assert_output(
+        &["foo"],
+        "foo
+        foo/foo.file
+        foo/bar/foo.file
+        bar/foo.file
+        bar/foo
+        bar/foo/foo.file
+        baz/foo.file",
+    );
+
+    te.assert_output(
+        &["--prune", "foo"],
+        "foo
+        bar/foo
+        bar/foo.file
+        baz/foo.file",
+    );
+}
+
 /// Absolute paths (--absolute-path)
 #[test]
 fn test_absolute_path() {

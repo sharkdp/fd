@@ -323,6 +323,7 @@ fn run() -> Result<ExitCode> {
             .value_of("min-depth")
             .or_else(|| matches.value_of("exact-depth"))
             .and_then(|n| usize::from_str_radix(n, 10).ok()),
+        prune: matches.is_present("prune"),
         threads: std::cmp::max(
             matches
                 .value_of("threads")
