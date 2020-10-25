@@ -7,6 +7,7 @@
 
 ## Bugfixes
 
+- Invalid numeric command-line arguments are silently ignored, see #675
 - Disable jemalloc on Android, see #662
 
 ## Changes

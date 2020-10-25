@@ -37,19 +37,19 @@ jobs:
 
     # Minimum Rust supported channel.
     - os: linux
-      rust: 1.36.0
+      rust: 1.40.0
       env: TARGET=x86_64-unknown-linux-gnu
     - os: linux
-      rust: 1.36.0
+      rust: 1.40.0
       env: TARGET=x86_64-unknown-linux-musl
     - os: linux
-      rust: 1.36.0
+      rust: 1.40.0
       env: TARGET=i686-unknown-linux-gnu
     - os: linux
-      rust: 1.36.0
+      rust: 1.40.0
       env: TARGET=i686-unknown-linux-musl
     - os: osx
-      rust: 1.36.0
+      rust: 1.40.0
       env: TARGET=x86_64-apple-darwin
 
 before_install:
