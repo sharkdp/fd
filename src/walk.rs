@@ -402,7 +402,11 @@ fn spawn_senders(
             }
 
             // Filter out unwanted extensions.
-            if let Some(ref exts_regex) = config.extensions {
+            if config.no_extension {
+                if entry_path.extension().is_some() {
+                    return ignore::WalkState::Continue;
+                }
+            } else if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
                     if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
                         return ignore::WalkState::Continue;

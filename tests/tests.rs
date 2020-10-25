@@ -959,6 +959,34 @@ fn test_type_empty() {
     te.assert_output(&["--type", "empty", "--type", "directory"], "dir_empty");
 }
 
+/// No file extension (--no-extension)
+#[test]
+fn test_no_extension() {
+    let te = TestEnv::new(
+        DEFAULT_DIRS,
+        &["a.foo", "aa", "one/b.foo", "one/bb", "one/two/three/d"],
+    );
+
+    te.assert_output(
+        &["--no-extension"],
+        "aa
+        one
+        one/bb
+        one/two
+        one/two/three
+        one/two/three/d
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["--no-extension", "--type", "file"],
+        "aa
+        one/bb
+        one/two/three/d",
+    );
+}
+
 /// File extension (--extension)
 #[test]
 fn test_extension() {

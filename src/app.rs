@@ -277,6 +277,13 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("no-extension")
+                .long("no-extension")
+                .conflicts_with("extension")
+                .hidden_short_help(true)
+                .long_help("Show files with no file extension. This includes directories, use alongside `--type` to filter file type.")
+        )
+        .arg(
             Arg::with_name("exec")
                 .long("exec")
                 .short("x")

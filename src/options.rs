@@ -75,6 +75,9 @@ pub struct Options {
     /// The value (if present) will be a lowercase string without leading dots.
     pub extensions: Option<RegexSet>,
 
+    /// Whether to only show results with no file extension.
+    pub no_extension: bool,
+
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandTemplate>>,
 
