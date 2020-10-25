@@ -34,7 +34,12 @@ use crate::regex_helper::pattern_has_uppercase_char;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
-#[cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_env = "musl")))]
+#[cfg(all(
+    not(windows),
+    not(target_os = "android"),
+    not(target_os = "macos"),
+    not(target_env = "musl")
+))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
@@ -52,7 +57,7 @@ fn run() -> Result<ExitCode> {
         }
         env::set_current_dir(base_directory).with_context(|| {
             format!(
-                "Could not set '{}' as the current working directory.",
+                "Could not set '{}' as the current working directory",
                 base_directory.to_string_lossy()
             )
         })?;
@@ -318,22 +323,38 @@ fn run() -> Result<ExitCode> {
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
             .or_else(|| matches.value_of("exact-depth"))
-            .and_then(|n| usize::from_str_radix(n, 10).ok()),
+            .map(|n| usize::from_str_radix(n, 10))
+            .transpose()
+            .context("Failed to parse argument to --max-depth/--exact-depth")?,
         min_depth: matches
             .value_of("min-depth")
             .or_else(|| matches.value_of("exact-depth"))
-            .and_then(|n| usize::from_str_radix(n, 10).ok()),
+            .map(|n| usize::from_str_radix(n, 10))
+            .transpose()
+            .context("Failed to parse argument to --min-depth/--exact-depth")?,
         prune: matches.is_present("prune"),
         threads: std::cmp::max(
             matches
                 .value_of("threads")
-                .and_then(|n| usize::from_str_radix(n, 10).ok())
+                .map(|n| usize::from_str_radix(n, 10))
+                .transpose()
+                .context(format!("Failed to parse number of threads"))?
+                .map(|n| {
+                    if n > 0 {
+                        Ok(n)
+                    } else {
+                        Err(anyhow!("Number of threads must be positive."))
+                    }
+                })
+                .transpose()?
                 .unwrap_or_else(num_cpus::get),
             1,
         ),
         max_buffer_time: matches
             .value_of("max-buffer-time")
-            .and_then(|n| u64::from_str_radix(n, 10).ok())
+            .map(|n| u64::from_str_radix(n, 10))
+            .transpose()
+            .context("Failed to parse max. buffer time argument")?
             .map(time::Duration::from_millis),
         ls_colors,
         interactive_terminal,
@@ -391,8 +412,10 @@ fn run() -> Result<ExitCode> {
         path_separator,
         max_results: matches
             .value_of("max-results")
-            .and_then(|n| usize::from_str_radix(n, 10).ok())
-            .filter(|&n| n != 0)
+            .map(|n| usize::from_str_radix(n, 10))
+            .transpose()
+            .context("Failed to parse --max-results argument")?
+            .filter(|&n| n > 0)
             .or_else(|| {
                 if matches.is_present("max-one-result") {
                     Some(1)
@@ -425,7 +448,7 @@ fn main() {
             process::exit(exit_code.into());
         }
         Err(err) => {
-            eprintln!("[fd error]: {}", err);
+            eprintln!("[fd error]: {:#}", err);
             process::exit(ExitCode::GeneralError.into());
         }
     }
