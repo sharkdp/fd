@@ -7,6 +7,7 @@
 
 ## Bugfixes
 
+- Avoid panic when performing limited searches in directories with restricted permissions, see #678
 - Invalid numeric command-line arguments are silently ignored, see #675
 - Disable jemalloc on Android, see #662
 
