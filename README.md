@@ -281,7 +281,7 @@ cargo build
 cargo test
 
 # Install
-cargo install
+cargo install --path .
 ```
 
 ## Command-line options
