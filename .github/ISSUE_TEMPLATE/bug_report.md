@@ -9,6 +9,11 @@ assignees: ''
 
 **Describe the bug you encountered:**
 
+<!--
+Please check out the troubleshooting section first:
+  https://github.com/sharkdp/fd#troubleshooting
+-->
+
 
 **Describe what you expected to happen:**
 
