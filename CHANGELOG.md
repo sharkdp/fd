@@ -4,6 +4,7 @@
 
 - Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
 - Add new `--prune` flag, see #535 (@reima)
+- Add support for exact sizes in `--size` filter, see #669 (pull #696)
 
 ## Bugfixes
 
