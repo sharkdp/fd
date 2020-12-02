@@ -1387,6 +1387,9 @@ fn test_size() {
 
     // Zero sized files.
     te.assert_output(&["", "--size", "-0B"], "0_bytes.foo");
+    te.assert_output(&["", "--size", "0B"], "0_bytes.foo");
+    te.assert_output(&["", "--size=0B"], "0_bytes.foo");
+    te.assert_output(&["", "-S", "0B"], "0_bytes.foo");
 
     // Files with 2 bytes or more.
     te.assert_output(
@@ -1402,6 +1405,9 @@ fn test_size() {
 
     // Files with size between 1 byte and 11 bytes.
     te.assert_output(&["", "--size", "+1B", "--size", "-11B"], "11_bytes.foo");
+
+    // Files with size equal 11 bytes.
+    te.assert_output(&["", "--size", "11B"], "11_bytes.foo");
 
     // Files with size between 1 byte and 30 bytes.
     te.assert_output(
@@ -1434,6 +1440,7 @@ fn test_size() {
 
     // Files with size equal 4 kibibytes.
     te.assert_output(&["", "--size", "+4ki", "--size", "-4ki"], "4_kibibytes.foo");
+    te.assert_output(&["", "--size", "4ki"], "4_kibibytes.foo");
 }
 
 #[cfg(test)]
