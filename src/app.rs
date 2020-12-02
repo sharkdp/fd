@@ -390,7 +390,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
                         '+': file size must be greater than or equal to this\n   \
-                        '-': file size must be less than or equal to this\n   \
+                        '-': file size must be less than or equal to this\n\
+                     If neither '+' nor '-' is specified, file size must be exactly equal to this.\n   \
                         'NUM':  The numeric size (e.g. 500)\n   \
                         'UNIT': The units for NUM. They are not case-sensitive.\n\
                      Allowed unit values:\n    \

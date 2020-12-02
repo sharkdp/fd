@@ -2,13 +2,14 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 lazy_static! {
-    static ref SIZE_CAPTURES: Regex = Regex::new(r"(?i)^([+-])(\d+)(b|[kmgt]i?b?)$").unwrap();
+    static ref SIZE_CAPTURES: Regex = Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap();
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SizeFilter {
     Max(u64),
     Min(u64),
+    Equals(u64),
 }
 
 // SI prefixes (powers of 10)
@@ -49,16 +50,19 @@ impl SizeFilter {
         };
 
         let size = quantity * multiplier;
-        Some(match limit_kind {
-            "+" => SizeFilter::Min(size),
-            _ => SizeFilter::Max(size),
-        })
+        match limit_kind {
+            "+" => Some(SizeFilter::Min(size)),
+            "-" => Some(SizeFilter::Max(size)),
+            "" => Some(SizeFilter::Equals(size)),
+            _ => None
+        }
     }
 
     pub fn is_within(&self, size: u64) -> bool {
         match *self {
             SizeFilter::Max(limit) => size <= limit,
             SizeFilter::Min(limit) => size >= limit,
+            SizeFilter::Equals(limit) => size == limit,
         }
     }
 }
@@ -170,7 +174,6 @@ mod tests {
 
     // Invalid parse data
     gen_size_filter_failure! {
-        ensure_missing_symbol_returns_none: "10M",
         ensure_missing_number_returns_none: "+g",
         ensure_missing_unit_returns_none: "+18",
         ensure_bad_format_returns_none_1: "$10M",
