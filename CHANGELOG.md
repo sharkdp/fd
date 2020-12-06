@@ -1,10 +1,19 @@
 # Upcoming release
 
 ## Features
+## Bugfixes
+## Changes
+## Other
+
+# v8.2.0
+
+## Features
 
 - Add new `--prune` flag, see #535 (@reima)
 - Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
 - Add support for exact file sizes in the `--size` filter, see #669 and #696 (@Rogach)
+- `fd` now prints an error message if the search pattern requires a leading dot but
+  `--hidden` is not enabled (Unix only), see #615
 
 ## Bugfixes
 
