@@ -2,17 +2,22 @@
 
 ## Features
 
-- Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
 - Add new `--prune` flag, see #535 (@reima)
-- Add support for exact sizes in `--size` filter, see #669 (pull #696)
+- Improved the usability of the time-based options, see #624 and #645 (@gorogoroumaru)
+- Add support for exact file sizes in the `--size` filter, see #669 and #696 (@Rogach)
 
 ## Bugfixes
 
 - Avoid panic when performing limited searches in directories with restricted permissions, see #678
 - Invalid numeric command-line arguments are silently ignored, see #675
 - Disable jemalloc on Android, see #662
+- The `--help` text will be colorless if `NO_COLOR` has been set, see #600 (@xanonid)
 
 ## Changes
+
+- If `LS_COLORS` is not set (e.g. on Windows), we now provide a more comprehensive default which
+  includes much more filetypes, see #604 and #682 (mjsir911).
+
 ## Other
 
 - Added `zsh` completion files, see #654 and #189 (@smancill)
