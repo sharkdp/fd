@@ -176,7 +176,7 @@ fn run() -> Result<ExitCode> {
     let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
 
     let ls_colors = if colored_output {
-        Some(LsColors::from_env().unwrap_or(LsColors::from_string(DEFAULT_LS_COLORS)))
+        Some(LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)))
     } else {
         None
     };
@@ -344,7 +344,7 @@ fn run() -> Result<ExitCode> {
                 .value_of("threads")
                 .map(|n| usize::from_str_radix(n, 10))
                 .transpose()
-                .context(format!("Failed to parse number of threads"))?
+                .context("Failed to parse number of threads")?
                 .map(|n| {
                     if n > 0 {
                         Ok(n)
