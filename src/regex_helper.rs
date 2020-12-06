@@ -34,6 +34,45 @@ fn hir_has_uppercase_char(hir: &Hir) -> bool {
     }
 }
 
+/// Determine if a regex pattern only matches strings starting with a literal dot (hidden files)
+pub fn pattern_matches_strings_with_leading_dot(pattern: &str) -> bool {
+    let mut parser = ParserBuilder::new().allow_invalid_utf8(true).build();
+
+    parser
+        .parse(pattern)
+        .map(|hir| hir_matches_strings_with_leading_dot(&hir))
+        .unwrap_or(false)
+}
+
+/// See above.
+fn hir_matches_strings_with_leading_dot(hir: &Hir) -> bool {
+    use regex_syntax::hir::*;
+
+    // Note: this only really detects the simplest case where a regex starts with
+    // "^\\.", i.e. a start text anchor and a literal dot character. There are a lot
+    // of other patterns that ONLY match hidden files, e.g. ^(\\.foo|\\.bar) which are
+    // not (yet) detected by this algorithm.
+    match *hir.kind() {
+        HirKind::Concat(ref hirs) => {
+            let mut hirs = hirs.iter();
+            if let Some(hir) = hirs.next() {
+                if *hir.kind() != HirKind::Anchor(Anchor::StartText) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+
+            if let Some(hir) = hirs.next() {
+                *hir.kind() == HirKind::Literal(Literal::Unicode('.'))
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
 #[test]
 fn pattern_has_uppercase_char_simple() {
     assert!(pattern_has_uppercase_char("A"));
@@ -49,4 +88,13 @@ fn pattern_has_uppercase_char_advanced() {
 
     assert!(!pattern_has_uppercase_char(r"\Acargo"));
     assert!(!pattern_has_uppercase_char(r"carg\x6F"));
+}
+
+#[test]
+fn matches_strings_with_leading_dot_simple() {
+    assert!(pattern_matches_strings_with_leading_dot("^\\.gitignore"));
+
+    assert!(!pattern_matches_strings_with_leading_dot("^.gitignore"));
+    assert!(!pattern_matches_strings_with_leading_dot("\\.gitignore"));
+    assert!(!pattern_matches_strings_with_leading_dot("^gitignore"));
 }

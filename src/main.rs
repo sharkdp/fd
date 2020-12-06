@@ -30,7 +30,7 @@ use crate::filetypes::FileTypes;
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 use crate::options::Options;
-use crate::regex_helper::pattern_has_uppercase_char;
+use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
@@ -430,6 +430,17 @@ fn run() -> Result<ExitCode> {
                 }
             }),
     };
+
+    if cfg!(unix)
+        && config.ignore_hidden
+        && pattern_matches_strings_with_leading_dot(&pattern_regex)
+    {
+        return Err(anyhow!(
+            "The pattern seems to only match files with a leading dot, but hidden files are \
+            filtered by default. Consider adding -H/--hidden to search hidden files as well \
+            or adjust your search pattern."
+        ));
+    }
 
     let re = RegexBuilder::new(&pattern_regex)
         .case_insensitive(!config.case_sensitive)

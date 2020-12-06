@@ -1699,3 +1699,18 @@ fn test_number_parsing_errors() {
 
     te.assert_failure(&["--max-results=a"]);
 }
+
+/// Print error if search pattern starts with a dot and --hidden is not set
+/// (Unix only, hidden files on Windows work differently)
+#[test]
+#[cfg(unix)]
+fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
+    let te = TestEnv::new(&[], &[".gitignore", ".whatever", "non-hidden"]);
+
+    te.assert_failure(&["^\\.gitignore"]);
+    te.assert_failure(&["--glob", ".gitignore"]);
+
+    te.assert_output(&["--hidden", "^\\.gitignore"], ".gitignore");
+    te.assert_output(&["--hidden", "--glob", ".gitignore"], ".gitignore");
+    te.assert_output(&[".gitignore"], "");
+}
