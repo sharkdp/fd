@@ -513,8 +513,12 @@ pub fn build_app() -> App<'static, 'static> {
         )
         .arg(
             Arg::with_name("pattern").help(
-                "the search pattern - a regular expression unless '--glob' is used (optional)",
-            ),
+                "the search pattern (a regular expression, unless '--glob' is used; optional)",
+            ).long_help(
+                "the search pattern which is either a regular expression (default) or a glob \
+                 pattern (if --glob is used). If no pattern has been specified, every entry \
+                 is considered a match. If your pattern starts with a dash (-), make sure to \
+                 pass '--' first, or it will be considered as a flag (fd -- '-foo').")
         )
         .arg(
             Arg::with_name("path-separator")
