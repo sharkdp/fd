@@ -128,162 +128,6 @@ fd -x wc -l \; -e rs
 
 The number of threads used for command execution can be set with the `--threads`/`-j` option.
 
-## Installation
-
-[![Packaging status](https://repology.org/badge/vertical-allrepos/fd-find.svg)](https://repology.org/project/fd-find/versions)
-
-### On Ubuntu
-*... and other Debian-based Linux distributions.*
-
-If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
-[officially maintained package](https://packages.ubuntu.com/fd-find):
-```
-sudo apt install fd-find
-```
-Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
-It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
-use `fd` in the same way as in this documentation.
-
-If you use an older version of Ubuntu, you can download the latest `.deb` package from the
-[release page](https://github.com/sharkdp/fd/releases) and install it via:
-``` bash
-sudo dpkg -i fd_8.1.0_amd64.deb  # adapt version number and architecture
-```
-
-### On Debian
-
-If you run Debian Buster or newer, you can install the
-[officially maintained Debian package](https://tracker.debian.org/pkg/rust-fd-find):
-```
-sudo apt-get install fd-find
-```
-Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
-It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
-use `fd` in the same way as in this documentation.
-
-### On Fedora
-
-Starting with Fedora 28, you can install `fd` from the official package sources:
-``` bash
-dnf install fd-find
-```
-
-For older versions, you can use this [Fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
-``` bash
-dnf copr enable keefle/fd
-dnf install fd
-```
-
-### On Alpine Linux
-
-You can install [the fd package](https://pkgs.alpinelinux.org/packages?name=fd)
-from the official sources, provided you have the appropriate repository enabled:
-```
-apk add fd
-```
-
-### On Arch Linux
-
-You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
-```
-pacman -S fd
-```
-### On Gentoo Linux
-
-You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) from the official repo:
-```
-emerge -av fd
-```
-
-### On openSUSE Linux
-
-You can install [the fd package](https://software.opensuse.org/package/fd) from the official repo:
-```
-zypper in fd
-```
-
-### On Void Linux
-
-You can install `fd` via xbps-install:
-```
-xbps-install -S fd
-```
-
-### On macOS
-
-You can install `fd` with [Homebrew](https://formulae.brew.sh/formula/fd):
-```
-brew install fd
-```
-
-… or with MacPorts:
-```
-sudo port install fd
-```
-
-### On Windows
-
-You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
-
-Alternatively, you can install `fd` via [Scoop](http://scoop.sh):
-```
-scoop install fd
-```
-
-Or via [Chocolatey](https://chocolatey.org):
-```
-choco install fd
-```
-
-### On NixOS / via Nix
-
-You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
-```
-nix-env -i fd
-```
-
-### On FreeBSD
-
-You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
-```
-pkg install fd-find
-```
-
-### From NPM
-
-On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
-
-```
-npm install -g fd-find
-```
-
-### From source
-
-With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
-```
-cargo install fd-find
-```
-Note that rust version *1.36.0* or later is required.
-
-### From binaries
-
-The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
-
-## Development
-```bash
-git clone https://github.com/sharkdp/fd
-
-# Build
-cd fd
-cargo build
-
-# Run unit tests and integration tests
-cargo test
-
-# Install
-cargo install --path .
-```
-
 ## Command-line options
 ```
 USAGE:
@@ -579,6 +423,162 @@ default, nor does it support as rich a set of options as `fd` does to control wh
 For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
 
 [`as-tree`]: https://github.com/jez/as-tree
+
+## Installation
+
+[![Packaging status](https://repology.org/badge/vertical-allrepos/fd-find.svg)](https://repology.org/project/fd-find/versions)
+
+### On Ubuntu
+*... and other Debian-based Linux distributions.*
+
+If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
+[officially maintained package](https://packages.ubuntu.com/fd-find):
+```
+sudo apt install fd-find
+```
+Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
+It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
+use `fd` in the same way as in this documentation.
+
+If you use an older version of Ubuntu, you can download the latest `.deb` package from the
+[release page](https://github.com/sharkdp/fd/releases) and install it via:
+``` bash
+sudo dpkg -i fd_8.1.0_amd64.deb  # adapt version number and architecture
+```
+
+### On Debian
+
+If you run Debian Buster or newer, you can install the
+[officially maintained Debian package](https://tracker.debian.org/pkg/rust-fd-find):
+```
+sudo apt-get install fd-find
+```
+Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
+It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
+use `fd` in the same way as in this documentation.
+
+### On Fedora
+
+Starting with Fedora 28, you can install `fd` from the official package sources:
+``` bash
+dnf install fd-find
+```
+
+For older versions, you can use this [Fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
+``` bash
+dnf copr enable keefle/fd
+dnf install fd
+```
+
+### On Alpine Linux
+
+You can install [the fd package](https://pkgs.alpinelinux.org/packages?name=fd)
+from the official sources, provided you have the appropriate repository enabled:
+```
+apk add fd
+```
+
+### On Arch Linux
+
+You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
+```
+pacman -S fd
+```
+### On Gentoo Linux
+
+You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) from the official repo:
+```
+emerge -av fd
+```
+
+### On openSUSE Linux
+
+You can install [the fd package](https://software.opensuse.org/package/fd) from the official repo:
+```
+zypper in fd
+```
+
+### On Void Linux
+
+You can install `fd` via xbps-install:
+```
+xbps-install -S fd
+```
+
+### On macOS
+
+You can install `fd` with [Homebrew](https://formulae.brew.sh/formula/fd):
+```
+brew install fd
+```
+
+… or with MacPorts:
+```
+sudo port install fd
+```
+
+### On Windows
+
+You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
+
+Alternatively, you can install `fd` via [Scoop](http://scoop.sh):
+```
+scoop install fd
+```
+
+Or via [Chocolatey](https://chocolatey.org):
+```
+choco install fd
+```
+
+### On NixOS / via Nix
+
+You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
+```
+nix-env -i fd
+```
+
+### On FreeBSD
+
+You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
+```
+pkg install fd-find
+```
+
+### From NPM
+
+On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
+
+```
+npm install -g fd-find
+```
+
+### From source
+
+With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can install *fd* via:
+```
+cargo install fd-find
+```
+Note that rust version *1.36.0* or later is required.
+
+### From binaries
+
+The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
+
+## Development
+```bash
+git clone https://github.com/sharkdp/fd
+
+# Build
+cd fd
+cargo build
+
+# Run unit tests and integration tests
+cargo test
+
+# Install
+cargo install --path .
+```
 
 ## Maintainers
 
