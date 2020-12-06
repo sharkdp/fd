@@ -117,7 +117,9 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("fixed-strings")
                 .hidden_short_help(true)
                 .long_help(
-                    "Treat the pattern as a literal string instead of a regular expression.",
+                    "Treat the pattern as a literal string instead of a regular expression. Note \
+                     that this also performs substring comparison. If you want to match on an \
+                     exact filename, consider using '--glob'.",
                 ),
         )
         .arg(

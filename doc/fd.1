@@ -60,7 +60,8 @@ Perform a glob-based search instead of a regular expression search.
 Perform a regular-expression based search (default). This can be used to override --glob.
 .TP
 .B \-F, \-\-fixed\-strings
-Treat the pattern as a literal string instead of a regular expression.
+Treat the pattern as a literal string instead of a regular expression. Note that this also
+performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'.
 .TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
