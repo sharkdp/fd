@@ -54,7 +54,7 @@ impl SizeFilter {
             "+" => Some(SizeFilter::Min(size)),
             "-" => Some(SizeFilter::Max(size)),
             "" => Some(SizeFilter::Equals(size)),
-            _ => None
+            _ => None,
         }
     }
 

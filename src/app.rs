@@ -1,12 +1,11 @@
 use clap::{crate_version, App, AppSettings, Arg};
 
 pub fn build_app() -> App<'static, 'static> {
-    let clap_color_setting =
-        if std::env::var_os("NO_COLOR").is_none() {
-            AppSettings::ColoredHelp
-        } else {
-            AppSettings::ColorNever
-        };
+    let clap_color_setting = if std::env::var_os("NO_COLOR").is_none() {
+        AppSettings::ColoredHelp
+    } else {
+        AppSettings::ColorNever
+    };
 
     let mut app = App::new("fd")
         .version(crate_version!())
