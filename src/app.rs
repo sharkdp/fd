@@ -340,7 +340,10 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Exclude files/directories that match the given glob pattern. This \
                          overrides any other ignore logic. Multiple exclude patterns can be \
-                         specified.",
+                         specified.\n\n\
+                         Examples:\n  \
+                           --exclude '*.pyc'\n  \
+                           --exclude node_modules",
                 ),
         )
         .arg(
