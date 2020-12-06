@@ -279,7 +279,9 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Filter by file extension")
                 .long_help(
                     "(Additionally) filter search results by their file extension. Multiple \
-                         allowable file extensions can be specified.",
+                     allowable file extensions can be specified.\n\
+                     If you want to search for files without extension, \
+                     you can use the regex '^[^.]+$' as a normal search pattern.",
                 ),
         )
         .arg(

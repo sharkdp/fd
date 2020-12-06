@@ -1016,6 +1016,34 @@ fn test_extension() {
     te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
 }
 
+/// No file extension (test for the pattern provided in the --help text)
+#[test]
+fn test_no_extension() {
+    let te = TestEnv::new(
+        DEFAULT_DIRS,
+        &["a.foo", "aa", "one/b.foo", "one/bb", "one/two/three/d"],
+    );
+
+    te.assert_output(
+        &["^[^.]+$"],
+        "aa
+        one
+        one/bb
+        one/two
+        one/two/three
+        one/two/three/d
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["^[^.]+$", "--type", "file"],
+        "aa
+        one/bb
+        one/two/three/d",
+    );
+}
+
 /// Symlink as search directory
 #[test]
 fn test_symlink_as_root() {
