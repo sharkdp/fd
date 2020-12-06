@@ -60,7 +60,8 @@ Perform a glob-based search instead of a regular expression search.
 Perform a regular-expression based search (default). This can be used to override --glob.
 .TP
 .B \-F, \-\-fixed\-strings
-Treat the pattern as a literal string instead of a regular expression.
+Treat the pattern as a literal string instead of a regular expression. Note that this also
+performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'.
 .TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
@@ -145,11 +146,17 @@ This option can be used repeatedly to allow for multiple file types.
 Filter search results by file extension
 .IR ext .
 This option can be used repeatedly to allow for multiple possible file extensions.
+
+If you want to search for files without extension, you can use the regex '^[^.]+$'
+as a normal search pattern.
 .TP
 .BI "\-E, \-\-exclude " pattern
 Exclude files/directories that match the given glob pattern.
 This overrides any other ignore logic.
 Multiple exclude patterns can be specified.
+Examples:
+  \-\-exclude '*.pyc'
+  \-\-exclude node_modules
 .TP
 .BI "\-\-ignore-file " path
 Add a custom ignore-file in '.gitignore' format.
@@ -179,6 +186,8 @@ Limit results based on the size of files using the format
 file size must be greater than or equal to this
 .IP '-'
 file size must be less than or equal to this
+.P
+If neither '+' nor '-' is specified, file size must be exactly equal to this.
 .IP 'NUM'
 The numeric size (e.g. 500)
 .IP 'UNIT'

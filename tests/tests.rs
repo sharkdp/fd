@@ -1016,6 +1016,34 @@ fn test_extension() {
     te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
 }
 
+/// No file extension (test for the pattern provided in the --help text)
+#[test]
+fn test_no_extension() {
+    let te = TestEnv::new(
+        DEFAULT_DIRS,
+        &["a.foo", "aa", "one/b.foo", "one/bb", "one/two/three/d"],
+    );
+
+    te.assert_output(
+        &["^[^.]+$"],
+        "aa
+        one
+        one/bb
+        one/two
+        one/two/three
+        one/two/three/d
+        one/two/three/directory_foo
+        symlink",
+    );
+
+    te.assert_output(
+        &["^[^.]+$", "--type", "file"],
+        "aa
+        one/bb
+        one/two/three/d",
+    );
+}
+
 /// Symlink as search directory
 #[test]
 fn test_symlink_as_root() {
@@ -1387,6 +1415,9 @@ fn test_size() {
 
     // Zero sized files.
     te.assert_output(&["", "--size", "-0B"], "0_bytes.foo");
+    te.assert_output(&["", "--size", "0B"], "0_bytes.foo");
+    te.assert_output(&["", "--size=0B"], "0_bytes.foo");
+    te.assert_output(&["", "-S", "0B"], "0_bytes.foo");
 
     // Files with 2 bytes or more.
     te.assert_output(
@@ -1402,6 +1433,9 @@ fn test_size() {
 
     // Files with size between 1 byte and 11 bytes.
     te.assert_output(&["", "--size", "+1B", "--size", "-11B"], "11_bytes.foo");
+
+    // Files with size equal 11 bytes.
+    te.assert_output(&["", "--size", "11B"], "11_bytes.foo");
 
     // Files with size between 1 byte and 30 bytes.
     te.assert_output(
@@ -1434,6 +1468,7 @@ fn test_size() {
 
     // Files with size equal 4 kibibytes.
     te.assert_output(&["", "--size", "+4ki", "--size", "-4ki"], "4_kibibytes.foo");
+    te.assert_output(&["", "--size", "4ki"], "4_kibibytes.foo");
 }
 
 #[cfg(test)]
@@ -1663,4 +1698,19 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--max-buffer-time=a"]);
 
     te.assert_failure(&["--max-results=a"]);
+}
+
+/// Print error if search pattern starts with a dot and --hidden is not set
+/// (Unix only, hidden files on Windows work differently)
+#[test]
+#[cfg(unix)]
+fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
+    let te = TestEnv::new(&[], &[".gitignore", ".whatever", "non-hidden"]);
+
+    te.assert_failure(&["^\\.gitignore"]);
+    te.assert_failure(&["--glob", ".gitignore"]);
+
+    te.assert_output(&["--hidden", "^\\.gitignore"], ".gitignore");
+    te.assert_output(&["--hidden", "--glob", ".gitignore"], ".gitignore");
+    te.assert_output(&[".gitignore"], "");
 }
