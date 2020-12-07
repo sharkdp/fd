@@ -100,34 +100,6 @@ for alternative, more complete (or more colorful) variants, see [here](https://g
 
 `fd` also honors the [`NO_COLOR`](https://no-color.org/) environment variable.
 
-## Parallel command execution
-If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
-for executing commands in parallel for each discovered path as the input. The syntax for generating
-commands is similar to that of GNU Parallel:
-
-- `{}`: A placeholder token that will be replaced with the path of the search result
-  (`documents/images/party.jpg`).
-- `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
-- `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
-- `{//}`: Uses the parent of the discovered path (`documents/images`).
-- `{/.}`: Uses the basename, with the extension removed (`party`).
-
-``` bash
-# Convert all jpg files to png files:
-fd -e jpg -x convert {} {.}.png
-
-# Unpack all zip files (if no placeholder is given, the path is appended):
-fd -e zip -x unzip
-
-# Convert all flac files into opus files:
-fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
-
-# Count the number of lines in Rust files (the command template can be terminated with ';'):
-fd -x wc -l \; -e rs
-```
-
-The number of threads used for command execution can be set with the `--threads`/`-j` option.
-
 ## Command-line options
 ```
 USAGE:
@@ -313,6 +285,50 @@ If we want to run a command on all search results, we can pipe the output to `xa
 ```
 Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
 newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
+
+### Parallel command execution
+If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
+for executing commands in parallel for each discovered path as the input. The number of threads 
+used for command execution can be set with the `--threads`/`-j` option.
+
+*fd* takes the command template as a series of arguments rather than as a string. If you want to 
+add additional options after the command template, you can terminate it with a `\;`. This is 
+useful when you want to repeat a command with new options. For example, to remove write and 
+execute permissions from all directories, run:
+``` bash
+fd -t d -x chmod -wx
+```
+If you realize you also need to modify hidden directories, you can quickly add the `-H` (or `--hidden`) 
+option after the command template:
+```bash
+fd -t d -x chmod -wx \; -H
+```
+
+More examples:
+``` bash
+# Convert all jpg files to png files:
+fd -e jpg -x convert {} {.}.png
+
+# Unpack all zip files (if no placeholder is given, the path is appended):
+fd -e zip -x unzip
+
+# Convert all flac files into opus files:
+fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
+
+# Count the number of lines in Rust files (the command template can be terminated with ';'):
+fd -x wc -l \; -e rs
+```
+
+The syntax for generating commands is similar to that of GNU Parallel:
+
+- `{}`: A placeholder token that will be replaced with the path of the search result
+  (`documents/images/party.jpg`).
+- `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
+- `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
+- `{//}`: Uses the parent of the discovered path (`documents/images`).
+- `{/.}`: Uses the basename, with the extension removed (`party`).
+
+If you do not include a placeholder, *fd* automatically adds `{}`.
 
 ### Deleting files
 
