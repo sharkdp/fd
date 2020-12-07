@@ -5,6 +5,10 @@
 ## Changes
 ## Other
 
+# v8.2.1
+
+No functional changes with respect to v8.2.0. Bugfix in the release process.
+
 # v8.2.0
 
 ## Features
