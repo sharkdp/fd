@@ -3,8 +3,9 @@ mod input;
 mod job;
 mod token;
 
-use std::ffi::OsString;
-use std::path::{Path, PathBuf};
+use std::borrow::Cow;
+use std::ffi::{OsStr, OsString};
+use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
@@ -37,23 +38,24 @@ pub enum ExecutionMode {
 pub struct CommandTemplate {
     args: Vec<ArgumentTemplate>,
     mode: ExecutionMode,
+    path_separator: Option<String>,
 }
 
 impl CommandTemplate {
-    pub fn new<I, S>(input: I) -> CommandTemplate
+    pub fn new<I, S>(input: I, path_separator: Option<String>) -> CommandTemplate
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        Self::build(input, ExecutionMode::OneByOne)
+        Self::build(input, ExecutionMode::OneByOne, path_separator)
     }
 
-    pub fn new_batch<I, S>(input: I) -> Result<CommandTemplate>
+    pub fn new_batch<I, S>(input: I, path_separator: Option<String>) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        let cmd = Self::build(input, ExecutionMode::Batch);
+        let cmd = Self::build(input, ExecutionMode::Batch, path_separator);
         if cmd.number_of_tokens() > 1 {
             return Err(anyhow!("Only one placeholder allowed for batch commands"));
         }
@@ -65,7 +67,7 @@ impl CommandTemplate {
         Ok(cmd)
     }
 
-    fn build<I, S>(input: I, mode: ExecutionMode) -> CommandTemplate
+    fn build<I, S>(input: I, mode: ExecutionMode, path_separator: Option<String>) -> CommandTemplate
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -122,7 +124,11 @@ impl CommandTemplate {
             args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        CommandTemplate { args, mode }
+        CommandTemplate {
+            args,
+            mode,
+            path_separator,
+        }
     }
 
     fn number_of_tokens(&self) -> usize {
@@ -136,9 +142,9 @@ impl CommandTemplate {
     pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> ExitCode {
         let input = strip_current_dir(input);
 
-        let mut cmd = Command::new(self.args[0].generate(&input));
+        let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
         for arg in &self.args[1..] {
-            cmd.arg(arg.generate(&input));
+            cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
         }
 
         execute_command(cmd, &out_perm)
@@ -152,7 +158,7 @@ impl CommandTemplate {
     where
         I: Iterator<Item = PathBuf>,
     {
-        let mut cmd = Command::new(self.args[0].generate(""));
+        let mut cmd = Command::new(self.args[0].generate("", None));
         cmd.stdin(Stdio::inherit());
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -167,11 +173,11 @@ impl CommandTemplate {
                 // A single `Tokens` is expected
                 // So we can directly consume the iterator once and for all
                 for path in &mut paths {
-                    cmd.arg(arg.generate(strip_current_dir(path)));
+                    cmd.arg(arg.generate(strip_current_dir(path), self.path_separator.as_deref()));
                     has_path = true;
                 }
             } else {
-                cmd.arg(arg.generate(""));
+                cmd.arg(arg.generate("", None));
             }
         }
 
@@ -201,21 +207,31 @@ impl ArgumentTemplate {
         }
     }
 
-    pub fn generate(&self, path: impl AsRef<Path>) -> OsString {
+    /// Generate an argument from this template. If path_separator is Some, then it will replace
+    /// the path separator in all placeholder tokens. Text arguments and tokens are not affected by
+    /// path separator substitution.
+    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
         use self::Token::*;
+        let path = path.as_ref();
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
                 let mut s = OsString::new();
                 for token in tokens {
                     match *token {
-                        Basename => s.push(basename(path.as_ref())),
-                        BasenameNoExt => {
-                            s.push(remove_extension(&PathBuf::from(basename(path.as_ref()))))
+                        Basename => s.push(Self::replace_separator(basename(path), path_separator)),
+                        BasenameNoExt => s.push(Self::replace_separator(
+                            &remove_extension(basename(path).as_ref()),
+                            path_separator,
+                        )),
+                        NoExt => s.push(Self::replace_separator(
+                            &remove_extension(path),
+                            path_separator,
+                        )),
+                        Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
+                        Placeholder => {
+                            s.push(Self::replace_separator(path.as_ref(), path_separator))
                         }
-                        NoExt => s.push(remove_extension(path.as_ref())),
-                        Parent => s.push(dirname(path.as_ref())),
-                        Placeholder => s.push(path.as_ref()),
                         Text(ref string) => s.push(string),
                     }
                 }
@@ -223,6 +239,61 @@ impl ArgumentTemplate {
             }
             ArgumentTemplate::Text(ref text) => OsString::from(text),
         }
+    }
+
+    /// Replace the path separator in the input with the custom separator string. If path_separator
+    /// is None, simply return a borrowed Cow<OsStr> of the input. Otherwise, the input is
+    /// interpreted as a Path and its components are iterated through and re-joined into a new
+    /// OsString.
+    fn replace_separator<'a>(path: &'a OsStr, path_separator: Option<&str>) -> Cow<'a, OsStr> {
+        // fast-path - no replacement necessary
+        if path_separator.is_none() {
+            return Cow::Borrowed(path);
+        }
+
+        let path_separator = path_separator.unwrap();
+        let mut out = OsString::with_capacity(path.len());
+        let mut components = Path::new(path).components().peekable();
+
+        while let Some(comp) = components.next() {
+            match comp {
+                // Absolute paths on Windows are tricky.  A Prefix component is usually a drive
+                // letter or UNC path, and is usually followed by RootDir. There are also
+                // "verbatim" prefixes beginning with "\\?\" that skip normalization. We choose to
+                // ignore verbatim path prefixes here because they're very rare, might be
+                // impossible to reach here, and there's no good way to deal with them. If users
+                // are doing something advanced involving verbatim windows paths, they can do their
+                // own output filtering with a tool like sed.
+                Component::Prefix(prefix) => {
+                    if let Prefix::UNC(server, share) = prefix.kind() {
+                        // Prefix::UNC is a parsed version of '\\server\share'
+                        out.push(path_separator);
+                        out.push(path_separator);
+                        out.push(server);
+                        out.push(path_separator);
+                        out.push(share);
+                    } else {
+                        // All other Windows prefix types are rendered as-is. This results in e.g. "C:" for
+                        // drive letters. DeviceNS and Verbatim* prefixes won't have backslashes converted,
+                        // but they're not returned by directories fd can search anyway so we don't worry
+                        // about them.
+                        out.push(comp.as_os_str());
+                    }
+                }
+
+                // Root directory is always replaced with the custom separator.
+                Component::RootDir => out.push(path_separator),
+
+                // Everything else is joined normally, with a trailing separator if we're not last
+                _ => {
+                    out.push(comp.as_os_str());
+                    if components.peek().is_some() {
+                        out.push(path_separator);
+                    }
+                }
+            }
+        }
+        Cow::Owned(out)
     }
 }
 
@@ -233,7 +304,7 @@ mod tests {
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
-            CommandTemplate::new(&[&"echo", &"${SHELL}:"]),
+            CommandTemplate::new(&[&"echo", &"${SHELL}:"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
@@ -241,6 +312,7 @@ mod tests {
                     ArgumentTemplate::Tokens(vec![Token::Placeholder]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -248,13 +320,14 @@ mod tests {
     #[test]
     fn tokens_with_no_extension() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{.}"]),
+            CommandTemplate::new(&["echo", "{.}"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::NoExt]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -262,13 +335,14 @@ mod tests {
     #[test]
     fn tokens_with_basename() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{/}"]),
+            CommandTemplate::new(&["echo", "{/}"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::Basename]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -276,13 +350,14 @@ mod tests {
     #[test]
     fn tokens_with_parent() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{//}"]),
+            CommandTemplate::new(&["echo", "{//}"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::Parent]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -290,13 +365,14 @@ mod tests {
     #[test]
     fn tokens_with_basename_no_extension() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{/.}"]),
+            CommandTemplate::new(&["echo", "{/.}"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::BasenameNoExt]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -304,7 +380,7 @@ mod tests {
     #[test]
     fn tokens_multiple() {
         assert_eq!(
-            CommandTemplate::new(&["cp", "{}", "{/.}.ext"]),
+            CommandTemplate::new(&["cp", "{}", "{/.}.ext"], None),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("cp".into()),
@@ -315,6 +391,7 @@ mod tests {
                     ]),
                 ],
                 mode: ExecutionMode::OneByOne,
+                path_separator: None,
             }
         );
     }
@@ -322,19 +399,62 @@ mod tests {
     #[test]
     fn tokens_single_batch() {
         assert_eq!(
-            CommandTemplate::new_batch(&["echo", "{.}"]).unwrap(),
+            CommandTemplate::new_batch(&["echo", "{.}"], None).unwrap(),
             CommandTemplate {
                 args: vec![
                     ArgumentTemplate::Text("echo".into()),
                     ArgumentTemplate::Tokens(vec![Token::NoExt]),
                 ],
                 mode: ExecutionMode::Batch,
+                path_separator: None,
             }
         );
     }
 
     #[test]
     fn tokens_multiple_batch() {
-        assert!(CommandTemplate::new_batch(&["echo", "{.}", "{}"]).is_err());
+        assert!(CommandTemplate::new_batch(&["echo", "{.}", "{}"], None).is_err());
+    }
+
+    #[test]
+    fn generate_custom_path_separator() {
+        let arg = ArgumentTemplate::Tokens(vec![Token::Placeholder]);
+        macro_rules! check {
+            ($input:expr, $expected:expr) => {
+                assert_eq!(arg.generate($input, Some("#")), OsString::from($expected));
+            };
+        }
+
+        check!("foo", "foo");
+        check!("foo/bar", "foo#bar");
+        check!("/foo/bar/baz", "#foo#bar#baz");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn generate_custom_path_separator_windows() {
+        let arg = ArgumentTemplate::Tokens(vec![Token::Placeholder]);
+        macro_rules! check {
+            ($input:expr, $expected:expr) => {
+                assert_eq!(arg.generate($input, Some("#")), OsString::from($expected));
+            };
+        }
+
+        // path starting with a drive letter
+        check!(r"C:\foo\bar", "C:#foo#bar");
+        // UNC path
+        check!(r"\\server\share\path", "##server#share#path");
+        // Drive Relative path - no separator after the colon omits the RootDir path component.
+        // This is uncommon, but valid
+        check!(r"C:foo\bar", "C:foo#bar");
+
+        // forward slashses should get normalized and interpreted as separators
+        check!("C:/foo/bar", "C:#foo#bar");
+        check!("C:foo/bar", "C:foo#bar");
+
+        // Rust does not intrepret "//server/share" as a UNC path, but rather as a normal
+        // absolute path that begins with RootDir, and the two slashes get combined together as
+        // a single path separator during normalization.
+        //check!("//server/share/path", "##server#share#path");
     }
 }
