@@ -182,9 +182,9 @@ fn run() -> Result<ExitCode> {
     };
 
     let command = if let Some(args) = matches.values_of("exec") {
-        Some(CommandTemplate::new(args))
+        Some(CommandTemplate::new(args, path_separator.clone()))
     } else if let Some(args) = matches.values_of("exec-batch") {
-        Some(CommandTemplate::new_batch(args)?)
+        Some(CommandTemplate::new_batch(args, path_separator.clone())?)
     } else if matches.is_present("list-details") {
         let color = matches.value_of("color").unwrap_or("auto");
         let color_arg = ["--color=", color].concat();
@@ -264,7 +264,7 @@ fn run() -> Result<ExitCode> {
             ));
         };
 
-        Some(CommandTemplate::new_batch(&cmd).unwrap())
+        Some(CommandTemplate::new_batch(&cmd, path_separator.clone()).unwrap())
     } else {
         None
     };

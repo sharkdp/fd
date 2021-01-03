@@ -1337,6 +1337,85 @@ fn test_exec_batch() {
     }
 }
 
+/// Shell script execution (--exec) with a custom --path-separator
+#[test]
+fn test_exec_with_separator() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    te.assert_output(
+        &[
+            "--path-separator=#",
+            "--absolute-path",
+            "foo",
+            "--exec",
+            "echo",
+        ],
+        &format!(
+            "{abs_path}#a.foo
+                {abs_path}#one#b.foo
+                {abs_path}#one#two#C.Foo2
+                {abs_path}#one#two#c.foo
+                {abs_path}#one#two#three#d.foo
+                {abs_path}#one#two#three#directory_foo",
+            abs_path = abs_path.replace(std::path::MAIN_SEPARATOR, "#"),
+        ),
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "foo", "--exec", "echo", "{}"],
+        "a.foo
+            one#b.foo
+            one#two#C.Foo2
+            one#two#c.foo
+            one#two#three#d.foo
+            one#two#three#directory_foo",
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "foo", "--exec", "echo", "{.}"],
+        "a
+            one#b
+            one#two#C
+            one#two#c
+            one#two#three#d
+            one#two#three#directory_foo",
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "foo", "--exec", "echo", "{/}"],
+        "a.foo
+            b.foo
+            C.Foo2
+            c.foo
+            d.foo
+            directory_foo",
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "foo", "--exec", "echo", "{/.}"],
+        "a
+            b
+            C
+            c
+            d
+            directory_foo",
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "foo", "--exec", "echo", "{//}"],
+        ".
+            one
+            one#two
+            one#two
+            one#two#three
+            one#two#three",
+    );
+
+    te.assert_output(
+        &["--path-separator=#", "e1", "--exec", "printf", "%s.%s\n"],
+        "e1 e2.",
+    );
+}
+
 /// Literal search (--fixed-strings)
 #[test]
 fn test_fixed_strings() {

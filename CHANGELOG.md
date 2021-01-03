@@ -3,6 +3,9 @@
 ## Features
 ## Bugfixes
 ## Changes
+
+- Apply custom `--path-separator` to commands run with `--exec(-batch)` and `--list-details`, see #697
+
 ## Other
 
 # v8.2.1
