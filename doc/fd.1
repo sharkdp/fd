@@ -261,7 +261,7 @@ Provide paths to search as an alternative to the positional \fIpath\fR argument.
 .BI "\-x, \-\-exec " command
 Execute
 .I command
-for each search result. The following placeholders are substituted by a path derived from the current search result:
+for each search result in parallel (see --thread 1 for sequential order). The following placeholders are substituted by a path derived from the current search result:
 .RS
 .IP {}
 path
