@@ -437,8 +437,10 @@ If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
 sudo apt install fd-find
 ```
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
-It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
-use `fd` in the same way as in this documentation.
+It is recommended that after installation, you add a link to `fd` by executing command
+`ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
+You can also add `alias fd=fdfind` to your shells initialization file but this wouldn't help if you
+export variables using `fd`. You will have to use `fdfind` in export also.
 
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
@@ -454,8 +456,10 @@ If you run Debian Buster or newer, you can install the
 sudo apt-get install fd-find
 ```
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
-It is recommended that you add an `alias fd=fdfind` to your shells initialization file, in order to
-use `fd` in the same way as in this documentation.
+It is recommended that after installation, you add a link to `fd` by executing command
+`ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
+You can also add `alias fd=fdfind` to your shells initialization file but this wouldn't help if you
+export variables using `fd`. You will have to use `fdfind` in export also.
 
 ### On Fedora
 
