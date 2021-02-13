@@ -295,7 +295,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_terminator(";")
                 .value_name("cmd")
                 .conflicts_with("list-details")
-                .help("Execute a command for each search result in parallel")
+                .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution).\n\
                      All arguments following --exec are taken to be arguments to the command until the \
