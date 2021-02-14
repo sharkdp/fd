@@ -1,15 +1,19 @@
 # fd
+
 [![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
 [![Build status](https://ci.appveyor.com/api/projects/status/21c4p5fwggc5gy3j/branch/master?svg=true)](https://ci.appveyor.com/project/sharkdp/fd/branch/master)
 [![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
-[中文](https://github.com/chinanf-boy/fd-zh)
-[한국어](https://github.com/spearkkk/fd-kor)
+[[中文](https://github.com/chinanf-boy/fd-zh)]
+[[한국어](https://github.com/spearkkk/fd-kor)]
 
 *fd* is a simple, fast and user-friendly alternative to
-[*find*](https://www.gnu.org/software/findutils/).
-
-While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible
+[*find*](https://www.gnu.org/software/findutils/). While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible
 (opinionated) defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
+
+Quick links:
+* [How to use](#how-to-use)
+* [Installation](#installation)
+* [Troubleshooting](#troubleshooting)
 
 ## Features
 
@@ -31,7 +35,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 
 ![Demo](doc/screencast.svg)
 
-## Tutorial
+## How to use
 
 First, to get an overview of all available command line options, you can either run
 `fd -h` for a concise help message (see above) or `fd --help` for a more detailed
@@ -242,7 +246,7 @@ path like `…/foo/bar/foo/…` and want to remove all directories named `foo`, 
 situation where the outer `foo` directory is removed first, leading to (harmless) *"'foo/bar/foo':
 No such file or directory"* errors in the `rm` call.
 
-## Command-line options
+### Command-line options
 
 This is the output of `fd -h`. To see the full set of command-line options, use `fd --help` which
 also includes a much more detailed help text.
