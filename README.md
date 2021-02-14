@@ -600,7 +600,8 @@ cargo install --path .
 - [tmccombs](https://github.com/tmccombs)
 
 ## License
-Copyright (c) 2017-2020 The fd developers
+
+Copyright (c) 2017-2021 The fd developers
 
 `fd` is distributed under the terms of both the MIT License and the Apache License 2.0.
 
