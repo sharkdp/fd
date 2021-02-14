@@ -173,7 +173,9 @@ fn run() -> Result<ExitCode> {
         _ => ansi_colors_support && env::var_os("NO_COLOR").is_none() && interactive_terminal,
     };
 
-    let path_separator = matches.value_of("path-separator").map(|str| str.to_owned());
+    let path_separator = matches
+        .value_of("path-separator")
+        .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
 
     let ls_colors = if colored_output {
         Some(LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)))

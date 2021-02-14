@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::env::current_dir;
+use std::env;
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
@@ -15,7 +15,7 @@ pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     }
 
     let path = path.strip_prefix(".").unwrap_or(path);
-    current_dir().map(|path_buf| path_buf.join(path))
+    env::current_dir().map(|path_buf| path_buf.join(path))
 }
 
 pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
@@ -106,6 +106,23 @@ pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
 /// Remove the `./` prefix from a path.
 pub fn strip_current_dir(path: &Path) -> &Path {
     path.strip_prefix(".").unwrap_or(path)
+}
+
+/// Default value for the path_separator, mainly for MSYS/MSYS2, which set the MSYSTEM
+/// environment variable, and we set fd's path separator to '/' rather than Rust's default of '\'.
+///
+/// Returns Some to use a nonstandard path separator, or None to use rust's default on the target
+/// platform.
+pub fn default_path_separator() -> Option<String> {
+    if cfg!(windows) {
+        let msystem = env::var("MSYSTEM").ok()?;
+        match msystem.as_str() {
+            "MINGW64" | "MINGW32" | "MSYS" => Some("/".to_owned()),
+            _ => None,
+        }
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
