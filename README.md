@@ -31,104 +31,6 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 
 ![Demo](doc/screencast.svg)
 
-## Benchmark
-
-Let's search my home folder for files that end in `[0-9].jpg`. It contains ~190.000
-subdirectories and about a million files. For averaging and statistical analysis, I'm using
-[hyperfine](https://github.com/sharkdp/hyperfine). The following benchmarks are performed
-with a "warm"/pre-filled disk-cache (results for a "cold" disk-cache show the same trends).
-
-Let's start with `find`:
-```
-Benchmark #1: find ~ -iregex '.*[0-9]\.jpg$'
-
-  Time (mean ± σ):      7.236 s ±  0.090 s
-
-  Range (min … max):    7.133 s …  7.385 s
-```
-
-`find` is much faster if it does not need to perform a regular-expression search:
-```
-Benchmark #2: find ~ -iname '*[0-9].jpg'
-
-  Time (mean ± σ):      3.914 s ±  0.027 s
-
-  Range (min … max):    3.876 s …  3.964 s
-```
-
-Now let's try the same for `fd`. Note that `fd` *always* performs a regular expression
-search. The options `--hidden` and `--no-ignore` are needed for a fair comparison,
-otherwise `fd` does not have to traverse hidden folders and ignored paths (see below):
-```
-Benchmark #3: fd -HI '.*[0-9]\.jpg$' ~
-
-  Time (mean ± σ):     811.6 ms ±  26.9 ms
-
-  Range (min … max):   786.0 ms … 870.7 ms
-```
-For this particular example, `fd` is approximately nine times faster than `find -iregex`
-and about five times faster than `find -iname`. By the way, both tools found the exact
-same 20880 files :smile:.
-
-Finally, let's run `fd` without `--hidden` and `--no-ignore` (this can lead to different
-search results, of course). If *fd* does not have to traverse the hidden and git-ignored
-folders, it is almost an order of magnitude faster:
-```
-Benchmark #4: fd '[0-9]\.jpg$' ~
-
-  Time (mean ± σ):     123.7 ms ±   6.0 ms
-
-  Range (min … max):   118.8 ms … 140.0 ms
-```
-
-**Note**: This is *one particular* benchmark on *one particular* machine. While I have
-performed quite a lot of different tests (and found consistent results), things might
-be different for you! I encourage everyone to try it out on their own. See
-[this repository](https://github.com/sharkdp/fd-benchmarks) for all necessary scripts.
-
-Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
-in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
-
-## Command-line options
-```
-USAGE:
-    fd [FLAGS/OPTIONS] [<pattern>] [<path>...]
-
-FLAGS:
-    -H, --hidden            Search hidden files and directories
-    -I, --no-ignore         Do not respect .(git|fd)ignore files
-    -s, --case-sensitive    Case-sensitive search (default: smart case)
-    -i, --ignore-case       Case-insensitive search (default: smart case)
-    -g, --glob              Glob-based search (default: regular expression)
-    -a, --absolute-path     Show absolute instead of relative paths
-    -l, --list-details      Use a long listing format with file metadata
-    -L, --follow            Follow symbolic links
-    -p, --full-path         Search full path (default: file-/dirname only)
-    -0, --print0            Separate results by the null character
-    -h, --help              Prints help information
-    -V, --version           Prints version information
-
-OPTIONS:
-    -d, --max-depth <depth>            Set maximum search depth (default: none)
-    -t, --type <filetype>...           Filter by type: file (f), directory (d), symlink (l),
-                                       executable (x), empty (e), socket (s), pipe (p)
-    -e, --extension <ext>...           Filter by file extension
-    -x, --exec <cmd>                   Execute a command for each search result
-    -X, --exec-batch <cmd>             Execute a command with all search results at once
-    -E, --exclude <pattern>...         Exclude entries that match the given glob pattern
-    -c, --color <when>                 When to use colors: never, *auto*, always
-    -S, --size <size>...               Limit results based on the size of files.
-        --changed-within <date|dur>    Filter by file modification time (newer than)
-        --changed-before <date|dur>    Filter by file modification time (older than)
-
-ARGS:
-    <pattern>    the search pattern - a regular expression unless '--glob' is used (optional)
-    <path>...    the root directory for the filesystem search (optional)
-```
-
-This is the output of `fd -h`. To see the full set of command-line options, use `fd --help` which
-also includes a much more detailed help text.
-
 ## Tutorial
 
 First, to get an overview of all available command line options, you can either run
@@ -339,6 +241,105 @@ Note: there are scenarios where using `fd … -X rm -r` can cause race condition
 path like `…/foo/bar/foo/…` and want to remove all directories named `foo`, you can end up in a
 situation where the outer `foo` directory is removed first, leading to (harmless) *"'foo/bar/foo':
 No such file or directory"* errors in the `rm` call.
+
+## Command-line options
+
+This is the output of `fd -h`. To see the full set of command-line options, use `fd --help` which
+also includes a much more detailed help text.
+
+```
+USAGE:
+    fd [FLAGS/OPTIONS] [<pattern>] [<path>...]
+
+FLAGS:
+    -H, --hidden            Search hidden files and directories
+    -I, --no-ignore         Do not respect .(git|fd)ignore files
+    -s, --case-sensitive    Case-sensitive search (default: smart case)
+    -i, --ignore-case       Case-insensitive search (default: smart case)
+    -g, --glob              Glob-based search (default: regular expression)
+    -a, --absolute-path     Show absolute instead of relative paths
+    -l, --list-details      Use a long listing format with file metadata
+    -L, --follow            Follow symbolic links
+    -p, --full-path         Search full path (default: file-/dirname only)
+    -0, --print0            Separate results by the null character
+    -h, --help              Prints help information
+    -V, --version           Prints version information
+
+OPTIONS:
+    -d, --max-depth <depth>            Set maximum search depth (default: none)
+    -t, --type <filetype>...           Filter by type: file (f), directory (d), symlink (l),
+                                       executable (x), empty (e), socket (s), pipe (p)
+    -e, --extension <ext>...           Filter by file extension
+    -x, --exec <cmd>                   Execute a command for each search result
+    -X, --exec-batch <cmd>             Execute a command with all search results at once
+    -E, --exclude <pattern>...         Exclude entries that match the given glob pattern
+    -c, --color <when>                 When to use colors: never, *auto*, always
+    -S, --size <size>...               Limit results based on the size of files.
+        --changed-within <date|dur>    Filter by file modification time (newer than)
+        --changed-before <date|dur>    Filter by file modification time (older than)
+
+ARGS:
+    <pattern>    the search pattern - a regular expression unless '--glob' is used (optional)
+    <path>...    the root directory for the filesystem search (optional)
+```
+
+## Benchmark
+
+Let's search my home folder for files that end in `[0-9].jpg`. It contains ~190.000
+subdirectories and about a million files. For averaging and statistical analysis, I'm using
+[hyperfine](https://github.com/sharkdp/hyperfine). The following benchmarks are performed
+with a "warm"/pre-filled disk-cache (results for a "cold" disk-cache show the same trends).
+
+Let's start with `find`:
+```
+Benchmark #1: find ~ -iregex '.*[0-9]\.jpg$'
+
+  Time (mean ± σ):      7.236 s ±  0.090 s
+
+  Range (min … max):    7.133 s …  7.385 s
+```
+
+`find` is much faster if it does not need to perform a regular-expression search:
+```
+Benchmark #2: find ~ -iname '*[0-9].jpg'
+
+  Time (mean ± σ):      3.914 s ±  0.027 s
+
+  Range (min … max):    3.876 s …  3.964 s
+```
+
+Now let's try the same for `fd`. Note that `fd` *always* performs a regular expression
+search. The options `--hidden` and `--no-ignore` are needed for a fair comparison,
+otherwise `fd` does not have to traverse hidden folders and ignored paths (see below):
+```
+Benchmark #3: fd -HI '.*[0-9]\.jpg$' ~
+
+  Time (mean ± σ):     811.6 ms ±  26.9 ms
+
+  Range (min … max):   786.0 ms … 870.7 ms
+```
+For this particular example, `fd` is approximately nine times faster than `find -iregex`
+and about five times faster than `find -iname`. By the way, both tools found the exact
+same 20880 files :smile:.
+
+Finally, let's run `fd` without `--hidden` and `--no-ignore` (this can lead to different
+search results, of course). If *fd* does not have to traverse the hidden and git-ignored
+folders, it is almost an order of magnitude faster:
+```
+Benchmark #4: fd '[0-9]\.jpg$' ~
+
+  Time (mean ± σ):     123.7 ms ±   6.0 ms
+
+  Range (min … max):   118.8 ms … 140.0 ms
+```
+
+**Note**: This is *one particular* benchmark on *one particular* machine. While I have
+performed quite a lot of different tests (and found consistent results), things might
+be different for you! I encourage everyone to try it out on their own. See
+[this repository](https://github.com/sharkdp/fd-benchmarks) for all necessary scripts.
+
+Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
+in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
 
 ## Troubleshooting
 
