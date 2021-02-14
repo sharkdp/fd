@@ -6,8 +6,8 @@
 [[中文](https://github.com/chinanf-boy/fd-zh)]
 [[한국어](https://github.com/spearkkk/fd-kor)]
 
-*fd* is a simple, fast and user-friendly alternative to
-[*find*](https://www.gnu.org/software/findutils/). While it does not seek to mirror all of *find*'s powerful functionality, it provides sensible
+`fd` is a simple, fast and user-friendly alternative to
+[`find`](https://www.gnu.org/software/findutils/). While it does not seek to mirror all of `find`'s powerful functionality, it provides sensible
 (opinionated) defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
 
 Quick links:
@@ -19,17 +19,16 @@ Quick links:
 
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
 * Colorized terminal output (same as *ls*).
-* It's *fast* (see [benchmarks](#benchmark) below).
+* [It's *fast*](#benchmark).
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
 * Ignores hidden directories and files, by default.
 * Ignores patterns from your `.gitignore`, by default.
+* Supports parallel command execution.
 * Regular expressions.
-* Unicode-awareness.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
-* Parallel command execution.
 
 ## Demo
 
@@ -38,7 +37,7 @@ Quick links:
 ## How to use
 
 First, to get an overview of all available command line options, you can either run
-`fd -h` for a concise help message (see above) or `fd --help` for a more detailed
+[`fd -h`](#command-line-options) for a concise help message or `fd --help` for a more detailed
 version.
 
 ### Simple search
