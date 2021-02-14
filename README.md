@@ -22,7 +22,7 @@ Quick links:
 * Regular expression (default) and glob-based patterns.
 * [Very fast](#benchmark) due to parallelized directory traversal.
 * Uses colors to highlight different file types (same as *ls*).
-* Supports [parallel command execution](#parallel-command-execution)
+* Supports [parallel command execution](#command-execution)
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
@@ -170,39 +170,53 @@ If you want `fd` to ignore these patterns globally, you can put them in `fd`'s g
 This is usually located in `~/.config/fd/ignore` in macOS or Linux, and `%APPDATA%\fd\ignore` in
 Windows.
 
-### Parallel command execution
+### Command execution
 
-If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
-for executing commands in parallel for each discovered path as the input. The number of threads
-used for command execution can be set with the `--threads`/`-j` option.
+Instead of just showing the search results, you often want to *do something* with them. `fd`
+provides two ways to execute external commands for each of your search results:
 
-*fd* takes the command template as a series of arguments rather than as a string. If you want to
-add additional options after the command template, you can terminate it with a `\;`. This is
-useful when you want to repeat a command with new options. For example, to remove write and
-execute permissions from all directories, run:
+* The `-x`/`--exec` option runs an external command *for each of the search results* (in parallel).
+* The `-X`/`--exec-batch` option launches the external command once, with *all search results as arguments*.
+
+#### Examples
+
+Recursively find all zip archives and unpack them in parallel:
 ``` bash
-fd -t d -x chmod -wx
-```
-If you realize you also need to modify hidden directories, you can quickly add the `-H` (or `--hidden`)
-option after the command template:
-```bash
-fd -t d -x chmod -wx \; -H
-```
-
-More examples:
-``` bash
-# Convert all jpg files to png files:
-fd -e jpg -x convert {} {.}.png
-
-# Unpack all zip files (if no placeholder is given, the path is appended):
 fd -e zip -x unzip
-
-# Convert all flac files into opus files:
-fd -e flac -x ffmpeg -i {} -c:a libopus {.}.opus
-
-# Count the number of lines in Rust files (the command template can be terminated with ';'):
-fd -x wc -l \; -e rs
 ```
+
+Find all `*.h` and `*.cpp` files and auto-format them inplace with `clang-format -i`:
+``` bash
+fd -e h -e cpp -x clang-format -i
+```
+Note how the `-i` option to `clang-format` can be passed as a separate argument. This is why
+we put the `-x` option last.
+
+Find all `test_*.py` files and open them in your favorite editor:
+``` bash
+fd -g 'test_*.py' -X vim
+```
+Note that we use capital `-X` here to open a single `vim` instance, with all search results as
+arguments.
+
+See details like file permissions, owners, file sizes etc. by running `ls -l`:
+``` bash
+fd … -X ls -lhd --color=always
+```
+This pattern is so useful that `fd` provides a shortcut. You can use the `-l`/`--list-details`
+option to execute `ls` in this way: `fd … -l`.
+
+Convert all `*.jpg` files to `*.png` files:
+``` bash
+fd -e jpg -x convert {} {.}.png
+```
+Here, `{}` is a placeholder for the search result. `{.}` is the same, without the file extension.
+See below for more details on the placeholder syntax.
+
+#### Placeholder syntax
+
+The `-x` and `-X` options take a *command template* as a series of arguments (instead of a single string).
+If you want to add additional options to `fd` after the command template, you can terminate it with a `\;`.
 
 The syntax for generating commands is similar to that of GNU Parallel:
 
@@ -210,10 +224,15 @@ The syntax for generating commands is similar to that of GNU Parallel:
   (`documents/images/party.jpg`).
 - `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
 - `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
-- `{//}`: Uses the parent of the discovered path (`documents/images`).
-- `{/.}`: Uses the basename, with the extension removed (`party`).
+- `{//}`: The parent of the discovered path (`documents/images`).
+- `{/.}`: The basename, with the extension removed (`party`).
 
-If you do not include a placeholder, *fd* automatically adds `{}`.
+If you do not include a placeholder, *fd* automatically adds a `{}` at the end.
+
+#### Parallel vs. serial execution
+
+For `-x`/`--exec`, you can control the number of parallel jobs by using the `-j`/`--threads` option.
+Use `--threads=1` for serial execution.
 
 ### Deleting files
 
@@ -439,7 +458,7 @@ For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
 
 ### Using fd with `xargs` or `parallel`
 
-Note that `fd` has a builtin feature for [command execution](#parallel-command-execution) with
+Note that `fd` has a builtin feature for [command execution](#command-execution) with
 its `-x`/`--exec` and `-X`/`--exec-batch` options. If you prefer, you can still use
 it in combination with `xargs`:
 ``` bash
