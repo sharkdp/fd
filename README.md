@@ -285,18 +285,19 @@ Here, the `-0` option tells *fd* to separate search results by the NULL characte
 newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
 ### Parallel command execution
+
 If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
-for executing commands in parallel for each discovered path as the input. The number of threads 
+for executing commands in parallel for each discovered path as the input. The number of threads
 used for command execution can be set with the `--threads`/`-j` option.
 
-*fd* takes the command template as a series of arguments rather than as a string. If you want to 
-add additional options after the command template, you can terminate it with a `\;`. This is 
-useful when you want to repeat a command with new options. For example, to remove write and 
+*fd* takes the command template as a series of arguments rather than as a string. If you want to
+add additional options after the command template, you can terminate it with a `\;`. This is
+useful when you want to repeat a command with new options. For example, to remove write and
 execute permissions from all directories, run:
 ``` bash
 fd -t d -x chmod -wx
 ```
-If you realize you also need to modify hidden directories, you can quickly add the `-H` (or `--hidden`) 
+If you realize you also need to modify hidden directories, you can quickly add the `-H` (or `--hidden`)
 option after the command template:
 ```bash
 fd -t d -x chmod -wx \; -H
@@ -350,9 +351,9 @@ path like `…/foo/bar/foo/…` and want to remove all directories named `foo`, 
 situation where the outer `foo` directory is removed first, leading to (harmless) *"'foo/bar/foo':
 No such file or directory"* errors in the `rm` call.
 
-### Troubleshooting
+## Troubleshooting
 
-#### `fd` does not find my file!
+### `fd` does not find my file!
 
 Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
 from `.gitignore` files. If you want to make sure to find absolutely every possible file, always
@@ -361,7 +362,7 @@ use the options `-H` and `-I` to disable these two features:
 > fd -HI …
 ```
 
-#### `fd` doesn't seem to interpret my regex pattern correctly
+### `fd` doesn't seem to interpret my regex pattern correctly
 
 A lot of special regex characters (like `[]`, `^`, `$`, ..) are also special characters in your
 shell. If in doubt, always make sure to put single quotes around the regex pattern:
@@ -379,9 +380,9 @@ use a character class with a single hyphen character:
 > fd '[-]pattern'
 ```
 
-### Integration with other programs
+## Integration with other programs
 
-#### Using fd with `fzf`
+### Using fd with `fzf`
 
 You can use *fd* to generate input for the command-line fuzzy finder [fzf](https://github.com/junegunn/fzf):
 ``` bash
@@ -404,7 +405,7 @@ export FZF_DEFAULT_OPTS="--ansi"
 
 For more details, see the [Tips section](https://github.com/junegunn/fzf#tips) of the fzf README.
 
-#### Using fd with `emacs`
+### Using fd with `emacs`
 
 The emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can
 use *fd* to find files.
@@ -415,7 +416,7 @@ After installing `find-file-in-project`, add the line `(setq ffip-use-rust-fd t)
 In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alternatively, run
 `M-x find-file-in-project` to list all available files in the project.
 
-#### Printing fd's output as a tree
+### Printing fd's output as a tree
 
 To format the output of `fd` similar to the `tree` command, install [`as-tree`] and pipe the output
 of `fd` to `as-tree`:
