@@ -147,10 +147,13 @@ provides two ways to execute external commands for each of your search results:
 
 #### Examples
 
-Recursively find all zip archives and unpack them in parallel:
+Recursively find all zip archives and unpack them:
 ``` bash
 fd -e zip -x unzip
 ```
+If there are two such files, `file1.zip` and `backup/file2.zip`, this would execute
+`unzip file1.zip` and `unzip backup/file2.zip`. The two `unzip` processes run in parallel
+(if the files are found fast enough).
 
 Find all `*.h` and `*.cpp` files and auto-format them inplace with `clang-format -i`:
 ``` bash
@@ -163,10 +166,11 @@ Find all `test_*.py` files and open them in your favorite editor:
 ``` bash
 fd -g 'test_*.py' -X vim
 ```
-Note that we use capital `-X` here to open a single `vim` instance, with all search results as
-arguments.
+Note that we use capital `-X` here to open a single `vim` instance. If there are two such files,
+`test_basic.py` and `lib/test_advanced.py`, this will run `vim test_basic.py lib/test_advanced.py`.
 
-See details like file permissions, owners, file sizes etc. by running `ls -l`:
+To see details like file permissions, owners, file sizes etc., you can tell `fd` to show them
+by running `ls` for each result:
 ``` bash
 fd … -X ls -lhd --color=always
 ```
