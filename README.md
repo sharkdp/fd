@@ -6,9 +6,10 @@
 [[中文](https://github.com/chinanf-boy/fd-zh)]
 [[한국어](https://github.com/spearkkk/fd-kor)]
 
-`fd` is a simple, fast and user-friendly alternative to
-[`find`](https://www.gnu.org/software/findutils/). While it does not seek to mirror all of `find`'s powerful functionality, it provides sensible
-(opinionated) defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
+`fd` is a program to find entries in your filesytem.
+It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.org/software/findutils/).
+While it does not aim to support all of `find`'s powerful functionality, it provides sensible
+(opinionated) defaults for a majority of use cases.
 
 Quick links:
 * [How to use](#how-to-use)
@@ -17,15 +18,15 @@ Quick links:
 
 ## Features
 
-* Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
-* Colorized terminal output (same as *ls*).
+* Intuitive syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
 * [It's *fast*](#benchmark).
+* Colorized terminal output (same as *ls*).
+* Parallel command execution.
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
 * Ignores hidden directories and files, by default.
 * Ignores patterns from your `.gitignore`, by default.
-* Supports parallel command execution.
 * Regular expressions.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
