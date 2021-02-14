@@ -19,15 +19,15 @@ Quick links:
 ## Features
 
 * Intuitive syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
-* [It's *fast*](#benchmark).
-* Colorized terminal output (same as *ls*).
-* Parallel command execution.
+* Regular expression (default) and glob-based patterns.
+* [Very fast](#benchmark) due to parallelized directory traversal.
+* Uses colors to highlight different file types (same as *ls*).
+* Supports [parallel command execution](#parallel-command-execution)
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
 * Ignores hidden directories and files, by default.
 * Ignores patterns from your `.gitignore`, by default.
-* Regular expressions.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 
