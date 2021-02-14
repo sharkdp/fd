@@ -175,6 +175,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .short("0")
                 .overrides_with("print0")
                 .conflicts_with("list-details")
+                .hidden_short_help(true)
                 .help("Separate results by the null character")
                 .long_help(
                     "Separate search results by the null character (instead of newlines). \
