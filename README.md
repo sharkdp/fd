@@ -170,15 +170,6 @@ If you want `fd` to ignore these patterns globally, you can put them in `fd`'s g
 This is usually located in `~/.config/fd/ignore` in macOS or Linux, and `%APPDATA%\fd\ignore` in
 Windows.
 
-### Using fd with `xargs` or `parallel`
-
-If we want to run a command on all search results, we can pipe the output to `xargs`:
-``` bash
-> fd -0 -e rs | xargs -0 wc -l
-```
-Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
-newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
-
 ### Parallel command execution
 
 If the `-x`/`--exec` option is specified alongside a command template, a job pool will be created
@@ -445,6 +436,17 @@ default, nor does it support as rich a set of options as `fd` does to control wh
 For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
 
 [`as-tree`]: https://github.com/jez/as-tree
+
+### Using fd with `xargs` or `parallel`
+
+Note that `fd` has a builtin feature for [command execution](#parallel-command-execution) with
+its `-x`/`--exec` and `-X`/`--exec-batch` options. If you prefer, you can still use
+it in combination with `xargs`:
+``` bash
+> fd -0 -e rs | xargs -0 wc -l
+```
+Here, the `-0` option tells *fd* to separate search results by the NULL character (instead of
+newlines). In the same way, the `-0` option of `xargs` tells it to read the input in this way.
 
 ## Installation
 
