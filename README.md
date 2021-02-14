@@ -12,8 +12,9 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 (opinionated) defaults for [80%](https://en.wikipedia.org/wiki/Pareto_principle) of the use cases.
 
 ## Features
+
 * Convenient syntax: `fd PATTERN` instead of `find -iname '*PATTERN*'`.
-* Colorized terminal output (similar to *ls*).
+* Colorized terminal output (same as *ls*).
 * It's *fast* (see [benchmarks](#benchmark) below).
 * Smart case: the search is case-insensitive by default. It switches to
   case-sensitive if the pattern contains an uppercase
@@ -24,7 +25,7 @@ While it does not seek to mirror all of *find*'s powerful functionality, it prov
 * Unicode-awareness.
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
-* Parallel command execution with a syntax similar to GNU Parallel.
+* Parallel command execution.
 
 ## Demo
 
@@ -87,18 +88,6 @@ be different for you! I encourage everyone to try it out on their own. See
 
 Concerning *fd*'s speed, the main credit goes to the `regex` and `ignore` crates that are also used
 in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
-
-## Colorized output
-`fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
-variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
-of this variable is set by the `dircolors` command which provides a convenient configuration format
-to define colors for different file formats.
-On most distributions, `LS_COLORS` should be set already. If you are on Windows or if you are looking
-for alternative, more complete (or more colorful) variants, see [here](https://github.com/sharkdp/vivid),
-[here](https://github.com/seebi/dircolors-solarized) or
-[here](https://github.com/trapd00r/LS_COLORS).
-
-`fd` also honors the [`NO_COLOR`](https://no-color.org/) environment variable.
 
 ## Command-line options
 ```
@@ -353,6 +342,19 @@ No such file or directory"* errors in the `rm` call.
 
 ## Troubleshooting
 
+### Colorized output
+
+`fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
+variable [`LS_COLORS`](https://linux.die.net/man/5/dir_colors) has to be set. Typically, the value
+of this variable is set by the `dircolors` command which provides a convenient configuration format
+to define colors for different file formats.
+On most distributions, `LS_COLORS` should be set already. If you are on Windows or if you are looking
+for alternative, more complete (or more colorful) variants, see [here](https://github.com/sharkdp/vivid),
+[here](https://github.com/seebi/dircolors-solarized) or
+[here](https://github.com/trapd00r/LS_COLORS).
+
+`fd` also honors the [`NO_COLOR`](https://no-color.org/) environment variable.
+
 ### `fd` does not find my file!
 
 Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
@@ -416,7 +418,7 @@ After installing `find-file-in-project`, add the line `(setq ffip-use-rust-fd t)
 In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alternatively, run
 `M-x find-file-in-project` to list all available files in the project.
 
-### Printing fd's output as a tree
+### Printing the output as a tree
 
 To format the output of `fd` similar to the `tree` command, install [`as-tree`] and pipe the output
 of `fd` to `as-tree`:
