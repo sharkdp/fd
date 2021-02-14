@@ -181,7 +181,7 @@ If we want to search a specific directory, it can be given as a second argument 
 /etc/passwd
 ```
 
-### Running *fd* without any arguments
+### List all files, recursively
 
 *fd* can be called with no arguments. This is very useful to get a quick overview of all entries
 in the current directory, recursively (similar to `ls -R`):
