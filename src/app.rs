@@ -442,8 +442,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Filter results based on the file modification time. The argument can be provided \
                      as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
-                     By default, for point in time if no time is specified (HH:MM:SS) it defaults to 00:00:00. \
-                     '--change-newer-than' or '--newer' can be used as an alias.\n\
+                     If the time is not specified, it defaults to 00:00:00. \
+                     '--change-newer-than' or '--newer' can be used as aliases.\n\
                      Examples:\n    \
                          --changed-within 2weeks\n    \
                          --change-newer-than '2018-10-27 10:00:00'\n    \
@@ -462,7 +462,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Filter results based on the file modification time. The argument can be provided \
                      as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
-                     '--change-older-than' or 'older' can be used as an alias.\n\
+                     '--change-older-than' or '--older' can be used as an alias.\n\
                      Examples:\n    \
                          --changed-before '2018-10-27 10:00:00'\n    \
                          --change-older-than 2weeks\n    \
