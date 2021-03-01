@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
@@ -9,6 +8,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
+use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
@@ -34,12 +34,18 @@ enum ReceiverMode {
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
 pub enum WorkerResult {
-    Entry(PathBuf),
+    Entry {
+        path: PathBuf,
+        meta: Option<Metadata>,
+    },
     Error(ignore::Error),
 }
 
 /// Maximum size of the output buffer before flushing results to the console
 pub const MAX_BUFFER_LENGTH: usize = 1000;
+
+/// After TTY_FLUSH_INTERVAL flush any buffered data to terminal
+pub const TTY_FLUSH_INTERVAL: usize = 40;
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
@@ -207,8 +213,6 @@ fn spawn_receiver(
         } else {
             let start = time::Instant::now();
 
-            let mut buffer = vec![];
-
             // Start in buffering mode
             let mut mode = ReceiverMode::Buffering;
 
@@ -218,10 +222,105 @@ fn spawn_receiver(
                 .unwrap_or_else(|| time::Duration::from_millis(100));
 
             let stdout = io::stdout();
-            let mut stdout = stdout.lock();
+            let stdout = stdout.lock();
+            let mut stdout = io::BufWriter::with_capacity(12 * 4096, stdout);
 
             let mut num_results = 0;
 
+            if config.interactive_terminal {
+                let mut buffer = Vec::with_capacity(MAX_BUFFER_LENGTH);
+                for worker_result in rx {
+                    match worker_result {
+                        WorkerResult::Entry { path, meta } => {
+                            match mode {
+                                ReceiverMode::Buffering => {
+                                    buffer.push((path, meta));
+
+                                    // Have we reached the maximum buffer size or maximum buffering time?
+                                    if buffer.len() > MAX_BUFFER_LENGTH
+                                        || time::Instant::now() - start > max_buffer_time
+                                    {
+                                        // Flush the buffer
+                                        for (path, meta) in &buffer {
+                                            output::print_entry(
+                                                &mut stdout,
+                                                path,
+                                                meta,
+                                                &config,
+                                                &wants_to_quit,
+                                            );
+                                        }
+                                        buffer.clear();
+                                        let r = stdout.flush();
+                                        if r.is_err() {
+                                            // Probably a broken pipe. Exit gracefully.
+                                            process::exit(ExitCode::GeneralError.into());
+                                        }
+                                        // Start streaming
+                                        mode = ReceiverMode::Streaming;
+                                    }
+                                }
+                                ReceiverMode::Streaming => {
+                                    output::print_entry(
+                                        &mut stdout,
+                                        &path,
+                                        &meta,
+                                        &config,
+                                        &wants_to_quit,
+                                    );
+                                    if num_results % TTY_FLUSH_INTERVAL == 0 {
+                                        let r = stdout.flush();
+                                        if r.is_err() {
+                                            // Probably a broken pipe. Exit gracefully.
+                                            process::exit(ExitCode::GeneralError.into());
+                                        }
+                                    }
+                                }
+                            }
+                            num_results += 1;
+                        }
+                        WorkerResult::Error(err) => {
+                            if show_filesystem_errors {
+                                print_error(err.to_string());
+                            }
+                        }
+                    }
+                    if let Some(max_results) = config.max_results {
+                        if num_results >= max_results {
+                            break;
+                        }
+                    }
+                }
+                // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
+                // anything to the console, yet. In this case, sort the results and print them:
+                if !buffer.is_empty() {
+                    buffer.sort_by(|left, right| left.0.cmp(&right.0));
+                    for (path, meta) in buffer {
+                        output::print_entry(&mut stdout, &path, &meta, &config, &wants_to_quit);
+                    }
+                }
+            } else {
+                let mut num_results = 0;
+                for worker_result in rx {
+                    match worker_result {
+                        WorkerResult::Entry { path, meta } => {
+                            output::print_entry(&mut stdout, &path, &meta, &config, &wants_to_quit);
+                            num_results += 1_usize;
+                        }
+                        WorkerResult::Error(err) => {
+                            if show_filesystem_errors {
+                                print_error(err.to_string());
+                            }
+                        }
+                    }
+                    if let Some(max_results) = config.max_results {
+                        if num_results >= max_results {
+                            break;
+                        }
+                    }
+                }
+            }
+            /*
             for worker_result in rx {
                 match worker_result {
                     WorkerResult::Entry(value) => {
@@ -277,6 +376,7 @@ fn spawn_receiver(
                     output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
                 }
             }
+            */
 
             ExitCode::Success
         }
@@ -496,7 +596,10 @@ fn spawn_senders(
                 }
             }
 
-            let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
+            let send_result = tx_thread.send(WorkerResult::Entry {
+                path: entry_path.to_owned(),
+                meta: entry.metadata(),
+            });
 
             if send_result.is_err() {
                 return ignore::WalkState::Quit;

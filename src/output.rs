@@ -2,7 +2,6 @@ use std::io::{self, StdoutLock, Write};
 use std::path::Path;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
 use lscolors::{LsColors, Style};
 
@@ -19,7 +18,7 @@ pub fn print_entry(
     stdout: &mut StdoutLock,
     entry: &Path,
     config: &Options,
-    wants_to_quit: &Arc<AtomicBool>,
+    wants_to_quit: &AtomicBool,
 ) {
     let path = if entry.is_absolute() {
         entry
@@ -40,31 +39,51 @@ pub fn print_entry(
 }
 
 // TODO: this function is performance critical and can probably be optimized
-fn print_entry_colorized(
-    stdout: &mut StdoutLock,
+fn print_entry_colorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
+    meta: &Option<Metadata>,
     config: &Options,
     ls_colors: &LsColors,
-    wants_to_quit: &Arc<AtomicBool>,
+    wants_to_quit: &AtomicBool,
 ) -> io::Result<()> {
     let default_style = ansi_term::Style::default();
 
-    // Traverse the path and colorize each component
-    for (component, style) in ls_colors.style_for_path_components(path) {
+    if path.components().rev().nth(1).is_none(){
+        let style = ls_colors.style_for_path_with_metadata(path, meta.as_ref());
         let style = style
             .map(Style::to_ansi_term_style)
             .unwrap_or(default_style);
 
-        let mut path_string = component.to_string_lossy();
+        let mut path_string = path.to_string_lossy();
         if let Some(ref separator) = config.path_separator {
             *path_string.to_mut() = replace_path_separator(&path_string, separator);
         }
         write!(stdout, "{}", style.paint(path_string))?;
-
-        // TODO: can we move this out of the if-statement? Why do we call it that often?
         if wants_to_quit.load(Ordering::Relaxed) {
             writeln!(stdout)?;
+            stdout.flush()?;
             process::exit(ExitCode::KilledBySigint.into());
+        }
+    }else{
+        // Traverse the path and colorize each component
+        for (component, style) in ls_colors.style_for_path_components(path) {
+            let style = style
+                .map(Style::to_ansi_term_style)
+                .unwrap_or(default_style);
+
+            let mut path_string = component.to_string_lossy();
+            if let Some(ref separator) = config.path_separator {
+                *path_string.to_mut() = replace_path_separator(&path_string, &separator);
+            }
+            write!(stdout, "{}", style.paint(path_string))?;
+
+            // TODO: can we move this out of the if-statement? Why do we call it that often?
+            if wants_to_quit.load(Ordering::Relaxed) {
+                writeln!(stdout)?;
+                stdout.flush()?;
+                process::exit(ExitCode::KilledBySigint.into());
+            }
         }
     }
 
@@ -76,8 +95,8 @@ fn print_entry_colorized(
 }
 
 // TODO: this function is performance critical and can probably be optimized
-fn print_entry_uncolorized_base(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized_base<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Options,
 ) -> io::Result<()> {
@@ -91,8 +110,8 @@ fn print_entry_uncolorized_base(
 }
 
 #[cfg(not(unix))]
-fn print_entry_uncolorized(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Options,
 ) -> io::Result<()> {
@@ -100,8 +119,8 @@ fn print_entry_uncolorized(
 }
 
 #[cfg(unix)]
-fn print_entry_uncolorized(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Options,
 ) -> io::Result<()> {
