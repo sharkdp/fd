@@ -48,7 +48,7 @@ pub enum WorkerResult {
 pub const MAX_BUFFER_LENGTH: usize = 1000;
 
 /// After TTY_FLUSH_INTERVAL flush any buffered data to terminal
-pub const TTY_FLUSH_INTERVAL: usize = 40;
+pub const TTY_FLUSH_INTERVAL: usize = 1;
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
