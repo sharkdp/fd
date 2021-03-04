@@ -4,7 +4,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender as Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
@@ -22,6 +22,12 @@ use crate::filesystem;
 use crate::options::Options;
 use crate::output;
 
+pub const WORKER_CHANNEL_DEFAULT_BOUND: usize = 1000;
+
+pub fn make_worker_channel() -> (Sender<WorkerResult>, Receiver<WorkerResult>) {
+    sync_channel(WORKER_CHANNEL_DEFAULT_BOUND)
+}
+
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
     /// Receiver is still buffering in order to sort the results, if the search finishes fast
@@ -34,10 +40,7 @@ enum ReceiverMode {
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
 pub enum WorkerResult {
-    Entry {
-        path: PathBuf,
-        meta: Option<Metadata>,
-    },
+    Entry(PathBuf),
     Error(ignore::Error),
 }
 
@@ -57,7 +60,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = channel();
+    let (tx, rx) = make_worker_channel();
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -223,7 +226,7 @@ fn spawn_receiver(
 
             let stdout = io::stdout();
             let stdout = stdout.lock();
-            let mut stdout = io::BufWriter::with_capacity(12 * 4096, stdout);
+            let mut stdout = io::BufWriter::new(stdout);
 
             let mut num_results = 0;
 
@@ -231,21 +234,20 @@ fn spawn_receiver(
                 let mut buffer = Vec::with_capacity(MAX_BUFFER_LENGTH);
                 for worker_result in rx {
                     match worker_result {
-                        WorkerResult::Entry { path, meta } => {
+                        WorkerResult::Entry(path) => {
                             match mode {
                                 ReceiverMode::Buffering => {
-                                    buffer.push((path, meta));
+                                    buffer.push(path);
 
                                     // Have we reached the maximum buffer size or maximum buffering time?
                                     if buffer.len() > MAX_BUFFER_LENGTH
                                         || time::Instant::now() - start > max_buffer_time
                                     {
                                         // Flush the buffer
-                                        for (path, meta) in &buffer {
+                                        for path in &buffer {
                                             output::print_entry(
                                                 &mut stdout,
                                                 path,
-                                                meta,
                                                 &config,
                                                 &wants_to_quit,
                                             );
@@ -264,7 +266,6 @@ fn spawn_receiver(
                                     output::print_entry(
                                         &mut stdout,
                                         &path,
-                                        &meta,
                                         &config,
                                         &wants_to_quit,
                                     );
@@ -294,17 +295,17 @@ fn spawn_receiver(
                 // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
                 // anything to the console, yet. In this case, sort the results and print them:
                 if !buffer.is_empty() {
-                    buffer.sort_by(|left, right| left.0.cmp(&right.0));
-                    for (path, meta) in buffer {
-                        output::print_entry(&mut stdout, &path, &meta, &config, &wants_to_quit);
+                    buffer.sort();
+                    for path in buffer {
+                        output::print_entry(&mut stdout, &path,  &config, &wants_to_quit);
                     }
                 }
             } else {
                 let mut num_results = 0;
                 for worker_result in rx {
                     match worker_result {
-                        WorkerResult::Entry { path, meta } => {
-                            output::print_entry(&mut stdout, &path, &meta, &config, &wants_to_quit);
+                        WorkerResult::Entry(path) => {
+                            output::print_entry(&mut stdout, &path,  &config, &wants_to_quit);
                             num_results += 1_usize;
                         }
                         WorkerResult::Error(err) => {
@@ -320,63 +321,6 @@ fn spawn_receiver(
                     }
                 }
             }
-            /*
-            for worker_result in rx {
-                match worker_result {
-                    WorkerResult::Entry(value) => {
-                        match mode {
-                            ReceiverMode::Buffering => {
-                                buffer.push(value);
-
-                                // Have we reached the maximum buffer size or maximum buffering time?
-                                if buffer.len() > MAX_BUFFER_LENGTH
-                                    || time::Instant::now() - start > max_buffer_time
-                                {
-                                    // Flush the buffer
-                                    for v in &buffer {
-                                        output::print_entry(
-                                            &mut stdout,
-                                            v,
-                                            &config,
-                                            &wants_to_quit,
-                                        );
-                                    }
-                                    buffer.clear();
-
-                                    // Start streaming
-                                    mode = ReceiverMode::Streaming;
-                                }
-                            }
-                            ReceiverMode::Streaming => {
-                                output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
-                            }
-                        }
-
-                        num_results += 1;
-                    }
-                    WorkerResult::Error(err) => {
-                        if show_filesystem_errors {
-                            print_error(err.to_string());
-                        }
-                    }
-                }
-
-                if let Some(max_results) = config.max_results {
-                    if num_results >= max_results {
-                        break;
-                    }
-                }
-            }
-
-            // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
-            // anything to the console, yet. In this case, sort the results and print them:
-            if !buffer.is_empty() {
-                buffer.sort();
-                for value in buffer {
-                    output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
-                }
-            }
-            */
 
             ExitCode::Success
         }
@@ -596,10 +540,7 @@ fn spawn_senders(
                 }
             }
 
-            let send_result = tx_thread.send(WorkerResult::Entry {
-                path: entry_path.to_owned(),
-                meta: entry.metadata(),
-            });
+            let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
 
             if send_result.is_err() {
                 return ignore::WalkState::Quit;
