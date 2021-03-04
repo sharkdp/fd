@@ -1,4 +1,4 @@
-use std::io::{self, StdoutLock, Write};
+use std::io::{self, Write};
 use std::path::Path;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
