@@ -189,7 +189,7 @@ See below for more details on the placeholder syntax.
 The `-x` and `-X` options take a *command template* as a series of arguments (instead of a single string).
 If you want to add additional options to `fd` after the command template, you can terminate it with a `\;`.
 
-The syntax for generating commands is similar to that of GNU Parallel:
+The syntax for generating commands is similar to that of [GNU Parallel](https://www.gnu.org/software/parallel/):
 
 - `{}`: A placeholder token that will be replaced with the path of the search result
   (`documents/images/party.jpg`).
