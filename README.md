@@ -426,6 +426,20 @@ export FZF_DEFAULT_OPTS="--ansi"
 
 For more details, see the [Tips section](https://github.com/junegunn/fzf#tips) of the fzf README.
 
+### Using fd with `rofi`
+
+[*rofi*](https://github.com/davatorium/rofi) is a graphical launch menu application that is able to create menus by reading from *stdin*. Piping `fd` output into `rofi`s `-dmenu` mode creates fuzzy-searchable lists of files and directories.
+
+#### Example
+
+Create a case-insensitive searchable multi-select list of *PDF* files under your `$HOME` directory and open the selection with your configured PDF viewer. To list all file types, drop the `-e pdf` argument.
+
+``` bash
+fd --type f -e pdf . $HOME | rofi -keep-right -dmenu -i -p FILES -multi-select | xargs -I {} xdg-open {}
+```
+
+To modify the list that is presented by rofi, add arguments to the `fd` command. To modify the search behaviour of rofi, add arguments to the `rofi` command.
+
 ### Using fd with `emacs`
 
 The emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can
