@@ -57,7 +57,7 @@ fn run() -> Result<ExitCode> {
         Ok(matches) => matches,
         Err(err) => {
             eprintln!("{}", err);
-            return Ok(ExitCode::GeneralError)
+            return Ok(ExitCode::GeneralError);
         }
     };
 
@@ -80,7 +80,6 @@ fn run() -> Result<ExitCode> {
         println!("");
         return Ok(ExitCode::Success);
     }
-
 
     // Set the current working directory of the process
     if let Some(base_directory) = matches.value_of_os("base-directory") {
