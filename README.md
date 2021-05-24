@@ -6,7 +6,7 @@
 [[中文](https://github.com/chinanf-boy/fd-zh)]
 [[한국어](https://github.com/spearkkk/fd-kor)]
 
-`fd` is a program to find entries in your filesytem.
+`fd` is a program to find entries in your filesystem.
 It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.org/software/findutils/).
 While it does not aim to support all of `find`'s powerful functionality, it provides sensible
 (opinionated) defaults for a majority of use cases.
