@@ -624,7 +624,7 @@ Note that rust version *1.36.0* or later is required.
 
 ### From binaries
 
-The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
+The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows. Statically-linked binaries are also available: look for archives with `musl` in the file name.
 
 ## Development
 ```bash
