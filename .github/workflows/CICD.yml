@@ -172,14 +172,14 @@ jobs:
         cp "${{ steps.strip.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
 
         # Man page
-        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/'${{ env.PROJECT_NAME }}.1' "$ARCHIVE_DIR"
+        cp 'doc/${{ env.PROJECT_NAME }}.1' "$ARCHIVE_DIR"
 
         # README, LICENSE and CHANGELOG files
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
 
         # Autocompletion files
-        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.bash' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.bash"
-        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.fish' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.fish"
+        # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.bash' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.bash"
+        # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.fish' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.fish"
         cp 'contrib/completion_${{ env.PROJECT_NAME }}' "$ARCHIVE_DIR/autocomplete/"
 
         # base compressed package
@@ -224,7 +224,7 @@ jobs:
         install -Dm755 "${{ steps.strip.outputs.BIN_PATH }}" "${DPKG_DIR}/usr/bin/${{ steps.strip.outputs.BIN_NAME }}"
 
         # Man page
-        install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/manual/'${{ env.PROJECT_NAME }}.1' "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
+        install -Dm644 'doc/${{ env.PROJECT_NAME }}.1' "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
         gzip -n --best "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
 
         # Autocompletion files
