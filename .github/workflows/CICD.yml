@@ -179,7 +179,7 @@ jobs:
         # Autocompletion files
         # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.bash' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.bash"
         # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.fish' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.fish"
-        cp 'contrib/completion_${{ env.PROJECT_NAME }}' "$ARCHIVE_DIR/autocomplete/"
+        cp 'contrib/completion/_${{ env.PROJECT_NAME }}' "$ARCHIVE_DIR/autocomplete/"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
