@@ -177,9 +177,10 @@ jobs:
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
 
         # Autocompletion files
-        # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.bash' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.bash"
-        # cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}.fish' "$ARCHIVE_DIR/autocomplete/${{ env.PROJECT_NAME }}.fish"
-        cp 'contrib/completion/_${{ env.PROJECT_NAME }}' "$ARCHIVE_DIR/autocomplete/"
+        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'*/out/'${{ env.PROJECT_NAME }}.bash' "$ARCHIVE_DIR/autocomplete/"
+        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'*/out/'${{ env.PROJECT_NAME }}.fish' "$ARCHIVE_DIR/autocomplete/"
+        cp 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'*/out/'_${{ env.PROJECT_NAME }}.ps1' "$ARCHIVE_DIR/autocomplete/"
+        cp 'contrib/completion/_fd' "$ARCHIVE_DIR/autocomplete/"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
@@ -227,9 +228,9 @@ jobs:
         gzip -n --best "${DPKG_DIR}/usr/share/man/man1/${{ env.PROJECT_NAME }}.1"
 
         # Autocompletion files
-        # TODO
-        # install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}'.fish "${DPKG_DIR}/usr/share/fish/vendor_completions.d/${{ env.PROJECT_NAME }}.fish"
-        # install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'-*/out/assets/completions/'${{ env.PROJECT_NAME }}'.zsh "${DPKG_DIR}/usr/share/zsh/vendor-completions/_${{ env.PROJECT_NAME }}"
+        install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'*/out/'${{ env.PROJECT_NAME }}.bash' "${DPKG_DIR}/usr/share/bash-completion/completions/${{ env.PROJECT_NAME }}"
+        install -Dm644 'target/${{ matrix.job.target }}/release/build/${{ env.PROJECT_NAME }}'*/out/'${{ env.PROJECT_NAME }}.fish' "${DPKG_DIR}/usr/share/fish/vendor_completions.d/${{ env.PROJECT_NAME }}.fish"
+        install -Dm644 'contrib/completion/_fd' "${DPKG_DIR}/usr/share/zsh/vendor-completions/_${{ env.PROJECT_NAME }}"
 
         # README and LICENSE
         install -Dm644 "README.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/README.md"
