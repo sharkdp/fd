@@ -68,22 +68,22 @@ pub fn is_empty(entry: &walk::DirEntry) -> bool {
 }
 
 #[cfg(any(unix, target_os = "redox"))]
-pub fn is_socket(ft: &fs::FileType) -> bool {
+pub fn is_socket(ft: fs::FileType) -> bool {
     ft.is_socket()
 }
 
 #[cfg(windows)]
-pub fn is_socket(_: &fs::FileType) -> bool {
+pub fn is_socket(_: fs::FileType) -> bool {
     false
 }
 
 #[cfg(any(unix, target_os = "redox"))]
-pub fn is_pipe(ft: &fs::FileType) -> bool {
+pub fn is_pipe(ft: fs::FileType) -> bool {
     ft.is_fifo()
 }
 
 #[cfg(windows)]
-pub fn is_pipe(_: &fs::FileType) -> bool {
+pub fn is_pipe(_: fs::FileType) -> bool {
     false
 }
 

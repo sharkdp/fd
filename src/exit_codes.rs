@@ -5,9 +5,9 @@ pub enum ExitCode {
     KilledBySigint,
 }
 
-impl Into<i32> for ExitCode {
-    fn into(self) -> i32 {
-        match self {
+impl From<ExitCode> for i32 {
+    fn from(code: ExitCode) -> Self {
+        match code {
             ExitCode::Success => 0,
             ExitCode::GeneralError => 1,
             ExitCode::KilledBySigint => 130,
@@ -16,13 +16,13 @@ impl Into<i32> for ExitCode {
 }
 
 impl ExitCode {
-    fn is_error(&self) -> bool {
-        *self != ExitCode::Success
+    fn is_error(self) -> bool {
+        self != ExitCode::Success
     }
 }
 
 pub fn merge_exitcodes(results: &[ExitCode]) -> ExitCode {
-    if results.iter().any(ExitCode::is_error) {
+    if results.iter().any(|&c| ExitCode::is_error(c)) {
         return ExitCode::GeneralError;
     }
     ExitCode::Success
