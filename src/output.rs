@@ -11,7 +11,7 @@ use crate::filesystem::strip_current_dir;
 use crate::options::Options;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
-    path.replace(std::path::MAIN_SEPARATOR, &new_path_separator)
+    path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -28,7 +28,7 @@ pub fn print_entry(
     };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(stdout, path, config, ls_colors, &wants_to_quit)
+        print_entry_colorized(stdout, path, config, ls_colors, wants_to_quit)
     } else {
         print_entry_uncolorized(stdout, path, config)
     };
@@ -57,7 +57,7 @@ fn print_entry_colorized(
 
         let mut path_string = component.to_string_lossy();
         if let Some(ref separator) = config.path_separator {
-            *path_string.to_mut() = replace_path_separator(&path_string, &separator);
+            *path_string.to_mut() = replace_path_separator(&path_string, separator);
         }
         write!(stdout, "{}", style.paint(path_string))?;
 
@@ -85,7 +85,7 @@ fn print_entry_uncolorized_base(
 
     let mut path_string = path.to_string_lossy();
     if let Some(ref separator) = config.path_separator {
-        *path_string.to_mut() = replace_path_separator(&path_string, &separator);
+        *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
     write!(stdout, "{}{}", path_string, separator)
 }

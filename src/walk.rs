@@ -451,7 +451,7 @@ fn spawn_senders(
             {
                 if let Some(ref owner_constraint) = config.owner_constraint {
                     if let Ok(ref metadata) = entry_path.metadata() {
-                        if !owner_constraint.matches(&metadata) {
+                        if !owner_constraint.matches(metadata) {
                             return ignore::WalkState::Continue;
                         }
                     } else {
