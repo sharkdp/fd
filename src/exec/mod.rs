@@ -201,10 +201,7 @@ enum ArgumentTemplate {
 
 impl ArgumentTemplate {
     pub fn has_tokens(&self) -> bool {
-        match self {
-            ArgumentTemplate::Tokens(_) => true,
-            _ => false,
-        }
+        matches!(self, ArgumentTemplate::Tokens(_))
     }
 
     /// Generate an argument from this template. If path_separator is Some, then it will replace

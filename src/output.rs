@@ -1,5 +1,5 @@
 use std::io::{self, StdoutLock, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -17,12 +17,12 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 // TODO: this function is performance critical and can probably be optimized
 pub fn print_entry(
     stdout: &mut StdoutLock,
-    entry: &PathBuf,
+    entry: &Path,
     config: &Options,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
     let path = if entry.is_absolute() {
-        entry.as_path()
+        entry
     } else {
         strip_current_dir(entry)
     };
