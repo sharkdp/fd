@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use lscolors::{LsColors, Style};
 
+use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
 use crate::options::Options;
@@ -33,9 +34,14 @@ pub fn print_entry(
         print_entry_uncolorized(stdout, path, config)
     };
 
-    if r.is_err() {
-        // Probably a broken pipe. Exit gracefully.
-        process::exit(ExitCode::GeneralError.into());
+    if let Err(e) = r {
+        if e.kind() == ::std::io::ErrorKind::BrokenPipe {
+            // Exit gracefully in case of a broken pipe (e.g. 'fd ... | head -n 3').
+            process::exit(0);
+        } else {
+            print_error(format!("Could not write to output: {}", e));
+            process::exit(ExitCode::GeneralError.into());
+        }
     }
 }
 

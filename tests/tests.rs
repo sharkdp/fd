@@ -1663,7 +1663,7 @@ fn test_base_directory() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let abs_base_dir = &format!("{abs_path}/one/two", abs_path = &abs_path);
     te.assert_output(
-        &["--base-directory", &abs_base_dir, "foo", &abs_path],
+        &["--base-directory", abs_base_dir, "foo", &abs_path],
         &format!(
             "{abs_path}/a.foo
             {abs_path}/one/b.foo
