@@ -5,6 +5,7 @@
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)
+- Properly handle write errors to devices that are full, see #737
 
 ## Changes
 
