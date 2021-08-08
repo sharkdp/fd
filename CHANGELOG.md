@@ -2,6 +2,8 @@
 
 ## Features
 
+- Add new `--has-match` flag, see issue #303 and PR #813 (@Asha20)
+
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)
