@@ -50,6 +50,16 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("no-ignore-parent")
+                .long("no-ignore-parent")
+                .overrides_with("no-ignore-parent")
+                .hidden_short_help(true)
+                .long_help(
+                    "Show search results from files and directories that would otherwise be \
+                        ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.",
+                ),
+        )
+        .arg(
             Arg::with_name("no-global-ignore-file")
                 .long("no-global-ignore-file")
                 .hidden(true)
