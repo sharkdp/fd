@@ -47,6 +47,7 @@ lscolors = "0.7"
 globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
+normpath = "0.3"
 
 [dependencies.clap]
 version = "2.31.2"
