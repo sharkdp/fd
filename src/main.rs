@@ -21,6 +21,7 @@ use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
+use normpath::PathExt;
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -120,7 +121,7 @@ fn run() -> Result<ExitCode> {
             .iter()
             .map(|path_buffer| {
                 path_buffer
-                    .canonicalize()
+                    .normalize()
                     .and_then(|pb| filesystem::absolute_path(pb.as_path()))
                     .unwrap()
             })

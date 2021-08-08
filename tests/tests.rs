@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
+use normpath::PathExt;
 use regex::escape;
 
 use crate::testenv::TestEnv;
@@ -26,8 +27,9 @@ static DEFAULT_FILES: &[&str] = &[
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env
         .test_root()
-        .canonicalize()
+        .normalize()
         .expect("absolute path")
+        .as_path()
         .to_str()
         .expect("string")
         .to_string();
@@ -1090,16 +1092,19 @@ fn test_symlink_as_root() {
 fn test_symlink_and_absolute_path() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
+    let expected_path = if cfg!(windows) { "symlink" } else { "one/two" };
+
     te.assert_output_subdirectory(
         "symlink",
         &["--absolute-path"],
         &format!(
-            "{abs_path}/one/two/c.foo
-            {abs_path}/one/two/C.Foo2
-            {abs_path}/one/two/three
-            {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
-            abs_path = &abs_path
+            "{abs_path}/{expected_path}/c.foo
+            {abs_path}/{expected_path}/C.Foo2
+            {abs_path}/{expected_path}/three
+            {abs_path}/{expected_path}/three/d.foo
+            {abs_path}/{expected_path}/three/directory_foo",
+            abs_path = &abs_path,
+            expected_path = expected_path
         ),
     );
 }
@@ -1127,6 +1132,8 @@ fn test_symlink_and_full_path() {
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
 
+    let expected_path = if cfg!(windows) { "symlink" } else { "one/two" };
+
     te.assert_output_subdirectory(
         "symlink",
         &[
@@ -1135,10 +1142,11 @@ fn test_symlink_and_full_path() {
             &format!("^{prefix}.*three", prefix = prefix),
         ],
         &format!(
-            "{abs_path}/one/two/three
-            {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
-            abs_path = &abs_path
+            "{abs_path}/{expected_path}/three
+            {abs_path}/{expected_path}/three/d.foo
+            {abs_path}/{expected_path}/three/directory_foo",
+            abs_path = &abs_path,
+            expected_path = expected_path
         ),
     );
 }
