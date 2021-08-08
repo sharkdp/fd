@@ -176,7 +176,8 @@ fn run() -> Result<ExitCode> {
     let path_separator = matches
         .value_of("path-separator")
         .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
-    if let Some(sep) = path_separator.clone() {
+
+    if let Some(ref sep) = path_separator {
         if sep.len() > 1 {
             return Err(anyhow!(
                 "A path separator must be exactly one byte, but \
