@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExitCode {
     Success,
+    HasMatch(bool),
     GeneralError,
     KilledBySigint,
 }
@@ -9,6 +10,7 @@ impl From<ExitCode> for i32 {
     fn from(code: ExitCode) -> Self {
         match code {
             ExitCode::Success => 0,
+            ExitCode::HasMatch(has_match) => !has_match as i32,
             ExitCode::GeneralError => 1,
             ExitCode::KilledBySigint => 130,
         }
@@ -17,7 +19,11 @@ impl From<ExitCode> for i32 {
 
 impl ExitCode {
     fn is_error(self) -> bool {
-        self != ExitCode::Success
+        match self {
+            ExitCode::Success => false,
+            ExitCode::HasMatch(has_match) => !has_match,
+            _ => true,
+        }
     }
 }
 
@@ -35,6 +41,22 @@ mod tests {
     #[test]
     fn success_when_no_results() {
         assert_eq!(merge_exitcodes(&[]), ExitCode::Success);
+    }
+
+    #[test]
+    fn success_when_has_match() {
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::HasMatch(true)]),
+            ExitCode::Success
+        );
+    }
+
+    #[test]
+    fn general_error_if_has_no_match() {
+        assert_eq!(
+            merge_exitcodes(&[ExitCode::HasMatch(false)]),
+            ExitCode::GeneralError
+        );
     }
 
     #[test]

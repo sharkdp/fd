@@ -1424,6 +1424,17 @@ fn test_exec_with_separator() {
     );
 }
 
+/// Non-zero exit code (--has-match)
+#[test]
+fn test_has_match() {
+    let dirs = &[];
+    let files = &["a.foo", "b.foo"];
+    let te = TestEnv::new(dirs, files);
+
+    te.assert_output(&["--has-match"], "");
+    te.assert_failure_with_error(&["--has-match", "c.foo"], "")
+}
+
 /// Literal search (--fixed-strings)
 #[test]
 fn test_fixed_strings() {

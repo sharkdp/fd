@@ -20,8 +20,8 @@ use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use normpath::PathExt;
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -344,6 +344,7 @@ fn run() -> Result<ExitCode> {
         follow_links: matches.is_present("follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
+        has_match: matches.is_present("has-match"),
         max_depth: matches
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
