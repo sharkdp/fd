@@ -180,9 +180,9 @@ fn run() -> Result<ExitCode> {
         if sep.len() > 1 {
             return Err(anyhow!(
                 "A path separator must be exactly one byte, but \
-                 the given separator is {} bytes: {}\n\
-                 In some shells on Windows '/' is automatically \
-                 expanded. Use '//' instead.",
+                 the given separator is {} bytes: '{}'.\n\
+                 In some shells on Windows, '/' is automatically \
+                 expanded. Try to use '//' instead.",
                 sep.len(),
                 sep
             ));
