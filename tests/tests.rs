@@ -24,6 +24,7 @@ static DEFAULT_FILES: &[&str] = &[
     "e1 e2",
 ];
 
+#[allow(clippy::let_and_return)]
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env
         .test_root()
