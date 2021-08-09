@@ -20,8 +20,8 @@ use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use normpath::PathExt;
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -212,9 +212,9 @@ fn run() -> Result<ExitCode> {
         let gnu_ls = |command_name| {
             vec![
                 command_name,
-                "-l",               // long listing format
-                "--human-readable", // human readable file sizes
-                "--directory",      // list directories themselves, not their contents
+                "-l", // long listing format
+                "-h", // human readable file sizes
+                "-d", // list directories themselves, not their contents
                 &color_arg,
             ]
         };
