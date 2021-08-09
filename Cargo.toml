@@ -69,6 +69,7 @@ jemallocator = "0.3.0"
 diff = "0.1"
 tempdir = "0.3"
 filetime = "0.2.14"
+test-case = "1.2.0"
 
 [profile.release]
 lto = true

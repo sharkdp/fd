@@ -20,8 +20,8 @@ use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use normpath::PathExt;
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -116,7 +116,7 @@ fn run() -> Result<ExitCode> {
         return Err(anyhow!("No valid search paths given."));
     }
 
-    if matches.is_present("absolute-path") {
+    if matches.is_present("absolute-path") && !matches.is_present("relative-path") {
         search_paths = search_paths
             .iter()
             .map(|path_buffer| {
@@ -331,17 +331,21 @@ fn run() -> Result<ExitCode> {
     let config = Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
-        ignore_hidden: !(matches.is_present("hidden")
-            || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
-        read_fdignore: !(matches.is_present("no-ignore")
-            || matches.is_present("rg-alias-hidden-ignore")),
-        read_vcsignore: !(matches.is_present("no-ignore")
-            || matches.is_present("rg-alias-hidden-ignore")
-            || matches.is_present("no-ignore-vcs")),
-        read_global_ignore: !(matches.is_present("no-ignore")
-            || matches.is_present("rg-alias-hidden-ignore")
-            || matches.is_present("no-global-ignore-file")),
-        follow_links: matches.is_present("follow"),
+        ignore_hidden: matches.is_present("no-hidden")
+            || !(matches.is_present("hidden")
+                || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
+        read_fdignore: matches.is_present("ignore")
+            || !(matches.is_present("no-ignore") || matches.is_present("rg-alias-hidden-ignore")),
+        read_vcsignore: matches.is_present("ignore") || matches.is_present("ignore-vcs") || {
+            !(matches.is_present("no-ignore")
+                || matches.is_present("rg-alias-hidden-ignore")
+                || matches.is_present("no-ignore-vcs"))
+        },
+        read_global_ignore: matches.is_present("ignore")
+            || !(matches.is_present("no-ignore")
+                || matches.is_present("rg-alias-hidden-ignore")
+                || matches.is_present("no-global-ignore-file")),
+        follow_links: matches.is_present("follow") && !matches.is_present("no-follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
         max_depth: matches

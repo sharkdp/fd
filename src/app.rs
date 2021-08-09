@@ -25,7 +25,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Include hidden directories and files in the search results (default: \
                          hidden files and directories are skipped). Files and directories are \
-                         considered to be hidden if their name starts with a `.` sign (dot).",
+                         considered to be hidden if their name starts with a `.` sign (dot). \
+                         Flag can be overridden with --no-hidden.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-hidden")
+                .long("no-hidden")
+                .overrides_with("no-hidden")
+                .hidden(true)
+                .long_help(
+                    "Overrides --hidden.",
                 ),
         )
         .arg(
@@ -36,7 +46,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Do not respect .(git|fd)ignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.",
+                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file. \
+                         Flag can be overridden with --ignore.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore")
+                .long("ignore")
+                .overrides_with("ignore")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore.",
                 ),
         )
         .arg(
@@ -46,7 +66,16 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true)
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore' files.",
+                         ignored by '.gitignore' files. Flag can be overridden with --ignore-vcs.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore-vcs")
+                .long("ignore-vcs")
+                .overrides_with("ignore-vcs")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore-vcs.",
                 ),
         )
         .arg(
@@ -129,7 +158,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("absolute-path")
                 .help("Show absolute instead of relative paths")
                 .long_help(
-                    "Shows the full path starting from the root as opposed to relative paths.",
+                    "Shows the full path starting from the root as opposed to relative paths. \
+                     Flag can be overridden with --relative-path.",
+                ),
+        )
+        .arg(
+            Arg::with_name("relative-path")
+                .long("relative-path")
+                .overrides_with("relative-path")
+                .hidden(true)
+                .long_help(
+                    "Overrides --absolute-path.",
                 ),
         )
         .arg(
@@ -154,7 +193,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Follow symbolic links")
                 .long_help(
                     "By default, fd does not descend into symlinked directories. Using this \
-                         flag, symbolic links are also traversed.",
+                         flag, symbolic links are also traversed. \
+                         Flag can be overriden with --no-follow.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-follow")
+                .long("no-follow")
+                .overrides_with("no-follow")
+                .hidden(true)
+                .long_help(
+                    "Overrides --follow.",
                 ),
         )
         .arg(

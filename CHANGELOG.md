@@ -2,6 +2,8 @@
 
 ## Features
 
+- Add opposing command-line options, see #595 (@Asha20)
+
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)
