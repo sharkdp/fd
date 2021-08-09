@@ -171,16 +171,12 @@ fn spawn_receiver(
     let show_filesystem_errors = config.show_filesystem_errors;
     let threads = config.threads;
     // This will be used to check if output should be buffered when only running a single thread
-    let is_multithread: bool = if threads > 1 {
-        true
-    } else {
-        false
-    };
+    let enable_output_buffering: bool = threads > 1;
     thread::spawn(move || {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors, is_multithread)
+                exec::batch(rx, cmd, show_filesystem_errors, enable_output_buffering)
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 
@@ -194,8 +190,15 @@ fn spawn_receiver(
                     let out_perm = Arc::clone(&out_perm);
 
                     // Spawn a job thread that will listen for and execute inputs.
-                    let handle =
-                        thread::spawn(move || exec::job(rx, cmd, out_perm, show_filesystem_errors, is_multithread));
+                    let handle = thread::spawn(move || {
+                        exec::job(
+                            rx,
+                            cmd,
+                            out_perm,
+                            show_filesystem_errors,
+                            enable_output_buffering,
+                        )
+                    });
 
                     // Push the handle of the spawned thread into the vector for later joining.
                     handles.push(handle);
