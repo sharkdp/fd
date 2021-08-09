@@ -292,6 +292,10 @@ path without file extension
 .IP {/.}
 basename without file extension
 .RE
+.TP
+.B \-\-has\-match
+When the flag is present, the program doesn't print anything and will instead return an exit code of 0 if there's at least one match. Otherwise, the exit code will be 1.
+.RE
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 
