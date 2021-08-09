@@ -119,9 +119,9 @@ tests/testenv/mod.rs
 
  To find files with exactly the provided search pattern, use the `-g` (or `--glob`) option:
 ``` bash
-> cd /bin
-> fd -g sh
-sh
+> fd -g libc.so /usr
+/usr/lib32/libc.so
+/usr/lib/libc.so
 ```
 
 ### Hidden and ignored files
