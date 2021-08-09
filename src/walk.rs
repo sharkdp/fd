@@ -358,27 +358,21 @@ fn spawn_senders(
                         DirEntry::BrokenSymlink(path)
                     }
                     _ => {
-                        match tx_thread.send(WorkerResult::Error(ignore::Error::WithPath {
+                        return match tx_thread.send(WorkerResult::Error(ignore::Error::WithPath {
                             path,
                             err: inner_err,
                         })) {
-                            Ok(_) => {
-                                return ignore::WalkState::Continue;
-                            }
-                            Err(_) => {
-                                return ignore::WalkState::Quit;
-                            }
+                            Ok(_) => ignore::WalkState::Continue,
+                            Err(_) => ignore::WalkState::Quit,
                         }
                     }
                 },
-                Err(err) => match tx_thread.send(WorkerResult::Error(err)) {
-                    Ok(_) => {
-                        return ignore::WalkState::Continue;
+                Err(err) => {
+                    return match tx_thread.send(WorkerResult::Error(err)) {
+                        Ok(_) => ignore::WalkState::Continue,
+                        Err(_) => ignore::WalkState::Quit,
                     }
-                    Err(_) => {
-                        return ignore::WalkState::Quit;
-                    }
-                },
+                }
             };
 
             if let Some(min_depth) = config.min_depth {
