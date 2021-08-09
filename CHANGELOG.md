@@ -9,6 +9,7 @@
 - fd doesn't show substituted drive on Windows, see #365
 - Properly handle write errors to devices that are full, see #737
 - Use local time zone for time functions (`--change-newer-than`, `--change-older-than`), see #631 (@jacobmischka)
+- Change time comparisons to exclusive by default, add `--time-inclusive` for previous behavior, see #794 (@jacobmischka)
 
 ## Changes
 

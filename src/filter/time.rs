@@ -7,6 +7,8 @@ use std::time::SystemTime;
 pub enum TimeFilter {
     Before(SystemTime),
     After(SystemTime),
+    BeforeEqual(SystemTime),
+    AfterEqual(SystemTime),
 }
 
 impl TimeFilter {
@@ -29,18 +31,30 @@ impl TimeFilter {
             })
     }
 
-    pub fn before(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(ref_time, s).map(TimeFilter::Before)
+    pub fn before(ref_time: &SystemTime, s: &str, inclusive: bool) -> Option<TimeFilter> {
+        let variant = if inclusive {
+            TimeFilter::BeforeEqual
+        } else {
+            TimeFilter::Before
+        };
+        TimeFilter::from_str(ref_time, s).map(variant)
     }
 
-    pub fn after(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(ref_time, s).map(TimeFilter::After)
+    pub fn after(ref_time: &SystemTime, s: &str, inclusive: bool) -> Option<TimeFilter> {
+        let variant = if inclusive {
+            TimeFilter::AfterEqual
+        } else {
+            TimeFilter::After
+        };
+        TimeFilter::from_str(ref_time, s).map(variant)
     }
 
     pub fn applies_to(&self, t: &SystemTime) -> bool {
         match self {
-            TimeFilter::Before(limit) => t <= limit,
-            TimeFilter::After(limit) => t >= limit,
+            TimeFilter::Before(limit) => t < limit,
+            TimeFilter::After(limit) => t > limit,
+            TimeFilter::BeforeEqual(limit) => t <= limit,
+            TimeFilter::AfterEqual(limit) => t >= limit,
         }
     }
 }
@@ -56,56 +70,68 @@ mod tests {
             .datetime_from_str("2010-10-10 10:10:10", "%F %T")
             .unwrap()
             .into();
-
-        assert!(TimeFilter::after(&ref_time, "1min")
+        assert!(TimeFilter::after(&ref_time, "2010-10-10 10:10:10", true)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(!TimeFilter::before(&ref_time, "1min")
+        assert!(TimeFilter::before(&ref_time, "2010-10-10 10:10:10", true)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::after(&ref_time, "2010-10-10 10:10:10", false)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::before(&ref_time, "2010-10-10 10:10:10", false)
+            .unwrap()
+            .applies_to(&ref_time));
+
+        assert!(TimeFilter::after(&ref_time, "1min", false)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::before(&ref_time, "1min", false)
             .unwrap()
             .applies_to(&ref_time));
 
         let t1m_ago = ref_time - Duration::from_secs(60);
-        assert!(!TimeFilter::after(&ref_time, "30sec")
+        assert!(!TimeFilter::after(&ref_time, "30sec", false)
             .unwrap()
             .applies_to(&t1m_ago));
-        assert!(TimeFilter::after(&ref_time, "2min")
+        assert!(TimeFilter::after(&ref_time, "2min", false)
             .unwrap()
             .applies_to(&t1m_ago));
 
-        assert!(TimeFilter::before(&ref_time, "30sec")
+        assert!(TimeFilter::before(&ref_time, "30sec", false)
             .unwrap()
             .applies_to(&t1m_ago));
-        assert!(!TimeFilter::before(&ref_time, "2min")
+        assert!(!TimeFilter::before(&ref_time, "2min", false)
             .unwrap()
             .applies_to(&t1m_ago));
 
         let t10s_before = "2010-10-10 10:10:00";
-        assert!(!TimeFilter::before(&ref_time, t10s_before)
+        assert!(!TimeFilter::before(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(TimeFilter::before(&ref_time, t10s_before)
+        assert!(TimeFilter::before(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&t1m_ago));
 
-        assert!(TimeFilter::after(&ref_time, t10s_before)
+        assert!(TimeFilter::after(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(!TimeFilter::after(&ref_time, t10s_before)
+        assert!(!TimeFilter::after(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&t1m_ago));
 
         let same_day = "2010-10-10";
-        assert!(!TimeFilter::before(&ref_time, same_day)
+        assert!(!TimeFilter::before(&ref_time, same_day, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(!TimeFilter::before(&ref_time, same_day)
+        assert!(!TimeFilter::before(&ref_time, same_day, false)
             .unwrap()
             .applies_to(&t1m_ago));
 
-        assert!(TimeFilter::after(&ref_time, same_day)
+        assert!(TimeFilter::after(&ref_time, same_day, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(TimeFilter::after(&ref_time, same_day)
+        assert!(TimeFilter::after(&ref_time, same_day, false)
             .unwrap()
             .applies_to(&t1m_ago));
 
@@ -114,17 +140,17 @@ mod tests {
             .into();
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t10s_before = "2010-10-10T10:10:00+00:00";
-        assert!(!TimeFilter::before(&ref_time, t10s_before)
+        assert!(!TimeFilter::before(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(TimeFilter::before(&ref_time, t10s_before)
+        assert!(TimeFilter::before(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&t1m_ago));
 
-        assert!(TimeFilter::after(&ref_time, t10s_before)
+        assert!(TimeFilter::after(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&ref_time));
-        assert!(!TimeFilter::after(&ref_time, t10s_before)
+        assert!(!TimeFilter::after(&ref_time, t10s_before, false)
             .unwrap()
             .applies_to(&t1m_ago));
     }

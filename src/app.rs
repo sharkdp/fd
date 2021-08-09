@@ -482,6 +482,12 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("time-inclusive")
+                .long("time-inclusive")
+                .alias("inclusive")
+                .help("Make time comparisons inclusive (greater/less than or equal to)"),
+        )
+        .arg(
             Arg::with_name("max-results")
                 .long("max-results")
                 .takes_value(true)

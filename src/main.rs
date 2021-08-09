@@ -20,8 +20,8 @@ use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use normpath::PathExt;
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -301,7 +301,7 @@ fn run() -> Result<ExitCode> {
     let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(t) = matches.value_of("changed-within") {
-        if let Some(f) = TimeFilter::after(&now, t) {
+        if let Some(f) = TimeFilter::after(&now, t, matches.is_present("time-inclusive")) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(
@@ -311,7 +311,7 @@ fn run() -> Result<ExitCode> {
         }
     }
     if let Some(t) = matches.value_of("changed-before") {
-        if let Some(f) = TimeFilter::before(&now, t) {
+        if let Some(f) = TimeFilter::before(&now, t, matches.is_present("time-inclusive")) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(
