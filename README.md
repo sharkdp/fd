@@ -656,6 +656,7 @@ cargo install --path .
 - [sharkdp](https://github.com/sharkdp)
 - [tmccombs](https://github.com/tmccombs)
 - [tavianator](https://github.com/tavianator)
+- [pemistahl](https://github.com/pemistahl/)
 
 ## License
 
