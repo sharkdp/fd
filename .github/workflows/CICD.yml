@@ -45,6 +45,13 @@ jobs:
       fail-fast: false
       matrix:
         job:
+          - { os: ubuntu-20.04, target: arm-unknown-linux-gnueabihf , use-cross: true }
+          - { os: ubuntu-20.04, target: arm-unknown-linux-musleabihf, use-cross: true }
+          - { os: ubuntu-20.04, target: aarch64-unknown-linux-gnu   , use-cross: true }
+          - { os: ubuntu-20.04, target: i686-unknown-linux-gnu      , use-cross: true }
+          - { os: ubuntu-20.04, target: i686-unknown-linux-musl     , use-cross: true }
+          - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu    }
+          - { os: ubuntu-20.04, target: x86_64-unknown-linux-musl   , use-cross: true }
           - { os: ubuntu-18.04, target: arm-unknown-linux-gnueabihf , use-cross: true }
           - { os: ubuntu-18.04, target: arm-unknown-linux-musleabihf, use-cross: true }
           - { os: ubuntu-18.04, target: aarch64-unknown-linux-gnu   , use-cross: true }
