@@ -259,12 +259,22 @@ Provide paths to search as an alternative to the positional \fIpath\fR argument.
 \'fd [FLAGS/OPTIONS] \-\-search\-path PATH \-\-search\-path PATH2 [PATTERN]\'
 .TP
 .BI "\-x, \-\-exec " command
+.RS
 Execute
 .I command
-for each search result in parallel (use --threads=1 for sequential command execution). The following placeholders are substituted by a path derived from the current search result:
+for each search result in parallel (use --threads=1 for sequential command execution).
+
+Note that all subsequent positional arguments are considered to be arguments to the
+.I command
+- not to fd.
+It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
+a ';' argument to end the argument list and continue with more fd options.
+Most shells require ';' to be escaped: '\\;'.
+
+The following placeholders are substituted before the command is executed:
 .RS
 .IP {}
-path
+path (of the current search result)
 .IP {/}
 basename
 .IP {//}
@@ -273,16 +283,34 @@ parent directory
 path without file extension
 .IP {/.}
 basename without file extension
+.RE
+
+If no placeholder is present, an implicit "{}" at the end is assumed.
+
+Examples:
+
+  - find all *.zip files and unzip them:
+
+        fd -e zip -x unzip
+
+  - find *.h and *.cpp files and run "clang-format -i .." for each of them:
+
+        fd -e h -e cpp -x clang-format -i
+
+  - Convert all *.jpg files to *.png files:
+
+        fd -e jpg -x convert {} {.}.png
 .RE
 .TP
 .BI "\-X, \-\-exec-batch " command
+.RS
 Execute
 .I command
-with all search results at once.
-A single occurence of the following placeholders is authorized and substituted by the paths derived from the search results before the command is executed:
+once, with all search results as arguments.
+One of the following placeholders is substituted before the command is executed:
 .RS
 .IP {}
-path
+path (of all search results)
 .IP {/}
 basename
 .IP {//}
@@ -292,6 +320,22 @@ path without file extension
 .IP {/.}
 basename without file extension
 .RE
+
+If no placeholder is present, an implicit "{}" at the end is assumed.
+
+Examples:
+
+  - Find all test_*.py files and open them in your favorite editor:
+
+        fd -g 'test_*.py' -X vim
+
+    Note that this executes a single "vim" process with all search results as arguments.
+
+  - Find all *.rs files and count the lines with "wc -l ...":
+
+        fd -e rs -X wc -l
+.RE
+
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 

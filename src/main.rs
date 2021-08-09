@@ -21,6 +21,7 @@ use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
+use normpath::PathExt;
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
@@ -55,7 +56,7 @@ fn run() -> Result<ExitCode> {
     // Set the current working directory of the process
     if let Some(base_directory) = matches.value_of_os("base-directory") {
         let base_directory = Path::new(base_directory);
-        if !filesystem::is_dir(base_directory) {
+        if !filesystem::is_existing_directory(base_directory) {
             return Err(anyhow!(
                 "The '--base-directory' path '{}' is not a directory.",
                 base_directory.to_string_lossy()
@@ -70,7 +71,7 @@ fn run() -> Result<ExitCode> {
     }
 
     let current_directory = Path::new(".");
-    if !filesystem::is_dir(current_directory) {
+    if !filesystem::is_existing_directory(current_directory) {
         return Err(anyhow!(
             "Could not retrieve current directory (has it been deleted?)."
         ));
@@ -95,7 +96,7 @@ fn run() -> Result<ExitCode> {
         let mut directories = vec![];
         for path in paths {
             let path_buffer = PathBuf::from(path);
-            if filesystem::is_dir(&path_buffer) {
+            if filesystem::is_existing_directory(&path_buffer) {
                 directories.push(path_buffer);
             } else {
                 print_error(format!(
@@ -120,7 +121,7 @@ fn run() -> Result<ExitCode> {
             .iter()
             .map(|path_buffer| {
                 path_buffer
-                    .canonicalize()
+                    .normalize()
                     .and_then(|pb| filesystem::absolute_path(pb.as_path()))
                     .unwrap()
             })
@@ -130,7 +131,7 @@ fn run() -> Result<ExitCode> {
     // Detect if the user accidentally supplied a path instead of a search pattern
     if !matches.is_present("full-path")
         && pattern.contains(std::path::MAIN_SEPARATOR)
-        && filesystem::is_dir(Path::new(pattern))
+        && Path::new(pattern).is_dir()
     {
         return Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
@@ -176,6 +177,22 @@ fn run() -> Result<ExitCode> {
     let path_separator = matches
         .value_of("path-separator")
         .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
+
+    #[cfg(windows)]
+    {
+        if let Some(ref sep) = path_separator {
+            if sep.len() > 1 {
+                return Err(anyhow!(
+                    "A path separator must be exactly one byte, but \
+                 the given separator is {} bytes: '{}'.\n\
+                 In some shells on Windows, '/' is automatically \
+                 expanded. Try to use '//' instead.",
+                    sep.len(),
+                    sep
+                ));
+            };
+        };
+    }
 
     let ls_colors = if colored_output {
         Some(LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)))

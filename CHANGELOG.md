@@ -5,6 +5,9 @@
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)
+- fd cannot search files under a RAM disk, see #752
+- fd doesn't show substituted drive on Windows, see #365
+- Properly handle write errors to devices that are full, see #737
 
 ## Changes
 

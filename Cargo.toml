@@ -39,7 +39,7 @@ atty = "0.2"
 ignore = "0.4.3"
 lazy_static = "1.1.0"
 num_cpus = "1.8"
-regex = "1.0.0"
+regex = "1.5.4"
 regex-syntax = "0.6"
 ctrlc = "3.1"
 humantime = "2.0"
@@ -47,6 +47,7 @@ lscolors = "0.7"
 globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
+normpath = "0.3"
 
 [dependencies.clap]
 version = "2.31.2"
@@ -67,7 +68,7 @@ jemallocator = "0.3.0"
 [dev-dependencies]
 diff = "0.1"
 tempdir = "0.3"
-filetime = "0.2.1"
+filetime = "0.2.14"
 
 [profile.release]
 lto = true
