@@ -1,3 +1,5 @@
+use chrono::{offset::TimeZone, DateTime, Local, NaiveDate};
+
 use std::time::SystemTime;
 
 /// Filter based on time ranges.
@@ -11,9 +13,20 @@ impl TimeFilter {
     fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
         humantime::parse_duration(s)
             .map(|duration| *ref_time - duration)
-            .or_else(|_| humantime::parse_rfc3339_weak(s))
-            .or_else(|_| humantime::parse_rfc3339_weak(&(s.to_owned() + " 00:00:00")))
             .ok()
+            .or_else(|| {
+                DateTime::parse_from_rfc3339(s)
+                    .map(|dt| dt.into())
+                    .ok()
+                    .or_else(|| {
+                        NaiveDate::parse_from_str(s, "%F")
+                            .map(|nd| nd.and_hms(0, 0, 0))
+                            .ok()
+                            .and_then(|ndt| Local.from_local_datetime(&ndt).single())
+                    })
+                    .or_else(|| Local.datetime_from_str(s, "%F %T").ok())
+                    .map(|dt| dt.into())
+            })
     }
 
     pub fn before(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
@@ -39,7 +52,11 @@ mod tests {
 
     #[test]
     fn is_time_filter_applicable() {
-        let ref_time = humantime::parse_rfc3339("2010-10-10T10:10:10Z").unwrap();
+        let ref_time = Local
+            .datetime_from_str("2010-10-10 10:10:10", "%F %T")
+            .unwrap()
+            .into();
+
         assert!(TimeFilter::after(&ref_time, "1min")
             .unwrap()
             .applies_to(&ref_time));
@@ -63,6 +80,40 @@ mod tests {
             .applies_to(&t1m_ago));
 
         let t10s_before = "2010-10-10 10:10:00";
+        assert!(!TimeFilter::before(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(TimeFilter::before(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&t1m_ago));
+
+        assert!(TimeFilter::after(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::after(&ref_time, t10s_before)
+            .unwrap()
+            .applies_to(&t1m_ago));
+
+        let same_day = "2010-10-10";
+        assert!(!TimeFilter::before(&ref_time, same_day)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(!TimeFilter::before(&ref_time, same_day)
+            .unwrap()
+            .applies_to(&t1m_ago));
+
+        assert!(TimeFilter::after(&ref_time, same_day)
+            .unwrap()
+            .applies_to(&ref_time));
+        assert!(TimeFilter::after(&ref_time, same_day)
+            .unwrap()
+            .applies_to(&t1m_ago));
+
+        let ref_time = DateTime::parse_from_rfc3339("2010-10-10T10:10:10+00:00")
+            .unwrap()
+            .into();
+        let t1m_ago = ref_time - Duration::from_secs(60);
+        let t10s_before = "2010-10-10T10:10:00+00:00";
         assert!(!TimeFilter::before(&ref_time, t10s_before)
             .unwrap()
             .applies_to(&ref_time));

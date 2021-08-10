@@ -115,6 +115,15 @@ src/lscolors/mod.rs
 tests/testenv/mod.rs
 ```
 
+### Searching for a particular file name
+
+ To find files with exactly the provided search pattern, use the `-g` (or `--glob`) option:
+``` bash
+> fd -g libc.so /usr
+/usr/lib32/libc.so
+/usr/lib/libc.so
+```
+
 ### Hidden and ignored files
 By default, *fd* does not search hidden directories and does not show hidden files in the
 search results. To disable this behavior, we can use the `-H` (or `--hidden`) option:
@@ -647,6 +656,7 @@ cargo install --path .
 - [sharkdp](https://github.com/sharkdp)
 - [tmccombs](https://github.com/tmccombs)
 - [tavianator](https://github.com/tavianator)
+- [pemistahl](https://github.com/pemistahl/)
 
 ## License
 
