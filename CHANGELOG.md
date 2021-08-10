@@ -9,7 +9,7 @@
 - fd doesn't show substituted drive on Windows, see #365
 - Properly handle write errors to devices that are full, see #737
 - Use local time zone for time functions (`--change-newer-than`, `--change-older-than`), see #631 (@jacobmischka)
-- Uses short options for ls regardless of the operating system, see #783
+- Support `--list-details` on more platforms (like BusyBox), see #783
 
 ## Changes
 
