@@ -210,6 +210,8 @@ fn run() -> Result<ExitCode> {
 
         #[allow(unused)]
         let gnu_ls = |command_name| {
+            // Note: we use short options here (instead of --long-options) to support more
+            // platforms (like BusyBox).
             vec![
                 command_name,
                 "-l", // long listing format
