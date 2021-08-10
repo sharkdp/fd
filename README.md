@@ -632,6 +632,8 @@ cargo install fd-find
 ```
 Note that rust version *1.42.0* or later is required.
 
+`make` is also needed for the build.
+
 ### From binaries
 
 The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows. Statically-linked binaries are also available: look for archives with `musl` in the file name.
