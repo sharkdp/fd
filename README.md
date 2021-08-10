@@ -145,6 +145,15 @@ target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 To really search *all* files and directories, simply combine the hidden and ignore features to show
 everything (`-HI`).
 
+### Matching the full path
+By default, *fd* only matches the filename of each file. However, using the `--full-path` or `-p` option,
+you can match against the full path.
+
+```bash
+> fd -p -g '**/.git/config'
+> fd -p '.*/lesson-\d+/[a-z]+.(jpg|png)'
+```
+
 ### Command execution
 
 Instead of just showing the search results, you often want to *do something* with them. `fd`
