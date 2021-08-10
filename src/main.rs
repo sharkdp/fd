@@ -20,8 +20,8 @@ use anyhow::{anyhow, Context, Result};
 use atty::Stream;
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
 use normpath::PathExt;
+use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
