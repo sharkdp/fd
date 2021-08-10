@@ -32,7 +32,7 @@ Include hidden files and directories in the search results
 .TP
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
-.IR .gitignore ,
+any of the files ignored by the '\-\-no\-ignore\-vcs' option,
 .IR .ignore ,
 .IR .fdignore ,
 or the global ignore file.
@@ -41,9 +41,15 @@ or the global ignore file.
 Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
 .TP
 .B \-\-no\-ignore\-vcs
-Show search results from files and directories that would otherwise be ignored by
-.I .gitignore
-files.
+Show search results from files and directories that would otherwise be ignored by gitignore files
+including
+.IR  .gitignore ,
+.IR  .git/info/exclude ,
+and the global gitignore configuration (
+.I core.excludesFile
+git setting, which defaults to
+.I $HOME/.config/git/ignore
+).
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
