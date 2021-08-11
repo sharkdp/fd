@@ -115,6 +115,15 @@ src/lscolors/mod.rs
 tests/testenv/mod.rs
 ```
 
+### Searching for a particular file name
+
+ To find files with exactly the provided search pattern, use the `-g` (or `--glob`) option:
+``` bash
+> fd -g libc.so /usr
+/usr/lib32/libc.so
+/usr/lib/libc.so
+```
+
 ### Hidden and ignored files
 By default, *fd* does not search hidden directories and does not show hidden files in the
 search results. To disable this behavior, we can use the `-H` (or `--hidden`) option:
@@ -135,6 +144,15 @@ target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 
 To really search *all* files and directories, simply combine the hidden and ignore features to show
 everything (`-HI`).
+
+### Matching the full path
+By default, *fd* only matches the filename of each file. However, using the `--full-path` or `-p` option,
+you can match against the full path.
+
+```bash
+> fd -p -g '**/.git/config'
+> fd -p '.*/lesson-\d+/[a-z]+.(jpg|png)'
+```
 
 ### Command execution
 
@@ -623,6 +641,8 @@ cargo install fd-find
 ```
 Note that rust version *1.42.0* or later is required.
 
+`make` is also needed for the build.
+
 ### From binaries
 
 The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows. Statically-linked binaries are also available: look for archives with `musl` in the file name.
@@ -646,6 +666,8 @@ cargo install --path .
 
 - [sharkdp](https://github.com/sharkdp)
 - [tmccombs](https://github.com/tmccombs)
+- [tavianator](https://github.com/tavianator)
+- [pemistahl](https://github.com/pemistahl/)
 
 ## License
 
