@@ -331,20 +331,20 @@ fn run() -> Result<ExitCode> {
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
             .or_else(|| matches.value_of("exact-depth"))
-            .map(|n| usize::from_str_radix(n, 10))
+            .map(|n| n.parse::<usize>())
             .transpose()
             .context("Failed to parse argument to --max-depth/--exact-depth")?,
         min_depth: matches
             .value_of("min-depth")
             .or_else(|| matches.value_of("exact-depth"))
-            .map(|n| usize::from_str_radix(n, 10))
+            .map(|n| n.parse::<usize>())
             .transpose()
             .context("Failed to parse argument to --min-depth/--exact-depth")?,
         prune: matches.is_present("prune"),
         threads: std::cmp::max(
             matches
                 .value_of("threads")
-                .map(|n| usize::from_str_radix(n, 10))
+                .map(|n| n.parse::<usize>())
                 .transpose()
                 .context("Failed to parse number of threads")?
                 .map(|n| {
@@ -360,7 +360,7 @@ fn run() -> Result<ExitCode> {
         ),
         max_buffer_time: matches
             .value_of("max-buffer-time")
-            .map(|n| u64::from_str_radix(n, 10))
+            .map(|n| n.parse::<u64>())
             .transpose()
             .context("Failed to parse max. buffer time argument")?
             .map(time::Duration::from_millis),
@@ -420,7 +420,7 @@ fn run() -> Result<ExitCode> {
         path_separator,
         max_results: matches
             .value_of("max-results")
-            .map(|n| usize::from_str_radix(n, 10))
+            .map(|n| n.parse::<usize>())
             .transpose()
             .context("Failed to parse --max-results argument")?
             .filter(|&n| n > 0)

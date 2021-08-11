@@ -20,7 +20,11 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 // TODO: this function is performance critical and can probably be optimized
 pub fn print_entry<W: Write>(
     stdout: &mut W,
+<<<<<<< HEAD
+    entry: &PathBuf,
+=======
     entry: &Path,
+>>>>>>> 979ae6b9a9044d12205c1d9e0a78d7eadf3e1653
     config: &Options,
     wants_to_quit: &AtomicBool,
 ) {

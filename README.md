@@ -1,12 +1,11 @@
 # fd
 
-[![Build Status](https://travis-ci.org/sharkdp/fd.svg?branch=master)](https://travis-ci.org/sharkdp/fd)
-[![Build status](https://ci.appveyor.com/api/projects/status/21c4p5fwggc5gy3j/branch/master?svg=true)](https://ci.appveyor.com/project/sharkdp/fd/branch/master)
+[![CICD](https://github.com/sharkdp/fd/actions/workflows/CICD.yml/badge.svg)](https://github.com/sharkdp/fd/actions/workflows/CICD.yml)
 [![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
 [[中文](https://github.com/chinanf-boy/fd-zh)]
 [[한국어](https://github.com/spearkkk/fd-kor)]
 
-`fd` is a program to find entries in your filesytem.
+`fd` is a program to find entries in your filesystem.
 It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.org/software/findutils/).
 While it does not aim to support all of `find`'s powerful functionality, it provides sensible
 (opinionated) defaults for a majority of use cases.
@@ -189,7 +188,7 @@ See below for more details on the placeholder syntax.
 The `-x` and `-X` options take a *command template* as a series of arguments (instead of a single string).
 If you want to add additional options to `fd` after the command template, you can terminate it with a `\;`.
 
-The syntax for generating commands is similar to that of GNU Parallel:
+The syntax for generating commands is similar to that of [GNU Parallel](https://www.gnu.org/software/parallel/):
 
 - `{}`: A placeholder token that will be replaced with the path of the search result
   (`documents/images/party.jpg`).
@@ -426,6 +425,20 @@ export FZF_DEFAULT_OPTS="--ansi"
 
 For more details, see the [Tips section](https://github.com/junegunn/fzf#tips) of the fzf README.
 
+### Using fd with `rofi`
+
+[*rofi*](https://github.com/davatorium/rofi) is a graphical launch menu application that is able to create menus by reading from *stdin*. Piping `fd` output into `rofi`s `-dmenu` mode creates fuzzy-searchable lists of files and directories.
+
+#### Example
+
+Create a case-insensitive searchable multi-select list of *PDF* files under your `$HOME` directory and open the selection with your configured PDF viewer. To list all file types, drop the `-e pdf` argument.
+
+``` bash
+fd --type f -e pdf . $HOME | rofi -keep-right -dmenu -i -p FILES -multi-select | xargs -I {} xdg-open {}
+```
+
+To modify the list that is presented by rofi, add arguments to the `fd` command. To modify the search behaviour of rofi, add arguments to the `rofi` command.
+
 ### Using fd with `emacs`
 
 The emacs package [find-file-in-project](https://github.com/technomancy/find-file-in-project) can
@@ -486,6 +499,7 @@ sudo apt install fd-find
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
 It is recommended that after installation, you add a link to `fd` by executing command
 `ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
+Make sure that `$HOME/.local/bin` is in your `$PATH`.
 
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
@@ -503,6 +517,7 @@ sudo apt-get install fd-find
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
 It is recommended that after installation, you add a link to `fd` by executing command
 `ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
+Make sure that `$HOME/.local/bin` is in your `$PATH`.
 
 ### On Fedora
 
@@ -606,11 +621,11 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.36.0* or later is required.
+Note that rust version *1.42.0* or later is required.
 
 ### From binaries
 
-The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows.
+The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows. Statically-linked binaries are also available: look for archives with `musl` in the file name.
 
 ## Development
 ```bash

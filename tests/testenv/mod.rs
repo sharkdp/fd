@@ -119,7 +119,7 @@ fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
             let line = line.replace('/', &std::path::MAIN_SEPARATOR.to_string());
             if normalize_line {
                 let mut words: Vec<_> = line.split_whitespace().collect();
-                words.sort();
+                words.sort_unstable();
                 return words.join(" ");
             }
             line
@@ -197,7 +197,7 @@ impl TestEnv {
 
         // Check for exit status.
         if !output.status.success() {
-            panic!(format_exit_error(args, &output));
+            panic!("{}", format_exit_error(args, &output));
         }
 
         output
@@ -236,7 +236,7 @@ impl TestEnv {
 
         // Compare actual output to expected output.
         if expected != actual {
-            panic!(format_output_error(args, &expected, &actual));
+            panic!("{}", format_output_error(args, &expected, &actual));
         }
     }
 
@@ -289,10 +289,13 @@ impl TestEnv {
 
             // Compare actual output to expected output.
             if !actual_err.trim_start().starts_with(&expected_error) {
-                panic!(format_output_error(args, &expected_error, &actual_err));
+                panic!(
+                    "{}",
+                    format_output_error(args, &expected_error, &actual_err)
+                );
             }
         }
 
-        return output.status;
+        output.status
     }
 }

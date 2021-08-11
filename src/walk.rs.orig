@@ -269,7 +269,10 @@ fn spawn_receiver(
                                         &config,
                                         &wants_to_quit,
                                     );
+<<<<<<< HEAD
                                     #[allow(clippy::modulo_one)]
+=======
+>>>>>>> 979ae6b9a9044d12205c1d9e0a78d7eadf3e1653
                                     if num_results % TTY_FLUSH_INTERVAL == 0 {
                                         let r = stdout.flush();
                                         if r.is_err() {
