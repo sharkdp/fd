@@ -1,9 +1,5 @@
 use std::io::{self, Write};
-<<<<<<< HEAD
-use std::path::{Path, PathBuf};
-=======
 use std::path::Path;
->>>>>>> 979ae6b9a9044d12205c1d9e0a78d7eadf3e1653
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 
