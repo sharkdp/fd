@@ -55,6 +55,7 @@ pattern contains an uppercase character (smart case).
 .TP
 .B \-g, \-\-glob
 Perform a glob-based search instead of a regular expression search.
+If combined with the '\-\-full-path' option, '**' can be used to match multiple path components.
 .TP
 .B \-\-regex
 Perform a regular-expression based search (default). This can be used to override --glob.
@@ -216,8 +217,11 @@ tebibytes
 .RE
 .TP
 .BI "\-\-changed-within " date|duration
-Filter results based on the file modification time. The argument can be provided as a specific
-point in time (\fIYYYY-MM-DD HH:MM:SS\fR) or as a duration (\fI10h, 1d, 35min\fR).
+Filter results based on the file modification time.
+Files with modification times greater than or equal to the argument will be returned.
+The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
+in time in either full RFC3339 format with time zone, or as a date or datetime in the
+local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR).
 .B --change-newer-than
 can be used as an alias.
 
@@ -226,8 +230,11 @@ Examples:
   \-\-change-newer-than "2018-10-27 10:00:00"
 .TP
 .BI "\-\-changed-before " date|duration
-Filter results based on the file modification time. The argument can be provided as a specific
-point in time (\fIYYYY-MM-DD HH:MM:SS\fR) or as a duration (\fI10h, 1d, 35min\fR).
+Filter results based on the file modification time.
+Files with modification times less than or equal to the argument will be returned.
+The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
+in time in either full RFC3339 format with time zone, or as a date or datetime in the
+local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR).
 .B --change-older-than
 can be used as an alias.
 

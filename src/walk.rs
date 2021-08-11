@@ -358,27 +358,21 @@ fn spawn_senders(
                         DirEntry::BrokenSymlink(path)
                     }
                     _ => {
-                        match tx_thread.send(WorkerResult::Error(ignore::Error::WithPath {
+                        return match tx_thread.send(WorkerResult::Error(ignore::Error::WithPath {
                             path,
                             err: inner_err,
                         })) {
-                            Ok(_) => {
-                                return ignore::WalkState::Continue;
-                            }
-                            Err(_) => {
-                                return ignore::WalkState::Quit;
-                            }
+                            Ok(_) => ignore::WalkState::Continue,
+                            Err(_) => ignore::WalkState::Quit,
                         }
                     }
                 },
-                Err(err) => match tx_thread.send(WorkerResult::Error(err)) {
-                    Ok(_) => {
-                        return ignore::WalkState::Continue;
+                Err(err) => {
+                    return match tx_thread.send(WorkerResult::Error(err)) {
+                        Ok(_) => ignore::WalkState::Continue,
+                        Err(_) => ignore::WalkState::Quit,
                     }
-                    Err(_) => {
-                        return ignore::WalkState::Quit;
-                    }
-                },
+                }
             };
 
             if let Some(min_depth) = config.min_depth {
@@ -422,27 +416,7 @@ fn spawn_senders(
 
             // Filter out unwanted file types.
             if let Some(ref file_types) = config.file_types {
-                if let Some(ref entry_type) = entry.file_type() {
-                    if (!file_types.files && entry_type.is_file())
-                        || (!file_types.directories && entry_type.is_dir())
-                        || (!file_types.symlinks && entry_type.is_symlink())
-                        || (!file_types.sockets && filesystem::is_socket(*entry_type))
-                        || (!file_types.pipes && filesystem::is_pipe(*entry_type))
-                        || (file_types.executables_only
-                            && !entry
-                                .metadata()
-                                .map(|m| filesystem::is_executable(&m))
-                                .unwrap_or(false))
-                        || (file_types.empty_only && !filesystem::is_empty(&entry))
-                        || !(entry_type.is_file()
-                            || entry_type.is_dir()
-                            || entry_type.is_symlink()
-                            || filesystem::is_socket(*entry_type)
-                            || filesystem::is_pipe(*entry_type))
-                    {
-                        return ignore::WalkState::Continue;
-                    }
-                } else {
+                if file_types.should_ignore(&entry) {
                     return ignore::WalkState::Continue;
                 }
             }
