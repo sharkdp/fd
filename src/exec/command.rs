@@ -7,9 +7,19 @@ use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 
 /// Executes a command.
-pub fn execute_command(mut cmd: Command, out_perm: &Mutex<()>) -> ExitCode {
+pub fn execute_command(
+    mut cmd: Command,
+    out_perm: &Mutex<()>,
+    enable_output_buffering: bool,
+) -> ExitCode {
     // Spawn the supplied command.
-    let output = cmd.output();
+    let output = if enable_output_buffering {
+        cmd.output()
+    } else {
+        // If running on only one thread, don't buffer output
+        // Allows for viewing and interacting with intermediate command output
+        cmd.spawn().and_then(|c| c.wait_with_output())
+    };
 
     // Then wait for the command to exit, if it was spawned.
     match output {
