@@ -381,15 +381,26 @@ fn spawn_senders(
                 }
             };
 
-            let filters: Vec<Box<dyn Filter>> = vec![
-                Box::new(MinDepth::new(config.min_depth)),
-                Box::new(RegexMatch::new(pattern.clone(), config.search_full_path)),
-                Box::new(Extensions::new(config.extensions.clone())),
+            let filters: Vec<Option<Box<dyn Filter>>> = vec![
+                Some(Box::new(MinDepth::new(config.min_depth))),
+                Some(Box::new(RegexMatch::new(
+                    pattern.clone(),
+                    config.search_full_path,
+                ))),
+                Some(Box::new(Extensions::new(config.extensions.clone()))),
+                config
+                    .file_types
+                    .clone()
+                    .map(|x| -> Box<dyn Filter> { Box::new(x) }),
             ];
 
-            let result = filters
-                .iter()
-                .find_map(|x| x.should_skip(&entry).then(|| ignore::WalkState::Continue));
+            let result = filters.iter().find_map(|filter_opt| {
+                filter_opt
+                    .as_ref()
+                    .map(|filter| filter.should_skip(&entry))
+                    .unwrap_or(false)
+                    .then(|| ignore::WalkState::Continue)
+            });
 
             if let Some(x) = result {
                 return x;
@@ -397,13 +408,6 @@ fn spawn_senders(
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();
-
-            // Filter out unwanted file types.
-            if let Some(ref file_types) = config.file_types {
-                if file_types.should_ignore(&entry) {
-                    return ignore::WalkState::Continue;
-                }
-            }
 
             #[cfg(unix)]
             {

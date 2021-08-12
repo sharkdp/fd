@@ -4,7 +4,7 @@ use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
 use crate::exec::CommandTemplate;
-use crate::filetypes::FileTypes;
+use crate::filter::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
