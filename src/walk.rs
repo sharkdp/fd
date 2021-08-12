@@ -16,7 +16,7 @@ use regex::bytes::Regex;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::filter::{Extensions, Filter, MinDepth, RegexMatch};
+use crate::filter::{Extensions, Filter, MinDepth, RegexMatch, SkipRoot};
 use crate::options::Options;
 use crate::output;
 
@@ -345,10 +345,6 @@ fn spawn_senders(
             }
 
             let entry = match entry_o {
-                Ok(ref e) if e.depth() == 0 => {
-                    // Skip the root directory entry.
-                    return ignore::WalkState::Continue;
-                }
                 Ok(e) => DirEntry::Normal(e),
                 Err(ignore::Error::WithPath {
                     path,
@@ -382,6 +378,7 @@ fn spawn_senders(
             };
 
             let filters: Vec<Option<Box<dyn Filter>>> = vec![
+                Some(Box::new(SkipRoot)),
                 Some(Box::new(MinDepth::new(config.min_depth))),
                 Some(Box::new(RegexMatch::new(
                     pattern.clone(),

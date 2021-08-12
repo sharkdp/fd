@@ -6,6 +6,7 @@ pub use self::extensions::Extensions;
 pub use self::filetypes::FileTypes;
 pub use self::min_depth::MinDepth;
 pub use self::regex_match::RegexMatch;
+pub use self::skip_root::SkipRoot;
 
 #[cfg(unix)]
 pub use self::owner::OwnerFilter;
@@ -15,6 +16,7 @@ mod extensions;
 mod filetypes;
 mod min_depth;
 mod regex_match;
+mod skip_root;
 
 mod size;
 mod time;
