@@ -16,8 +16,7 @@ use regex::bytes::Regex;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::filesystem;
-use crate::filter::{Filter, MinDepth, RegexMatch};
+use crate::filter::{Extensions, Filter, MinDepth, RegexMatch};
 use crate::options::Options;
 use crate::output;
 
@@ -385,6 +384,7 @@ fn spawn_senders(
             let filters: Vec<Box<dyn Filter>> = vec![
                 Box::new(MinDepth::new(config.min_depth)),
                 Box::new(RegexMatch::new(pattern.clone(), config.search_full_path)),
+                Box::new(Extensions::new(config.extensions.clone())),
             ];
 
             let result = filters
@@ -397,17 +397,6 @@ fn spawn_senders(
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();
-
-            // Filter out unwanted extensions.
-            if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name() {
-                    if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
-                        return ignore::WalkState::Continue;
-                    }
-                } else {
-                    return ignore::WalkState::Continue;
-                }
-            }
 
             // Filter out unwanted file types.
             if let Some(ref file_types) = config.file_types {
