@@ -19,6 +19,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
+use crate::filter::{Filter, MinDepth};
 use crate::options::Options;
 use crate::output;
 
@@ -383,10 +384,14 @@ fn spawn_senders(
                 }
             };
 
-            if let Some(min_depth) = config.min_depth {
-                if entry.depth().map_or(true, |d| d < min_depth) {
-                    return ignore::WalkState::Continue;
-                }
+            let filters: Vec<Box<dyn Filter>> = vec![Box::new(MinDepth::new(config.min_depth))];
+
+            let result = filters
+                .iter()
+                .find_map(|x| x.should_skip(&entry).then(|| ignore::WalkState::Continue));
+
+            if let Some(x) = result {
+                return x;
             }
 
             // Check the name first, since it doesn't require metadata
