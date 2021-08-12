@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -19,7 +17,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
-use crate::filter::{Filter, MinDepth};
+use crate::filter::{Filter, MinDepth, RegexMatch};
 use crate::options::Options;
 use crate::output;
 
@@ -384,7 +382,10 @@ fn spawn_senders(
                 }
             };
 
-            let filters: Vec<Box<dyn Filter>> = vec![Box::new(MinDepth::new(config.min_depth))];
+            let filters: Vec<Box<dyn Filter>> = vec![
+                Box::new(MinDepth::new(config.min_depth)),
+                Box::new(RegexMatch::new(pattern.clone(), config.search_full_path)),
+            ];
 
             let result = filters
                 .iter()
@@ -396,25 +397,6 @@ fn spawn_senders(
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();
-
-            let search_str: Cow<OsStr> = if config.search_full_path {
-                let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                    .expect("Retrieving absolute path succeeds");
-                Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-            } else {
-                match entry_path.file_name() {
-                    Some(filename) => Cow::Borrowed(filename),
-                    None => unreachable!(
-                        "Encountered file system entry without a file name. This should only \
-                         happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                         appear in a file system traversal."
-                    ),
-                }
-            };
-
-            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
-                return ignore::WalkState::Continue;
-            }
 
             // Filter out unwanted extensions.
             if let Some(ref exts_regex) = config.extensions {
