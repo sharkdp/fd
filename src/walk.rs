@@ -47,8 +47,6 @@ pub enum WorkerResult {
 /// Maximum size of the output buffer before flushing results to the console
 pub const MAX_BUFFER_LENGTH: usize = 1000;
 
-/// After TTY_FLUSH_INTERVAL flush any buffered data to terminal
-pub const TTY_FLUSH_INTERVAL: usize = 1;
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
@@ -277,13 +275,10 @@ fn spawn_receiver(
                                         &config,
                                         &wants_to_quit,
                                     );
-                                    #[allow(clippy::modulo_one)]
-                                    if num_results % TTY_FLUSH_INTERVAL == 0 {
-                                        let r = stdout.flush();
-                                        if r.is_err() {
-                                            // Probably a broken pipe. Exit gracefully.
-                                            process::exit(ExitCode::GeneralError.into());
-                                        }
+                                    let r = stdout.flush();
+                                    if r.is_err() {
+                                        // Probably a broken pipe. Exit gracefully.
+                                        process::exit(ExitCode::GeneralError.into());
                                     }
                                 }
                             }
