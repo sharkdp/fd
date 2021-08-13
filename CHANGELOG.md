@@ -19,6 +19,7 @@
 ## Other
 
 - Many documentation updates
+- Refactor filtering logic in `spawn_senders`, see #382 (@Asha20)
 
 # v8.2.1
 

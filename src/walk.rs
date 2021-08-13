@@ -392,11 +392,15 @@ fn spawn_senders(
             ];
 
             let result = filters.iter().find_map(|filter_opt| {
-                filter_opt
+                let should_skip = filter_opt
                     .as_ref()
                     .map(|filter| filter.should_skip(&entry))
-                    .unwrap_or(false)
-                    .then(|| ignore::WalkState::Continue)
+                    .unwrap_or(false);
+
+                match should_skip {
+                    true => Some(ignore::WalkState::Continue),
+                    false => None,
+                }
             });
 
             if let Some(x) = result {
