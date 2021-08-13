@@ -1425,15 +1425,17 @@ fn test_exec_with_separator() {
     );
 }
 
-/// Non-zero exit code (--has-match)
+/// Non-zero exit code (--quiet)
 #[test]
-fn test_has_match() {
+fn test_quiet() {
     let dirs = &[];
     let files = &["a.foo", "b.foo"];
     let te = TestEnv::new(dirs, files);
 
+    te.assert_output(&["-q"], "");
+    te.assert_output(&["--quiet"], "");
     te.assert_output(&["--has-match"], "");
-    te.assert_failure_with_error(&["--has-match", "c.foo"], "")
+    te.assert_failure_with_error(&["--quiet", "c.foo"], "")
 }
 
 /// Literal search (--fixed-strings)

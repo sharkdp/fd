@@ -56,7 +56,7 @@ pub struct Options {
 
     /// If true, the program doesn't print anything and will instead return an exit code of 0
     /// if there's at least one match. Otherwise, the exit code will be 1.
-    pub has_match: bool,
+    pub quiet: bool,
 
     /// Time to buffer results internally before streaming to the console. This is useful to
     /// provide a sorted output, in case the total execution time is shorter than

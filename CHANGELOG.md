@@ -2,7 +2,7 @@
 
 ## Features
 
-- Add new `--has-match` flag, see issue #303 and PR #813 (@Asha20)
+- Add new `-q, --quiet` flag, see #303 (@Asha20)
 
 ## Bugfixes
 

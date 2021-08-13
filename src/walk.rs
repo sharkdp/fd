@@ -225,7 +225,7 @@ fn spawn_receiver(
             for worker_result in rx {
                 match worker_result {
                     WorkerResult::Entry(value) => {
-                        if config.has_match {
+                        if config.quiet {
                             return ExitCode::HasMatch(true);
                         }
 
@@ -282,7 +282,7 @@ fn spawn_receiver(
                 }
             }
 
-            if config.has_match {
+            if config.quiet {
                 ExitCode::HasMatch(false)
             } else {
                 ExitCode::Success
