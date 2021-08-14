@@ -226,7 +226,7 @@ fn spawn_receiver(
                 match worker_result {
                     WorkerResult::Entry(value) => {
                         if config.quiet {
-                            return ExitCode::HasMatch(true);
+                            return ExitCode::HasResults(true);
                         }
 
                         match mode {
@@ -283,7 +283,7 @@ fn spawn_receiver(
             }
 
             if config.quiet {
-                ExitCode::HasMatch(false)
+                ExitCode::HasResults(false)
             } else {
                 ExitCode::Success
             }

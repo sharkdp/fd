@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExitCode {
     Success,
-    HasMatch(bool),
+    HasResults(bool),
     GeneralError,
     KilledBySigint,
 }
@@ -10,7 +10,7 @@ impl From<ExitCode> for i32 {
     fn from(code: ExitCode) -> Self {
         match code {
             ExitCode::Success => 0,
-            ExitCode::HasMatch(has_match) => !has_match as i32,
+            ExitCode::HasResults(has_results) => !has_results as i32,
             ExitCode::GeneralError => 1,
             ExitCode::KilledBySigint => 130,
         }

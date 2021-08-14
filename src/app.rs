@@ -508,14 +508,14 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("quiet")
                 .long("quiet")
                 .short("q")
-                .alias("has-match")
+                .alias("has-results")
                 .conflicts_with_all(&["exec", "exec-batch", "list-details", "max-results"])
                 .help("Returns exit code 1 if no matches are found")
                 .long_help(
-                    "When the flag is present, the program doesn't print anything and will \
-                     return an exit code of 0 if there's at least one match. Otherwise, the \
+                    "When the flag is present, the program does not print anything and will \
+                     return with an exit code of 0 if there is at least one match. Otherwise, the \
                      exit code will be 1. \
-                     '--has-match' can be used as an alias."
+                     '--has-results' can be used as an alias."
                 )
         )
         .arg(

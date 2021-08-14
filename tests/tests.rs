@@ -1434,7 +1434,7 @@ fn test_quiet() {
 
     te.assert_output(&["-q"], "");
     te.assert_output(&["--quiet"], "");
-    te.assert_output(&["--has-match"], "");
+    te.assert_output(&["--has-results"], "");
     te.assert_failure_with_error(&["--quiet", "c.foo"], "")
 }
 
