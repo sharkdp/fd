@@ -233,6 +233,10 @@ fn spawn_receiver(
             for worker_result in rx {
                 match worker_result {
                     WorkerResult::Entry(value) => {
+                        if config.quiet {
+                            return ExitCode::HasResults(true);
+                        }
+
                         match mode {
                             ReceiverMode::Buffering => {
                                 buffer.push(value);
@@ -286,7 +290,11 @@ fn spawn_receiver(
                 }
             }
 
-            ExitCode::Success
+            if config.quiet {
+                ExitCode::HasResults(false)
+            } else {
+                ExitCode::Success
+            }
         }
     })
 }
