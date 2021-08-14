@@ -509,8 +509,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("quiet")
                 .short("q")
                 .alias("has-results")
+                .hidden_short_help(true)
                 .conflicts_with_all(&["exec", "exec-batch", "list-details", "max-results"])
-                .help("Returns exit code 1 if no matches are found")
                 .long_help(
                     "When the flag is present, the program does not print anything and will \
                      return with an exit code of 0 if there is at least one match. Otherwise, the \
