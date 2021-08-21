@@ -50,10 +50,38 @@ ow=0:or=0;38;5;16;48;5;203:no=0:ex=1;38;5;203:cd=0;38;5;203;48;5;236:mi=0;38;5;1
 38;5;185:*.jpg=0;38;5;208:*.mir=0;38;5;48:*.sxi=0;38;5;186:*.bz2=4;38;5;203:*.odt=0;38;5;186:*.mov=0;38;5;208:*.toc=0;38;5;243:*.bat=1;38;5;203:*.asa=0;38;5;48:*.awk=0;38;5;48:*.sbt=0;38;5;48:*.vcd=4;38;5;203:*.kts=0;38;5;48:*.arj=4;38;5;203:*.blg=0;38;5;243:*.c++=0;38;5;48:*.odp=0;38;5;186:*.bbl=0;38;5;243:*.idx=0;38;5;243:*.com=1;38;5;203:*.mp3=0;38;5;208:*.avi=0;38;5;208:*.def=0;38;5;48:*.cgi=0;38;5;48:*.zip=4;38;5;203:*.ttf=0;38;5;208:*.ppt=0;38;5;186:*.tml=0;38;5;149:*.fsx=0;38;5;48:*.h++=0;38;5;48:*.rtf=0;38;5;186:*.inl=0;38;5;48:*.yaml=0;38;5;149:*.html=0;38;5;185:*.mpeg=0;38;5;208:*.java=0;38;5;48:*.hgrc=0;38;5;149:*.orig=0;38;5;243:*.conf=0;38;5;149:*.dart=0;38;5;48:*.psm1=0;38;5;48:*.rlib=0;38;5;243:*.fish=0;38;5;48:*.bash=0;38;5;48:*.make=0;38;5;149:*.docx=0;38;5;186:*.json=0;38;5;149:*.psd1=0;38;5;48:*.lisp=0;38;5;48:*.tbz2=4;38;5;203:*.diff=0;38;5;48:*.epub=0;38;5;186:*.xlsx=0;38;5;186:*.pptx=0;38;5;186:*.toml=0;38;5;149:*.h264=0;38;5;208:*.purs=0;38;5;48:*.flac=0;38;5;208:*.tiff=0;38;5;208:*.jpeg=0;38;5;208:*.lock=0;38;5;243:*.less=0;38;5;48:*.dyn_o=0;38;5;243:*.scala=0;38;5;48:*.mdown=0;38;5;185:*.shtml=0;38;5;185:*.class=0;38;5;243:*.cache=0;38;5;243:*.cmake=0;38;5;149:*passwd=0;38;5;149:*.swift=0;38;5;48:*shadow=0;38;5;149:*.xhtml=0;38;5;185:*.patch=0;38;5;48:*.cabal=0;38;5;48:*README=0;38;5;16;48;5;186:*.toast=4;38;5;203:*.ipynb=0;38;5;48:*COPYING=0;38;5;249:*.gradle=0;38;5;48:*.matlab=0;38;5;48:*.config=0;38;5;149:*LICENSE=0;38;5;249:*.dyn_hi=0;38;5;243:*.flake8=0;38;5;149:*.groovy=0;38;5;48:*INSTALL=0;38;5;16;48;5;186:*TODO.md=1:*.ignore=0;38;5;149:*Doxyfile=0;38;5;149:*TODO.txt=1:*setup.py=0;38;5;149:*Makefile=0;38;5;149:*.gemspec=0;38;5;149:*.desktop=0;38;5;149:*.rgignore=0;38;5;149:*.markdown=0;38;5;185:*COPYRIGHT=0;38;5;249:*configure=0;38;5;149:*.DS_Store=0;38;5;243:*.kdevelop=0;38;5;149:*.fdignore=0;38;5;149:*README.md=0;38;5;16;48;5;186:*.cmake.in=0;38;5;149:*SConscript=0;38;5;149:*CODEOWNERS=0;38;5;149:*.localized=0;38;5;243:*.gitignore=0;38;5;149:*Dockerfile=0;38;5;149:*.gitconfig=0;38;5;149:*INSTALL.md=0;38;5;16;48;5;186:*README.txt=0;38;5;16;48;5;186:*SConstruct=0;38;5;149:*.scons_opt=0;38;5;243:*.travis.yml=0;38;5;186:*.gitmodules=0;38;5;149:*.synctex.gz=0;38;5;243:*LICENSE-MIT=0;38;5;249:*MANIFEST.in=0;38;5;149:*Makefile.in=0;38;5;243:*Makefile.am=0;38;5;149:*INSTALL.txt=0;38;5;16;48;5;186:*configure.ac=0;38;5;149:*.applescript=0;38;5;48:*appveyor.yml=0;38;5;186:*.fdb_latexmk=0;38;5;243:*CONTRIBUTORS=0;38;5;16;48;5;186:*.clang-format=0;38;5;149:*LICENSE-APACHE=0;38;5;249:*CMakeLists.txt=0;38;5;149:*CMakeCache.txt=0;38;5;243:*.gitattributes=0;38;5;149:*CONTRIBUTORS.md=0;38;5;16;48;5;186:*.sconsign.dblite=0;38;5;243:*requirements.txt=0;38;5;149:*CONTRIBUTORS.txt=0;38;5;16;48;5;186:*package-lock.json=0;38;5;243:*.CFUserTextEncoding=0;38;5;243
 ";
 
+fn main() {
+    let result = run();
+    match result {
+        Ok(exit_code) => {
+            process::exit(exit_code.into());
+        }
+        Err(err) => {
+            eprintln!("[fd error]: {:#}", err);
+            process::exit(ExitCode::GeneralError.into());
+        }
+    }
+}
+
 fn run() -> Result<ExitCode> {
     let matches = app::build_app().get_matches_from(env::args_os());
 
-    // Set the current working directory of the process
+    set_working_dir(&matches)?;
+    let current_directory = Path::new(".");
+    ensure_current_directory_exists(current_directory)?;
+    let search_paths = extract_search_paths(&matches, current_directory)?;
+
+    let pattern = extract_search_pattern(&matches)?;
+    ensure_search_pattern_is_not_a_path(&matches, pattern)?;
+    let pattern_regex = build_pattern_regex(&matches, pattern)?;
+
+    let config = construct_options(matches, &pattern_regex)?;
+    ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regex)?;
+    let re = build_regex(pattern_regex, &config)?;
+    walk::scan(&search_paths, Arc::new(re), Arc::new(config))
+}
+
+fn set_working_dir(matches: &clap::ArgMatches) -> Result<()> {
     if let Some(base_directory) = matches.value_of_os("base-directory") {
         let base_directory = Path::new(base_directory);
         if !filesystem::is_existing_directory(base_directory) {
@@ -69,15 +97,20 @@ fn run() -> Result<ExitCode> {
             )
         })?;
     }
+    Ok(())
+}
 
-    let current_directory = Path::new(".");
-    if !filesystem::is_existing_directory(current_directory) {
-        return Err(anyhow!(
+fn ensure_current_directory_exists(current_directory: &Path) -> Result<()> {
+    if filesystem::is_existing_directory(current_directory) {
+        Ok(())
+    } else {
+        Err(anyhow!(
             "Could not retrieve current directory (has it been deleted?)."
-        ));
+        ))
     }
+}
 
-    // Get the search pattern
+fn extract_search_pattern<'a>(matches: &'a clap::ArgMatches) -> Result<&'a str> {
     let pattern = matches
         .value_of_os("pattern")
         .map(|p| {
@@ -86,54 +119,57 @@ fn run() -> Result<ExitCode> {
         })
         .transpose()?
         .unwrap_or("");
+    Ok(pattern)
+}
 
-    // Get one or more root directories to search.
-    let passed_arguments = matches
+fn extract_search_paths(
+    matches: &clap::ArgMatches,
+    current_directory: &Path,
+) -> Result<Vec<PathBuf>> {
+    let mut search_paths = matches
         .values_of_os("path")
-        .or_else(|| matches.values_of_os("search-path"));
-
-    let mut search_paths = if let Some(paths) = passed_arguments {
-        let mut directories = vec![];
-        for path in paths {
-            let path_buffer = PathBuf::from(path);
-            if filesystem::is_existing_directory(&path_buffer) {
-                directories.push(path_buffer);
-            } else {
-                print_error(format!(
-                    "Search path '{}' is not a directory.",
-                    path_buffer.to_string_lossy()
-                ));
-            }
-        }
-
-        directories
-    } else {
-        vec![current_directory.to_path_buf()]
-    };
-
-    // Check if we have no valid search paths.
+        .or_else(|| matches.values_of_os("search-path"))
+        .map_or_else(
+            || vec![current_directory.to_path_buf()],
+            |paths| {
+                paths
+                    .filter_map(|path| {
+                        let path_buffer = PathBuf::from(path);
+                        if filesystem::is_existing_directory(&path_buffer) {
+                            Some(path_buffer)
+                        } else {
+                            print_error(format!(
+                                "Search path '{}' is not a directory.",
+                                path_buffer.to_string_lossy()
+                            ));
+                            None
+                        }
+                    })
+                    .collect()
+            },
+        );
     if search_paths.is_empty() {
         return Err(anyhow!("No valid search paths given."));
     }
-
     if matches.is_present("absolute-path") {
-        search_paths = search_paths
-            .iter()
-            .map(|path_buffer| {
-                path_buffer
-                    .normalize()
-                    .and_then(|pb| filesystem::absolute_path(pb.as_path()))
-                    .unwrap()
-            })
-            .collect();
+        update_to_absolute_paths(&mut search_paths);
     }
+    Ok(search_paths)
+}
 
-    // Detect if the user accidentally supplied a path instead of a search pattern
+fn update_to_absolute_paths(search_paths: &mut [PathBuf]) {
+    for buffer in search_paths.iter_mut() {
+        *buffer = filesystem::absolute_path(buffer.normalize().unwrap().as_path()).unwrap();
+    }
+}
+
+/// Detect if the user accidentally supplied a path instead of a search pattern
+fn ensure_search_pattern_is_not_a_path(matches: &clap::ArgMatches, pattern: &str) -> Result<()> {
     if !matches.is_present("full-path")
         && pattern.contains(std::path::MAIN_SEPARATOR)
         && Path::new(pattern).is_dir()
     {
-        return Err(anyhow!(
+        Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
@@ -142,10 +178,14 @@ fn run() -> Result<ExitCode> {
              fd --full-path '{pattern}'",
             pattern = pattern,
             sep = std::path::MAIN_SEPARATOR,
-        ));
+        ))
+    } else {
+        Ok(())
     }
+}
 
-    let pattern_regex = if matches.is_present("glob") && !pattern.is_empty() {
+fn build_pattern_regex(matches: &clap::ArgMatches, pattern: &str) -> Result<String> {
+    Ok(if matches.is_present("glob") && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
     } else if matches.is_present("fixed-strings") {
@@ -153,17 +193,46 @@ fn run() -> Result<ExitCode> {
         regex::escape(pattern)
     } else {
         String::from(pattern)
-    };
+    })
+}
 
+fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
+    match (cfg!(windows), path_separator) {
+        (true, Some(sep)) if sep.len() > 1 => Err(anyhow!(
+            "A path separator must be exactly one byte, but \
+                 the given separator is {} bytes: '{}'.\n\
+                 In some shells on Windows, '/' is automatically \
+                 expanded. Try to use '//' instead.",
+            sep.len(),
+            sep
+        )),
+        _ => Ok(()),
+    }
+}
+
+fn construct_options(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Options> {
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
-        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(&pattern_regex));
+        && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern_regex));
+
+    let path_separator = matches
+        .value_of("path-separator")
+        .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
+    check_path_separator_length(path_separator.as_deref())?;
+
+    let size_limits = extract_size_limits(&matches)?;
+    let time_constraints = extract_time_constraints(&matches)?;
+    #[cfg(unix)]
+    let owner_constraint = matches
+        .value_of("owner")
+        .map(OwnerFilter::from_string)
+        .transpose()?
+        .flatten();
 
     #[cfg(windows)]
     let ansi_colors_support =
         ansi_term::enable_ansi_support().is_ok() || std::env::var_os("TERM").is_some();
-
     #[cfg(not(windows))]
     let ansi_colors_support = true;
 
@@ -174,163 +243,14 @@ fn run() -> Result<ExitCode> {
         _ => ansi_colors_support && env::var_os("NO_COLOR").is_none() && interactive_terminal,
     };
 
-    let path_separator = matches
-        .value_of("path-separator")
-        .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
-
-    #[cfg(windows)]
-    {
-        if let Some(ref sep) = path_separator {
-            if sep.len() > 1 {
-                return Err(anyhow!(
-                    "A path separator must be exactly one byte, but \
-                 the given separator is {} bytes: '{}'.\n\
-                 In some shells on Windows, '/' is automatically \
-                 expanded. Try to use '//' instead.",
-                    sep.len(),
-                    sep
-                ));
-            };
-        };
-    }
-
     let ls_colors = if colored_output {
         Some(LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)))
     } else {
         None
     };
+    let command = extract_command(&matches, path_separator.as_deref(), colored_output)?;
 
-    let command = if let Some(args) = matches.values_of("exec") {
-        Some(CommandTemplate::new(args, path_separator.clone()))
-    } else if let Some(args) = matches.values_of("exec-batch") {
-        Some(CommandTemplate::new_batch(args, path_separator.clone())?)
-    } else if matches.is_present("list-details") {
-        let color = matches.value_of("color").unwrap_or("auto");
-        let color_arg = ["--color=", color].concat();
-
-        #[allow(unused)]
-        let gnu_ls = |command_name| {
-            // Note: we use short options here (instead of --long-options) to support more
-            // platforms (like BusyBox).
-            vec![
-                command_name,
-                "-l", // long listing format
-                "-h", // human readable file sizes
-                "-d", // list directories themselves, not their contents
-                &color_arg,
-            ]
-        };
-
-        let cmd: Vec<&str> = if cfg!(unix) {
-            if !cfg!(any(
-                target_os = "macos",
-                target_os = "dragonfly",
-                target_os = "freebsd",
-                target_os = "netbsd",
-                target_os = "openbsd"
-            )) {
-                // Assume ls is GNU ls
-                gnu_ls("ls")
-            } else {
-                // MacOS, DragonFlyBSD, FreeBSD
-                use std::process::{Command, Stdio};
-
-                // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
-                let gnu_ls_exists = Command::new("gls")
-                    .arg("--version")
-                    .stdout(Stdio::null())
-                    .stderr(Stdio::null())
-                    .status()
-                    .is_ok();
-
-                if gnu_ls_exists {
-                    gnu_ls("gls")
-                } else {
-                    let mut cmd = vec![
-                        "ls", // BSD version of ls
-                        "-l", // long listing format
-                        "-h", // '--human-readable' is not available, '-h' is
-                        "-d", // '--directory' is not available, but '-d' is
-                    ];
-
-                    if !cfg!(any(target_os = "netbsd", target_os = "openbsd")) && colored_output {
-                        // -G is not available in NetBSD's and OpenBSD's ls
-                        cmd.push("-G");
-                    }
-
-                    cmd
-                }
-            }
-        } else if cfg!(windows) {
-            use std::process::{Command, Stdio};
-
-            // Use GNU ls, if available
-            let gnu_ls_exists = Command::new("ls")
-                .arg("--version")
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .is_ok();
-
-            if gnu_ls_exists {
-                gnu_ls("ls")
-            } else {
-                return Err(anyhow!(
-                    "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
-                ));
-            }
-        } else {
-            return Err(anyhow!(
-                "'fd --list-details' is not supported on this platform."
-            ));
-        };
-
-        Some(CommandTemplate::new_batch(&cmd, path_separator.clone()).unwrap())
-    } else {
-        None
-    };
-
-    let size_limits = if let Some(vs) = matches.values_of("size") {
-        vs.map(|sf| {
-            SizeFilter::from_string(sf)
-                .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", sf))
-        })
-        .collect::<Result<Vec<_>>>()?
-    } else {
-        vec![]
-    };
-
-    let now = time::SystemTime::now();
-    let mut time_constraints: Vec<TimeFilter> = Vec::new();
-    if let Some(t) = matches.value_of("changed-within") {
-        if let Some(f) = TimeFilter::after(&now, t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
-    }
-    if let Some(t) = matches.value_of("changed-before") {
-        if let Some(f) = TimeFilter::before(&now, t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
-    }
-
-    #[cfg(unix)]
-    let owner_constraint = if let Some(s) = matches.value_of("owner") {
-        OwnerFilter::from_string(s)?
-    } else {
-        None
-    };
-
-    let config = Options {
+    Ok(Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden")
@@ -455,20 +375,177 @@ fn run() -> Result<ExitCode> {
                     None
                 }
             }),
-    };
+    })
+}
 
-    if cfg!(unix)
-        && config.ignore_hidden
-        && pattern_matches_strings_with_leading_dot(&pattern_regex)
-    {
+fn extract_command(
+    matches: &clap::ArgMatches,
+    path_separator: Option<&str>,
+    colored_output: bool,
+) -> Result<Option<CommandTemplate>> {
+    None.or_else(|| {
+        matches.values_of("exec").map(|args| {
+            Ok(CommandTemplate::new(
+                args,
+                path_separator.map(str::to_string),
+            ))
+        })
+    })
+    .or_else(|| {
+        matches
+            .values_of("exec-batch")
+            .map(|args| CommandTemplate::new_batch(args, path_separator.map(str::to_string)))
+    })
+    .or_else(|| {
+        if !matches.is_present("list-details") {
+            return None;
+        }
+
+        let color = matches.value_of("color").unwrap_or("auto");
+        let color_arg = format!("--color={}", color);
+
+        let res = determine_ls_command(&color_arg, colored_output).map(|cmd| {
+            CommandTemplate::new_batch(cmd, path_separator.map(str::to_string)).unwrap()
+        });
+
+        Some(res)
+    })
+    .transpose()
+}
+
+fn determine_ls_command(color_arg: &str, colored_output: bool) -> Result<Vec<&str>> {
+    #[allow(unused)]
+    let gnu_ls = |command_name| {
+        // Note: we use short options here (instead of --long-options) to support more
+        // platforms (like BusyBox).
+        vec![
+            command_name,
+            "-l", // long listing format
+            "-h", // human readable file sizes
+            "-d", // list directories themselves, not their contents
+            color_arg,
+        ]
+    };
+    let cmd: Vec<&str> = if cfg!(unix) {
+        if !cfg!(any(
+            target_os = "macos",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        )) {
+            // Assume ls is GNU ls
+            gnu_ls("ls")
+        } else {
+            // MacOS, DragonFlyBSD, FreeBSD
+            use std::process::{Command, Stdio};
+
+            // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
+            let gnu_ls_exists = Command::new("gls")
+                .arg("--version")
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status()
+                .is_ok();
+
+            if gnu_ls_exists {
+                gnu_ls("gls")
+            } else {
+                let mut cmd = vec![
+                    "ls", // BSD version of ls
+                    "-l", // long listing format
+                    "-h", // '--human-readable' is not available, '-h' is
+                    "-d", // '--directory' is not available, but '-d' is
+                ];
+
+                if !cfg!(any(target_os = "netbsd", target_os = "openbsd")) && colored_output {
+                    // -G is not available in NetBSD's and OpenBSD's ls
+                    cmd.push("-G");
+                }
+
+                cmd
+            }
+        }
+    } else if cfg!(windows) {
+        use std::process::{Command, Stdio};
+
+        // Use GNU ls, if available
+        let gnu_ls_exists = Command::new("ls")
+            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .is_ok();
+
+        if gnu_ls_exists {
+            gnu_ls("ls")
+        } else {
+            return Err(anyhow!(
+                "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
+            ));
+        }
+    } else {
         return Err(anyhow!(
+            "'fd --list-details' is not supported on this platform."
+        ));
+    };
+    Ok(cmd)
+}
+
+fn extract_size_limits(matches: &clap::ArgMatches) -> Result<Vec<SizeFilter>> {
+    matches.values_of("size").map_or(Ok(Vec::new()), |vs| {
+        vs.map(|sf| {
+            SizeFilter::from_string(sf)
+                .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", sf))
+        })
+        .collect::<Result<Vec<_>>>()
+    })
+}
+
+fn extract_time_constraints(matches: &clap::ArgMatches) -> Result<Vec<TimeFilter>> {
+    let now = time::SystemTime::now();
+    let mut time_constraints: Vec<TimeFilter> = Vec::new();
+    if let Some(t) = matches.value_of("changed-within") {
+        if let Some(f) = TimeFilter::after(&now, t) {
+            time_constraints.push(f);
+        } else {
+            return Err(anyhow!(
+                "'{}' is not a valid date or duration. See 'fd --help'.",
+                t
+            ));
+        }
+    }
+    if let Some(t) = matches.value_of("changed-before") {
+        if let Some(f) = TimeFilter::before(&now, t) {
+            time_constraints.push(f);
+        } else {
+            return Err(anyhow!(
+                "'{}' is not a valid date or duration. See 'fd --help'.",
+                t
+            ));
+        }
+    }
+    Ok(time_constraints)
+}
+
+fn ensure_use_hidden_option_for_leading_dot_pattern(
+    config: &Options,
+    pattern_regex: &str,
+) -> Result<()> {
+    if cfg!(unix) && config.ignore_hidden && pattern_matches_strings_with_leading_dot(pattern_regex)
+    {
+        Err(anyhow!(
             "The pattern seems to only match files with a leading dot, but hidden files are \
             filtered by default. Consider adding -H/--hidden to search hidden files as well \
             or adjust your search pattern."
-        ));
+        ))
+    } else {
+        Ok(())
     }
+}
 
-    let re = RegexBuilder::new(&pattern_regex)
+fn build_regex(pattern_regex: String, config: &Options) -> Result<regex::bytes::Regex> {
+    RegexBuilder::new(&pattern_regex)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
         .build()
@@ -479,20 +556,5 @@ fn run() -> Result<ExitCode> {
                  also use the '--glob' option to match on a glob pattern.",
                 e.to_string()
             )
-        })?;
-
-    walk::scan(&search_paths, Arc::new(re), Arc::new(config))
-}
-
-fn main() {
-    let result = run();
-    match result {
-        Ok(exit_code) => {
-            process::exit(exit_code.into());
-        }
-        Err(err) => {
-            eprintln!("[fd error]: {:#}", err);
-            process::exit(ExitCode::GeneralError.into());
-        }
-    }
+        })
 }
