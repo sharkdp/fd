@@ -40,6 +40,8 @@ pub enum WorkerResult {
 
 /// Maximum size of the output buffer before flushing results to the console
 pub const MAX_BUFFER_LENGTH: usize = 1000;
+/// Default duration until output buffering switches to streaming.
+pub const DEFAULT_MAX_BUFFER_TIME: time::Duration = time::Duration::from_millis(100);
 
 /// Recursively scan the given search path for files / pathnames matching the pattern.
 ///
@@ -220,9 +222,7 @@ fn spawn_receiver(
             let mut mode = ReceiverMode::Buffering;
 
             // Maximum time to wait before we start streaming to the console.
-            let max_buffer_time = config
-                .max_buffer_time
-                .unwrap_or_else(|| time::Duration::from_millis(100));
+            let max_buffer_time = config.max_buffer_time.unwrap_or(DEFAULT_MAX_BUFFER_TIME);
 
             let stdout = io::stdout();
             let mut stdout = stdout.lock();
@@ -242,7 +242,7 @@ fn spawn_receiver(
 
                                 // Have we reached the maximum buffer size or maximum buffering time?
                                 if buffer.len() > MAX_BUFFER_LENGTH
-                                    || time::Instant::now() - start > max_buffer_time
+                                    || start.elapsed() > max_buffer_time
                                 {
                                     // Flush the buffer
                                     for v in &buffer {
@@ -265,6 +265,11 @@ fn spawn_receiver(
                         }
 
                         num_results += 1;
+                        if let Some(max_results) = config.max_results {
+                            if num_results >= max_results {
+                                break;
+                            }
+                        }
                     }
                     WorkerResult::Error(err) => {
                         if show_filesystem_errors {
@@ -272,21 +277,13 @@ fn spawn_receiver(
                         }
                     }
                 }
-
-                if let Some(max_results) = config.max_results {
-                    if num_results >= max_results {
-                        break;
-                    }
-                }
             }
 
             // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
             // anything to the console, yet. In this case, sort the results and print them:
-            if !buffer.is_empty() {
-                buffer.sort();
-                for value in buffer {
-                    output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
-                }
+            buffer.sort();
+            for value in buffer {
+                output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
             }
 
             if config.quiet {
