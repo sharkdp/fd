@@ -205,12 +205,11 @@ fn spawn_receiver(
                 }
 
                 // Wait for all threads to exit before exiting the program.
-                let mut results: Vec<ExitCode> = Vec::new();
-                for h in handles {
-                    results.push(h.join().unwrap());
-                }
-
-                merge_exitcodes(&results)
+                let exit_codes = handles
+                    .into_iter()
+                    .map(|handle| handle.join().unwrap())
+                    .collect::<Vec<_>>();
+                merge_exitcodes(exit_codes)
             }
         } else {
             let start = time::Instant::now();
