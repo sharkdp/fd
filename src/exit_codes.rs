@@ -23,8 +23,8 @@ impl ExitCode {
     }
 }
 
-pub fn merge_exitcodes(results: &[ExitCode]) -> ExitCode {
-    if results.iter().any(|&c| ExitCode::is_error(c)) {
+pub fn merge_exitcodes(results: impl IntoIterator<Item = ExitCode>) -> ExitCode {
+    if results.into_iter().any(ExitCode::is_error) {
         return ExitCode::GeneralError;
     }
     ExitCode::Success
@@ -36,38 +36,38 @@ mod tests {
 
     #[test]
     fn success_when_no_results() {
-        assert_eq!(merge_exitcodes(&[]), ExitCode::Success);
+        assert_eq!(merge_exitcodes([]), ExitCode::Success);
     }
 
     #[test]
     fn general_error_if_at_least_one_error() {
         assert_eq!(
-            merge_exitcodes(&[ExitCode::GeneralError]),
+            merge_exitcodes([ExitCode::GeneralError]),
             ExitCode::GeneralError
         );
         assert_eq!(
-            merge_exitcodes(&[ExitCode::KilledBySigint]),
+            merge_exitcodes([ExitCode::KilledBySigint]),
             ExitCode::GeneralError
         );
         assert_eq!(
-            merge_exitcodes(&[ExitCode::KilledBySigint, ExitCode::Success]),
+            merge_exitcodes([ExitCode::KilledBySigint, ExitCode::Success]),
             ExitCode::GeneralError
         );
         assert_eq!(
-            merge_exitcodes(&[ExitCode::Success, ExitCode::GeneralError]),
+            merge_exitcodes([ExitCode::Success, ExitCode::GeneralError]),
             ExitCode::GeneralError
         );
         assert_eq!(
-            merge_exitcodes(&[ExitCode::GeneralError, ExitCode::KilledBySigint]),
+            merge_exitcodes([ExitCode::GeneralError, ExitCode::KilledBySigint]),
             ExitCode::GeneralError
         );
     }
 
     #[test]
     fn success_if_no_error() {
-        assert_eq!(merge_exitcodes(&[ExitCode::Success]), ExitCode::Success);
+        assert_eq!(merge_exitcodes([ExitCode::Success]), ExitCode::Success);
         assert_eq!(
-            merge_exitcodes(&[ExitCode::Success, ExitCode::Success]),
+            merge_exitcodes([ExitCode::Success, ExitCode::Success]),
             ExitCode::Success
         );
     }
