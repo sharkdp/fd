@@ -26,7 +26,7 @@ pub fn build_app() -> App<'static, 'static> {
                     "Include hidden directories and files in the search results (default: \
                          hidden files and directories are skipped). Files and directories are \
                          considered to be hidden if their name starts with a `.` sign (dot). \
-                         Flag can be overridden with --no-hidden.",
+                         The flag can be overridden with --no-hidden.",
                 ),
         )
         .arg(
@@ -47,7 +47,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
                          ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file. \
-                         Flag can be overridden with --ignore.",
+                         The flag can be overridden with --ignore.",
                 ),
         )
         .arg(
@@ -66,7 +66,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true)
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore' files. Flag can be overridden with --ignore-vcs.",
+                         ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.",
                 ),
         )
         .arg(
@@ -159,7 +159,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Show absolute instead of relative paths")
                 .long_help(
                     "Shows the full path starting from the root as opposed to relative paths. \
-                     Flag can be overridden with --relative-path.",
+                     The flag can be overridden with --relative-path.",
                 ),
         )
         .arg(
