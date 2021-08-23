@@ -32,7 +32,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("no-hidden")
                 .long("no-hidden")
-                .overrides_with("no-hidden")
+                .overrides_with("hidden")
                 .hidden(true)
                 .long_help(
                     "Overrides --hidden.",
@@ -53,7 +53,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("ignore")
                 .long("ignore")
-                .overrides_with("ignore")
+                .overrides_with("no-ignore")
                 .hidden(true)
                 .long_help(
                     "Overrides --no-ignore.",
@@ -72,7 +72,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("ignore-vcs")
                 .long("ignore-vcs")
-                .overrides_with("ignore-vcs")
+                .overrides_with("no-ignore-vcs")
                 .hidden(true)
                 .long_help(
                     "Overrides --no-ignore-vcs.",
@@ -88,6 +88,7 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("rg-alias-hidden-ignore")
                 .short("u")
                 .long("unrestricted")
+                .overrides_with_all(&["ignore", "no-hidden"])
                 .multiple(true)
                 .hidden_short_help(true)
                 .long_help(
@@ -165,7 +166,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("relative-path")
                 .long("relative-path")
-                .overrides_with("relative-path")
+                .overrides_with("absolute-path")
                 .hidden(true)
                 .long_help(
                     "Overrides --absolute-path.",
@@ -200,7 +201,7 @@ pub fn build_app() -> App<'static, 'static> {
         .arg(
             Arg::with_name("no-follow")
                 .long("no-follow")
-                .overrides_with("no-follow")
+                .overrides_with("follow")
                 .hidden(true)
                 .long_help(
                     "Overrides --follow.",
