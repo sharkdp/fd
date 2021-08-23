@@ -14,17 +14,16 @@ on:
       - '*'
 
 jobs:
-  min_version:
-    name: Minimum supported rust version
+  code_quality:
+    name: Code quality
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
-
-    - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
+    - name: Install rust toolchain
       uses: actions-rs/toolchain@v1
       with:
-        toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
+        toolchain: stable
         default: true
         profile: minimal # minimal component installation (ie, no documentation)
         components: clippy, rustfmt
@@ -33,11 +32,26 @@ jobs:
       with:
         command: fmt
         args: -- --check
-    - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
+    - name: Ensure MSRV is set in `clippy.toml`
+      run: grep "^msrv = \"${{ env.MIN_SUPPORTED_RUST_VERSION }}\"\$" clippy.toml
+    - name: Run clippy
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --locked --all-targets --all-features
+
+  min_version:
+    name: Minimum supported rust version
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
+        default: true
+        profile: minimal # minimal component installation (ie, no documentation)
     - name: Run tests
       uses: actions-rs/cargo@v1
       with:
