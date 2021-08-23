@@ -1,11 +1,11 @@
 mod app;
+mod config;
 mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;
 mod filetypes;
 mod filter;
-mod options;
 mod output;
 mod regex_helper;
 mod walk;
@@ -23,6 +23,7 @@ use lscolors::LsColors;
 use normpath::PathExt;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
+use crate::config::Config;
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
 use crate::exit_codes::ExitCode;
@@ -30,7 +31,6 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
-use crate::options::Options;
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
@@ -75,7 +75,7 @@ fn run() -> Result<ExitCode> {
     ensure_search_pattern_is_not_a_path(&matches, pattern)?;
     let pattern_regex = build_pattern_regex(&matches, pattern)?;
 
-    let config = construct_options(matches, &pattern_regex)?;
+    let config = construct_config(matches, &pattern_regex)?;
     ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regex)?;
     let re = build_regex(pattern_regex, &config)?;
     walk::scan(&search_paths, Arc::new(re), Arc::new(config))
@@ -210,7 +210,7 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
     }
 }
 
-fn construct_options(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Options> {
+fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Config> {
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
@@ -250,7 +250,7 @@ fn construct_options(matches: clap::ArgMatches, pattern_regex: &str) -> Result<O
     };
     let command = extract_command(&matches, path_separator.as_deref(), colored_output)?;
 
-    Ok(Options {
+    Ok(Config {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden")
@@ -529,7 +529,7 @@ fn extract_time_constraints(matches: &clap::ArgMatches) -> Result<Vec<TimeFilter
 }
 
 fn ensure_use_hidden_option_for_leading_dot_pattern(
-    config: &Options,
+    config: &Config,
     pattern_regex: &str,
 ) -> Result<()> {
     if cfg!(unix) && config.ignore_hidden && pattern_matches_strings_with_leading_dot(pattern_regex)
@@ -544,7 +544,7 @@ fn ensure_use_hidden_option_for_leading_dot_pattern(
     }
 }
 
-fn build_regex(pattern_regex: String, config: &Options) -> Result<regex::bytes::Regex> {
+fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::Regex> {
     RegexBuilder::new(&pattern_regex)
         .case_insensitive(!config.case_sensitive)
         .dot_matches_new_line(true)
