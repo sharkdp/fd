@@ -555,6 +555,20 @@ pub fn build_app() -> App<'static, 'static> {
                                 This is an alias for '--max-results=1'.")
         )
         .arg(
+            Arg::with_name("quiet")
+                .long("quiet")
+                .short("q")
+                .alias("has-results")
+                .hidden_short_help(true)
+                .conflicts_with_all(&["exec", "exec-batch", "list-details", "max-results"])
+                .long_help(
+                    "When the flag is present, the program does not print anything and will \
+                     return with an exit code of 0 if there is at least one match. Otherwise, the \
+                     exit code will be 1. \
+                     '--has-results' can be used as an alias."
+                )
+        )
+        .arg(
             Arg::with_name("show-errors")
                 .long("show-errors")
                 .hidden_short_help(true)

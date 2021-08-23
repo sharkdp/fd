@@ -346,6 +346,7 @@ fn run() -> Result<ExitCode> {
         follow_links: matches.is_present("follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
+        quiet: matches.is_present("quiet"),
         max_depth: matches
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
