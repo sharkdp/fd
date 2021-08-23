@@ -10,7 +10,7 @@ use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 
 /// Configuration options for *fd*.
-pub struct Options {
+pub struct Config {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 

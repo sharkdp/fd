@@ -15,11 +15,11 @@ use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
 
+use crate::config::Config;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
-use crate::options::Options;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -48,7 +48,7 @@ pub const DEFAULT_MAX_BUFFER_TIME: time::Duration = time::Duration::from_millis(
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> Result<ExitCode> {
+pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
     let mut path_iter = path_vec.iter();
     let first_path_buf = path_iter
         .next()
@@ -163,7 +163,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
 }
 
 fn spawn_receiver(
-    config: &Arc<Options>,
+    config: &Arc<Config>,
     wants_to_quit: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
 ) -> thread::JoinHandle<ExitCode> {
@@ -333,7 +333,7 @@ impl DirEntry {
 }
 
 fn spawn_senders(
-    config: &Arc<Options>,
+    config: &Arc<Config>,
     wants_to_quit: &Arc<AtomicBool>,
     pattern: Arc<Regex>,
     parallel_walker: ignore::WalkParallel,
