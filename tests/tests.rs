@@ -497,6 +497,78 @@ fn test_gitignore_and_fdignore() {
     );
 }
 
+/// Ignore parent ignore files (--no-ignore-parent)
+#[test]
+fn test_no_ignore_parent() {
+    let dirs = &["inner"];
+    let files = &[
+        "inner/parent-ignored",
+        "inner/child-ignored",
+        "inner/not-ignored",
+    ];
+    let te = TestEnv::new(dirs, files);
+
+    // Ignore 'parent-ignored' in root
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"parent-ignored")
+        .unwrap();
+    // Ignore 'child-ignored' in inner
+    fs::File::create(te.test_root().join("inner/.gitignore"))
+        .unwrap()
+        .write_all(b"child-ignored")
+        .unwrap();
+
+    te.assert_output_subdirectory("inner", &[], "not-ignored");
+
+    te.assert_output_subdirectory(
+        "inner",
+        &["--no-ignore-parent"],
+        "parent-ignored
+        not-ignored",
+    );
+}
+
+/// Ignore parent ignore files (--no-ignore-parent) with an inner git repo
+#[test]
+fn test_no_ignore_parent_inner_git() {
+    let dirs = &["inner"];
+    let files = &[
+        "inner/parent-ignored",
+        "inner/child-ignored",
+        "inner/not-ignored",
+    ];
+    let te = TestEnv::new(dirs, files);
+
+    // Make the inner folder also appear as a git repo
+    fs::create_dir_all(te.test_root().join("inner/.git")).unwrap();
+
+    // Ignore 'parent-ignored' in root
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"parent-ignored")
+        .unwrap();
+    // Ignore 'child-ignored' in inner
+    fs::File::create(te.test_root().join("inner/.gitignore"))
+        .unwrap()
+        .write_all(b"child-ignored")
+        .unwrap();
+
+    te.assert_output_subdirectory(
+        "inner",
+        &[],
+        "not-ignored
+        parent-ignored",
+    );
+
+    te.assert_output_subdirectory(
+        "inner",
+        &["--no-ignore-parent"],
+        "not-ignored
+        parent-ignored",
+    );
+}
+
 /// Precedence of .fdignore files
 #[test]
 fn test_custom_ignore_precedence() {
