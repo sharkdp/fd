@@ -210,11 +210,13 @@ fn run() -> Result<ExitCode> {
 
         #[allow(unused)]
         let gnu_ls = |command_name| {
+            // Note: we use short options here (instead of --long-options) to support more
+            // platforms (like BusyBox).
             vec![
                 command_name,
-                "-l",               // long listing format
-                "--human-readable", // human readable file sizes
-                "--directory",      // list directories themselves, not their contents
+                "-l", // long listing format
+                "-h", // human readable file sizes
+                "-d", // list directories themselves, not their contents
                 &color_arg,
             ]
         };
@@ -344,6 +346,7 @@ fn run() -> Result<ExitCode> {
         follow_links: matches.is_present("follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
+        quiet: matches.is_present("quiet"),
         max_depth: matches
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))

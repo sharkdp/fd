@@ -139,7 +139,12 @@ impl CommandTemplate {
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build. Once all arguments have been processed, the command is executed.
-    pub fn generate_and_execute(&self, input: &Path, out_perm: Arc<Mutex<()>>) -> ExitCode {
+    pub fn generate_and_execute(
+        &self,
+        input: &Path,
+        out_perm: Arc<Mutex<()>>,
+        buffer_output: bool,
+    ) -> ExitCode {
         let input = strip_current_dir(input);
 
         let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
@@ -147,14 +152,14 @@ impl CommandTemplate {
             cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
         }
 
-        execute_command(cmd, &out_perm)
+        execute_command(cmd, &out_perm, buffer_output)
     }
 
     pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
     }
 
-    pub fn generate_and_execute_batch<I>(&self, paths: I) -> ExitCode
+    pub fn generate_and_execute_batch<I>(&self, paths: I, buffer_output: bool) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
@@ -182,7 +187,7 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()))
+            execute_command(cmd, &Mutex::new(()), buffer_output)
         } else {
             ExitCode::Success
         }
@@ -445,11 +450,11 @@ mod tests {
         // This is uncommon, but valid
         check!(r"C:foo\bar", "C:foo#bar");
 
-        // forward slashses should get normalized and interpreted as separators
+        // forward slashes should get normalized and interpreted as separators
         check!("C:/foo/bar", "C:#foo#bar");
         check!("C:foo/bar", "C:foo#bar");
 
-        // Rust does not intrepret "//server/share" as a UNC path, but rather as a normal
+        // Rust does not interpret "//server/share" as a UNC path, but rather as a normal
         // absolute path that begins with RootDir, and the two slashes get combined together as
         // a single path separator during normalization.
         //check!("//server/share/path", "##server#share#path");

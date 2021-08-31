@@ -20,7 +20,7 @@ enter() {
 }
 
 prompt() {
-  printf '%b ' $PROMPT | pv -q
+    printf '%b ' "$PROMPT" | pv -q
 }
 
 type() {
