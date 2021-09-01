@@ -30,7 +30,7 @@ name = "fd"
 path = "src/main.rs"
 
 [build-dependencies]
-clap = "2.31.2"
+clap = "2.33.3"
 version_check = "0.9"
 
 [dependencies]
@@ -51,7 +51,7 @@ normpath = "0.3"
 chrono = "0.4"
 
 [dependencies.clap]
-version = "2.31.2"
+version = "2.33.3"
 features = ["suggestions", "color", "wrap_help"]
 
 [target.'cfg(unix)'.dependencies]
