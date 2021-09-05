@@ -330,6 +330,43 @@ fn run() -> Result<ExitCode> {
         None
     };
 
+    let mut file_types = matches.values_of("file-type").map(|values| {
+        let mut file_types = FileTypes::default();
+        for value in values {
+            match value {
+                "f" | "file" => file_types.files = true,
+                "d" | "directory" => file_types.directories = true,
+                "l" | "symlink" => file_types.symlinks = true,
+                "x" | "executable" => {
+                    file_types.executables_only = true;
+                    file_types.files = true;
+                }
+                "e" | "empty" => file_types.empty_only = true,
+                "s" | "socket" => file_types.sockets = true,
+                "p" | "pipe" => file_types.pipes = true,
+                _ => unreachable!(),
+            }
+        }
+
+        // If only 'empty' was specified, search for both files and directories:
+        if file_types.empty_only && !(file_types.files || file_types.directories) {
+            file_types.files = true;
+            file_types.directories = true;
+        }
+
+        file_types
+    });
+    if let Some(values) = matches.values_of("file-prop") {
+        let file_types = file_types.get_or_insert_with(FileTypes::files);
+        for value in values {
+            match value {
+                "e" | "empty" => file_types.empty_only = true,
+                "x" | "executable" => file_types.executables_only = true,
+                _ => unreachable!(),
+            }
+        }
+    }
+
     let config = Options {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
@@ -390,32 +427,7 @@ fn run() -> Result<ExitCode> {
             .map(time::Duration::from_millis),
         ls_colors,
         interactive_terminal,
-        file_types: matches.values_of("file-type").map(|values| {
-            let mut file_types = FileTypes::default();
-            for value in values {
-                match value {
-                    "f" | "file" => file_types.files = true,
-                    "d" | "directory" => file_types.directories = true,
-                    "l" | "symlink" => file_types.symlinks = true,
-                    "x" | "executable" => {
-                        file_types.executables_only = true;
-                        file_types.files = true;
-                    }
-                    "e" | "empty" => file_types.empty_only = true,
-                    "s" | "socket" => file_types.sockets = true,
-                    "p" | "pipe" => file_types.pipes = true,
-                    _ => unreachable!(),
-                }
-            }
-
-            // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
-                file_types.files = true;
-                file_types.directories = true;
-            }
-
-            file_types
-        }),
+        file_types: file_types,
         extensions: matches
             .values_of("extension")
             .map(|exts| {

@@ -267,18 +267,38 @@ pub fn build_app() -> App<'static, 'static> {
                 ])
                 .hide_possible_values(true)
                 .help(
-                    "Filter by type: file (f), directory (d), symlink (l),\nexecutable (x), \
-                         empty (e), socket (s), pipe (p)",
+                    "Filter by type: file (f), directory (d), symlink (l),\n \
+                         socket (s), pipe (p)",
                 )
                 .long_help(
                     "Filter the search by type (multiple allowable filetypes can be specified):\n  \
                        'f' or 'file':         regular files\n  \
                        'd' or 'directory':    directories\n  \
                        'l' or 'symlink':      symbolic links\n  \
-                       'x' or 'executable':   executables\n  \
-                       'e' or 'empty':        empty files or directories\n  \
                        's' or 'socket':       socket\n  \
                        'p' or 'pipe':         named pipe (FIFO)",
+                ),
+        )
+        .arg(
+            Arg::with_name("file-prop")
+                .long("prop")
+                .short("P")
+                .multiple(true)
+                .number_of_values(1)
+                .takes_value(true)
+                .value_name("fileprop")
+                .possible_values(&[
+                    "x",
+                    "executable",
+                    "e",
+                    "empty",
+                ])
+                .hide_possible_values(true)
+                .help("Filter by property of file: empty (e), executable (x)")
+                .long_help(
+                    "Filter the search by a property of the file (multiple allowable properties can be specified):\n \
+                       'x' or 'executable':   executables\n  \
+                       'e' or 'empty':        empty files or directories",
                 ),
         )
         .arg(

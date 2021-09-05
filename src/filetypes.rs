@@ -49,4 +49,17 @@ impl FileTypes {
             true
         }
     }
+
+    /// Return a FileTypes that filters to files
+    pub fn files() -> FileTypes {
+        FileTypes {
+            files: true,
+            directories: false,
+            symlinks: false,
+            sockets: false,
+            pipes: false,
+            executables_only: false,
+            empty_only: false,
+        }
+    }
 }

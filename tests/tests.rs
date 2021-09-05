@@ -1034,6 +1034,55 @@ fn test_type_empty() {
     te.assert_output(&["--type", "empty", "--type", "directory"], "dir_empty");
 }
 
+/// Test `--prop executable`
+#[cfg(unix)]
+#[test]
+fn test_prop_executable() {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .mode(0o777)
+        .open(te.test_root().join("executable-file.sh"))
+        .unwrap();
+
+    te.assert_output(&["--prop", "executable"], "executable-file.sh");
+
+    te.assert_output(
+        &["--prop", "executable", "--type", "directory"],
+        "one
+        one/two
+        one/two/three
+        one/two/three/directory_foo",
+    );
+}
+
+/// Test `--prop empty`
+#[test]
+fn test_prop_empty() {
+    let te = TestEnv::new(&["dir_empty", "dir_nonempty"], &[]);
+
+    create_file_with_size(te.test_root().join("0_bytes.foo"), 0);
+    create_file_with_size(te.test_root().join("5_bytes.foo"), 5);
+
+    create_file_with_size(te.test_root().join("dir_nonempty").join("2_bytes.foo"), 2);
+
+    te.assert_output(&["--prop", "empty"], "0_bytes.foo");
+
+    te.assert_output(
+        &["--prop", "empty", "--type", "file", "--type", "directory"],
+        "0_bytes.foo
+        dir_empty",
+    );
+
+    te.assert_output(&["--prop", "empty", "--type", "file"], "0_bytes.foo");
+
+    te.assert_output(&["--prop", "empty", "--type", "directory"], "dir_empty");
+}
+
 /// File extension (--extension)
 #[test]
 fn test_extension() {
