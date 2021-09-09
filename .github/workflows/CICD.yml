@@ -14,29 +14,49 @@ on:
       - '*'
 
 jobs:
+  code_quality:
+    name: Code quality
+    runs-on: ubuntu-20.04
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+    - name: Install rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        default: true
+        profile: minimal # minimal component installation (ie, no documentation)
+        components: clippy, rustfmt
+    - name: Ensure `cargo fmt` has been run
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
+    - name: Ensure MSRV is set in `clippy.toml`
+      run: grep "^msrv = \"${{ env.MIN_SUPPORTED_RUST_VERSION }}\"\$" clippy.toml
+    - name: Run clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --locked --all-targets --all-features
+
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
-
     - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
         default: true
         profile: minimal # minimal component installation (ie, no documentation)
-        components: clippy
-    - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --all-targets --all-features
     - name: Run tests
       uses: actions-rs/cargo@v1
       with:
         command: test
+        args: --locked
 
   build:
     name: ${{ matrix.job.os }} (${{ matrix.job.target }})
@@ -100,7 +120,7 @@ jobs:
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: build
-        args: --release --target=${{ matrix.job.target }}
+        args: --locked --release --target=${{ matrix.job.target }}
 
     - name: Strip debug information from executable
       id: strip
@@ -142,6 +162,7 @@ jobs:
       id: test-options
       shell: bash
       run: |
+        # test only library unit tests and binary for arm-type targets
         unset CARGO_TEST_OPTIONS
         unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--bin ${PROJECT_NAME}" ;; esac;
         echo ::set-output name=CARGO_TEST_OPTIONS::${CARGO_TEST_OPTIONS}
@@ -151,7 +172,7 @@ jobs:
       with:
         use-cross: ${{ matrix.job.use-cross }}
         command: test
-        args: --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+        args: --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
 
     - name: Create tarball
       id: package

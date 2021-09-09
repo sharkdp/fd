@@ -50,6 +50,16 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("no-ignore-parent")
+                .long("no-ignore-parent")
+                .overrides_with("no-ignore-parent")
+                .hidden_short_help(true)
+                .long_help(
+                    "Show search results from files and directories that would otherwise be \
+                        ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.",
+                ),
+        )
+        .arg(
             Arg::with_name("no-global-ignore-file")
                 .long("no-global-ignore-file")
                 .hidden(true)
@@ -503,6 +513,20 @@ pub fn build_app() -> App<'static, 'static> {
                 .conflicts_with_all(&["exec", "exec-batch", "list-details"])
                 .long_help("Limit the search to a single result and quit immediately. \
                                 This is an alias for '--max-results=1'.")
+        )
+        .arg(
+            Arg::with_name("quiet")
+                .long("quiet")
+                .short("q")
+                .alias("has-results")
+                .hidden_short_help(true)
+                .conflicts_with_all(&["exec", "exec-batch", "list-details", "max-results"])
+                .long_help(
+                    "When the flag is present, the program does not print anything and will \
+                     return with an exit code of 0 if there is at least one match. Otherwise, the \
+                     exit code will be 1. \
+                     '--has-results' can be used as an alias."
+                )
         )
         .arg(
             Arg::with_name("show-errors")

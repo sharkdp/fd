@@ -3,6 +3,10 @@
 ## Features
 - Don't buffer command output from `--exec` when using a single thread. See #522
 
+- Add new `-q, --quiet` flag, see #303 (@Asha20)
+
+- Add new `--no-ignore-parent` flag, see #787 (@will459)
+
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)

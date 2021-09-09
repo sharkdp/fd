@@ -75,7 +75,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Options>) -> 
     walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_fdignore)
-        .parents(config.read_fdignore || config.read_vcsignore)
+        .parents(config.read_parent_ignore)
         .git_ignore(config.read_vcsignore)
         .git_global(config.read_vcsignore)
         .git_exclude(config.read_vcsignore)
@@ -235,12 +235,15 @@ fn spawn_receiver(
             let mut stdout = io::BufWriter::new(stdout);
 
             let mut num_results = 0;
-
             if config.interactive_terminal {
                 let mut buffer = Vec::with_capacity(MAX_BUFFER_LENGTH);
                 for worker_result in rx {
                     match worker_result {
                         WorkerResult::Entry(path) => {
+                            if config.quiet {
+                                return ExitCode::HasResults(true);
+                            }
+
                             match mode {
                                 ReceiverMode::Buffering => {
                                     buffer.push(path);
@@ -326,7 +329,11 @@ fn spawn_receiver(
                 }
             }
 
-            ExitCode::Success
+            if config.quiet {
+                ExitCode::HasResults(false)
+            } else {
+                ExitCode::Success
+            }
         }
     })
 }

@@ -340,12 +340,17 @@ fn run() -> Result<ExitCode> {
         read_vcsignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-ignore-vcs")),
+        read_parent_ignore: !(matches.is_present("no-ignore")
+            || matches.is_present("rg-alias-hidden-ignore")
+            || matches.is_present("no-ignore-vcs")
+            || matches.is_present("no-ignore-parent")),
         read_global_ignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-global-ignore-file")),
         follow_links: matches.is_present("follow"),
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
+        quiet: matches.is_present("quiet"),
         max_depth: matches
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))
