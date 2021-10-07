@@ -625,7 +625,7 @@ You can install [the fd-find package](https://www.freshports.org/sysutils/fd) fr
 pkg install fd-find
 ```
 
-### From NPM
+### From npm
 
 On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
 
