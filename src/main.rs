@@ -375,6 +375,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
                     None
                 }
             }),
+        no_strip: matches.is_present("no-strip"),
     })
 }
 

@@ -109,4 +109,7 @@ pub struct Config {
 
     /// The maximum number of search results
     pub max_results: Option<usize>,
+
+    /// Whether to prefix each relative path with "./"
+    pub no_strip: bool,
 }
