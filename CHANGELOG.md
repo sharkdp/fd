@@ -12,8 +12,6 @@
 
 - Add new `--no-ignore-parent` flag, see #787 (@will459)
 
-- Add new `-N, --no-strip` flag, see #760 (@jcaplan)
-
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)

@@ -1907,7 +1907,7 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
 fn test_no_strip() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(
-        &["--no-strip"],
+        &[".", "."],
         "./a.foo
         ./e1 e2
         ./one
@@ -1922,19 +1922,17 @@ fn test_no_strip() {
     );
 
     te.assert_output(
-        &["--no-strip", "foo", "./one"],
-        "./one/b.foo
+        &["--search-path=."],
+        "./a.foo
+        ./e1 e2
+        ./one
+        ./one/b.foo
+        ./one/two
         ./one/two/c.foo
         ./one/two/C.Foo2
+        ./one/two/three
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
-    );
-    te.assert_output(
-        &["--no-strip", "foo", "one"],
-        "one/b.foo
-        one/two/c.foo
-        one/two/C.Foo2
-        one/two/three/d.foo
-        one/two/three/directory_foo",
+        ./one/two/three/directory_foo
+        ./symlink",
     );
 }

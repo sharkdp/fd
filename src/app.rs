@@ -615,17 +615,6 @@ pub fn build_app() -> App<'static, 'static> {
                          argument. Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> \
                          --search-path <path2> [<pattern>]`",
                 ),
-        )
-        .arg(
-            Arg::with_name("no-strip")
-                .long("no-strip")
-                .short("N")
-                .conflicts_with_all(&["absolute-path", "list-details"])
-                .help("Show all non-absolute paths with './' prefix")
-                .long_help(
-                    "Show all non-absolute paths with './' prefix. This flag only affects \
-                         the output when no search path is provided.")
-
         );
 
     if cfg!(unix) {
