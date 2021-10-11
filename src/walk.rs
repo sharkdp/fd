@@ -13,6 +13,7 @@ use std::time;
 use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
+use once_cell::unsync::OnceCell;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -295,39 +296,58 @@ fn spawn_receiver(
     })
 }
 
-pub enum DirEntry {
+enum DirEntryInner {
     Normal(ignore::DirEntry),
     BrokenSymlink(PathBuf),
 }
 
+pub struct DirEntry {
+    inner: DirEntryInner,
+    metadata: OnceCell<Option<Metadata>>,
+}
+
 impl DirEntry {
+    fn normal(e: ignore::DirEntry) -> Self {
+        Self {
+            inner: DirEntryInner::Normal(e),
+            metadata: OnceCell::new(),
+        }
+    }
+
+    fn broken_symlink(path: PathBuf) -> Self {
+        Self {
+            inner: DirEntryInner::BrokenSymlink(path),
+            metadata: OnceCell::new(),
+        }
+    }
+
     pub fn path(&self) -> &Path {
-        match self {
-            DirEntry::Normal(e) => e.path(),
-            DirEntry::BrokenSymlink(pathbuf) => pathbuf.as_path(),
+        match &self.inner {
+            DirEntryInner::Normal(e) => e.path(),
+            DirEntryInner::BrokenSymlink(pathbuf) => pathbuf.as_path(),
         }
     }
 
     pub fn file_type(&self) -> Option<FileType> {
-        match self {
-            DirEntry::Normal(e) => e.file_type(),
-            DirEntry::BrokenSymlink(pathbuf) => {
-                pathbuf.symlink_metadata().map(|m| m.file_type()).ok()
-            }
+        match &self.inner {
+            DirEntryInner::Normal(e) => e.file_type(),
+            DirEntryInner::BrokenSymlink(_) => self.metadata().map(|m| m.file_type()),
         }
     }
 
-    pub fn metadata(&self) -> Option<Metadata> {
-        match self {
-            DirEntry::Normal(e) => e.metadata().ok(),
-            DirEntry::BrokenSymlink(_) => None,
-        }
+    pub fn metadata(&self) -> Option<&Metadata> {
+        self.metadata
+            .get_or_init(|| match &self.inner {
+                DirEntryInner::Normal(e) => e.metadata().ok(),
+                DirEntryInner::BrokenSymlink(path) => path.symlink_metadata().ok(),
+            })
+            .as_ref()
     }
 
     pub fn depth(&self) -> Option<usize> {
-        match self {
-            DirEntry::Normal(e) => Some(e.depth()),
-            DirEntry::BrokenSymlink(_) => None,
+        match &self.inner {
+            DirEntryInner::Normal(e) => Some(e.depth()),
+            DirEntryInner::BrokenSymlink(_) => None,
         }
     }
 }
@@ -355,7 +375,7 @@ fn spawn_senders(
                     // Skip the root directory entry.
                     return ignore::WalkState::Continue;
                 }
-                Ok(e) => DirEntry::Normal(e),
+                Ok(e) => DirEntry::normal(e),
                 Err(ignore::Error::WithPath {
                     path,
                     err: inner_err,
@@ -367,7 +387,7 @@ fn spawn_senders(
                                 .ok()
                                 .map_or(false, |m| m.file_type().is_symlink()) =>
                     {
-                        DirEntry::BrokenSymlink(path)
+                        DirEntry::broken_symlink(path)
                     }
                     _ => {
                         return match tx_thread.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -436,7 +456,7 @@ fn spawn_senders(
             #[cfg(unix)]
             {
                 if let Some(ref owner_constraint) = config.owner_constraint {
-                    if let Ok(ref metadata) = entry_path.metadata() {
+                    if let Some(metadata) = entry.metadata() {
                         if !owner_constraint.matches(metadata) {
                             return ignore::WalkState::Continue;
                         }
@@ -449,7 +469,7 @@ fn spawn_senders(
             // Filter out unwanted sizes if it is a file and we have been given size constraints.
             if !config.size_constraints.is_empty() {
                 if entry_path.is_file() {
-                    if let Ok(metadata) = entry_path.metadata() {
+                    if let Some(metadata) = entry.metadata() {
                         let file_size = metadata.len();
                         if config
                             .size_constraints
@@ -469,7 +489,7 @@ fn spawn_senders(
             // Filter out unwanted modification times
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
-                if let Ok(metadata) = entry_path.metadata() {
+                if let Some(metadata) = entry.metadata() {
                     if let Ok(modified) = metadata.modified() {
                         matched = config
                             .time_constraints
