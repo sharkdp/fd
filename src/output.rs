@@ -22,7 +22,7 @@ pub fn print_entry(
     config: &Config,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
-    let path = if entry.is_absolute() || config.no_strip {
+    let path = if config.no_strip {
         entry
     } else {
         strip_current_dir(entry)
