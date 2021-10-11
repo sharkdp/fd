@@ -1652,9 +1652,22 @@ fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
     filetime::set_file_times(&path, ft, ft).expect("time modification failed");
 }
 
+#[cfg(test)]
+fn remove_symlink<P: AsRef<Path>>(path: P) {
+    #[cfg(unix)]
+    fs::remove_file(path).expect("remove symlink");
+
+    // On Windows, symlinks remember whether they point to files or directories, so try both
+    #[cfg(windows)]
+    fs::remove_file(path.as_ref())
+        .or_else(|_| fs::remove_dir(path.as_ref()))
+        .expect("remove symlink");
+}
+
 #[test]
 fn test_modified_relative() {
     let te = TestEnv::new(&[], &[]);
+    remove_symlink(te.test_root().join("symlink"));
     create_file_with_modified(te.test_root().join("foo_0_now"), 0);
     create_file_with_modified(te.test_root().join("bar_1_min"), 60);
     create_file_with_modified(te.test_root().join("foo_10_min"), 600);
@@ -1692,8 +1705,9 @@ fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
 }
 
 #[test]
-fn test_modified_asolute() {
+fn test_modified_absolute() {
     let te = TestEnv::new(&[], &["15mar2018", "30dec2017"]);
+    remove_symlink(te.test_root().join("symlink"));
     change_file_modified(te.test_root().join("15mar2018"), "2018-03-15T12:00:00Z");
     change_file_modified(te.test_root().join("30dec2017"), "2017-12-30T23:59:00Z");
 

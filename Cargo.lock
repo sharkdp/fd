@@ -177,6 +177,7 @@ dependencies = [
  "lscolors",
  "normpath",
  "num_cpus",
+ "once_cell",
  "regex",
  "regex-syntax",
  "tempdir",

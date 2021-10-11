@@ -37,7 +37,7 @@ impl FileTypes {
                 || (self.executables_only
                     && !entry
                         .metadata()
-                        .map(|m| filesystem::is_executable(&m))
+                        .map(|m| filesystem::is_executable(m))
                         .unwrap_or(false))
                 || (self.empty_only && !filesystem::is_empty(entry))
                 || !(entry_type.is_file()
