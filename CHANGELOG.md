@@ -26,6 +26,7 @@
 ## Changes
 
 - Apply custom `--path-separator` to commands run with `--exec(-batch)` and `--list-details`, see #697 (@aswild)
+- Show "./" prefix in results when search path is provided, see #861 (@jcaplan)
 
 ## Other
 
