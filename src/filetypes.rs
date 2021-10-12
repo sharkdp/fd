@@ -39,7 +39,7 @@ impl FileTypes {
                         .metadata()
                         .map(|m| filesystem::is_executable(&m))
                         .unwrap_or(false))
-                || (self.empty_only && !filesystem::is_empty(&entry))
+                || (self.empty_only && !filesystem::is_empty(entry))
                 || !(entry_type.is_file()
                     || entry_type.is_dir()
                     || entry_type.is_symlink()
