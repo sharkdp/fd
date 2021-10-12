@@ -1902,7 +1902,7 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
     te.assert_output(&[".gitignore"], "");
 }
 
-/// Show "./" prefix if the --no-strip flag is provided
+/// Show "./" prefix in results if a search path is provided
 #[test]
 fn test_no_strip() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
