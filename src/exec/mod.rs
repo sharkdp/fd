@@ -14,6 +14,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
+use crate::filesystem::strip_current_dir;
 
 use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
@@ -144,6 +145,8 @@ impl CommandTemplate {
         out_perm: Arc<Mutex<()>>,
         buffer_output: bool,
     ) -> ExitCode {
+        let input = strip_current_dir(input);
+
         let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
         for arg in &self.args[1..] {
             cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
@@ -175,7 +178,7 @@ impl CommandTemplate {
                 // A single `Tokens` is expected
                 // So we can directly consume the iterator once and for all
                 for path in &mut paths {
-                    cmd.arg(arg.generate(path, self.path_separator.as_deref()));
+                    cmd.arg(arg.generate(strip_current_dir(path), self.path_separator.as_deref()));
                     has_path = true;
                 }
             } else {
