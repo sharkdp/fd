@@ -144,7 +144,6 @@ impl CommandTemplate {
         out_perm: Arc<Mutex<()>>,
         buffer_output: bool,
     ) -> ExitCode {
-
         let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
         for arg in &self.args[1..] {
             cmd.arg(arg.generate(&input, self.path_separator.as_deref()));

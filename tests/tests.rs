@@ -1944,6 +1944,6 @@ fn test_no_strip() {
 
     te.assert_output(
         &["c.foo", "./", "-X", "echo"],
-        "./one/two/C.Foo2 ./one/two/c.foo"
+        "./one/two/C.Foo2 ./one/two/c.foo",
     )
 }

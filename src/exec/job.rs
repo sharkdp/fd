@@ -2,11 +2,11 @@ use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
+use crate::config::Config;
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::walk::WorkerResult;
 use crate::filesystem::strip_current_dir;
-use crate::config::Config;
+use crate::walk::WorkerResult;
 
 use super::CommandTemplate;
 
@@ -60,21 +60,23 @@ pub fn batch(
     buffer_output: bool,
     config: &Arc<Config>,
 ) -> ExitCode {
-    let paths = rx.iter().filter_map(|value| match value {
-        WorkerResult::Entry(val) => Some(val),
-        WorkerResult::Error(err) => {
-            if show_filesystem_errors {
-                print_error(err.to_string());
+    let paths = rx
+        .iter()
+        .filter_map(|value| match value {
+            WorkerResult::Entry(val) => Some(val),
+            WorkerResult::Error(err) => {
+                if show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                None
             }
-            None
-        }
-    })
-    .map(|m| {
-        if config.no_strip {
-            m
-        } else {
-            strip_current_dir(&m).to_path_buf()
-        }
-    });
+        })
+        .map(|m| {
+            if config.no_strip {
+                m
+            } else {
+                strip_current_dir(&m).to_path_buf()
+            }
+        });
     cmd.generate_and_execute_batch(paths, buffer_output)
 }

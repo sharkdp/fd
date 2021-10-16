@@ -376,7 +376,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
                 }
             }),
         no_strip: matches.is_present("path") || matches.is_present("search-path"),
-        })
+    })
 }
 
 fn extract_command(
