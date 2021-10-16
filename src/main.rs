@@ -33,6 +33,8 @@ use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
+extern crate libc;
+
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
 #[cfg(all(
