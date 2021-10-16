@@ -250,6 +250,8 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
     };
     let command = extract_command(&matches, path_separator.as_deref(), colored_output)?;
 
+    let istty = unsafe { libc::isatty(libc::STDOUT_FILENO as i32) } != 0;
+
     Ok(Config {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
@@ -375,8 +377,8 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
                     None
                 }
             }),
-        no_strip: matches.is_present("path") || matches.is_present("search-path"),
-        })
+        no_strip: matches.is_present("path") || matches.is_present("search-path") || !istty,
+    })
 }
 
 fn extract_command(
