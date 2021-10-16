@@ -1935,4 +1935,15 @@ fn test_no_strip() {
         ./one/two/three/directory_foo
         ./symlink",
     );
+
+    te.assert_output(
+        &["c.foo", "./", "-x", "echo"],
+        "./one/two/c.foo
+        ./one/two/C.Foo2",
+    );
+
+    te.assert_output(
+        &["c.foo", "./", "-X", "echo"],
+        "./one/two/C.Foo2 ./one/two/c.foo"
+    )
 }

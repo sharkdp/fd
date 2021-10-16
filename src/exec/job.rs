@@ -5,6 +5,8 @@ use std::sync::{Arc, Mutex};
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::walk::WorkerResult;
+use crate::options::Options;
+use crate::filesystem::strip_current_dir;
 
 use super::CommandTemplate;
 
@@ -17,6 +19,7 @@ pub fn job(
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
     buffer_output: bool,
+    config: &Arc<Options>,
 ) -> ExitCode {
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
@@ -36,10 +39,15 @@ pub fn job(
             Err(_) => break,
         };
 
+        let path = if config.no_strip {
+            value
+        } else {
+            strip_current_dir(&value).to_path_buf()
+        };
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
         // Generate a command, execute it and store its exit code.
-        results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm), buffer_output))
+        results.push(cmd.generate_and_execute(&path, Arc::clone(&out_perm), buffer_output))
     }
     // Returns error in case of any error.
     merge_exitcodes(results)
@@ -50,6 +58,7 @@ pub fn batch(
     cmd: &CommandTemplate,
     show_filesystem_errors: bool,
     buffer_output: bool,
+    config: &Arc<Options>,
 ) -> ExitCode {
     let paths = rx.iter().filter_map(|value| match value {
         WorkerResult::Entry(val) => Some(val),
@@ -58,6 +67,13 @@ pub fn batch(
                 print_error(err.to_string());
             }
             None
+        }
+    })
+    .map(|m| {
+        if config.no_strip {
+            m
+        } else {
+            strip_current_dir(&m).to_path_buf()
         }
     });
     cmd.generate_and_execute_batch(paths, buffer_output)
