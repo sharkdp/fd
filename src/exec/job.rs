@@ -5,8 +5,8 @@ use std::sync::{Arc, Mutex};
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::walk::WorkerResult;
-use crate::options::Options;
 use crate::filesystem::strip_current_dir;
+use crate::config::Config;
 
 use super::CommandTemplate;
 
@@ -19,7 +19,7 @@ pub fn job(
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
     buffer_output: bool,
-    config: &Arc<Options>,
+    config: &Arc<Config>,
 ) -> ExitCode {
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
@@ -58,7 +58,7 @@ pub fn batch(
     cmd: &CommandTemplate,
     show_filesystem_errors: bool,
     buffer_output: bool,
-    config: &Arc<Options>,
+    config: &Arc<Config>,
 ) -> ExitCode {
     let paths = rx.iter().filter_map(|value| match value {
         WorkerResult::Entry(val) => Some(val),
