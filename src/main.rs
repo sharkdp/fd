@@ -33,8 +33,6 @@ use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
-extern crate libc;
-
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
 #[cfg(all(
@@ -252,8 +250,6 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
     };
     let command = extract_command(&matches, path_separator.as_deref(), colored_output)?;
 
-    let istty = unsafe { libc::isatty(libc::STDOUT_FILENO as i32) } != 0;
-
     Ok(Config {
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
@@ -379,7 +375,9 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
                     None
                 }
             }),
-        no_strip: matches.is_present("path") || matches.is_present("search-path") || !istty,
+        no_strip: matches.is_present("path")
+            || matches.is_present("search-path")
+            || !interactive_terminal,
     })
 }
 
