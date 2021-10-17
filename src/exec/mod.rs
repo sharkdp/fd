@@ -21,7 +21,6 @@ pub use self::job::{batch, job};
 use self::token::Token;
 use crate::filesystem::strip_current_dir;
 
-
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExecutionMode {
@@ -74,7 +73,7 @@ impl CommandTemplate {
         S: AsRef<str>,
     {
         lazy_static! {
-            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//|-)\}").unwrap();
+            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//|-|//-)\}").unwrap();
         }
 
         let mut args = Vec::new();
@@ -101,6 +100,7 @@ impl CommandTemplate {
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
                     "{-}" => tokens.push(Token::StripPrefix),
+                    "{//-}" => tokens.push(Token::ParentStripPrefix),
                     _ => unreachable!("Unhandled placeholder"),
                 }
 
@@ -237,6 +237,10 @@ impl ArgumentTemplate {
                         StripPrefix => {
                             let path = strip_current_dir(path);
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
+                        }
+                        ParentStripPrefix => {
+                            let path = strip_current_dir(path);
+                            s.push(Self::replace_separator(&dirname(path), path_separator))
                         }
                         Text(ref string) => s.push(string),
                     }

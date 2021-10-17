@@ -377,7 +377,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
             }),
         no_strip: matches.is_present("path")
             || matches.is_present("search-path")
-            || !interactive_terminal,
+            || (!interactive_terminal && !matches.is_present("strip-prefix")),
     })
 }
 

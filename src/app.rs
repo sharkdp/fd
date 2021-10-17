@@ -615,6 +615,17 @@ pub fn build_app() -> App<'static, 'static> {
                          argument. Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> \
                          --search-path <path2> [<pattern>]`",
                 ),
+        )
+        .arg(
+            Arg::with_name("strip-prefix")
+                .long("strip-prefix")
+                .short("P")
+                .conflicts_with_all(&["path", "search-path"])
+                .help("When no search path is provided and output is non-tty, strip './' prefix from results")
+                .long_help(
+                    "By default, relative results are prefixed with './' when output to non-ttys. \
+                        Use this flag to disable this behaviour."
+                )
         );
 
     if cfg!(unix) {

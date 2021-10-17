@@ -12,6 +12,7 @@ pub enum Token {
     NoExt,
     BasenameNoExt,
     StripPrefix,
+    ParentStripPrefix,
     Text(String),
 }
 
@@ -24,6 +25,7 @@ impl Display for Token {
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
             Token::StripPrefix => f.write_str("{-}")?,
+            Token::ParentStripPrefix => f.write_str("{//-}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())

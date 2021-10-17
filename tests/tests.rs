@@ -1928,33 +1928,19 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
 #[test]
 fn test_no_strip() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-    te.assert_output(
-        &[".", "."],
-        "./a.foo
-        ./e1 e2
-        ./one
-        ./one/b.foo
-        ./one/two
-        ./one/two/c.foo
-        ./one/two/C.Foo2
-        ./one/two/three
-        ./one/two/three/d.foo
-        ./one/two/three/directory_foo
-        ./symlink",
-    );
 
     te.assert_output(
-        &["--search-path=."],
-        "./a.foo
-        ./e1 e2
-        ./one
-        ./one/b.foo
-        ./one/two
-        ./one/two/c.foo
-        ./one/two/C.Foo2
-        ./one/two/three
-        ./one/two/three/d.foo
-        ./one/two/three/directory_foo
-        ./symlink",
+        &["-P", "."],
+        "a.foo
+        e1 e2
+        one
+        one/b.foo
+        one/two
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three
+        one/two/three/d.foo
+        one/two/three/directory_foo
+        symlink",
     );
 }
