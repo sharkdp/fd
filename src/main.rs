@@ -348,6 +348,12 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
             })
             .transpose()?,
         command: command.map(Arc::new),
+        batch_size: matches
+            .value_of("batch-size")
+            .map(|n| n.parse::<usize>())
+            .transpose()
+            .context("Failed to parse --batch-size argument")?
+            .unwrap_or_default(),
         exclude_patterns: matches
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())

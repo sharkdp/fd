@@ -366,6 +366,21 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("batch-size")
+            .long("batch-size")
+            .takes_value(true)
+            .value_name("size")
+            .hidden_short_help(true)
+            .requires("exec-batch")
+            .help("Max number of arguments to run as a batch with -X")
+            .long_help(
+                "Maximum number of arguments to pass to the command given with -X. \
+                If the number of results is greater than the given size, \
+                the command given with -X is run again with remaining arguments. \
+                A batch size of zero means there is no limit.",
+            ),
+        )
+        .arg(
             Arg::with_name("exclude")
                 .long("exclude")
                 .short("E")

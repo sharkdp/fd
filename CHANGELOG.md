@@ -12,6 +12,8 @@
 
 - Add new `--no-ignore-parent` flag, see #787 (@will459)
 
+- Add new `--batch-size` flag, see #410 (@devonhollowood)
+
 ## Bugfixes
 
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)

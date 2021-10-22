@@ -1418,6 +1418,48 @@ fn test_exec_batch() {
     }
 }
 
+#[test]
+fn test_exec_batch_with_limit() {
+    // TODO Test for windows
+    if cfg!(windows) {
+        return;
+    }
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["foo", "--batch-size", "0", "--exec-batch", "echo", "{}"],
+        "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
+    );
+
+    let output = te.assert_success_and_get_output(
+        ".",
+        &["foo", "--batch-size=2", "--exec-batch", "echo", "{}"],
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    for line in stdout.lines() {
+        assert_eq!(2, line.split_whitespace().count());
+    }
+
+    let mut paths: Vec<_> = stdout
+        .lines()
+        .flat_map(|line| line.split_whitespace())
+        .collect();
+    paths.sort_unstable();
+    assert_eq!(
+        &paths,
+        &[
+            "a.foo",
+            "one/b.foo",
+            "one/two/C.Foo2",
+            "one/two/c.foo",
+            "one/two/three/d.foo",
+            "one/two/three/directory_foo"
+        ],
+    );
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
