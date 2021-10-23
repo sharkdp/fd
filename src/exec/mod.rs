@@ -14,7 +14,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
-use crate::filesystem::strip_current_dir;
+use crate::filesystem::{absolute_path, strip_current_dir};
 
 use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
@@ -73,7 +73,7 @@ impl CommandTemplate {
         S: AsRef<str>,
     {
         lazy_static! {
-            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
+            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{([/+]?\.?|//)\}").unwrap();
         }
 
         let mut args = Vec::new();
@@ -99,6 +99,8 @@ impl CommandTemplate {
                     "{/}" => tokens.push(Token::Basename),
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
+                    "{+}" => tokens.push(Token::Absolute),
+                    "{+.}" => tokens.push(Token::AbsoluteNoExt),
                     _ => unreachable!("Unhandled placeholder"),
                 }
 
@@ -221,6 +223,14 @@ impl ArgumentTemplate {
                 let mut s = OsString::new();
                 for token in tokens {
                     match *token {
+                        Absolute => s.push(Self::replace_separator(
+                            absolute_path(path).unwrap().as_os_str(),
+                            path_separator,
+                        )),
+                        AbsoluteNoExt => s.push(Self::replace_separator(
+                            &remove_extension(&absolute_path(path).unwrap()),
+                            path_separator,
+                        )),
                         Basename => s.push(Self::replace_separator(basename(path), path_separator)),
                         BasenameNoExt => s.push(Self::replace_separator(
                             &remove_extension(basename(path).as_ref()),

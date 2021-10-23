@@ -211,6 +211,8 @@ The syntax for generating commands is similar to that of [GNU Parallel](https://
 - `{}`: A placeholder token that will be replaced with the path of the search result
   (`documents/images/party.jpg`).
 - `{.}`: Like `{}`, but without the file extension (`documents/images/party`).
+- `{+}`: The absolute path (`/home/alice/documents/images/party.jpg`).
+- `{+.}`: Like `{+}`, but without the file extension (`/home/alice/documents/images/party`).
 - `{/}`: A placeholder that will be replaced by the basename of the search result (`party.jpg`).
 - `{//}`: The parent of the discovered path (`documents/images`).
 - `{/.}`: The basename, with the extension removed (`party`).

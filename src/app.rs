@@ -352,9 +352,11 @@ pub fn build_app() -> App<'static, 'static> {
                     "Execute the given command once, with all search results as arguments.\n\
                      One of the following placeholders is substituted before the command is executed:\n  \
                        '{}':   path (of all search results)\n  \
+                       '{+}':  absolute path\n  \
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
+                       '{+.}':  absolute path without file extension\n  \
                        '{/.}': basename without file extension\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \

@@ -7,9 +7,11 @@ use std::fmt::{self, Display, Formatter};
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Placeholder,
+    Absolute,
     Basename,
     Parent,
     NoExt,
+    AbsoluteNoExt,
     BasenameNoExt,
     Text(String),
 }
@@ -18,9 +20,11 @@ impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
             Token::Placeholder => f.write_str("{}")?,
+            Token::Absolute => f.write_str("{+}")?,
             Token::Basename => f.write_str("{/}")?,
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
+            Token::AbsoluteNoExt => f.write_str("{+.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }

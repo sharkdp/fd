@@ -1323,6 +1323,19 @@ fn test_exec() {
         );
 
         te.assert_output(
+            &["foo", "--exec", "echo", "{+}"],
+            &format!(
+                "{abs_path}/a.foo
+                {abs_path}/one/b.foo
+                {abs_path}/one/two/C.Foo2
+                {abs_path}/one/two/c.foo
+                {abs_path}/one/two/three/d.foo
+                {abs_path}/one/two/three/directory_foo",
+                abs_path = &abs_path
+            ),
+        );
+
+        te.assert_output(
             &["foo", "--exec", "echo", "{.}"],
             "a
             one/b
@@ -1340,6 +1353,19 @@ fn test_exec() {
             c.foo
             d.foo
             directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo", "{+.}"],
+            &format!(
+                "{abs_path}/a
+                {abs_path}/one/b
+                {abs_path}/one/two/C
+                {abs_path}/one/two/c
+                {abs_path}/one/two/three/d
+                {abs_path}/one/two/three/directory_foo",
+                abs_path = &abs_path
+            ),
         );
 
         te.assert_output(
