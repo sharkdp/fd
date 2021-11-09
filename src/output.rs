@@ -5,6 +5,7 @@ use std::path::Path;
 use lscolors::{Indicator, LsColors, Style};
 
 use crate::config::Config;
+use crate::entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
@@ -14,11 +15,12 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 }
 
 // TODO: this function is performance critical and can probably be optimized
-pub fn print_entry<W: Write>(stdout: &mut W, entry: &Path, config: &Config) {
+pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) {
+    let path = entry.path();
     let path = if config.strip_cwd_prefix {
-        strip_current_dir(entry)
+        strip_current_dir(path)
     } else {
-        entry
+        path
     };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {

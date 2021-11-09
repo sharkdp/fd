@@ -1,5 +1,6 @@
 mod app;
 mod config;
+mod entry;
 mod error;
 mod exec;
 mod exit_codes;

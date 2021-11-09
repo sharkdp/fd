@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use normpath::PathExt;
 
-use crate::walk;
+use crate::entry;
 
 pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     if path.is_absolute() {
@@ -51,7 +51,7 @@ pub fn is_executable(_: &fs::Metadata) -> bool {
     false
 }
 
-pub fn is_empty(entry: &walk::DirEntry) -> bool {
+pub fn is_empty(entry: &entry::DirEntry) -> bool {
     if let Some(file_type) = entry.file_type() {
         if file_type.is_dir() {
             if let Ok(mut entries) = fs::read_dir(entry.path()) {
