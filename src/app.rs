@@ -228,11 +228,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("full-path")
                 .short("p")
                 .overrides_with("full-path")
-                .help("Search full path (default: file-/dirname only)")
+                .help("Search full abs. path (default: filename only)")
                 .long_help(
                     "By default, the search pattern is only matched against the filename (or \
-                         directory name). Using this flag, the pattern is matched against the \
-                         full path.",
+                      directory name). Using this flag, the pattern is matched against the full \
+                      (absolute) path. Example:\n  \
+                        fd --glob -p '**/.git/config'",
                 ),
         )
         .arg(
