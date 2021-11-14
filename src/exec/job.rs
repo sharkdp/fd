@@ -42,7 +42,7 @@ pub fn job(
         results.push(cmd.generate_and_execute(&value, Arc::clone(&out_perm), buffer_output))
     }
     // Returns error in case of any error.
-    merge_exitcodes(&results)
+    merge_exitcodes(results)
 }
 
 pub fn batch(
@@ -50,6 +50,7 @@ pub fn batch(
     cmd: &CommandTemplate,
     show_filesystem_errors: bool,
     buffer_output: bool,
+    limit: usize,
 ) -> ExitCode {
     let paths = rx.iter().filter_map(|value| match value {
         WorkerResult::Entry(val) => Some(val),
@@ -60,5 +61,17 @@ pub fn batch(
             None
         }
     });
-    cmd.generate_and_execute_batch(paths, buffer_output)
+    if limit == 0 {
+        // no limit
+        return cmd.generate_and_execute_batch(paths, buffer_output);
+    }
+
+    let mut exit_codes = Vec::new();
+    let mut peekable = paths.peekable();
+    while peekable.peek().is_some() {
+        let limited = peekable.by_ref().take(limit);
+        let exit_code = cmd.generate_and_execute_batch(limited, buffer_output);
+        exit_codes.push(exit_code);
+    }
+    merge_exitcodes(exit_codes)
 }

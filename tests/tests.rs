@@ -499,6 +499,78 @@ fn test_gitignore_and_fdignore() {
     );
 }
 
+/// Ignore parent ignore files (--no-ignore-parent)
+#[test]
+fn test_no_ignore_parent() {
+    let dirs = &["inner"];
+    let files = &[
+        "inner/parent-ignored",
+        "inner/child-ignored",
+        "inner/not-ignored",
+    ];
+    let te = TestEnv::new(dirs, files);
+
+    // Ignore 'parent-ignored' in root
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"parent-ignored")
+        .unwrap();
+    // Ignore 'child-ignored' in inner
+    fs::File::create(te.test_root().join("inner/.gitignore"))
+        .unwrap()
+        .write_all(b"child-ignored")
+        .unwrap();
+
+    te.assert_output_subdirectory("inner", &[], "not-ignored");
+
+    te.assert_output_subdirectory(
+        "inner",
+        &["--no-ignore-parent"],
+        "parent-ignored
+        not-ignored",
+    );
+}
+
+/// Ignore parent ignore files (--no-ignore-parent) with an inner git repo
+#[test]
+fn test_no_ignore_parent_inner_git() {
+    let dirs = &["inner"];
+    let files = &[
+        "inner/parent-ignored",
+        "inner/child-ignored",
+        "inner/not-ignored",
+    ];
+    let te = TestEnv::new(dirs, files);
+
+    // Make the inner folder also appear as a git repo
+    fs::create_dir_all(te.test_root().join("inner/.git")).unwrap();
+
+    // Ignore 'parent-ignored' in root
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"parent-ignored")
+        .unwrap();
+    // Ignore 'child-ignored' in inner
+    fs::File::create(te.test_root().join("inner/.gitignore"))
+        .unwrap()
+        .write_all(b"child-ignored")
+        .unwrap();
+
+    te.assert_output_subdirectory(
+        "inner",
+        &[],
+        "not-ignored
+        parent-ignored",
+    );
+
+    te.assert_output_subdirectory(
+        "inner",
+        &["--no-ignore-parent"],
+        "not-ignored
+        parent-ignored",
+    );
+}
+
 /// Precedence of .fdignore files
 #[test]
 fn test_custom_ignore_precedence() {
@@ -1347,6 +1419,48 @@ fn test_exec_batch() {
     }
 }
 
+#[test]
+fn test_exec_batch_with_limit() {
+    // TODO Test for windows
+    if cfg!(windows) {
+        return;
+    }
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["foo", "--batch-size", "0", "--exec-batch", "echo", "{}"],
+        "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
+    );
+
+    let output = te.assert_success_and_get_output(
+        ".",
+        &["foo", "--batch-size=2", "--exec-batch", "echo", "{}"],
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    for line in stdout.lines() {
+        assert_eq!(2, line.split_whitespace().count());
+    }
+
+    let mut paths: Vec<_> = stdout
+        .lines()
+        .flat_map(|line| line.split_whitespace())
+        .collect();
+    paths.sort_unstable();
+    assert_eq!(
+        &paths,
+        &[
+            "a.foo",
+            "one/b.foo",
+            "one/two/C.Foo2",
+            "one/two/c.foo",
+            "one/two/three/d.foo",
+            "one/two/three/directory_foo"
+        ],
+    );
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
@@ -1581,9 +1695,22 @@ fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
     filetime::set_file_times(&path, ft, ft).expect("time modification failed");
 }
 
+#[cfg(test)]
+fn remove_symlink<P: AsRef<Path>>(path: P) {
+    #[cfg(unix)]
+    fs::remove_file(path).expect("remove symlink");
+
+    // On Windows, symlinks remember whether they point to files or directories, so try both
+    #[cfg(windows)]
+    fs::remove_file(path.as_ref())
+        .or_else(|_| fs::remove_dir(path.as_ref()))
+        .expect("remove symlink");
+}
+
 #[test]
 fn test_modified_relative() {
     let te = TestEnv::new(&[], &[]);
+    remove_symlink(te.test_root().join("symlink"));
     create_file_with_modified(te.test_root().join("foo_0_now"), 0);
     create_file_with_modified(te.test_root().join("bar_1_min"), 60);
     create_file_with_modified(te.test_root().join("foo_10_min"), 600);
@@ -1621,8 +1748,9 @@ fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
 }
 
 #[test]
-fn test_modified_asolute() {
+fn test_modified_absolute() {
     let te = TestEnv::new(&[], &["15mar2018", "30dec2017"]);
+    remove_symlink(te.test_root().join("symlink"));
     change_file_modified(te.test_root().join("15mar2018"), "2018-03-15T12:00:00Z");
     change_file_modified(te.test_root().join("30dec2017"), "2017-12-30T23:59:00Z");
 

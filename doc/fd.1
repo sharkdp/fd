@@ -409,5 +409,11 @@ $ fd -e py
 .TP
 .RI "Open all search results with vim:"
 $ fd pattern -X vim
+.TP
+.BI "\-\-batch\-size " size
+Pass at most
+.I size
+arguments to each call to the command given with -X.
+.TP
 .SH SEE ALSO
 .BR find (1)
