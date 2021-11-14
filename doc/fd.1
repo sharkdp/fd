@@ -158,18 +158,40 @@ regular files
 directories
 .IP "l, symlink"
 symbolic links
-.IP "x, executable"
-executable (files)
-.IP "e, empty"
-empty files or directories
 .IP "s, socket"
 sockets
 .IP "p, pipe"
 named pipes (FIFOs)
+.IP "x, executable"
+executable (files)
+.IP "e, empty"
+empty files or directories
 .RE
 
 .RS
-This option can be used repeatedly to allow for multiple file types.
+This option can be specified more than once to include multiple file types.
+Searching for '--type file --type symlink' will show both regular files as well as
+symlinks. Note that the 'executable' and 'empty' filters work differently: '--type
+executable' implies '--type file' by default. And '--type empty' searches for
+empty files and directories, unless either '--type file' or '--type directory' is
+specified in addition.
+
+Examples:
+  - Only search for files:
+      fd --type file …
+      fd -tf …
+  - Find both files and symlinks
+      fd --type file --type symlink …
+      fd -tf -tl …
+  - Find executable files:
+      fd --type executable
+      fd -tx
+  - Find empty files:
+      fd --type empty --type file
+      fd -te -tf
+  - Find empty directories:
+      fd --type empty --type directory
+      fd -te -td
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
