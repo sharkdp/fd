@@ -25,7 +25,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Include hidden directories and files in the search results (default: \
                          hidden files and directories are skipped). Files and directories are \
-                         considered to be hidden if their name starts with a `.` sign (dot).",
+                         considered to be hidden if their name starts with a `.` sign (dot). \
+                         The flag can be overridden with --no-hidden.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-hidden")
+                .long("no-hidden")
+                .overrides_with("hidden")
+                .hidden(true)
+                .long_help(
+                    "Overrides --hidden.",
                 ),
         )
         .arg(
@@ -36,7 +46,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Do not respect .(git|fd)ignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.",
+                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file. \
+                         The flag can be overridden with --ignore.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore")
+                .long("ignore")
+                .overrides_with("no-ignore")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore.",
                 ),
         )
         .arg(
@@ -44,23 +64,47 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("no-ignore-vcs")
                 .overrides_with("no-ignore-vcs")
                 .hidden_short_help(true)
+                .help("Do not respect .gitignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore' files.",
+                         ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore-vcs")
+                .long("ignore-vcs")
+                .overrides_with("no-ignore-vcs")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore-vcs.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-ignore-parent")
+                .long("no-ignore-parent")
+                .overrides_with("no-ignore-parent")
+                .hidden_short_help(true)
+                .help("Do not respect .(git|fd)ignore files in parent directories")
+                .long_help(
+                    "Show search results from files and directories that would otherwise be \
+                        ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.",
                 ),
         )
         .arg(
             Arg::with_name("no-global-ignore-file")
                 .long("no-global-ignore-file")
                 .hidden(true)
+                .help("Do not respect the global ignore file")
                 .long_help("Do not respect the global ignore file."),
         )
         .arg(
             Arg::with_name("rg-alias-hidden-ignore")
                 .short("u")
                 .long("unrestricted")
+                .overrides_with_all(&["ignore", "no-hidden"])
                 .multiple(true)
                 .hidden_short_help(true)
+                .help("Alias for '--no-ignore', and '--hidden' when given twice")
                 .long_help(
                     "Alias for '--no-ignore'. Can be repeated. '-uu' is an alias for \
                          '--no-ignore --hidden'.",
@@ -104,6 +148,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("regex")
                 .overrides_with_all(&["glob", "regex"])
                 .hidden_short_help(true)
+                .help("Regular-expression based search (default)")
                 .long_help(
                     "Perform a regular-expression based search (default). This can be used to \
                          override --glob.",
@@ -116,6 +161,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .alias("literal")
                 .overrides_with("fixed-strings")
                 .hidden_short_help(true)
+                .help("Treat pattern as literal string instead of regex")
                 .long_help(
                     "Treat the pattern as a literal string instead of a regular expression. Note \
                      that this also performs substring comparison. If you want to match on an \
@@ -129,7 +175,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("absolute-path")
                 .help("Show absolute instead of relative paths")
                 .long_help(
-                    "Shows the full path starting from the root as opposed to relative paths.",
+                    "Shows the full path starting from the root as opposed to relative paths. \
+                     The flag can be overridden with --relative-path.",
+                ),
+        )
+        .arg(
+            Arg::with_name("relative-path")
+                .long("relative-path")
+                .overrides_with("absolute-path")
+                .hidden(true)
+                .long_help(
+                    "Overrides --absolute-path.",
                 ),
         )
         .arg(
@@ -154,7 +210,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Follow symbolic links")
                 .long_help(
                     "By default, fd does not descend into symlinked directories. Using this \
-                         flag, symbolic links are also traversed.",
+                         flag, symbolic links are also traversed. \
+                         Flag can be overriden with --no-follow.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-follow")
+                .long("no-follow")
+                .overrides_with("follow")
+                .hidden(true)
+                .long_help(
+                    "Overrides --follow.",
                 ),
         )
         .arg(
@@ -162,11 +228,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("full-path")
                 .short("p")
                 .overrides_with("full-path")
-                .help("Search full path (default: file-/dirname only)")
+                .help("Search full abs. path (default: filename only)")
                 .long_help(
                     "By default, the search pattern is only matched against the filename (or \
-                         directory name). Using this flag, the pattern is matched against the \
-                         full path.",
+                      directory name). Using this flag, the pattern is matched against the full \
+                      (absolute) path. Example:\n  \
+                        fd --glob -p '**/.git/config'",
                 ),
         )
         .arg(
@@ -200,6 +267,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("maxdepth")
                 .hidden(true)
                 .takes_value(true)
+                .help("Set maximum search depth (default: none)")
         )
         .arg(
             Arg::with_name("min-depth")
@@ -207,6 +275,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("depth")
                 .hidden_short_help(true)
+                .help("Only show results starting at given depth")
                 .long_help(
                     "Only show search results starting at the given depth. \
                      See also: '--max-depth' and '--exact-depth'",
@@ -219,6 +288,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("depth")
                 .hidden_short_help(true)
                 .conflicts_with_all(&["max-depth", "min-depth"])
+                .help("Only show results at exact given depth")
                 .long_help(
                     "Only show search results at the exact given depth. This is an alias for \
                      '--min-depth <depth> --max-depth <depth>'.",
@@ -229,7 +299,9 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("prune")
                 .conflicts_with_all(&["size", "exact-depth"])
                 .hidden_short_help(true)
-                .long_help("Do not traverse into matching directories.")
+                .help("Do not traverse into matching directories")
+                .long_help("Do not traverse into directories that match the search criteria. If \
+                    you want to exclude specific directories, use the '--exclude=…' option.")
         )
         .arg(
             Arg::with_name("file-type")
@@ -346,6 +418,21 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("batch-size")
+            .long("batch-size")
+            .takes_value(true)
+            .value_name("size")
+            .hidden_short_help(true)
+            .requires("exec-batch")
+            .help("Max number of arguments to run as a batch with -X")
+            .long_help(
+                "Maximum number of arguments to pass to the command given with -X. \
+                If the number of results is greater than the given size, \
+                the command given with -X is run again with remaining arguments. \
+                A batch size of zero means there is no limit.",
+            ),
+        )
+        .arg(
             Arg::with_name("exclude")
                 .long("exclude")
                 .short("E")
@@ -371,6 +458,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .multiple(true)
                 .hidden_short_help(true)
+                .help("Add custom ignore-file in '.gitignore' format")
                 .long_help(
                     "Add a custom ignore-file in '.gitignore' format. These files have a low \
                          precedence.",
@@ -399,6 +487,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("num")
                 .hidden_short_help(true)
+                .help("Set number of threads")
                 .long_help(
                     "Set number of threads to use for searching & executing (default: number \
                          of available CPU cores)",
@@ -412,7 +501,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .number_of_values(1)
                 .allow_hyphen_values(true)
                 .multiple(true)
-                .help("Limit results based on the size of files.")
+                .help("Limit results based on the size of files")
                 .long_help(
                     "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
                         '+': file size must be greater than or equal to this\n   \
@@ -437,6 +526,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("max-buffer-time")
                 .takes_value(true)
                 .hidden(true)
+                .help("Milliseconds to buffer before streaming search results to console")
                 .long_help(
                     "Amount of time in milliseconds to buffer, before streaming the search \
                          results to the console.",
@@ -493,6 +583,7 @@ pub fn build_app() -> App<'static, 'static> {
                 // the files they saw in the previous search.
                 .conflicts_with_all(&["exec", "exec-batch", "list-details"])
                 .hidden_short_help(true)
+                .help("Limit number of search results")
                 .long_help("Limit the number of search results to 'count' and quit immediately."),
         )
         .arg(
@@ -501,14 +592,31 @@ pub fn build_app() -> App<'static, 'static> {
                 .hidden_short_help(true)
                 .overrides_with("max-results")
                 .conflicts_with_all(&["exec", "exec-batch", "list-details"])
+                .help("Limit search to a single result")
                 .long_help("Limit the search to a single result and quit immediately. \
                                 This is an alias for '--max-results=1'.")
+        )
+        .arg(
+            Arg::with_name("quiet")
+                .long("quiet")
+                .short("q")
+                .alias("has-results")
+                .hidden_short_help(true)
+                .conflicts_with_all(&["exec", "exec-batch", "list-details", "max-results"])
+                .help("Print nothing, exit code 0 if match found, 1 otherwise")
+                .long_help(
+                    "When the flag is present, the program does not print anything and will \
+                     return with an exit code of 0 if there is at least one match. Otherwise, the \
+                     exit code will be 1. \
+                     '--has-results' can be used as an alias."
+                )
         )
         .arg(
             Arg::with_name("show-errors")
                 .long("show-errors")
                 .hidden_short_help(true)
                 .overrides_with("show-errors")
+                .help("Show filesystem errors")
                 .long_help(
                     "Enable the display of filesystem errors for situations such as \
                          insufficient permissions or dead symlinks.",
@@ -521,6 +629,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("path")
                 .number_of_values(1)
                 .hidden_short_help(true)
+                .help("Change current working directory")
                 .long_help(
                     "Change the current working directory of fd to the provided path. This \
                          means that search results will be shown with respect to the given base \
@@ -544,6 +653,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .value_name("separator")
                 .long("path-separator")
                 .hidden_short_help(true)
+                .help("Set path separator when printing file paths")
                 .long_help(
                     "Set the path separator to use when printing file paths. The default is \
                          the OS-specific separator ('/' on Unix, '\\' on Windows).",
@@ -566,6 +676,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .multiple(true)
                 .hidden_short_help(true)
                 .number_of_values(1)
+                .help("Provide paths to search as an alternative to the positional <path>")
                 .long_help(
                     "Provide paths to search as an alternative to the positional <path> \
                          argument. Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> \
@@ -602,6 +713,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("one-file-system")
                 .aliases(&["mount", "xdev"])
                 .hidden_short_help(true)
+                .help("Do not descend into a different file system")
                 .long_help(
                     "By default, fd will traverse the file system tree as far as other options \
                      dictate. With this flag, fd ensures that it does not descend into a \

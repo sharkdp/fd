@@ -6,10 +6,10 @@ use std::sync::Arc;
 
 use lscolors::{LsColors, Style};
 
+use crate::config::Config;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
-use crate::options::Options;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -19,7 +19,7 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 pub fn print_entry(
     stdout: &mut StdoutLock,
     entry: &Path,
-    config: &Options,
+    config: &Config,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
     let path = if entry.is_absolute() {
@@ -49,7 +49,7 @@ pub fn print_entry(
 fn print_entry_colorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &Options,
+    config: &Config,
     ls_colors: &LsColors,
     wants_to_quit: &Arc<AtomicBool>,
 ) -> io::Result<()> {
@@ -85,7 +85,7 @@ fn print_entry_colorized(
 fn print_entry_uncolorized_base(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &Options,
+    config: &Config,
 ) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
 
@@ -100,7 +100,7 @@ fn print_entry_uncolorized_base(
 fn print_entry_uncolorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &Options,
+    config: &Config,
 ) -> io::Result<()> {
     print_entry_uncolorized_base(stdout, path, config)
 }
@@ -109,7 +109,7 @@ fn print_entry_uncolorized(
 fn print_entry_uncolorized(
     stdout: &mut StdoutLock,
     path: &Path,
-    config: &Options,
+    config: &Config,
 ) -> io::Result<()> {
     use std::os::unix::ffi::OsStrExt;
 

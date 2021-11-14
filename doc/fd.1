@@ -28,22 +28,43 @@ is a simple, fast and user-friendly alternative to
 .TP
 .B \-H, \-\-hidden
 Include hidden files and directories in the search results
-(default: hidden files and directories are skipped).
+(default: hidden files and directories are skipped). The flag can be overridden with '--no-hidden'.
 .TP
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
-.IR .gitignore ,
-.IR .ignore ,
-.IR .fdignore ,
-or the global ignore file.
+.RS
+.IP \[bu] 2
+.I .gitignore
+.IP \[bu]
+.I .git/info/exclude
+.IP \[bu]
+The global gitignore configuration (by default
+.IR $HOME/.config/git/ignore )
+.IP \[bu]
+.I .ignore
+.IP \[bu]
+.I .fdignore
+.IP \[bu]
+The global fd ignore file (usually
+.I $HOME/.config/fd/ignore
+)
+.RE
+.IP
+The flag can be overridden with '--ignore'.
 .TP
 .B \-u, \-\-unrestricted
 Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
 .TP
 .B \-\-no\-ignore\-vcs
-Show search results from files and directories that would otherwise be ignored by
-.I .gitignore
-files.
+Show search results from files and directories that would otherwise be ignored by gitignore files
+including
+.IR  .gitignore ,
+.IR  .git/info/exclude ,
+and the global gitignore configuration
+.RI ( core.excludesFile
+git setting, which defaults to
+.IR $HOME/.config/git/ignore ).
+The flag can be overridden with '--ignore-vcs'.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -66,6 +87,7 @@ performs substring comparison. If you want to match on an exact filename, consid
 .TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
+The flag can be overridden with '--relative-path'.
 .TP
 .B \-l, \-\-list\-details
 Use a detailed listing format like 'ls -l'. This is basically an alias
@@ -75,7 +97,7 @@ sort order.
 .TP
 .B \-L, \-\-follow
 By default, fd does not descend into symlinked directories. Using this flag, symbolic links are
-also traversed.
+also traversed. The flag can be overridden with '--no-follow'.
 .TP
 .B \-p, \-\-full\-path
 By default, the search pattern is only matched against the filename (or directory name). Using
@@ -92,6 +114,13 @@ Limit the number of search results to 'count' and quit immediately.
 .TP
 .B \-1
 Limit the search to a single result and quit immediately. This is an alias for '--max-results=1'.
+.TP
+.B \-q, \-\-quiet
+When the flag is present, the program does not print anything and will instead exit with a code of 0 if there is at least one search result.
+Otherwise, the exit code will be 1.
+This is mainly for usage in scripts and can be faster than checking for output because the search can be stopped early after the first match.
+.B \-\-has\-results
+can be used as an alias.
 .TP
 .B \-\-show-errors
 Enable the display of filesystem errors for situations such as insufficient
@@ -380,5 +409,11 @@ $ fd -e py
 .TP
 .RI "Open all search results with vim:"
 $ fd pattern -X vim
+.TP
+.BI "\-\-batch\-size " size
+Pass at most
+.I size
+arguments to each call to the command given with -X.
+.TP
 .SH SEE ALSO
 .BR find (1)

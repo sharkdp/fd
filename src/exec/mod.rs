@@ -450,11 +450,11 @@ mod tests {
         // This is uncommon, but valid
         check!(r"C:foo\bar", "C:foo#bar");
 
-        // forward slashses should get normalized and interpreted as separators
+        // forward slashes should get normalized and interpreted as separators
         check!("C:/foo/bar", "C:#foo#bar");
         check!("C:foo/bar", "C:foo#bar");
 
-        // Rust does not intrepret "//server/share" as a UNC path, but rather as a normal
+        // Rust does not interpret "//server/share" as a UNC path, but rather as a normal
         // absolute path that begins with RootDir, and the two slashes get combined together as
         // a single path separator during normalization.
         //check!("//server/share/path", "##server#share#path");

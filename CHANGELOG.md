@@ -1,7 +1,20 @@
 # Upcoming release
 
+## Performance improvements
+
+- File metadata is now cached between the different filters that require it (e.g. `--owner`,
+  `--size`), reducing the number of `stat` syscalls when multiple filters are used; see #863
+
 ## Features
 - Don't buffer command output from `--exec` when using a single thread. See #522
+
+- Add new `-q, --quiet` flag, see #303 (@Asha20)
+
+- Add new `--no-ignore-parent` flag, see #787 (@will459)
+
+- Add new `--batch-size` flag, see #410 (@devonhollowood)
+
+- Add opposing command-line options, see #595 (@Asha20)
 
 ## Bugfixes
 
@@ -11,6 +24,8 @@
 - Properly handle write errors to devices that are full, see #737
 - Use local time zone for time functions (`--change-newer-than`, `--change-older-than`), see #631 (@jacobmischka)
 - Support `--list-details` on more platforms (like BusyBox), see #783
+- The filters `--owner`, `--size`, and `--changed-{within,before}` now apply to symbolic links
+  themselves, rather than the link target, except when `--follow` is specified; see #863
 
 ## Changes
 

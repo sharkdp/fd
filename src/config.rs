@@ -10,7 +10,7 @@ use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 
 /// Configuration options for *fd*.
-pub struct Options {
+pub struct Config {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 
@@ -23,6 +23,9 @@ pub struct Options {
 
     /// Whether to respect `.fdignore` files or not.
     pub read_fdignore: bool,
+
+    /// Whether to respect ignore files in parent directories or not.
+    pub read_parent_ignore: bool,
 
     /// Whether to respect VCS ignore files (`.gitignore`, ..) or not.
     pub read_vcsignore: bool,
@@ -54,6 +57,10 @@ pub struct Options {
     /// The number of threads to use.
     pub threads: usize,
 
+    /// If true, the program doesn't print anything and will instead return an exit code of 0
+    /// if there's at least one match. Otherwise, the exit code will be 1.
+    pub quiet: bool,
+
     /// Time to buffer results internally before streaming to the console. This is useful to
     /// provide a sorted output, in case the total execution time is shorter than
     /// `max_buffer_time`.
@@ -77,6 +84,10 @@ pub struct Options {
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandTemplate>>,
+
+    /// Maximum number of search results to pass to each `command`. If zero, the number is
+    /// unlimited.
+    pub batch_size: usize,
 
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
