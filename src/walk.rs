@@ -368,7 +368,7 @@ fn spawn_senders(
             Box::new(SkipRoot),
             Box::new(MinDepth::new(config.min_depth)),
             Box::new(RegexMatch::new(pattern, config.search_full_path)),
-            Box::new(Extensions::new(config.extensions.clone())),
+            Box::new(Extensions::new(config.extensions.as_ref())),
         ];
 
         if let Some(file_types) = config.file_types.clone() {

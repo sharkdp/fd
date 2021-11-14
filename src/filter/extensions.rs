@@ -4,17 +4,17 @@ use crate::filesystem;
 
 use super::common::Filter;
 
-pub struct Extensions {
-    extensions: Option<RegexSet>,
+pub struct Extensions<'a> {
+    extensions: Option<&'a RegexSet>,
 }
 
-impl Extensions {
-    pub fn new(extensions: Option<RegexSet>) -> Self {
+impl<'a> Extensions<'a> {
+    pub fn new(extensions: Option<&'a RegexSet>) -> Self {
         Self { extensions }
     }
 }
 
-impl Filter for Extensions {
+impl Filter for Extensions<'_> {
     fn should_skip(&self, entry: &crate::walk::DirEntry) -> bool {
         self.extensions
             .as_ref()
