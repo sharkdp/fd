@@ -407,34 +407,20 @@ fn spawn_senders(
                 }
             };
 
-            let filters: Vec<Option<Box<dyn Filter>>> = vec![
-                Some(Box::new(SkipRoot)),
-                Some(Box::new(MinDepth::new(config.min_depth))),
-                Some(Box::new(RegexMatch::new(
-                    pattern.clone(),
-                    config.search_full_path,
-                ))),
-                Some(Box::new(Extensions::new(config.extensions.clone()))),
-                config
-                    .file_types
-                    .clone()
-                    .map(|x| -> Box<dyn Filter> { Box::new(x) }),
+            let mut filters: Vec<Box<dyn Filter>> = vec![
+                Box::new(SkipRoot),
+                Box::new(MinDepth::new(config.min_depth)),
+                Box::new(RegexMatch::new(pattern.clone(), config.search_full_path)),
+                Box::new(Extensions::new(config.extensions.clone())),
             ];
 
-            let result = filters.iter().find_map(|filter_opt| {
-                let should_skip = filter_opt
-                    .as_ref()
-                    .map(|filter| filter.should_skip(&entry))
-                    .unwrap_or(false);
+            if let Some(file_types) = config.file_types.clone() {
+                filters.push(Box::new(file_types));
+            }
 
-                match should_skip {
-                    true => Some(ignore::WalkState::Continue),
-                    false => None,
-                }
-            });
-
-            if let Some(x) = result {
-                return x;
+            let should_skip = filters.iter().any(|filter| filter.should_skip(&entry));
+            if should_skip {
+                return ignore::WalkState::Continue;
             }
 
             // Check the name first, since it doesn't require metadata
