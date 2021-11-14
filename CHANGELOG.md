@@ -5,6 +5,8 @@
 - File metadata is now cached between the different filters that require it (e.g. `--owner`,
   `--size`), reducing the number of `stat` syscalls when multiple filters are used; see #863
 
+- Colorized output is now significantly faster, see #720 and #853 (@tavianator)
+
 ## Features
 - Don't buffer command output from `--exec` when using a single thread. See #522
 
