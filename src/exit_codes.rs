@@ -1,3 +1,5 @@
+use std::process;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExitCode {
     Success,
@@ -20,6 +22,11 @@ impl From<ExitCode> for i32 {
 impl ExitCode {
     fn is_error(self) -> bool {
         i32::from(self) != 0
+    }
+
+    /// Exit the process with the appropriate code.
+    pub fn exit(self) -> ! {
+        process::exit(self.into())
     }
 }
 

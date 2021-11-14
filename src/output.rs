@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::io::{self, StdoutLock, Write};
 use std::path::Path;
-use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -38,10 +37,10 @@ pub fn print_entry(
     if let Err(e) = r {
         if e.kind() == ::std::io::ErrorKind::BrokenPipe {
             // Exit gracefully in case of a broken pipe (e.g. 'fd ... | head -n 3').
-            process::exit(0);
+            ExitCode::Success.exit();
         } else {
             print_error(format!("Could not write to output: {}", e));
-            process::exit(ExitCode::GeneralError.into());
+            ExitCode::GeneralError.exit();
         }
     }
 }
@@ -95,7 +94,7 @@ fn print_entry_colorized(
     }
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        process::exit(ExitCode::KilledBySigint.into());
+        ExitCode::KilledBySigint.exit();
     }
 
     Ok(())

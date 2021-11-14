@@ -12,7 +12,6 @@ mod walk;
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process;
 use std::sync::Arc;
 use std::time;
 
@@ -54,11 +53,11 @@ fn main() {
     let result = run();
     match result {
         Ok(exit_code) => {
-            process::exit(exit_code.into());
+            exit_code.exit();
         }
         Err(err) => {
             eprintln!("[fd error]: {:#}", err);
-            process::exit(ExitCode::GeneralError.into());
+            ExitCode::GeneralError.exit();
         }
     }
 }
