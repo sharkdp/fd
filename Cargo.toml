@@ -70,7 +70,8 @@ jemallocator = "0.3.0"
 [dev-dependencies]
 diff = "0.1"
 tempdir = "0.3"
-filetime = "0.2.15"
+filetime = "0.2"
+test-case = "1.2"
 
 [profile.release]
 lto = true

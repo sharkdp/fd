@@ -28,7 +28,7 @@ is a simple, fast and user-friendly alternative to
 .TP
 .B \-H, \-\-hidden
 Include hidden files and directories in the search results
-(default: hidden files and directories are skipped).
+(default: hidden files and directories are skipped). The flag can be overridden with '--no-hidden'.
 .TP
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
@@ -49,6 +49,8 @@ The global fd ignore file (usually
 .I $HOME/.config/fd/ignore
 )
 .RE
+.IP
+The flag can be overridden with '--ignore'.
 .TP
 .B \-u, \-\-unrestricted
 Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
@@ -62,6 +64,7 @@ and the global gitignore configuration
 .RI ( core.excludesFile
 git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
+The flag can be overridden with '--ignore-vcs'.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -84,6 +87,7 @@ performs substring comparison. If you want to match on an exact filename, consid
 .TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
+The flag can be overridden with '--relative-path'.
 .TP
 .B \-l, \-\-list\-details
 Use a detailed listing format like 'ls -l'. This is basically an alias
@@ -93,7 +97,7 @@ sort order.
 .TP
 .B \-L, \-\-follow
 By default, fd does not descend into symlinked directories. Using this flag, symbolic links are
-also traversed.
+also traversed. The flag can be overridden with '--no-follow'.
 .TP
 .B \-p, \-\-full\-path
 By default, the search pattern is only matched against the filename (or directory name). Using
