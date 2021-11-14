@@ -363,11 +363,26 @@ fn spawn_senders(
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
 ) {
+    let filters = {
+        let mut filters: Vec<Box<dyn Filter>> = vec![
+            Box::new(SkipRoot),
+            Box::new(MinDepth::new(config.min_depth)),
+            Box::new(RegexMatch::new(pattern, config.search_full_path)),
+            Box::new(Extensions::new(config.extensions.clone())),
+        ];
+
+        if let Some(file_types) = config.file_types.clone() {
+            filters.push(Box::new(file_types));
+        }
+
+        Arc::new(filters)
+    };
+
     parallel_walker.run(|| {
         let config = Arc::clone(config);
-        let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
         let wants_to_quit = Arc::clone(wants_to_quit);
+        let filters = Arc::clone(&filters);
 
         Box::new(move |entry_o| {
             if wants_to_quit.load(Ordering::Relaxed) {
@@ -407,18 +422,9 @@ fn spawn_senders(
                 }
             };
 
-            let mut filters: Vec<Box<dyn Filter>> = vec![
-                Box::new(SkipRoot),
-                Box::new(MinDepth::new(config.min_depth)),
-                Box::new(RegexMatch::new(pattern.clone(), config.search_full_path)),
-                Box::new(Extensions::new(config.extensions.clone())),
-            ];
-
-            if let Some(file_types) = config.file_types.clone() {
-                filters.push(Box::new(file_types));
-            }
-
-            let should_skip = filters.iter().any(|filter| filter.should_skip(&entry));
+            let should_skip = filters
+                .iter()
+                .any(|filter| filter.should_skip(&entry));
             if should_skip {
                 return ignore::WalkState::Continue;
             }
