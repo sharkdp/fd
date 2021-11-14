@@ -175,6 +175,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "lscolors",
+ "nix",
  "normpath",
  "num_cpus",
  "once_cell",
