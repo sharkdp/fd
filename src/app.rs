@@ -249,7 +249,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .conflicts_with_all(&["size", "exact-depth"])
                 .hidden_short_help(true)
                 .help("Do not traverse into matching directories")
-                .long_help("Do not traverse into matching directories.")
+                .long_help("Do not traverse into directories that match the search criteria. If \
+                    you want to exclude specific directories, use the '--exclude=…' option.")
         )
         .arg(
             Arg::with_name("file-type")
