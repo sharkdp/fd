@@ -1,7 +1,8 @@
 pub use self::size::SizeFilter;
 pub use self::time::TimeFilter;
 
-pub use self::common::Filter;
+pub(super) use self::common::Filter;
+pub use self::common::FilterKind;
 pub use self::extensions::Extensions;
 pub use self::filetypes::FileTypes;
 pub use self::min_depth::MinDepth;
