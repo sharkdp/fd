@@ -15,6 +15,7 @@
 - Add opposing command-line options, see #595 (@Asha20)
 - Add support for more filesystem indicators in `LS_COLORS`, see
   https://github.com/sharkdp/lscolors/pull/35 (@tavianator)
+- Buffer writing to stdout if stdout is not a TTY, to improve performance.
 
 ## Bugfixes
 
