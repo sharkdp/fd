@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::io::{self, StdoutLock, Write};
+use std::io::{self, Write};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
 use lscolors::{Indicator, LsColors, Style};
 
@@ -16,11 +15,11 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 }
 
 // TODO: this function is performance critical and can probably be optimized
-pub fn print_entry(
-    stdout: &mut StdoutLock,
+pub fn print_entry<W: Write>(
+    stdout: &mut W,
     entry: &Path,
     config: &Config,
-    wants_to_quit: &Arc<AtomicBool>,
+    wants_to_quit: &AtomicBool,
 ) {
     let path = if config.strip_cwd_prefix {
         strip_current_dir(entry)
@@ -46,12 +45,12 @@ pub fn print_entry(
 }
 
 // TODO: this function is performance critical and can probably be optimized
-fn print_entry_colorized(
-    stdout: &mut StdoutLock,
+fn print_entry_colorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Config,
     ls_colors: &LsColors,
-    wants_to_quit: &Arc<AtomicBool>,
+    wants_to_quit: &AtomicBool,
 ) -> io::Result<()> {
     // Split the path between the parent and the last component
     let mut offset = 0;
@@ -94,6 +93,7 @@ fn print_entry_colorized(
     }
 
     if wants_to_quit.load(Ordering::Relaxed) {
+        stdout.flush()?;
         ExitCode::KilledBySigint.exit();
     }
 
@@ -101,8 +101,8 @@ fn print_entry_colorized(
 }
 
 // TODO: this function is performance critical and can probably be optimized
-fn print_entry_uncolorized_base(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized_base<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Config,
 ) -> io::Result<()> {
@@ -116,8 +116,8 @@ fn print_entry_uncolorized_base(
 }
 
 #[cfg(not(unix))]
-fn print_entry_uncolorized(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Config,
 ) -> io::Result<()> {
@@ -125,8 +125,8 @@ fn print_entry_uncolorized(
 }
 
 #[cfg(unix)]
-fn print_entry_uncolorized(
-    stdout: &mut StdoutLock,
+fn print_entry_uncolorized<W: Write>(
+    stdout: &mut W,
     path: &Path,
     config: &Config,
 ) -> io::Result<()> {

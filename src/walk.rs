@@ -1,13 +1,13 @@
-use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::mpsc::{sync_channel, Receiver, SyncSender as Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
+use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
@@ -21,6 +21,12 @@ use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
 use crate::output;
+
+pub const WORKER_CHANNEL_DEFAULT_BOUND: usize = 1000;
+
+pub fn make_worker_channel() -> (Sender<WorkerResult>, Receiver<WorkerResult>) {
+    sync_channel(WORKER_CHANNEL_DEFAULT_BOUND)
+}
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -53,7 +59,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = channel();
+    let (tx, rx) = make_worker_channel();
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -220,8 +226,6 @@ fn spawn_receiver(
         } else {
             let start = time::Instant::now();
 
-            let mut buffer = vec![];
-
             // Start in buffering mode
             let mut mode = ReceiverMode::Buffering;
 
@@ -229,45 +233,53 @@ fn spawn_receiver(
             let max_buffer_time = config.max_buffer_time.unwrap_or(DEFAULT_MAX_BUFFER_TIME);
 
             let stdout = io::stdout();
-            let mut stdout = stdout.lock();
+            let stdout = stdout.lock();
+            let mut stdout = io::BufWriter::new(stdout);
 
             let mut num_results = 0;
-
+            let is_interactive = config.interactive_terminal;
+            let mut buffer = Vec::with_capacity(MAX_BUFFER_LENGTH);
             for worker_result in rx {
                 match worker_result {
-                    WorkerResult::Entry(value) => {
+                    WorkerResult::Entry(path) => {
                         if config.quiet {
                             return ExitCode::HasResults(true);
                         }
 
                         match mode {
                             ReceiverMode::Buffering => {
-                                buffer.push(value);
+                                buffer.push(path);
 
                                 // Have we reached the maximum buffer size or maximum buffering time?
                                 if buffer.len() > MAX_BUFFER_LENGTH
                                     || start.elapsed() > max_buffer_time
                                 {
                                     // Flush the buffer
-                                    for v in &buffer {
+                                    for path in &buffer {
                                         output::print_entry(
                                             &mut stdout,
-                                            v,
+                                            path,
                                             &config,
                                             &wants_to_quit,
                                         );
                                     }
                                     buffer.clear();
-
+                                    if is_interactive && stdout.flush().is_err() {
+                                        // Probably a broken pipe. Exit gracefully.
+                                        return ExitCode::GeneralError;
+                                    }
                                     // Start streaming
                                     mode = ReceiverMode::Streaming;
                                 }
                             }
                             ReceiverMode::Streaming => {
-                                output::print_entry(&mut stdout, &value, &config, &wants_to_quit);
+                                output::print_entry(&mut stdout, &path, &config, &wants_to_quit);
+                                if is_interactive && stdout.flush().is_err() {
+                                    // Probably a broken pipe. Exit gracefully.
+                                    return ExitCode::GeneralError;
+                                }
                             }
                         }
-
                         num_results += 1;
                         if let Some(max_results) = config.max_results {
                             if num_results >= max_results {
@@ -282,7 +294,6 @@ fn spawn_receiver(
                     }
                 }
             }
-
             // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
             // anything to the console, yet. In this case, sort the results and print them:
             buffer.sort();
