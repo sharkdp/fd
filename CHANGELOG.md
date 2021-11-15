@@ -49,6 +49,7 @@
 
 ## Changes
 
+- Directories are now printed with an additional path separator at the end: `foo/bar/`
 - Apply custom `--path-separator` to commands run with `--exec(-batch)` and `--list-details`, see #697 (@aswild)
 
 ## Other
