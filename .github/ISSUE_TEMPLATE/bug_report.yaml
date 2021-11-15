@@ -34,7 +34,7 @@ body:
     attributes:
       label: Which operating system / distribution are you on?
       placeholder: |
-        Unix: paste the output of `uname -srm` and lsb_release -a` here.
+        Unix: paste the output of `uname -srm` and `lsb_release -a` here.
         Windows: please tell us your Windows version
       render: shell
     validations:
