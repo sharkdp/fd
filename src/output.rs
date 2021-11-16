@@ -93,7 +93,8 @@ fn print_entry_colorized<W: Write>(
     }
 
     if wants_to_quit.load(Ordering::Relaxed) {
-        stdout.flush()?;
+        // Ignore any errors on flush, because we're about to exit anyway
+        let _ = stdout.flush();
         ExitCode::KilledBySigint.exit();
     }
 
