@@ -280,6 +280,7 @@ fn spawn_receiver(
                                 }
                             }
                         }
+
                         num_results += 1;
                         if let Some(max_results) = config.max_results {
                             if num_results >= max_results {
@@ -294,6 +295,7 @@ fn spawn_receiver(
                     }
                 }
             }
+
             // If we have finished fast enough (faster than max_buffer_time), we haven't streamed
             // anything to the console, yet. In this case, sort the results and print them:
             buffer.sort();
