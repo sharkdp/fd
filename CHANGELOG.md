@@ -26,6 +26,7 @@
 - Support `--list-details` on more platforms (like BusyBox), see #783
 - The filters `--owner`, `--size`, and `--changed-{within,before}` now apply to symbolic links
   themselves, rather than the link target, except when `--follow` is specified; see #863
+- Change time comparisons to be exclusive, see #794 (@jacobmischka)
 
 ## Changes
 
