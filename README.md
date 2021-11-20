@@ -194,6 +194,11 @@ fd … -X ls -lhd --color=always
 This pattern is so useful that `fd` provides a shortcut. You can use the `-l`/`--list-details`
 option to execute `ls` in this way: `fd … -l`.
 
+Another example of the `-X` option can be shown with `rg`, using all the search results as arguments:
+```bash
+fd … -X rg -i target
+```
+
 Convert all `*.jpg` files to `*.png` files:
 ``` bash
 fd -e jpg -x convert {} {.}.png
