@@ -172,7 +172,6 @@ dependencies = [
  "humantime",
  "ignore",
  "jemallocator",
- "lazy_static",
  "libc",
  "lscolors",
  "nix",
