@@ -617,10 +617,10 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
-            Arg::with_name("strip-prefix")
-                .long("strip-prefix")
-                .short("P")
+            Arg::with_name("strip-cwd-prefix")
+                .long("strip-cwd-prefix")
                 .conflicts_with_all(&["path", "search-path"])
+                .hidden_short_help(true)
                 .help("When no search path is provided and output is non-tty, strip './' prefix from results")
                 .long_help(
                     "By default, relative results are prefixed with './' when output to non-ttys. \

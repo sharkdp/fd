@@ -1925,11 +1925,11 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
 }
 
 #[test]
-fn test_no_strip() {
+fn test_strip_cwd_prefix() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
-        &["-P", "."],
+        &["--strip-cwd-prefix", "."],
         "a.foo
         e1 e2
         one

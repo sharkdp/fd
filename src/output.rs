@@ -22,10 +22,10 @@ pub fn print_entry(
     config: &Config,
     wants_to_quit: &Arc<AtomicBool>,
 ) {
-    let path = if config.no_strip {
-        entry
-    } else {
+    let path = if config.strip_cwd_prefix {
         strip_current_dir(entry)
+    } else {
+        entry
     };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
