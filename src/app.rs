@@ -704,6 +704,17 @@ pub fn build_app() -> App<'static, 'static> {
                          argument. Changes the usage to `fd [FLAGS/OPTIONS] --search-path <path> \
                          --search-path <path2> [<pattern>]`",
                 ),
+        )
+        .arg(
+            Arg::with_name("strip-cwd-prefix")
+                .long("strip-cwd-prefix")
+                .conflicts_with_all(&["path", "search-path"])
+                .hidden_short_help(true)
+                .help("strip './' prefix from non-tty outputs")
+                .long_help(
+                    "By default, relative paths are prefixed with './' when the output goes to a non \
+                     interactive terminal (TTY). Use this flag to disable this behaviour."
+                )
         );
 
     if cfg!(unix) {
