@@ -3,7 +3,7 @@ use std::fs::{FileType, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{sync_channel, Receiver, SyncSender as Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time;
@@ -21,12 +21,6 @@ use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
 use crate::output;
-
-pub const WORKER_CHANNEL_DEFAULT_BOUND: usize = 1000;
-
-pub fn make_worker_channel() -> (Sender<WorkerResult>, Receiver<WorkerResult>) {
-    sync_channel(WORKER_CHANNEL_DEFAULT_BOUND)
-}
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 enum ReceiverMode {
@@ -59,7 +53,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = make_worker_channel();
+    let (tx, rx) = channel();
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
