@@ -621,7 +621,7 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("strip-cwd-prefix")
                 .conflicts_with_all(&["path", "search-path"])
                 .hidden_short_help(true)
-                .help("When no search path is provided and output is non-tty, strip './' prefix from results")
+                .help("strip './' prefix from non-tty outputs")
                 .long_help(
                     "By default, relative paths are prefixed with './' when the output goes to a non \
                      interactive terminal (TTY). Use this flag to disable this behaviour."
