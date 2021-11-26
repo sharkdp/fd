@@ -4,7 +4,6 @@ mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;
-mod filetypes;
 mod filter;
 mod output;
 mod regex_helper;
@@ -26,10 +25,9 @@ use crate::config::Config;
 use crate::error::print_error;
 use crate::exec::CommandTemplate;
 use crate::exit_codes::ExitCode;
-use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, TimeFilter};
+use crate::filter::{FileTypes, SizeFilter, TimeFilter};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481

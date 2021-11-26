@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -19,7 +17,7 @@ use crate::config::Config;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::filesystem;
+use crate::filter::{Extensions, FilterKind, MinDepth, RegexMatch, SkipRoot};
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -362,11 +360,26 @@ fn spawn_senders(
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
 ) {
+    let filters = {
+        let mut filters: Vec<FilterKind> = vec![
+            FilterKind::SkipRoot(SkipRoot),
+            FilterKind::MinDepth(MinDepth::new(config.min_depth)),
+            FilterKind::RegexMatch(RegexMatch::new(pattern, config.search_full_path)),
+            FilterKind::Extensions(Extensions::new(config.extensions.as_ref())),
+        ];
+
+        if let Some(file_types) = config.file_types.clone() {
+            filters.push(FilterKind::FileTypes(file_types));
+        }
+
+        Arc::new(filters)
+    };
+
     parallel_walker.run(|| {
         let config = Arc::clone(config);
-        let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
         let wants_to_quit = Arc::clone(wants_to_quit);
+        let filters = Arc::clone(&filters);
 
         Box::new(move |entry_o| {
             if wants_to_quit.load(Ordering::Relaxed) {
@@ -374,10 +387,6 @@ fn spawn_senders(
             }
 
             let entry = match entry_o {
-                Ok(ref e) if e.depth() == 0 => {
-                    // Skip the root directory entry.
-                    return ignore::WalkState::Continue;
-                }
                 Ok(e) => DirEntry::normal(e),
                 Err(ignore::Error::WithPath {
                     path,
@@ -410,51 +419,13 @@ fn spawn_senders(
                 }
             };
 
-            if let Some(min_depth) = config.min_depth {
-                if entry.depth().map_or(true, |d| d < min_depth) {
-                    return ignore::WalkState::Continue;
-                }
+            let should_skip = filters.iter().any(|filter| filter.should_skip(&entry));
+            if should_skip {
+                return ignore::WalkState::Continue;
             }
 
             // Check the name first, since it doesn't require metadata
             let entry_path = entry.path();
-
-            let search_str: Cow<OsStr> = if config.search_full_path {
-                let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                    .expect("Retrieving absolute path succeeds");
-                Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-            } else {
-                match entry_path.file_name() {
-                    Some(filename) => Cow::Borrowed(filename),
-                    None => unreachable!(
-                        "Encountered file system entry without a file name. This should only \
-                         happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                         appear in a file system traversal."
-                    ),
-                }
-            };
-
-            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
-                return ignore::WalkState::Continue;
-            }
-
-            // Filter out unwanted extensions.
-            if let Some(ref exts_regex) = config.extensions {
-                if let Some(path_str) = entry_path.file_name() {
-                    if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
-                        return ignore::WalkState::Continue;
-                    }
-                } else {
-                    return ignore::WalkState::Continue;
-                }
-            }
-
-            // Filter out unwanted file types.
-            if let Some(ref file_types) = config.file_types {
-                if file_types.should_ignore(&entry) {
-                    return ignore::WalkState::Continue;
-                }
-            }
 
             #[cfg(unix)]
             {
