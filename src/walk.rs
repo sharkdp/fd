@@ -3,7 +3,6 @@ use std::ffi::OsStr;
 use std::fs::{FileType, Metadata};
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
@@ -137,11 +136,9 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     if config.ls_colors.is_some() && config.command.is_none() {
         let wq = Arc::clone(&wants_to_quit);
         ctrlc::set_handler(move || {
-            if wq.load(Ordering::Relaxed) {
+            if wq.fetch_or(true, Ordering::Relaxed) {
                 // Ctrl-C has been pressed twice, exit NOW
-                process::exit(ExitCode::KilledBySigint.into());
-            } else {
-                wq.store(true, Ordering::Relaxed);
+                ExitCode::KilledBySigint.exit();
             }
         })
         .unwrap();
@@ -179,7 +176,13 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors, enable_output_buffering)
+                exec::batch(
+                    rx,
+                    cmd,
+                    show_filesystem_errors,
+                    enable_output_buffering,
+                    config.batch_size,
+                )
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 

@@ -4,13 +4,17 @@
 
 - File metadata is now cached between the different filters that require it (e.g. `--owner`,
   `--size`), reducing the number of `stat` syscalls when multiple filters are used; see #863
+- Colorized output is now significantly faster, see #720 and #853 (@tavianator)
 
 ## Features
+
 - Don't buffer command output from `--exec` when using a single thread. See #522
-
 - Add new `-q, --quiet` flag, see #303 (@Asha20)
-
 - Add new `--no-ignore-parent` flag, see #787 (@will459)
+- Add new `--batch-size` flag, see #410 (@devonhollowood)
+- Add opposing command-line options, see #595 (@Asha20)
+- Add support for more filesystem indicators in `LS_COLORS`, see
+  https://github.com/sharkdp/lscolors/pull/35 (@tavianator)
 
 ## Bugfixes
 
@@ -23,6 +27,7 @@
 - Support `--list-details` on more platforms (like BusyBox), see #783
 - The filters `--owner`, `--size`, and `--changed-{within,before}` now apply to symbolic links
   themselves, rather than the link target, except when `--follow` is specified; see #863
+- Change time comparisons to be exclusive, see #794 (@jacobmischka)
 
 ## Changes
 

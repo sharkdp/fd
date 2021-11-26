@@ -28,7 +28,7 @@ is a simple, fast and user-friendly alternative to
 .TP
 .B \-H, \-\-hidden
 Include hidden files and directories in the search results
-(default: hidden files and directories are skipped).
+(default: hidden files and directories are skipped). The flag can be overridden with '--no-hidden'.
 .TP
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
@@ -49,6 +49,8 @@ The global fd ignore file (usually
 .I $HOME/.config/fd/ignore
 )
 .RE
+.IP
+The flag can be overridden with '--ignore'.
 .TP
 .B \-u, \-\-unrestricted
 Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
@@ -62,6 +64,7 @@ and the global gitignore configuration
 .RI ( core.excludesFile
 git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
+The flag can be overridden with '--ignore-vcs'.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -84,6 +87,7 @@ performs substring comparison. If you want to match on an exact filename, consid
 .TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
+The flag can be overridden with '--relative-path'.
 .TP
 .B \-l, \-\-list\-details
 Use a detailed listing format like 'ls -l'. This is basically an alias
@@ -93,7 +97,7 @@ sort order.
 .TP
 .B \-L, \-\-follow
 By default, fd does not descend into symlinked directories. Using this flag, symbolic links are
-also traversed.
+also traversed. The flag can be overridden with '--no-follow'.
 .TP
 .B \-p, \-\-full\-path
 By default, the search pattern is only matched against the filename (or directory name). Using
@@ -154,18 +158,40 @@ regular files
 directories
 .IP "l, symlink"
 symbolic links
-.IP "x, executable"
-executable (files)
-.IP "e, empty"
-empty files or directories
 .IP "s, socket"
 sockets
 .IP "p, pipe"
 named pipes (FIFOs)
+.IP "x, executable"
+executable (files)
+.IP "e, empty"
+empty files or directories
 .RE
 
 .RS
-This option can be used repeatedly to allow for multiple file types.
+This option can be specified more than once to include multiple file types.
+Searching for '--type file --type symlink' will show both regular files as well as
+symlinks. Note that the 'executable' and 'empty' filters work differently: '--type
+executable' implies '--type file' by default. And '--type empty' searches for
+empty files and directories, unless either '--type file' or '--type directory' is
+specified in addition.
+
+Examples:
+  - Only search for files:
+      fd --type file …
+      fd -tf …
+  - Find both files and symlinks
+      fd --type file --type symlink …
+      fd -tf -tl …
+  - Find executable files:
+      fd --type executable
+      fd -tx
+  - Find empty files:
+      fd --type empty --type file
+      fd -te -tf
+  - Find empty directories:
+      fd --type empty --type directory
+      fd -te -td
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
@@ -243,7 +269,7 @@ tebibytes
 .TP
 .BI "\-\-changed-within " date|duration
 Filter results based on the file modification time.
-Files with modification times greater than or equal to the argument will be returned.
+Files with modification times greater than the argument will be returned.
 The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
 in time in either full RFC3339 format with time zone, or as a date or datetime in the
 local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR).
@@ -256,7 +282,7 @@ Examples:
 .TP
 .BI "\-\-changed-before " date|duration
 Filter results based on the file modification time.
-Files with modification times less than or equal to the argument will be returned.
+Files with modification times less than the argument will be returned.
 The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
 in time in either full RFC3339 format with time zone, or as a date or datetime in the
 local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR).
@@ -405,5 +431,11 @@ $ fd -e py
 .TP
 .RI "Open all search results with vim:"
 $ fd pattern -X vim
+.TP
+.BI "\-\-batch\-size " size
+Pass at most
+.I size
+arguments to each call to the command given with -X.
+.TP
 .SH SEE ALSO
 .BR find (1)

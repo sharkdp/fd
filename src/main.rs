@@ -12,7 +12,6 @@ mod walk;
 
 use std::env;
 use std::path::{Path, PathBuf};
-use std::process;
 use std::sync::Arc;
 use std::time;
 
@@ -54,11 +53,11 @@ fn main() {
     let result = run();
     match result {
         Ok(exit_code) => {
-            process::exit(exit_code.into());
+            exit_code.exit();
         }
         Err(err) => {
             eprintln!("[fd error]: {:#}", err);
-            process::exit(ExitCode::GeneralError.into());
+            ExitCode::GeneralError.exit();
         }
     }
 }
@@ -348,6 +347,12 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
             })
             .transpose()?,
         command: command.map(Arc::new),
+        batch_size: matches
+            .value_of("batch-size")
+            .map(|n| n.parse::<usize>())
+            .transpose()
+            .context("Failed to parse --batch-size argument")?
+            .unwrap_or_default(),
         exclude_patterns: matches
             .values_of("exclude")
             .map(|v| v.map(|p| String::from("!") + p).collect())

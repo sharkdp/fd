@@ -1,0 +1,41 @@
+name: Bug Report
+description: Report a bug.
+title: "[BUG] "
+labels: bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check out the [troubleshooting section](https://github.com/sharkdp/fd#troubleshooting) first.
+  - type: checkboxes
+    attributes:
+      options:
+        - label: I have read the troubleshooting section and still think this is a bug.
+          required: true
+  - type: textarea
+    id: bug
+    attributes:
+      label: "Describe the bug you encountered:"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Describe what you expected to happen:"
+  - type: input
+    id: version
+    attributes:
+      label: "What version of `fd` are you using?"
+      placeholder: "paste the output of `fd --version` here"
+    validations:
+      required: true
+  - type: textarea
+    id: os
+    attributes:
+      label: Which operating system / distribution are you on?
+      placeholder: |
+        Unix: paste the output of `uname -srm` and `lsb_release -a` here.
+        Windows: please tell us your Windows version
+      render: shell
+    validations:
+      required: true

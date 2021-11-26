@@ -37,13 +37,12 @@ version_check = "0.9"
 ansi_term = "0.12"
 atty = "0.2"
 ignore = "0.4.3"
-lazy_static = "1.1.0"
 num_cpus = "1.8"
 regex = "1.5.4"
 regex-syntax = "0.6"
 ctrlc = "3.2"
 humantime = "2.1"
-lscolors = "0.7"
+lscolors = "0.8"
 globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
@@ -57,6 +56,7 @@ features = ["suggestions", "color", "wrap_help"]
 
 [target.'cfg(unix)'.dependencies]
 users = "0.11.0"
+nix = "0.23.0"
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
@@ -70,7 +70,8 @@ jemallocator = "0.3.0"
 [dev-dependencies]
 diff = "0.1"
 tempdir = "0.3"
-filetime = "0.2.15"
+filetime = "0.2"
+test-case = "1.2"
 
 [profile.release]
 lto = true

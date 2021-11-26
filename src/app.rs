@@ -25,7 +25,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .long_help(
                     "Include hidden directories and files in the search results (default: \
                          hidden files and directories are skipped). Files and directories are \
-                         considered to be hidden if their name starts with a `.` sign (dot).",
+                         considered to be hidden if their name starts with a `.` sign (dot). \
+                         The flag can be overridden with --no-hidden.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-hidden")
+                .long("no-hidden")
+                .overrides_with("hidden")
+                .hidden(true)
+                .long_help(
+                    "Overrides --hidden.",
                 ),
         )
         .arg(
@@ -36,7 +46,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Do not respect .(git|fd)ignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.",
+                         ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file. \
+                         The flag can be overridden with --ignore.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore")
+                .long("ignore")
+                .overrides_with("no-ignore")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore.",
                 ),
         )
         .arg(
@@ -47,7 +67,16 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Do not respect .gitignore files")
                 .long_help(
                     "Show search results from files and directories that would otherwise be \
-                         ignored by '.gitignore' files.",
+                         ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.",
+                ),
+        )
+        .arg(
+            Arg::with_name("ignore-vcs")
+                .long("ignore-vcs")
+                .overrides_with("no-ignore-vcs")
+                .hidden(true)
+                .long_help(
+                    "Overrides --no-ignore-vcs.",
                 ),
         )
         .arg(
@@ -72,6 +101,7 @@ pub fn build_app() -> App<'static, 'static> {
             Arg::with_name("rg-alias-hidden-ignore")
                 .short("u")
                 .long("unrestricted")
+                .overrides_with_all(&["ignore", "no-hidden"])
                 .multiple(true)
                 .hidden_short_help(true)
                 .help("Alias for '--no-ignore', and '--hidden' when given twice")
@@ -145,7 +175,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .overrides_with("absolute-path")
                 .help("Show absolute instead of relative paths")
                 .long_help(
-                    "Shows the full path starting from the root as opposed to relative paths.",
+                    "Shows the full path starting from the root as opposed to relative paths. \
+                     The flag can be overridden with --relative-path.",
+                ),
+        )
+        .arg(
+            Arg::with_name("relative-path")
+                .long("relative-path")
+                .overrides_with("absolute-path")
+                .hidden(true)
+                .long_help(
+                    "Overrides --absolute-path.",
                 ),
         )
         .arg(
@@ -170,7 +210,17 @@ pub fn build_app() -> App<'static, 'static> {
                 .help("Follow symbolic links")
                 .long_help(
                     "By default, fd does not descend into symlinked directories. Using this \
-                         flag, symbolic links are also traversed.",
+                         flag, symbolic links are also traversed. \
+                         Flag can be overriden with --no-follow.",
+                ),
+        )
+        .arg(
+            Arg::with_name("no-follow")
+                .long("no-follow")
+                .overrides_with("follow")
+                .hidden(true)
+                .long_help(
+                    "Overrides --follow.",
                 ),
         )
         .arg(
@@ -178,11 +228,12 @@ pub fn build_app() -> App<'static, 'static> {
                 .long("full-path")
                 .short("p")
                 .overrides_with("full-path")
-                .help("Search full path (default: file-/dirname only)")
+                .help("Search full abs. path (default: filename only)")
                 .long_help(
                     "By default, the search pattern is only matched against the filename (or \
-                         directory name). Using this flag, the pattern is matched against the \
-                         full path.",
+                      directory name). Using this flag, the pattern is matched against the full \
+                      (absolute) path. Example:\n  \
+                        fd --glob -p '**/.git/config'",
                 ),
         )
         .arg(
@@ -249,7 +300,8 @@ pub fn build_app() -> App<'static, 'static> {
                 .conflicts_with_all(&["size", "exact-depth"])
                 .hidden_short_help(true)
                 .help("Do not traverse into matching directories")
-                .long_help("Do not traverse into matching directories.")
+                .long_help("Do not traverse into directories that match the search criteria. If \
+                    you want to exclude specific directories, use the '--exclude=…' option.")
         )
         .arg(
             Arg::with_name("file-type")
@@ -281,14 +333,36 @@ pub fn build_app() -> App<'static, 'static> {
                          empty (e), socket (s), pipe (p)",
                 )
                 .long_help(
-                    "Filter the search by type (multiple allowable filetypes can be specified):\n  \
+                    "Filter the search by type:\n  \
                        'f' or 'file':         regular files\n  \
                        'd' or 'directory':    directories\n  \
                        'l' or 'symlink':      symbolic links\n  \
-                       'x' or 'executable':   executables\n  \
-                       'e' or 'empty':        empty files or directories\n  \
                        's' or 'socket':       socket\n  \
-                       'p' or 'pipe':         named pipe (FIFO)",
+                       'p' or 'pipe':         named pipe (FIFO)\n\n  \
+                       'x' or 'executable':   executables\n  \
+                       'e' or 'empty':        empty files or directories\n\n\
+                     This option can be specified more than once to include multiple file types. \
+                     Searching for '--type file --type symlink' will show both regular files as \
+                     well as symlinks. Note that the 'executable' and 'empty' filters work differently: \
+                     '--type executable' implies '--type file' by default. And '--type empty' searches \
+                     for empty files and directories, unless either '--type file' or '--type directory' \
+                     is specified in addition.\n\n\
+                     Examples:\n  \
+                       - Only search for files:\n      \
+                           fd --type file …\n      \
+                           fd -tf …\n  \
+                       - Find both files and symlinks\n      \
+                           fd --type file --type symlink …\n      \
+                           fd -tf -tl …\n  \
+                       - Find executable files:\n      \
+                           fd --type executable\n      \
+                           fd -tx\n  \
+                       - Find empty files:\n      \
+                           fd --type empty --type file\n      \
+                           fd -te -tf\n  \
+                       - Find empty directories:\n      \
+                           fd --type empty --type directory\n      \
+                           fd -te -td"
                 ),
         )
         .arg(
@@ -364,6 +438,21 @@ pub fn build_app() -> App<'static, 'static> {
                            fd -e rs -X wc -l\
                      "
                 ),
+        )
+        .arg(
+            Arg::with_name("batch-size")
+            .long("batch-size")
+            .takes_value(true)
+            .value_name("size")
+            .hidden_short_help(true)
+            .requires("exec-batch")
+            .help("Max number of arguments to run as a batch with -X")
+            .long_help(
+                "Maximum number of arguments to pass to the command given with -X. \
+                If the number of results is greater than the given size, \
+                the command given with -X is run again with remaining arguments. \
+                A batch size of zero means there is no limit.",
+            ),
         )
         .arg(
             Arg::with_name("exclude")

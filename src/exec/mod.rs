@@ -10,7 +10,7 @@ use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
 use anyhow::{anyhow, Result};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
@@ -71,9 +71,8 @@ impl CommandTemplate {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        lazy_static! {
-            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
-        }
+        static PLACEHOLDER_PATTERN: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
 
         let mut args = Vec::new();
         let mut has_placeholder = false;

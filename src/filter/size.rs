@@ -1,9 +1,8 @@
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
-lazy_static! {
-    static ref SIZE_CAPTURES: Regex = Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap();
-}
+static SIZE_CAPTURES: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SizeFilter {

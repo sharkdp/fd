@@ -85,6 +85,10 @@ pub struct Config {
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandTemplate>>,
 
+    /// Maximum number of search results to pass to each `command`. If zero, the number is
+    /// unlimited.
+    pub batch_size: usize,
+
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
 
