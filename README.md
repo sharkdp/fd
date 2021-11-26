@@ -194,9 +194,9 @@ fd … -X ls -lhd --color=always
 This pattern is so useful that `fd` provides a shortcut. You can use the `-l`/`--list-details`
 option to execute `ls` in this way: `fd … -l`.
 
-Another example of the `-X` option can be shown with `rg`, using all the search results as arguments:
+The `-X` option is also useful when combining `fd` with [ripgrep](https://github.com/BurntSushi/ripgrep/) (`rg`) in order to search within a certain class of files, like all C++ source files:
 ```bash
-fd … -X rg -i target
+fd -e cpp -e cxx -e h -e hpp -X rg 'std::cout'
 ```
 
 Convert all `*.jpg` files to `*.png` files:
