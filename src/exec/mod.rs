@@ -19,7 +19,6 @@ use self::command::execute_command;
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
 use self::token::Token;
-use crate::filesystem::strip_current_dir;
 
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -73,7 +72,7 @@ impl CommandTemplate {
         S: AsRef<str>,
     {
         lazy_static! {
-            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//|-|//-)\}").unwrap();
+            static ref PLACEHOLDER_PATTERN: Regex = Regex::new(r"\{(/?\.?|//)\}").unwrap();
         }
 
         let mut args = Vec::new();
@@ -99,8 +98,6 @@ impl CommandTemplate {
                     "{/}" => tokens.push(Token::Basename),
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
-                    "{-}" => tokens.push(Token::StripPrefix),
-                    "{//-}" => tokens.push(Token::ParentStripPrefix),
                     _ => unreachable!("Unhandled placeholder"),
                 }
 
@@ -233,14 +230,6 @@ impl ArgumentTemplate {
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
                         Placeholder => {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
-                        }
-                        StripPrefix => {
-                            let path = strip_current_dir(path);
-                            s.push(Self::replace_separator(path.as_ref(), path_separator))
-                        }
-                        ParentStripPrefix => {
-                            let path = strip_current_dir(path);
-                            s.push(Self::replace_separator(&dirname(path), path_separator))
                         }
                         Text(ref string) => s.push(string),
                     }

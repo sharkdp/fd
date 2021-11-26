@@ -1363,16 +1363,6 @@ fn test_exec() {
         );
 
         te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "./e1 e2.");
-
-        te.assert_output(
-            &["foo", "--exec", "echo", "{-}"],
-            "a.foo
-            one/b.foo
-            one/two/C.Foo2
-            one/two/c.foo
-            one/two/three/d.foo
-            one/two/three/directory_foo",
-        );
     }
 }
 
