@@ -300,8 +300,7 @@ FLAGS:
     -a, --absolute-path     Show absolute instead of relative paths
     -l, --list-details      Use a long listing format with file metadata
     -L, --follow            Follow symbolic links
-    -p, --full-path         Search full path (default: file-/dirname only)
-    -0, --print0            Separate results by the null character
+    -p, --full-path         Search full abs. path (default: filename only)
     -h, --help              Prints help information
     -V, --version           Prints version information
 
@@ -314,12 +313,13 @@ OPTIONS:
     -X, --exec-batch <cmd>             Execute a command with all search results at once
     -E, --exclude <pattern>...         Exclude entries that match the given glob pattern
     -c, --color <when>                 When to use colors: never, *auto*, always
-    -S, --size <size>...               Limit results based on the size of files.
+    -S, --size <size>...               Limit results based on the size of files
         --changed-within <date|dur>    Filter by file modification time (newer than)
         --changed-before <date|dur>    Filter by file modification time (older than)
+    -o, --owner <user:group>           Filter by owning user and/or group
 
 ARGS:
-    <pattern>    the search pattern - a regular expression unless '--glob' is used (optional)
+    <pattern>    the search pattern (a regular expression, unless '--glob' is used; optional)
     <path>...    the root directory for the filesystem search (optional)
 ```
 
