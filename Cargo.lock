@@ -157,7 +157,7 @@ dependencies = [
 
 [[package]]
 name = "fd-find"
-version = "8.2.1"
+version = "8.3.0"
 dependencies = [
  "ansi_term 0.12.1",
  "anyhow",
