@@ -2,9 +2,27 @@
 
 ## Performance improvements
 
+## Features
+
+## Bugfixes
+
+## Changes
+
+## Other
+
+
+
+# v8.3.0
+
+## Performance improvements
+
+- Colorized output is now significantly faster, see #720 and #853 (@tavianator)
+- Writing to stdout is now buffered if the output does not go to a TTY. This increases performance
+  when the output of `fd` is piped to another program or to a file, see #885 (@tmccombs, original
+  implementation by @sourlemon207)
 - File metadata is now cached between the different filters that require it (e.g. `--owner`,
   `--size`), reducing the number of `stat` syscalls when multiple filters are used; see #863
-- Colorized output is now significantly faster, see #720 and #853 (@tavianator)
+  (@tavianator, original implementation by @alexmaco)
 
 ## Features
 
@@ -15,7 +33,6 @@
 - Add opposing command-line options, see #595 (@Asha20)
 - Add support for more filesystem indicators in `LS_COLORS`, see
   https://github.com/sharkdp/lscolors/pull/35 (@tavianator)
-- Buffer writing to stdout if stdout is not a TTY, to improve performance.
 
 ## Bugfixes
 
@@ -37,6 +54,7 @@
 ## Other
 
 - Many documentation updates
+
 
 # v8.2.1
 
