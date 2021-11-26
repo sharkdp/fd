@@ -14,6 +14,7 @@
 
 ## Bugfixes
 
+- Always show the `./` prefix for search results unless the output is a TTY or `--strip-cwd-prefix` is set, see #760 and #861 (@jcaplan)
 - Set default path separator to `/` in MSYS, see #537 and #730 (@aswild)
 - fd cannot search files under a RAM disk, see #752
 - fd doesn't show substituted drive on Windows, see #365
@@ -26,7 +27,6 @@
 ## Changes
 
 - Apply custom `--path-separator` to commands run with `--exec(-batch)` and `--list-details`, see #697 (@aswild)
-- Show "./" prefix in results when search path is provided, see #861 (@jcaplan)
 
 ## Other
 
