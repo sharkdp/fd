@@ -15,7 +15,7 @@ use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
 
 use crate::config::Config;
-use crate::entry::DirEntry;
+use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};

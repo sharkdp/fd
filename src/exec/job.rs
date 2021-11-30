@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use crossbeam_channel::Receiver;
 
-use crate::entry::DirEntry;
+use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::walk::WorkerResult;

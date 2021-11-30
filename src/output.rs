@@ -6,7 +6,7 @@ use lscolors::{Indicator, LsColors, Style};
 use once_cell::sync::Lazy;
 
 use crate::config::Config;
-use crate::entry::DirEntry;
+use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
