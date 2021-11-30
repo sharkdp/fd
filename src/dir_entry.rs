@@ -37,6 +37,13 @@ impl DirEntry {
         }
     }
 
+    pub fn into_path(self) -> PathBuf {
+        match self.inner {
+            DirEntryInner::Normal(e) => e.into_path(),
+            DirEntryInner::BrokenSymlink(p) => p,
+        }
+    }
+
     pub fn file_type(&self) -> Option<FileType> {
         match &self.inner {
             DirEntryInner::Normal(e) => e.file_type(),

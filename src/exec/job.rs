@@ -26,8 +26,8 @@ pub fn job(
 
         // Obtain the next result from the receiver, else if the channel
         // has closed, exit from the loop
-        let value: DirEntry = match lock.recv() {
-            Ok(WorkerResult::Entry(val)) => val,
+        let dir_entry: DirEntry = match lock.recv() {
+            Ok(WorkerResult::Entry(dir_entry)) => dir_entry,
             Ok(WorkerResult::Error(err)) => {
                 if show_filesystem_errors {
                     print_error(err.to_string());
@@ -40,7 +40,11 @@ pub fn job(
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
         // Generate a command, execute it and store its exit code.
-        results.push(cmd.generate_and_execute(value.path(), Arc::clone(&out_perm), buffer_output))
+        results.push(cmd.generate_and_execute(
+            dir_entry.path(),
+            Arc::clone(&out_perm),
+            buffer_output,
+        ))
     }
     // Returns error in case of any error.
     merge_exitcodes(results)
@@ -53,15 +57,17 @@ pub fn batch(
     buffer_output: bool,
     limit: usize,
 ) -> ExitCode {
-    let paths = rx.iter().filter_map(|value| match value {
-        WorkerResult::Entry(val) => Some(val.path().to_owned()),
-        WorkerResult::Error(err) => {
-            if show_filesystem_errors {
-                print_error(err.to_string());
+    let paths = rx
+        .into_iter()
+        .filter_map(|worker_result| match worker_result {
+            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_path()),
+            WorkerResult::Error(err) => {
+                if show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                None
             }
-            None
-        }
-    });
+        });
     if limit == 0 {
         // no limit
         return cmd.generate_and_execute_batch(paths, buffer_output);
