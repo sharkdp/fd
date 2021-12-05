@@ -134,11 +134,19 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
 
     let parallel_walker = walker.threads(config.threads).build_parallel();
 
-    let wants_to_quit = Arc::new(AtomicBool::new(false));
+    // Flag for cleanly shutting down the parallel walk
+    let quit_flag = Arc::new(AtomicBool::new(false));
+    // Flag specifically for quitting due to ^C
+    let interrupt_flag = Arc::new(AtomicBool::new(false));
+
     if config.ls_colors.is_some() && config.command.is_none() {
-        let wq = Arc::clone(&wants_to_quit);
+        let quit_flag = Arc::clone(&quit_flag);
+        let interrupt_flag = Arc::clone(&interrupt_flag);
+
         ctrlc::set_handler(move || {
-            if wq.fetch_or(true, Ordering::Relaxed) {
+            quit_flag.store(true, Ordering::Relaxed);
+
+            if interrupt_flag.fetch_or(true, Ordering::Relaxed) {
                 // Ctrl-C has been pressed twice, exit NOW
                 ExitCode::KilledBySigint.exit();
             }
@@ -147,15 +155,15 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     }
 
     // Spawn the thread that receives all results through the channel.
-    let receiver_thread = spawn_receiver(&config, &wants_to_quit, rx);
+    let receiver_thread = spawn_receiver(&config, &quit_flag, &interrupt_flag, rx);
 
     // Spawn the sender threads.
-    spawn_senders(&config, &wants_to_quit, pattern, parallel_walker, tx);
+    spawn_senders(&config, &quit_flag, pattern, parallel_walker, tx);
 
     // Wait for the receiver thread to print out all results.
     let exit_code = receiver_thread.join().unwrap();
 
-    if wants_to_quit.load(Ordering::Relaxed) {
+    if interrupt_flag.load(Ordering::Relaxed) {
         Ok(ExitCode::KilledBySigint)
     } else {
         Ok(exit_code)
@@ -166,8 +174,10 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
 struct ReceiverBuffer<W> {
     /// The configuration.
     config: Arc<Config>,
+    /// For shutting down the senders.
+    quit_flag: Arc<AtomicBool>,
     /// The ^C notifier.
-    wants_to_quit: Arc<AtomicBool>,
+    interrupt_flag: Arc<AtomicBool>,
     /// Receiver for worker results.
     rx: Receiver<WorkerResult>,
     /// Standard output.
@@ -186,7 +196,8 @@ impl<W: Write> ReceiverBuffer<W> {
     /// Create a new receiver buffer.
     fn new(
         config: Arc<Config>,
-        wants_to_quit: Arc<AtomicBool>,
+        quit_flag: Arc<AtomicBool>,
+        interrupt_flag: Arc<AtomicBool>,
         rx: Receiver<WorkerResult>,
         stdout: W,
     ) -> Self {
@@ -195,7 +206,8 @@ impl<W: Write> ReceiverBuffer<W> {
 
         Self {
             config,
-            wants_to_quit,
+            quit_flag,
+            interrupt_flag,
             rx,
             stdout,
             mode: ReceiverMode::Buffering,
@@ -209,6 +221,7 @@ impl<W: Write> ReceiverBuffer<W> {
     fn process(&mut self) -> ExitCode {
         loop {
             if let Err(ec) = self.poll() {
+                self.quit_flag.store(true, Ordering::Relaxed);
                 return ec;
             }
         }
@@ -276,7 +289,7 @@ impl<W: Write> ReceiverBuffer<W> {
     fn print(&mut self, path: &Path) -> Result<(), ExitCode> {
         output::print_entry(&mut self.stdout, path, &self.config);
 
-        if self.wants_to_quit.load(Ordering::Relaxed) {
+        if self.interrupt_flag.load(Ordering::Relaxed) {
             // Ignore any errors on flush, because we're about to exit anyway
             let _ = self.flush();
             return Err(ExitCode::KilledBySigint);
@@ -323,11 +336,13 @@ impl<W: Write> ReceiverBuffer<W> {
 
 fn spawn_receiver(
     config: &Arc<Config>,
-    wants_to_quit: &Arc<AtomicBool>,
+    quit_flag: &Arc<AtomicBool>,
+    interrupt_flag: &Arc<AtomicBool>,
     rx: Receiver<WorkerResult>,
 ) -> thread::JoinHandle<ExitCode> {
     let config = Arc::clone(config);
-    let wants_to_quit = Arc::clone(wants_to_quit);
+    let quit_flag = Arc::clone(quit_flag);
+    let interrupt_flag = Arc::clone(interrupt_flag);
 
     let show_filesystem_errors = config.show_filesystem_errors;
     let threads = config.threads;
@@ -383,7 +398,7 @@ fn spawn_receiver(
             let stdout = stdout.lock();
             let stdout = io::BufWriter::new(stdout);
 
-            let mut rxbuffer = ReceiverBuffer::new(config, wants_to_quit, rx, stdout);
+            let mut rxbuffer = ReceiverBuffer::new(config, quit_flag, interrupt_flag, rx, stdout);
             rxbuffer.process()
         }
     })
@@ -447,7 +462,7 @@ impl DirEntry {
 
 fn spawn_senders(
     config: &Arc<Config>,
-    wants_to_quit: &Arc<AtomicBool>,
+    quit_flag: &Arc<AtomicBool>,
     pattern: Arc<Regex>,
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
@@ -456,10 +471,10 @@ fn spawn_senders(
         let config = Arc::clone(config);
         let pattern = Arc::clone(&pattern);
         let tx_thread = tx.clone();
-        let wants_to_quit = Arc::clone(wants_to_quit);
+        let quit_flag = Arc::clone(quit_flag);
 
         Box::new(move |entry_o| {
-            if wants_to_quit.load(Ordering::Relaxed) {
+            if quit_flag.load(Ordering::Relaxed) {
                 return ignore::WalkState::Quit;
             }
 
