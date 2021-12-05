@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use lscolors::{Indicator, LsColors, Style};
 
@@ -15,12 +14,7 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 }
 
 // TODO: this function is performance critical and can probably be optimized
-pub fn print_entry<W: Write>(
-    stdout: &mut W,
-    entry: &Path,
-    config: &Config,
-    wants_to_quit: &AtomicBool,
-) {
+pub fn print_entry<W: Write>(stdout: &mut W, entry: &Path, config: &Config) {
     let path = if config.strip_cwd_prefix {
         strip_current_dir(entry)
     } else {
@@ -28,7 +22,7 @@ pub fn print_entry<W: Write>(
     };
 
     let r = if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(stdout, path, config, ls_colors, wants_to_quit)
+        print_entry_colorized(stdout, path, config, ls_colors)
     } else {
         print_entry_uncolorized(stdout, path, config)
     };
@@ -50,7 +44,6 @@ fn print_entry_colorized<W: Write>(
     path: &Path,
     config: &Config,
     ls_colors: &LsColors,
-    wants_to_quit: &AtomicBool,
 ) -> io::Result<()> {
     // Split the path between the parent and the last component
     let mut offset = 0;
@@ -90,12 +83,6 @@ fn print_entry_colorized<W: Write>(
         write!(stdout, "\0")?;
     } else {
         writeln!(stdout)?;
-    }
-
-    if wants_to_quit.load(Ordering::Relaxed) {
-        // Ignore any errors on flush, because we're about to exit anyway
-        let _ = stdout.flush();
-        ExitCode::KilledBySigint.exit();
     }
 
     Ok(())

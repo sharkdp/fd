@@ -244,7 +244,7 @@ impl<W: Write> ReceiverBuffer<W> {
                         }
                     }
                     ReceiverMode::Streaming => {
-                        self.print(&path);
+                        self.print(&path)?;
                         self.flush()?;
                     }
                 }
@@ -273,8 +273,16 @@ impl<W: Write> ReceiverBuffer<W> {
     }
 
     /// Output a path.
-    fn print(&mut self, path: &Path) {
-        output::print_entry(&mut self.stdout, path, &self.config, &self.wants_to_quit)
+    fn print(&mut self, path: &Path) -> Result<(), ExitCode> {
+        output::print_entry(&mut self.stdout, path, &self.config);
+
+        if self.wants_to_quit.load(Ordering::Relaxed) {
+            // Ignore any errors on flush, because we're about to exit anyway
+            let _ = self.flush();
+            return Err(ExitCode::KilledBySigint);
+        }
+
+        Ok(())
     }
 
     /// Switch ourselves into streaming mode.
@@ -283,7 +291,7 @@ impl<W: Write> ReceiverBuffer<W> {
 
         let buffer = mem::take(&mut self.buffer);
         for path in buffer {
-            self.print(&path);
+            self.print(&path)?;
         }
 
         self.flush()
