@@ -598,12 +598,10 @@ fn spawn_senders(
             if !config.time_constraints.is_empty() {
                 let mut matched = false;
                 if let Some(metadata) = entry.metadata() {
-                    if let Ok(modified) = metadata.modified() {
-                        matched = config
-                            .time_constraints
-                            .iter()
-                            .all(|tf| tf.applies_to(&modified));
-                    }
+                    matched = config
+                        .time_constraints
+                        .iter()
+                        .all(|tf| tf.applies_to(metadata));
                 }
                 if !matched {
                     return ignore::WalkState::Continue;

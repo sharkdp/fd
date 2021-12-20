@@ -29,7 +29,7 @@ use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, TimeFilter};
+use crate::filter::{SizeFilter, TimeFilter, TimeFilterKind, TimeRange};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
@@ -512,27 +512,35 @@ fn extract_size_limits(matches: &clap::ArgMatches) -> Result<Vec<SizeFilter>> {
 }
 
 fn extract_time_constraints(matches: &clap::ArgMatches) -> Result<Vec<TimeFilter>> {
+    use TimeFilterKind::*;
+    use TimeRange::*;
     let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
-    if let Some(t) = matches.value_of("changed-within") {
-        if let Some(f) = TimeFilter::after(&now, t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
+    let make = |kind, dir, text| {
+        TimeFilter::new(kind, dir, text, &now).ok_or_else(|| {
+            anyhow!(
                 "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
+                text
+            )
+        })
+    };
+    if let Some(t) = matches.value_of("changed-within") {
+        time_constraints.push(make(Modified, After, t)?)
     }
     if let Some(t) = matches.value_of("changed-before") {
-        if let Some(f) = TimeFilter::before(&now, t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
+        time_constraints.push(make(Modified, Before, t)?);
+    }
+    if let Some(t) = matches.value_of("accessed-within") {
+        time_constraints.push(make(Accessed, After, t)?);
+    }
+    if let Some(t) = matches.value_of("accessed-before") {
+        time_constraints.push(make(Accessed, Before, t)?);
+    }
+    if let Some(t) = matches.value_of("created-within") {
+        time_constraints.push(make(Created, After, t)?);
+    }
+    if let Some(t) = matches.value_of("created-before") {
+        time_constraints.push(make(Created, Before, t)?);
     }
     Ok(time_constraints)
 }

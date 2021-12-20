@@ -594,6 +594,80 @@ pub fn build_app() -> App<'static, 'static> {
                 ),
         )
         .arg(
+            Arg::with_name("accessed-within")
+                .long("accessed-within")
+                .alias("accessed-after")
+                .alias("access-newer-than")
+                .takes_value(true)
+                .value_name("date|dur")
+                .number_of_values(1)
+                .help("Filter by file access time (newer than)")
+                .long_help(
+                    "Filter results based on the file access time. The argument can be provided \
+                     as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+                     If the time is not specified, it defaults to 00:00:00. \
+                     '--accessed-newer-than' or '--accessed-after' can be used as an alias.\n\
+                     Examples:\n    \
+                         --accessed-within 2weeks\n    \
+                         --access-newer-than '2018-10-27 10:00:00'",
+                ),
+        )
+        .arg(
+            Arg::with_name("accessed-before")
+                .long("accessed-before")
+                .alias("access-older-than")
+                .takes_value(true)
+                .value_name("date|dur")
+                .number_of_values(1)
+                .help("Filter by file access time (older than)")
+                .long_help(
+                    "Filter results based on the file access time. The argument can be provided \
+                     as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+                     If the time is not specified, it defaults to 00:00:00. \
+                     '--access-older-than' can be used as an alias.\n\
+                     Examples:\n    \
+                         --accessed-before 2weeks\n    \
+                         --access-older-than '2018-10-27 10:00:00'",
+                ),
+        )
+        .arg(
+            Arg::with_name("created-within")
+                .long("created-within")
+                .alias("created-after")
+                .alias("creation-newer-than")
+                .takes_value(true)
+                .value_name("date|dur")
+                .number_of_values(1)
+                .help("Filter by file creation time (newer than)")
+                .long_help(
+                    "Filter results based on the file creation time. The argument can be provided \
+                     as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+                     If the time is not specified, it defaults to 00:00:00. \
+                     '--creation-newer-than' or '--created-after' can be used as an alias.\n\
+                     Examples:\n    \
+                         --created-within 2weeks\n    \
+                         --creation-newer-than '2018-10-27 10:00:00'",
+                ),
+        )
+        .arg(
+            Arg::with_name("created-before")
+                .long("created-before")
+                .alias("creation-older-than")
+                .takes_value(true)
+                .value_name("date|dur")
+                .number_of_values(1)
+                .help("Filter by file creation time (older than)")
+                .long_help(
+                    "Filter results based on the file creation time. The argument can be provided \
+                     as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
+                     If the time is not specified, it defaults to 00:00:00. \
+                     '--creation-older-than' can be used as an alias.\n\
+                     Examples:\n    \
+                         --created-before 2weeks\n    \
+                         --creation-older-than '2018-10-27 10:00:00'",
+                ),
+        )
+        .arg(
             Arg::with_name("max-results")
                 .long("max-results")
                 .takes_value(true)
