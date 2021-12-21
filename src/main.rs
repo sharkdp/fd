@@ -260,10 +260,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         read_vcsignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-ignore-vcs")),
-        read_parent_ignore: !(matches.is_present("no-ignore")
-            || matches.is_present("rg-alias-hidden-ignore")
-            || matches.is_present("no-ignore-vcs")
-            || matches.is_present("no-ignore-parent")),
+        read_parent_ignore: !matches.is_present("no-ignore-parent"),
         read_global_ignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-global-ignore-file")),
