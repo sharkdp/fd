@@ -614,6 +614,22 @@ fn test_no_ignore_vcs() {
     );
 }
 
+/// Test that --no-ignore-vcs still respects .fdignored in parent directory
+#[test]
+fn test_no_ignore_vcs_child_dir() {
+    let te = TestEnv::new(
+        &["inner"],
+        &["inner/fdignored.foo", "inner/foo", "inner/gitignored.foo"],
+    );
+
+    te.assert_output_subdirectory(
+        "inner",
+        &["--no-ignore-vcs", "foo"],
+        "./foo
+        ./gitignored.foo",
+    );
+}
+
 /// Custom ignore files (--ignore-file)
 #[test]
 fn test_custom_ignore_files() {
