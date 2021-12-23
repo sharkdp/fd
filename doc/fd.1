@@ -66,6 +66,10 @@ git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
 The flag can be overridden with '--ignore-vcs'.
 .TP
+.B \-\-no\-ignore\-parent
+Show search results from files and directories that would otherwise be ignored by gitignore files in
+parent directories.
+.TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
 pattern contains an uppercase character (smart case).
@@ -125,6 +129,10 @@ can be used as an alias.
 .B \-\-show-errors
 Enable the display of filesystem errors for situations such as insufficient
 permissions or dead symlinks.
+.TP
+.B \-\-strip-cwd-prefix
+By default, relative paths are prefixed with './' when the output goes to a non interactive terminal
+(TTY). Use this flag to disable this behaviour.
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
 By default, fd will traverse the file system tree as far as other options dictate. With this flag, fd ensures that it does not descend into a different file system than the one it started in. Comparable to the -mount or -xdev filters of find(1).
@@ -393,7 +401,11 @@ Examples:
 
         fd -e rs -X wc -l
 .RE
-
+.TP
+.BI "\-\-batch-size " size
+Maximum number of arguments to pass to the command given with -X. If the number of results is
+greater than the given size, the command given with -X is run again with remaining arguments. A
+batch size of zero means there is no limit.
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 
