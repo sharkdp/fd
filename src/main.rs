@@ -74,12 +74,12 @@ fn run() -> Result<ExitCode> {
     let search_paths = extract_search_paths(&matches, current_directory)?;
 
     let pattern = extract_search_pattern(&matches)?;
-    ensure_search_pattern_is_not_a_path(&matches, pattern)?;
     let pattern_regex = build_pattern_regex(&matches, pattern)?;
 
     let config = construct_config(matches, &pattern_regex)?;
     ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regex)?;
     let re = build_regex(pattern_regex, &config)?;
+
     walk::scan(&search_paths, Arc::new(re), Arc::new(config))
 }
 
@@ -165,27 +165,6 @@ fn update_to_absolute_paths(search_paths: &mut [PathBuf]) {
     }
 }
 
-/// Detect if the user accidentally supplied a path instead of a search pattern
-fn ensure_search_pattern_is_not_a_path(matches: &clap::ArgMatches, pattern: &str) -> Result<()> {
-    if !matches.is_present("full-path")
-        && pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(pattern).is_dir()
-    {
-        Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
-             and will not lead to any search results.\n\n\
-             If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
-             fd . '{pattern}'\n\n\
-             Instead, if you want your pattern to match the full file path, use:\n\n  \
-             fd --full-path '{pattern}'",
-            pattern = pattern,
-            sep = std::path::MAIN_SEPARATOR,
-        ))
-    } else {
-        Ok(())
-    }
-}
-
 fn build_pattern_regex(matches: &clap::ArgMatches, pattern: &str) -> Result<String> {
     Ok(if matches.is_present("glob") && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
@@ -223,6 +202,11 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
     check_path_separator_length(path_separator.as_deref())?;
 
+    // Search full path if the pattern contains a path separator, even if the flag was not set.
+    // But only do so for hand-written patterns.
+    let search_full_path = matches.is_present("full-path")
+        || (!matches.is_present("glob") && pattern_regex.contains(std::path::MAIN_SEPARATOR));
+
     let size_limits = extract_size_limits(&matches)?;
     let time_constraints = extract_time_constraints(&matches)?;
     #[cfg(unix)]
@@ -254,7 +238,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
 
     Ok(Config {
         case_sensitive,
-        search_full_path: matches.is_present("full-path"),
+        search_full_path,
         ignore_hidden: !(matches.is_present("hidden")
             || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
         read_fdignore: !(matches.is_present("no-ignore")

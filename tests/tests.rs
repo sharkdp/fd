@@ -373,6 +373,26 @@ fn test_regex_overrides_glob() {
     te.assert_output(&["--glob", "--regex", "Foo2$"], "./one/two/C.Foo2");
 }
 
+/// Make sure `--full-path` switches on on its own
+#[test]
+fn test_full_path_switches_on_by_input_with_separators() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &[
+            // No `--full-path` flag given,
+            // but the search pattern contains a path separator.
+            "e/t",
+        ],
+        "./one/two
+        ./one/two/C.Foo2
+        ./one/two/c.foo
+        ./one/two/three
+        ./one/two/three/d.foo
+        ./one/two/three/directory_foo",
+    );
+}
+
 /// Full path search (--full-path)
 #[test]
 fn test_full_path() {
