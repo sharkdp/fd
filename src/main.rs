@@ -205,7 +205,9 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
     // Search full path if the pattern contains a path separator, even if the flag was not set.
     // But only do so for hand-written patterns.
     let search_full_path = matches.is_present("full-path")
-        || (!matches.is_present("glob") && pattern_regex.contains(std::path::MAIN_SEPARATOR));
+        || (cfg!(unix)
+            && !matches.is_present("glob")
+            && pattern_regex.contains(std::path::MAIN_SEPARATOR));
 
     let size_limits = extract_size_limits(&matches)?;
     let time_constraints = extract_time_constraints(&matches)?;

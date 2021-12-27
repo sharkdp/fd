@@ -374,6 +374,7 @@ fn test_regex_overrides_glob() {
 }
 
 /// Make sure `--full-path` switches on on its own
+#[cfg(not(windows))] // TODO: make this work on Windows
 #[test]
 fn test_full_path_switches_on_by_input_with_separators() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
