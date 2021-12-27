@@ -6,6 +6,8 @@
 
 ## Bugfixes
 
+- Stop implying `--no-ignore-parent` when `--no-vcs-ignore` is supplied, see #907, #901
+
 ## Changes
 
 ## Other
