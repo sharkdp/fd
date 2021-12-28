@@ -1,7 +1,6 @@
 use std::path::PathBuf;
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-
-use crossbeam_channel::Receiver;
 
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
