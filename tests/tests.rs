@@ -1420,12 +1420,12 @@ fn test_exec_batch() {
 
         te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo", "{/}", ";", "-x", "echo"],
-            "error: The argument '--exec <cmd>' cannot be used with '--exec-batch <cmd>'",
+            "error: The argument '--exec-batch <cmd>...' cannot be used with '--exec <cmd>...'",
         );
 
         te.assert_failure_with_error(
             &["foo", "--exec-batch"],
-            "error: The argument '--exec-batch <cmd>' requires a value but none was supplied",
+            "error: The argument '--exec-batch <cmd>...' requires a value but none was supplied",
         );
 
         te.assert_failure_with_error(
