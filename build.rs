@@ -7,7 +7,7 @@ use Shell::*;
 include!("src/app.rs");
 
 fn main() {
-    let min_version = "1.53";
+    let min_version = "1.54";
 
     match version_check::is_min_version(min_version) {
         Some(true) => {}

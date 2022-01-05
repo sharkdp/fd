@@ -652,7 +652,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.53.0* or later is required.
+Note that rust version *1.54.0* or later is required.
 
 `make` is also needed for the build.
 
