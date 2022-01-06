@@ -6,9 +6,16 @@
 
 ## Bugfixes
 
-- Stop implying `--no-ignore-parent` when `--no-vcs-ignore` is supplied, see #907, #901
+- Stop implying `--no-ignore-parent` when `--no-vcs-ignore` is supplied, see #907, #901, #908 (@tmccombs)
+- fd no longer waits for the whole traversal if the only matches arrive within max_buffer_time, see #868 and #895 (@tavianator)
+- `--max-results=1` now immediately quits after the first result, see #867
+- `fd -h` does not panic anymore when stdout is closed, see #897
 
 ## Changes
+
+- Disable jemalloc on FreeBSD, see #896 (@xanderio)
+- Updated man page, see #912 (@rlue)
+- Updated zsh completions, see #932 (@tmccombs)
 
 ## Other
 
