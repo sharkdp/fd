@@ -2,7 +2,22 @@
 
 ## Performance improvements
 
+
 ## Features
+
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
+
+
+
+# v8.3.1
 
 ## Bugfixes
 
@@ -16,9 +31,6 @@
 - Disable jemalloc on FreeBSD, see #896 (@xanderio)
 - Updated man page, see #912 (@rlue)
 - Updated zsh completions, see #932 (@tmccombs)
-
-## Other
-
 
 
 # v8.3.0
