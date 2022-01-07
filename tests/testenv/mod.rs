@@ -203,6 +203,19 @@ impl TestEnv {
         output
     }
 
+    pub fn assert_success_and_get_normalized_output<P: AsRef<Path>>(
+        &self,
+        path: P,
+        args: &[&str],
+    ) -> String {
+        let output = self.assert_success_and_get_output(path, args);
+        normalize_output(
+            &String::from_utf8_lossy(&output.stdout),
+            false,
+            self.normalize_line,
+        )
+    }
+
     /// Assert that calling *fd* with the specified arguments produces the expected output.
     pub fn assert_output(&self, args: &[&str], expected: &str) {
         self.assert_output_subdirectory(".", args, expected)
@@ -224,15 +237,9 @@ impl TestEnv {
         args: &[&str],
         expected: &str,
     ) {
-        let output = self.assert_success_and_get_output(path, args);
-
         // Normalize both expected and actual output.
         let expected = normalize_output(expected, true, self.normalize_line);
-        let actual = normalize_output(
-            &String::from_utf8_lossy(&output.stdout),
-            false,
-            self.normalize_line,
-        );
+        let actual = self.assert_success_and_get_normalized_output(path, args);
 
         // Compare actual output to expected output.
         if expected != actual {
