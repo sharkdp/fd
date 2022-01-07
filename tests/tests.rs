@@ -1970,8 +1970,8 @@ fn test_opposing(flag: &str, opposing_flags: &[&str]) {
 
     let mut flags = vec![flag];
     flags.extend_from_slice(opposing_flags);
-    let out_no_flags = te.assert_success_and_get_output(".", &[]);
-    let out_opposing_flags = te.assert_success_and_get_output(".", &flags);
+    let out_no_flags = te.assert_success_and_get_normalized_output(".", &[]);
+    let out_opposing_flags = te.assert_success_and_get_normalized_output(".", &flags);
 
     assert_eq!(
         out_no_flags,
