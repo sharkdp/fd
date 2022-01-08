@@ -130,6 +130,17 @@ fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
     lines.join("\n")
 }
 
+/// Trim whitespace from the beginning of each line.
+fn trim_lines(s: &str) -> String {
+    s.lines()
+        .map(|line| line.trim_start())
+        .fold(String::new(), |mut str, line| {
+            str.push_str(line);
+            str.push('\n');
+            str
+        })
+}
+
 impl TestEnv {
     pub fn new(directories: &[&'static str], files: &[&'static str]) -> TestEnv {
         let temp_dir = create_working_directory(directories, files).expect("working directory");
@@ -287,12 +298,8 @@ impl TestEnv {
 
         if let Some(expected) = expected {
             // Normalize both expected and actual output.
-            let expected_error = normalize_output(expected, true, self.normalize_line);
-            let actual_err = normalize_output(
-                &String::from_utf8_lossy(&output.stderr),
-                false,
-                self.normalize_line,
-            );
+            let expected_error = trim_lines(expected);
+            let actual_err = trim_lines(&String::from_utf8_lossy(&output.stderr));
 
             // Compare actual output to expected output.
             if !actual_err.trim_start().starts_with(&expected_error) {
