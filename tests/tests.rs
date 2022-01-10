@@ -758,9 +758,16 @@ fn test_follow_broken_symlink() {
 
     te.assert_output(
         &["--follow", "--type", "symlink", "symlink"],
-        "./broken_symlink",
+        "./broken_symlink\n./symlink",
     );
     te.assert_output(&["--follow", "--type", "file", "symlink"], "");
+}
+
+#[test]
+fn test_follow_symlink() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--type", "symlink", "--follow"], "./symlink");
 }
 
 /// Null separator (--print0)

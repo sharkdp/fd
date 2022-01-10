@@ -15,10 +15,11 @@ pub struct FileTypes {
 
 impl FileTypes {
     pub fn should_ignore(&self, entry: &walk::DirEntry) -> bool {
+        let is_symlink = entry.is_symlink();
         if let Some(ref entry_type) = entry.file_type() {
-            (!self.files && entry_type.is_file())
-                || (!self.directories && entry_type.is_dir())
-                || (!self.symlinks && entry_type.is_symlink())
+            (!self.files && entry_type.is_file() && !is_symlink)
+                || (!self.directories && entry_type.is_dir() && !is_symlink)
+                || (!self.symlinks && is_symlink)
                 || (!self.sockets && filesystem::is_socket(*entry_type))
                 || (!self.pipes && filesystem::is_pipe(*entry_type))
                 || (self.executables_only

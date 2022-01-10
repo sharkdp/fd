@@ -447,6 +447,13 @@ impl DirEntry {
         }
     }
 
+    pub fn is_symlink(&self) -> bool {
+        match &self.inner {
+            DirEntryInner::Normal(e) => e.path_is_symlink(),
+            DirEntryInner::BrokenSymlink(_) => true,
+        }
+    }
+
     pub fn metadata(&self) -> Option<&Metadata> {
         self.metadata
             .get_or_init(|| match &self.inner {
