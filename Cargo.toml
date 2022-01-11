@@ -50,6 +50,7 @@ dirs-next = "2.0"
 normpath = "0.3.2"
 chrono = "0.4"
 once_cell = "1.9.0"
+flume = "0.10.10"
 
 [dependencies.clap]
 version = "3.0"

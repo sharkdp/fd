@@ -4,13 +4,13 @@ use std::io;
 use std::mem;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
+use flume::{unbounded, Receiver, RecvTimeoutError, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use once_cell::unsync::OnceCell;
@@ -55,7 +55,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = channel();
+    let (tx, rx) = unbounded();
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
