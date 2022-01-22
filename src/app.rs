@@ -411,6 +411,11 @@ pub fn build_app() -> App<'static> {
                            fd -e jpg -x convert {} {.}.png\
                     ",
                 ),
+        ).arg(
+            Arg::new("dry-run")
+                .long("--dry-run")
+                .requires("exec")
+                .help("Print the commands to be executed without executing them"),
         )
         .arg(
             Arg::new("exec-batch")

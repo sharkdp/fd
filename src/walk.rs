@@ -350,6 +350,7 @@ fn spawn_receiver(
 
     let show_filesystem_errors = config.show_filesystem_errors;
     let threads = config.threads;
+    let dry_run = config.dry_run;
     // This will be used to check if output should be buffered when only running a single thread
     let enable_output_buffering: bool = threads > 1;
     thread::spawn(move || {
@@ -362,6 +363,7 @@ fn spawn_receiver(
                     show_filesystem_errors,
                     enable_output_buffering,
                     config.batch_size,
+                    dry_run,
                 )
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
@@ -383,6 +385,7 @@ fn spawn_receiver(
                             out_perm,
                             show_filesystem_errors,
                             enable_output_buffering,
+                            dry_run,
                         )
                     });
 

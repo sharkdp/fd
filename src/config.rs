@@ -85,6 +85,9 @@ pub struct Config {
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandTemplate>>,
 
+    /// Whether to print commands instead of executing them for testing
+    pub dry_run: bool,
+
     /// Maximum number of search results to pass to each `command`. If zero, the number is
     /// unlimited.
     pub batch_size: usize,

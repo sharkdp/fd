@@ -2,7 +2,7 @@ mod testenv;
 
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use test_case::test_case;
 
@@ -1380,6 +1380,110 @@ fn test_exec() {
         );
 
         te.assert_output(&["e1", "--exec", "printf", "%s.%s\n"], "./e1 e2.");
+    }
+}
+
+/// Shell script execution (--exec)
+#[test]
+fn test_exec_dry_run() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
+    if !cfg!(windows) {
+        te.assert_output(
+            &["--absolute-path", "--dry-run", "foo", "--exec", "rm"],
+            &format!(
+                "rm {abs_path}/a.foo
+                rm {abs_path}/one/b.foo
+                rm {abs_path}/one/two/C.Foo2
+                rm {abs_path}/one/two/c.foo
+                rm {abs_path}/one/two/three/d.foo
+                rm {abs_path}/one/two/three/directory_foo",
+                abs_path = &abs_path
+            ),
+        );
+
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
+
+        te.assert_output(
+            &["foo", "--dry-run", "--exec", "rm", "{}"],
+            "rm ./a.foo
+            rm ./one/b.foo
+            rm ./one/two/C.Foo2
+            rm ./one/two/c.foo
+            rm ./one/two/three/d.foo
+            rm ./one/two/three/directory_foo",
+        );
+
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
+
+        te.assert_output(
+            &["foo", "--dry-run", "--exec", "rm", "{.}"],
+            "rm a
+            rm one/b
+            rm one/two/C
+            rm one/two/c
+            rm one/two/three/d
+            rm one/two/three/directory_foo",
+        );
+
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
+
+        te.assert_output(
+            &["foo", "--dry-run", "--exec", "rm", "{/}"],
+            "rm a.foo
+            rm b.foo
+            rm C.Foo2
+            rm c.foo
+            rm d.foo
+            rm directory_foo",
+        );
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
+
+        te.assert_output(
+            &["foo", "--dry-run", "--exec", "rm", "{/.}"],
+            "rm a
+            rm b
+            rm C
+            rm c
+            rm d
+            rm directory_foo",
+        );
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
+
+        te.assert_output(
+            &["foo", "--dry-run", "--exec", "rm", "{//}"],
+            "rm .
+            rm ./one
+            rm ./one/two
+            rm ./one/two
+            rm ./one/two/three
+            rm ./one/two/three",
+        );
+        // Make sure no files were actually created
+        for &file in DEFAULT_FILES {
+            let p = PathBuf::from(&abs_path).join(file);
+            assert!(p.exists(), "{:?}", p);
+        }
     }
 }
 

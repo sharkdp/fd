@@ -270,6 +270,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         one_file_system: matches.is_present("one-file-system"),
         null_separator: matches.is_present("null_separator"),
         quiet: matches.is_present("quiet"),
+        dry_run: matches.is_present("dry-run"),
         max_depth: matches
             .value_of("max-depth")
             .or_else(|| matches.value_of("rg-depth"))

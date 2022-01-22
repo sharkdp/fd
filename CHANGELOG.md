@@ -5,6 +5,7 @@
 
 ## Features
 
+- Add "--dry-run" option to print commands instead of executing when used with "--exec" to make tesing a bit easier (@savente93)
 
 ## Bugfixes
 

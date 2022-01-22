@@ -142,20 +142,26 @@ impl CommandTemplate {
         input: &Path,
         out_perm: Arc<Mutex<()>>,
         buffer_output: bool,
+        dry_run: bool,
     ) -> ExitCode {
         let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
         for arg in &self.args[1..] {
             cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
         }
 
-        execute_command(cmd, &out_perm, buffer_output)
+        execute_command(cmd, &out_perm, buffer_output, dry_run)
     }
 
     pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
     }
 
-    pub fn generate_and_execute_batch<I>(&self, paths: I, buffer_output: bool) -> ExitCode
+    pub fn generate_and_execute_batch<I>(
+        &self,
+        paths: I,
+        buffer_output: bool,
+        dry_run: bool,
+    ) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
@@ -183,7 +189,7 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()), buffer_output)
+            execute_command(cmd, &Mutex::new(()), buffer_output, dry_run)
         } else {
             ExitCode::Success
         }
