@@ -144,12 +144,18 @@ impl CommandTemplate {
         buffer_output: bool,
         dry_run: bool,
     ) -> ExitCode {
-        let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
+        let mut cmd = if dry_run {
+            let mut tmp = Command::new("echo");
+            tmp.arg(self.args[0].generate(&input, self.path_separator.as_deref()));
+            tmp
+        } else {
+            Command::new(self.args[0].generate(&input, self.path_separator.as_deref()))
+        };
         for arg in &self.args[1..] {
             cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
         }
 
-        execute_command(cmd, &out_perm, buffer_output, dry_run)
+        execute_command(cmd, &out_perm, buffer_output)
     }
 
     pub fn in_batch_mode(&self) -> bool {
@@ -165,7 +171,13 @@ impl CommandTemplate {
     where
         I: Iterator<Item = PathBuf>,
     {
-        let mut cmd = Command::new(self.args[0].generate("", None));
+        let mut cmd = if dry_run {
+            let mut tmp = Command::new("echo");
+            tmp.arg(self.args[0].generate("", self.path_separator.as_deref()));
+            tmp
+        } else {
+            Command::new(self.args[0].generate("", self.path_separator.as_deref()))
+        };
         cmd.stdin(Stdio::inherit());
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
@@ -189,7 +201,7 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()), buffer_output, dry_run)
+            execute_command(cmd, &Mutex::new(()), buffer_output)
         } else {
             ExitCode::Success
         }

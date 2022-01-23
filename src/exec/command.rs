@@ -11,26 +11,7 @@ pub fn execute_command(
     mut cmd: Command,
     out_perm: &Mutex<()>,
     enable_output_buffering: bool,
-    dry_run: bool,
 ) -> ExitCode {
-    if dry_run {
-        let _lock = out_perm.lock().unwrap();
-        let stdout = io::stdout();
-
-        let out = format!(
-            "{} {}\n",
-            cmd.get_program().to_str().unwrap_or_default(),
-            cmd.get_args()
-                .map(|arg| arg.to_str().unwrap_or_default())
-                .collect::<Vec<_>>()
-                .join(" ")
-        );
-
-        let _ = stdout.lock().write_all(out.as_bytes());
-
-        return ExitCode::Success;
-    }
-
     // Spawn the supplied command.
     let output = if enable_output_buffering {
         cmd.output()
