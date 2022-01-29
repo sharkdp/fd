@@ -46,11 +46,18 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v2
+
     - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
         default: true
+        components: clippy
+    - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --locked --all-targets --all-features
         profile: minimal # minimal component installation (ie, no documentation)
     - name: Run tests
       uses: actions-rs/cargo@v1
