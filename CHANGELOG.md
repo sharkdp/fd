@@ -8,7 +8,6 @@
 
 ## Bugfixes
 
-- Invalid absolute path on windows when searching from the drive root, see #931 and #936 (@gbarta)
 
 ## Changes
 
@@ -16,6 +15,11 @@
 ## Other
 
 
+# v8.3.2
+
+## Bugfixes
+
+- Invalid absolute path on windows when searching from the drive root, see #931 and #936 (@gbarta)
 
 
 # v8.3.1
