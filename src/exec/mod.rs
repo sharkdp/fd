@@ -202,12 +202,12 @@ impl CommandTemplate {
             cmd.arg(arg.generate(&input, path_separator));
         }
 
-        execute_command(cmd, &out_perm, buffer_output)
+        execute_command(cmd, out_perm, buffer_output)
     }
 
     fn generate_and_execute_batch(
         &self,
-        paths: &Vec<PathBuf>,
+        paths: &[PathBuf],
         path_separator: Option<&str>,
         buffer_output: bool,
     ) -> ExitCode {
@@ -459,10 +459,10 @@ mod tests {
             CommandSet::new_batch(vec![vec!["echo", "{.}"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::NoExt]),
-                ],
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::NoExt]),
+                    ],
                 }],
                 mode: ExecutionMode::Batch,
                 path_separator: None,
