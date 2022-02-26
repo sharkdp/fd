@@ -341,6 +341,9 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
+This option can be specified multiple times, in which case all commands are run for each
+file found, in the order they are provided. In that case, you must supply a ';' argument for
+all but the last commands.
 
 The following placeholders are substituted before the command is executed:
 .RS
@@ -393,6 +396,9 @@ basename without file extension
 .RE
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
+
+Like \-\-exec, this can be used multiple times, in which case each command will be run in
+the order given.
 
 Examples:
 
