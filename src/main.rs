@@ -112,7 +112,7 @@ fn ensure_current_directory_exists(current_directory: &Path) -> Result<()> {
     }
 }
 
-fn extract_search_pattern<'a>(matches: &'a clap::ArgMatches) -> Result<&'a str> {
+fn extract_search_pattern(matches: &clap::ArgMatches) -> Result<&'_ str> {
     let pattern = matches
         .value_of_os("pattern")
         .map(|p| {
