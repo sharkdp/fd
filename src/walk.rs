@@ -104,10 +104,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
             match result {
                 Some(ignore::Error::Partial(_)) => (),
                 Some(err) => {
-                    print_error(format!(
-                        "Malformed pattern in global ignore file. {}.",
-                        err.to_string()
-                    ));
+                    print_error(format!("Malformed pattern in global ignore file. {}.", err));
                 }
                 None => (),
             }
@@ -119,10 +116,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         match result {
             Some(ignore::Error::Partial(_)) => (),
             Some(err) => {
-                print_error(format!(
-                    "Malformed pattern in custom ignore file. {}.",
-                    err.to_string()
-                ));
+                print_error(format!("Malformed pattern in custom ignore file. {}.", err));
             }
             None => (),
         }
