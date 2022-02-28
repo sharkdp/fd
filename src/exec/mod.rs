@@ -15,7 +15,7 @@ use regex::Regex;
 
 use crate::exit_codes::ExitCode;
 
-use self::command::execute_command;
+use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
 use self::token::Token;
@@ -86,17 +86,14 @@ impl CommandSet {
         buffer_output: bool,
     ) -> ExitCode {
         let path_separator = self.path_separator.as_deref();
-        for cmd in &self.commands {
-            let exit =
-                cmd.generate_and_execute(input, path_separator, &mut out_perm, buffer_output);
-            if exit != ExitCode::Success {
-                return exit;
-            }
-        }
-        ExitCode::Success
+        let commands = self
+            .commands
+            .iter()
+            .map(|c| c.generate(input, path_separator));
+        execute_commands(commands, &mut out_perm, buffer_output)
     }
 
-    pub fn execute_batch<I>(&self, paths: I, buffer_output: bool) -> ExitCode
+    pub fn execute_batch<I>(&self, paths: I) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
@@ -104,7 +101,7 @@ impl CommandSet {
         let mut paths = paths.collect::<Vec<_>>();
         paths.sort();
         for cmd in &self.commands {
-            let exit = cmd.generate_and_execute_batch(&paths, path_separator, buffer_output);
+            let exit = cmd.generate_and_execute_batch(&paths, path_separator);
             if exit != ExitCode::Success {
                 return exit;
             }
@@ -189,27 +186,19 @@ impl CommandTemplate {
     /// Generates and executes a command.
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
-    /// build. Once all arguments have been processed, the command is executed.
-    fn generate_and_execute(
-        &self,
-        input: &Path,
-        path_separator: Option<&str>,
-        out_perm: &mut Arc<Mutex<()>>,
-        buffer_output: bool,
-    ) -> ExitCode {
+    /// build.
+    fn generate(&self, input: &Path, path_separator: Option<&str>) -> Command {
         let mut cmd = Command::new(self.args[0].generate(&input, path_separator));
         for arg in &self.args[1..] {
             cmd.arg(arg.generate(&input, path_separator));
         }
-
-        execute_command(cmd, out_perm, buffer_output)
+        cmd
     }
 
     fn generate_and_execute_batch(
         &self,
         paths: &[PathBuf],
         path_separator: Option<&str>,
-        buffer_output: bool,
     ) -> ExitCode {
         let mut cmd = Command::new(self.args[0].generate("", None));
         cmd.stdin(Stdio::inherit());
@@ -230,7 +219,10 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()), buffer_output)
+            match cmd.spawn().and_then(|mut c| c.wait()) {
+                Ok(_) => ExitCode::Success,
+                Err(e) => handle_cmd_error(&cmd, e),
+            }
         } else {
             ExitCode::Success
         }

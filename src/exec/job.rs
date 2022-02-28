@@ -49,7 +49,6 @@ pub fn batch(
     rx: Receiver<WorkerResult>,
     cmd: &CommandSet,
     show_filesystem_errors: bool,
-    buffer_output: bool,
     limit: usize,
 ) -> ExitCode {
     let paths = rx.iter().filter_map(|value| match value {
@@ -63,14 +62,14 @@ pub fn batch(
     });
     if limit == 0 {
         // no limit
-        return cmd.execute_batch(paths, buffer_output);
+        return cmd.execute_batch(paths);
     }
 
     let mut exit_codes = Vec::new();
     let mut peekable = paths.peekable();
     while peekable.peek().is_some() {
         let limited = peekable.by_ref().take(limit);
-        let exit_code = cmd.execute_batch(limited, buffer_output);
+        let exit_code = cmd.execute_batch(limited);
         exit_codes.push(exit_code);
     }
     merge_exitcodes(exit_codes)
