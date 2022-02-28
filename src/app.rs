@@ -1,17 +1,17 @@
-use clap::{crate_version, App, AppSettings, Arg, ColorChoice};
+use clap::{crate_version, AppSettings, Arg, ColorChoice, Command};
 
-pub fn build_app() -> App<'static> {
+pub fn build_app() -> Command<'static> {
     let clap_color_choice = if std::env::var_os("NO_COLOR").is_none() {
         ColorChoice::Auto
     } else {
         ColorChoice::Never
     };
 
-    let mut app = App::new("fd")
+    let mut app = Command::new("fd")
         .version(crate_version!())
         .color(clap_color_choice)
         .setting(AppSettings::DeriveDisplayOrder)
-        .setting(AppSettings::DontCollapseArgsInUsage)
+        .dont_collapse_args_in_usage(true)
         .after_help(
             "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
                  details.",
