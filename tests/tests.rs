@@ -1384,6 +1384,67 @@ fn test_exec() {
 }
 
 #[test]
+fn test_exec_multi() {
+    // TODO test for windows
+    if cfg!(windows) {
+        return;
+    }
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &[
+            "--absolute-path",
+            "foo",
+            "--exec",
+            "echo",
+            ";",
+            "--exec",
+            "echo",
+            "test",
+            "{/}",
+        ],
+        &format!(
+            "{abs_path}/a.foo
+                {abs_path}/one/b.foo
+                {abs_path}/one/two/C.Foo2
+                {abs_path}/one/two/c.foo
+                {abs_path}/one/two/three/d.foo
+                {abs_path}/one/two/three/directory_foo
+                test a.foo
+                test b.foo
+                test C.Foo2
+                test c.foo
+                test d.foo
+                test directory_foo",
+            abs_path = &abs_path
+        ),
+    );
+
+    te.assert_output(
+        &[
+            "e1", "--exec", "echo", "{.}", ";", "--exec", "echo", "{/}", ";", "--exec", "echo",
+            "{//}", ";", "--exec", "echo", "{/.}",
+        ],
+        "e1 e2
+        e1 e2
+        .
+        e1 e2",
+    );
+
+    te.assert_output(
+        &[
+            "foo", "--exec", "echo", "-n", "{/}: ", ";", "--exec", "echo", "{//}",
+        ],
+        "a.foo: .
+        b.foo: ./one
+        C.Foo2: ./one/two
+        c.foo: ./one/two
+        d.foo: ./one/two/three
+        directory_foo: ./one/two/three",
+    );
+}
+
+#[test]
 fn test_exec_batch() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let te = te.normalize_line(true);
@@ -1433,6 +1494,21 @@ fn test_exec_batch() {
             "[fd error]: First argument of exec-batch is expected to be a fixed executable",
         );
     }
+}
+
+#[test]
+fn test_exec_batch_multi() {
+    // TODO test for windows
+    if cfg!(windows) {
+        return;
+    }
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["foo",  "--exec-batch", "echo", "{}", ";", "--exec-batch", "echo", "{/}"],
+        "./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo
+        a.foo b.foo C.Foo2 c.foo d.foo directory_foo",
+    );
 }
 
 #[test]
