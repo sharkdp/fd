@@ -31,7 +31,7 @@ path = "src/main.rs"
 
 [build-dependencies]
 clap = "3.0"
-clap_complete = "3.0"
+clap_complete = "3.1"
 version_check = "0.9"
 
 [dependencies]
