@@ -557,12 +557,6 @@ Starting with Fedora 28, you can install `fd` from the official package sources:
 dnf install fd-find
 ```
 
-For older versions, you can use this [Fedora copr](https://copr.fedorainfracloud.org/coprs/keefle/fd/) to install `fd`:
-``` bash
-dnf copr enable keefle/fd
-dnf install fd
-```
-
 ### On Alpine Linux
 
 You can install [the fd package](https://pkgs.alpinelinux.org/packages?name=fd)
