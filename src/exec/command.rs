@@ -10,15 +10,15 @@ struct Outputs {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
-struct OutputBuf<'a> {
-    out_perm: &'a Mutex<()>,
+struct OutputBuffer<'a> {
+    output_permission: &'a Mutex<()>,
     outputs: Vec<Outputs>,
 }
 
-impl<'a> OutputBuf<'a> {
-    fn new(out_perm: &'a Mutex<()>) -> Self {
+impl<'a> OutputBuffer<'a> {
+    fn new(output_permission: &'a Mutex<()>) -> Self {
         Self {
-            out_perm,
+            output_permission,
             outputs: Vec::new(),
         }
     }
@@ -34,7 +34,7 @@ impl<'a> OutputBuf<'a> {
         }
         // While this lock is active, this thread will be the only thread allowed
         // to write its outputs.
-        let _lock = self.out_perm.lock().unwrap();
+        let _lock = self.output_permission.lock().unwrap();
 
         let stdout = io::stdout();
         let stderr = io::stderr();
@@ -55,7 +55,7 @@ pub fn execute_commands<I: Iterator<Item = Command>>(
     out_perm: &Mutex<()>,
     enable_output_buffering: bool,
 ) -> ExitCode {
-    let mut out_buf = OutputBuf::new(out_perm);
+    let mut output_buffer = OutputBuffer::new(out_perm);
     for mut cmd in cmds {
         // Spawn the supplied command.
         let output = if enable_output_buffering {
@@ -70,20 +70,20 @@ pub fn execute_commands<I: Iterator<Item = Command>>(
         match output {
             Ok(output) => {
                 if enable_output_buffering {
-                    out_buf.push(output.stdout, output.stderr);
+                    output_buffer.push(output.stdout, output.stderr);
                 }
                 if output.status.code() != Some(0) {
-                    out_buf.write();
+                    output_buffer.write();
                     return ExitCode::GeneralError;
                 }
             }
             Err(why) => {
-                out_buf.write();
+                output_buffer.write();
                 return handle_cmd_error(&cmd, why);
             }
         }
     }
-    out_buf.write();
+    output_buffer.write();
     ExitCode::Success
 }
 
