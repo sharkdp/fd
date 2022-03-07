@@ -394,7 +394,7 @@ fn extract_command(
     None.or_else(|| {
         matches
             .grouped_values_of("exec")
-            .map(|args| Ok(CommandSet::new(args, path_separator.map(str::to_string))))
+            .map(|args| CommandSet::new(args, path_separator.map(str::to_string)))
     })
     .or_else(|| {
         matches

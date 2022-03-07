@@ -9,7 +9,7 @@ use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -37,16 +37,19 @@ pub struct CommandSet {
 }
 
 impl CommandSet {
-    pub fn new<I, S>(input: I, path_separator: Option<String>) -> CommandSet
+    pub fn new<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
     where
         I: IntoIterator<Item = Vec<S>>,
         S: AsRef<str>,
     {
-        CommandSet {
+        Ok(CommandSet {
             mode: ExecutionMode::OneByOne,
             path_separator,
-            commands: input.into_iter().map(CommandTemplate::new).collect(),
-        }
+            commands: input
+                .into_iter()
+                .map(CommandTemplate::new)
+                .collect::<Result<_>>()?,
+        })
     }
 
     pub fn new_batch<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
@@ -60,14 +63,12 @@ impl CommandSet {
             commands: input
                 .into_iter()
                 .map(|args| {
-                    let cmd = CommandTemplate::new(args);
+                    let cmd = CommandTemplate::new(args)?;
                     if cmd.number_of_tokens() > 1 {
-                        return Err(anyhow!("Only one placeholder allowed for batch commands"));
+                        bail!("Only one placeholder allowed for batch commands");
                     }
                     if cmd.args[0].has_tokens() {
-                        return Err(anyhow!(
-                            "First argument of exec-batch is expected to be a fixed executable"
-                        ));
+                        bail!("First argument of exec-batch is expected to be a fixed executable");
                     }
                     Ok(cmd)
                 })
@@ -79,18 +80,13 @@ impl CommandSet {
         self.mode == ExecutionMode::Batch
     }
 
-    pub fn execute(
-        &self,
-        input: &Path,
-        mut out_perm: Arc<Mutex<()>>,
-        buffer_output: bool,
-    ) -> ExitCode {
+    pub fn execute(&self, input: &Path, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
         let path_separator = self.path_separator.as_deref();
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands(commands, &mut out_perm, buffer_output)
+        execute_commands(commands, &out_perm, buffer_output)
     }
 
     pub fn execute_batch<I>(&self, paths: I) -> ExitCode
@@ -120,7 +116,7 @@ struct CommandTemplate {
 }
 
 impl CommandTemplate {
-    fn new<I, S>(input: I) -> CommandTemplate
+    fn new<I, S>(input: I) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -171,12 +167,21 @@ impl CommandTemplate {
             args.push(ArgumentTemplate::Tokens(tokens));
         }
 
+        // We need to check that we have at least one argument, because if not
+        // it will try to execute each file and directory it finds.
+        //
+        // Sadly, clap can't currently handle this for us, see
+        // https://github.com/clap-rs/clap/issues/3542
+        if args.is_empty() {
+            bail!("No executable provided for --exec or --exec-batch");
+        }
+
         // If a placeholder token was not supplied, append one at the end of the command.
         if !has_placeholder {
             args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        CommandTemplate { args }
+        Ok(CommandTemplate { args })
     }
 
     fn number_of_tokens(&self) -> usize {
@@ -341,7 +346,7 @@ mod tests {
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
-            CommandSet::new(vec![vec![&"echo", &"${SHELL}:"]], None),
+            CommandSet::new(vec![vec![&"echo", &"${SHELL}:"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -359,7 +364,7 @@ mod tests {
     #[test]
     fn tokens_with_no_extension() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{.}"]], None),
+            CommandSet::new(vec![vec!["echo", "{.}"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -376,7 +381,7 @@ mod tests {
     #[test]
     fn tokens_with_basename() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/}"]], None),
+            CommandSet::new(vec![vec!["echo", "{/}"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -393,7 +398,7 @@ mod tests {
     #[test]
     fn tokens_with_parent() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{//}"]], None),
+            CommandSet::new(vec![vec!["echo", "{//}"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -410,7 +415,7 @@ mod tests {
     #[test]
     fn tokens_with_basename_no_extension() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/.}"]], None),
+            CommandSet::new(vec![vec!["echo", "{/.}"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -427,7 +432,7 @@ mod tests {
     #[test]
     fn tokens_multiple() {
         assert_eq!(
-            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None),
+            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -465,6 +470,16 @@ mod tests {
     #[test]
     fn tokens_multiple_batch() {
         assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None).is_err());
+    }
+
+    #[test]
+    fn template_no_args() {
+        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![]).is_err());
+    }
+
+    #[test]
+    fn command_set_no_args() {
+        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None).is_err());
     }
 
     #[test]
