@@ -1,7 +1,5 @@
-use std::path::PathBuf;
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
-
 
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
@@ -41,7 +39,7 @@ pub fn job(
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
         // Generate a command, execute it and store its exit code.
-        results.push(cmd.execute(&dir_entry, Arc::clone(&out_perm), buffer_output))
+        results.push(cmd.execute(dir_entry.path(), Arc::clone(&out_perm), buffer_output))
     }
     // Returns error in case of any error.
     merge_exitcodes(results)
