@@ -25,7 +25,7 @@ use regex::bytes::{RegexBuilder, RegexSetBuilder};
 
 use crate::config::Config;
 use crate::error::print_error;
-use crate::exec::CommandTemplate;
+use crate::exec::CommandSet;
 use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
@@ -40,7 +40,9 @@ use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_wi
     not(target_os = "android"),
     not(target_os = "macos"),
     not(target_os = "freebsd"),
-    not(target_env = "musl")
+    not(target_env = "musl"),
+    not(target_arch = "riscv64"),
+    feature = "use-jemalloc"
 ))]
 #[global_allocator]
 static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
@@ -111,7 +113,7 @@ fn ensure_current_directory_exists(current_directory: &Path) -> Result<()> {
     }
 }
 
-fn extract_search_pattern<'a>(matches: &'a clap::ArgMatches) -> Result<&'a str> {
+fn extract_search_pattern(matches: &clap::ArgMatches) -> Result<&'_ str> {
     let pattern = matches
         .value_of_os("pattern")
         .map(|p| {
@@ -261,10 +263,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         read_vcsignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-ignore-vcs")),
-        read_parent_ignore: !(matches.is_present("no-ignore")
-            || matches.is_present("rg-alias-hidden-ignore")
-            || matches.is_present("no-ignore-vcs")
-            || matches.is_present("no-ignore-parent")),
+        read_parent_ignore: !matches.is_present("no-ignore-parent"),
         read_global_ignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")
             || matches.is_present("no-global-ignore-file")),
@@ -392,19 +391,16 @@ fn extract_command(
     matches: &clap::ArgMatches,
     path_separator: Option<&str>,
     colored_output: bool,
-) -> Result<Option<CommandTemplate>> {
+) -> Result<Option<CommandSet>> {
     None.or_else(|| {
-        matches.values_of("exec").map(|args| {
-            Ok(CommandTemplate::new(
-                args,
-                path_separator.map(str::to_string),
-            ))
-        })
+        matches
+            .grouped_values_of("exec")
+            .map(|args| CommandSet::new(args, path_separator.map(str::to_string)))
     })
     .or_else(|| {
         matches
-            .values_of("exec-batch")
-            .map(|args| CommandTemplate::new_batch(args, path_separator.map(str::to_string)))
+            .grouped_values_of("exec-batch")
+            .map(|args| CommandSet::new_batch(args, path_separator.map(str::to_string)))
     })
     .or_else(|| {
         if !matches.is_present("list-details") {
@@ -414,9 +410,8 @@ fn extract_command(
         let color = matches.value_of("color").unwrap_or("auto");
         let color_arg = format!("--color={}", color);
 
-        let res = determine_ls_command(&color_arg, colored_output).map(|cmd| {
-            CommandTemplate::new_batch(cmd, path_separator.map(str::to_string)).unwrap()
-        });
+        let res = determine_ls_command(&color_arg, colored_output)
+            .map(|cmd| CommandSet::new_batch([cmd], path_separator.map(str::to_string)).unwrap());
 
         Some(res)
     })

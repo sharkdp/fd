@@ -24,6 +24,11 @@ fd \- find entries in the filesystem
 .B fd
 is a simple, fast and user-friendly alternative to
 .BR find (1).
+.P
+By default
+.B fd
+uses regular expressions for the pattern. However, this can be changed to use simple glob patterns
+with the '\-\-glob' option.
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
@@ -65,6 +70,10 @@ and the global gitignore configuration
 git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
 The flag can be overridden with '--ignore-vcs'.
+.TP
+.B \-\-no\-ignore\-parent
+Show search results from files and directories that would otherwise be ignored by gitignore files in
+parent directories.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -125,6 +134,10 @@ can be used as an alias.
 .B \-\-show-errors
 Enable the display of filesystem errors for situations such as insufficient
 permissions or dead symlinks.
+.TP
+.B \-\-strip-cwd-prefix
+By default, relative paths are prefixed with './' when the output goes to a non interactive terminal
+(TTY). Use this flag to disable this behaviour.
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
 By default, fd will traverse the file system tree as far as other options dictate. With this flag, fd ensures that it does not descend into a different file system than the one it started in. Comparable to the -mount or -xdev filters of find(1).
@@ -328,6 +341,9 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
+This option can be specified multiple times, in which case all commands are run for each
+file found, in the order they are provided. In that case, you must supply a ';' argument for
+all but the last commands.
 
 The following placeholders are substituted before the command is executed:
 .RS
@@ -381,6 +397,9 @@ basename without file extension
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
 
+Like \-\-exec, this can be used multiple times, in which case each command will be run in
+the order given.
+
 Examples:
 
   - Find all test_*.py files and open them in your favorite editor:
@@ -393,7 +412,11 @@ Examples:
 
         fd -e rs -X wc -l
 .RE
-
+.TP
+.BI "\-\-batch-size " size
+Maximum number of arguments to pass to the command given with -X. If the number of results is
+greater than the given size, the command given with -X is run again with remaining arguments. A
+batch size of zero means there is no limit.
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 

@@ -9,13 +9,13 @@ use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::exit_codes::ExitCode;
 
-use self::command::execute_command;
+use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
 use self::token::Token;
@@ -29,44 +29,94 @@ pub enum ExecutionMode {
     Batch,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct CommandSet {
+    mode: ExecutionMode,
+    path_separator: Option<String>,
+    commands: Vec<CommandTemplate>,
+}
+
+impl CommandSet {
+    pub fn new<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
+    where
+        I: IntoIterator<Item = Vec<S>>,
+        S: AsRef<str>,
+    {
+        Ok(CommandSet {
+            mode: ExecutionMode::OneByOne,
+            path_separator,
+            commands: input
+                .into_iter()
+                .map(CommandTemplate::new)
+                .collect::<Result<_>>()?,
+        })
+    }
+
+    pub fn new_batch<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
+    where
+        I: IntoIterator<Item = Vec<S>>,
+        S: AsRef<str>,
+    {
+        Ok(CommandSet {
+            mode: ExecutionMode::Batch,
+            path_separator,
+            commands: input
+                .into_iter()
+                .map(|args| {
+                    let cmd = CommandTemplate::new(args)?;
+                    if cmd.number_of_tokens() > 1 {
+                        bail!("Only one placeholder allowed for batch commands");
+                    }
+                    if cmd.args[0].has_tokens() {
+                        bail!("First argument of exec-batch is expected to be a fixed executable");
+                    }
+                    Ok(cmd)
+                })
+                .collect::<Result<Vec<_>>>()?,
+        })
+    }
+
+    pub fn in_batch_mode(&self) -> bool {
+        self.mode == ExecutionMode::Batch
+    }
+
+    pub fn execute(&self, input: &Path, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
+        let path_separator = self.path_separator.as_deref();
+        let commands = self
+            .commands
+            .iter()
+            .map(|c| c.generate(input, path_separator));
+        execute_commands(commands, &out_perm, buffer_output)
+    }
+
+    pub fn execute_batch<I>(&self, paths: I) -> ExitCode
+    where
+        I: Iterator<Item = PathBuf>,
+    {
+        let path_separator = self.path_separator.as_deref();
+        let mut paths = paths.collect::<Vec<_>>();
+        paths.sort();
+        for cmd in &self.commands {
+            let exit = cmd.generate_and_execute_batch(&paths, path_separator);
+            if exit != ExitCode::Success {
+                return exit;
+            }
+        }
+        ExitCode::Success
+    }
+}
+
 /// Represents a template that is utilized to generate command strings.
 ///
 /// The template is meant to be coupled with an input in order to generate a command. The
 /// `generate_and_execute()` method will be used to generate a command and execute it.
 #[derive(Debug, Clone, PartialEq)]
-pub struct CommandTemplate {
+struct CommandTemplate {
     args: Vec<ArgumentTemplate>,
-    mode: ExecutionMode,
-    path_separator: Option<String>,
 }
 
 impl CommandTemplate {
-    pub fn new<I, S>(input: I, path_separator: Option<String>) -> CommandTemplate
-    where
-        I: IntoIterator<Item = S>,
-        S: AsRef<str>,
-    {
-        Self::build(input, ExecutionMode::OneByOne, path_separator)
-    }
-
-    pub fn new_batch<I, S>(input: I, path_separator: Option<String>) -> Result<CommandTemplate>
-    where
-        I: IntoIterator<Item = S>,
-        S: AsRef<str>,
-    {
-        let cmd = Self::build(input, ExecutionMode::Batch, path_separator);
-        if cmd.number_of_tokens() > 1 {
-            return Err(anyhow!("Only one placeholder allowed for batch commands"));
-        }
-        if cmd.args[0].has_tokens() {
-            return Err(anyhow!(
-                "First argument of exec-batch is expected to be a fixed executable"
-            ));
-        }
-        Ok(cmd)
-    }
-
-    fn build<I, S>(input: I, mode: ExecutionMode, path_separator: Option<String>) -> CommandTemplate
+    fn new<I, S>(input: I) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -117,16 +167,21 @@ impl CommandTemplate {
             args.push(ArgumentTemplate::Tokens(tokens));
         }
 
+        // We need to check that we have at least one argument, because if not
+        // it will try to execute each file and directory it finds.
+        //
+        // Sadly, clap can't currently handle this for us, see
+        // https://github.com/clap-rs/clap/issues/3542
+        if args.is_empty() {
+            bail!("No executable provided for --exec or --exec-batch");
+        }
+
         // If a placeholder token was not supplied, append one at the end of the command.
         if !has_placeholder {
             args.push(ArgumentTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        CommandTemplate {
-            args,
-            mode,
-            path_separator,
-        }
+        Ok(CommandTemplate { args })
     }
 
     fn number_of_tokens(&self) -> usize {
@@ -136,45 +191,31 @@ impl CommandTemplate {
     /// Generates and executes a command.
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
-    /// build. Once all arguments have been processed, the command is executed.
-    pub fn generate_and_execute(
-        &self,
-        input: &Path,
-        out_perm: Arc<Mutex<()>>,
-        buffer_output: bool,
-    ) -> ExitCode {
-        let mut cmd = Command::new(self.args[0].generate(&input, self.path_separator.as_deref()));
+    /// build.
+    fn generate(&self, input: &Path, path_separator: Option<&str>) -> Command {
+        let mut cmd = Command::new(self.args[0].generate(&input, path_separator));
         for arg in &self.args[1..] {
-            cmd.arg(arg.generate(&input, self.path_separator.as_deref()));
+            cmd.arg(arg.generate(&input, path_separator));
         }
-
-        execute_command(cmd, &out_perm, buffer_output)
+        cmd
     }
 
-    pub fn in_batch_mode(&self) -> bool {
-        self.mode == ExecutionMode::Batch
-    }
-
-    pub fn generate_and_execute_batch<I>(&self, paths: I, buffer_output: bool) -> ExitCode
-    where
-        I: Iterator<Item = PathBuf>,
-    {
+    fn generate_and_execute_batch(
+        &self,
+        paths: &[PathBuf],
+        path_separator: Option<&str>,
+    ) -> ExitCode {
         let mut cmd = Command::new(self.args[0].generate("", None));
         cmd.stdin(Stdio::inherit());
         cmd.stdout(Stdio::inherit());
         cmd.stderr(Stdio::inherit());
 
-        let mut paths: Vec<_> = paths.collect();
         let mut has_path = false;
 
         for arg in &self.args[1..] {
             if arg.has_tokens() {
-                paths.sort();
-
-                // A single `Tokens` is expected
-                // So we can directly consume the iterator once and for all
-                for path in &mut paths {
-                    cmd.arg(arg.generate(path, self.path_separator.as_deref()));
+                for path in paths {
+                    cmd.arg(arg.generate(path, path_separator));
                     has_path = true;
                 }
             } else {
@@ -183,7 +224,10 @@ impl CommandTemplate {
         }
 
         if has_path {
-            execute_command(cmd, &Mutex::new(()), buffer_output)
+            match cmd.spawn().and_then(|mut c| c.wait()) {
+                Ok(_) => ExitCode::Success,
+                Err(e) => handle_cmd_error(&cmd, e),
+            }
         } else {
             ExitCode::Success
         }
@@ -302,13 +346,15 @@ mod tests {
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
-            CommandTemplate::new(&[&"echo", &"${SHELL}:"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Text("${SHELL}:".into()),
-                    ArgumentTemplate::Tokens(vec![Token::Placeholder]),
-                ],
+            CommandSet::new(vec![vec![&"echo", &"${SHELL}:"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Text("${SHELL}:".into()),
+                        ArgumentTemplate::Tokens(vec![Token::Placeholder]),
+                    ]
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -318,12 +364,14 @@ mod tests {
     #[test]
     fn tokens_with_no_extension() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{.}"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::NoExt]),
-                ],
+            CommandSet::new(vec![vec!["echo", "{.}"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::NoExt]),
+                    ],
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -333,12 +381,14 @@ mod tests {
     #[test]
     fn tokens_with_basename() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{/}"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::Basename]),
-                ],
+            CommandSet::new(vec![vec!["echo", "{/}"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::Basename]),
+                    ],
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -348,12 +398,14 @@ mod tests {
     #[test]
     fn tokens_with_parent() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{//}"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::Parent]),
-                ],
+            CommandSet::new(vec![vec!["echo", "{//}"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::Parent]),
+                    ],
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -363,12 +415,14 @@ mod tests {
     #[test]
     fn tokens_with_basename_no_extension() {
         assert_eq!(
-            CommandTemplate::new(&["echo", "{/.}"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::BasenameNoExt]),
-                ],
+            CommandSet::new(vec![vec!["echo", "{/.}"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::BasenameNoExt]),
+                    ],
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -378,16 +432,18 @@ mod tests {
     #[test]
     fn tokens_multiple() {
         assert_eq!(
-            CommandTemplate::new(&["cp", "{}", "{/.}.ext"], None),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("cp".into()),
-                    ArgumentTemplate::Tokens(vec![Token::Placeholder]),
-                    ArgumentTemplate::Tokens(vec![
-                        Token::BasenameNoExt,
-                        Token::Text(".ext".into())
-                    ]),
-                ],
+            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("cp".into()),
+                        ArgumentTemplate::Tokens(vec![Token::Placeholder]),
+                        ArgumentTemplate::Tokens(vec![
+                            Token::BasenameNoExt,
+                            Token::Text(".ext".into())
+                        ]),
+                    ],
+                }],
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -397,12 +453,14 @@ mod tests {
     #[test]
     fn tokens_single_batch() {
         assert_eq!(
-            CommandTemplate::new_batch(&["echo", "{.}"], None).unwrap(),
-            CommandTemplate {
-                args: vec![
-                    ArgumentTemplate::Text("echo".into()),
-                    ArgumentTemplate::Tokens(vec![Token::NoExt]),
-                ],
+            CommandSet::new_batch(vec![vec!["echo", "{.}"]], None).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        ArgumentTemplate::Text("echo".into()),
+                        ArgumentTemplate::Tokens(vec![Token::NoExt]),
+                    ],
+                }],
                 mode: ExecutionMode::Batch,
                 path_separator: None,
             }
@@ -411,7 +469,17 @@ mod tests {
 
     #[test]
     fn tokens_multiple_batch() {
-        assert!(CommandTemplate::new_batch(&["echo", "{.}", "{}"], None).is_err());
+        assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None).is_err());
+    }
+
+    #[test]
+    fn template_no_args() {
+        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![]).is_err());
+    }
+
+    #[test]
+    fn command_set_no_args() {
+        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None).is_err());
     }
 
     #[test]

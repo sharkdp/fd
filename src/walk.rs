@@ -3,13 +3,13 @@ use std::io;
 use std::mem;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
-use crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
@@ -54,7 +54,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     let first_path_buf = path_iter
         .next()
         .expect("Error: Path vector can not be empty");
-    let (tx, rx) = unbounded();
+    let (tx, rx) = channel();
 
     let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
 
@@ -71,7 +71,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_fdignore)
-        .parents(config.read_parent_ignore)
+        .parents(config.read_parent_ignore && (config.read_fdignore || config.read_vcsignore))
         .git_ignore(config.read_vcsignore)
         .git_global(config.read_vcsignore)
         .git_exclude(config.read_vcsignore)
@@ -103,10 +103,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
             match result {
                 Some(ignore::Error::Partial(_)) => (),
                 Some(err) => {
-                    print_error(format!(
-                        "Malformed pattern in global ignore file. {}.",
-                        err.to_string()
-                    ));
+                    print_error(format!("Malformed pattern in global ignore file. {}.", err));
                 }
                 None => (),
             }
@@ -118,10 +115,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         match result {
             Some(ignore::Error::Partial(_)) => (),
             Some(err) => {
-                print_error(format!(
-                    "Malformed pattern in custom ignore file. {}.",
-                    err.to_string()
-                ));
+                print_error(format!("Malformed pattern in custom ignore file. {}.", err));
             }
             None => (),
         }
@@ -231,7 +225,11 @@ impl<W: Write> ReceiverBuffer<W> {
         match self.mode {
             ReceiverMode::Buffering => {
                 // Wait at most until we should switch to streaming
-                self.rx.recv_deadline(self.deadline)
+                let now = Instant::now();
+                self.deadline
+                    .checked_duration_since(now)
+                    .ok_or(RecvTimeoutError::Timeout)
+                    .and_then(|t| self.rx.recv_timeout(t))
             }
             ReceiverMode::Streaming => {
                 // Wait however long it takes for a result
@@ -351,13 +349,7 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(
-                    rx,
-                    cmd,
-                    show_filesystem_errors,
-                    enable_output_buffering,
-                    config.batch_size,
-                )
+                exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 

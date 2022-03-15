@@ -2,15 +2,41 @@
 
 ## Performance improvements
 
+
 ## Features
 
+
 ## Bugfixes
+
 
 ## Changes
 
 - Directories are now printed with an additional path separator at the end: `foo/bar/`
+
 ## Other
 
+
+# v8.3.2
+
+## Bugfixes
+
+- Invalid absolute path on windows when searching from the drive root, see #931 and #936 (@gbarta)
+
+
+# v8.3.1
+
+## Bugfixes
+
+- Stop implying `--no-ignore-parent` when `--no-vcs-ignore` is supplied, see #907, #901, #908 (@tmccombs)
+- fd no longer waits for the whole traversal if the only matches arrive within max_buffer_time, see #868 and #895 (@tavianator)
+- `--max-results=1` now immediately quits after the first result, see #867
+- `fd -h` does not panic anymore when stdout is closed, see #897
+
+## Changes
+
+- Disable jemalloc on FreeBSD, see #896 (@xanderio)
+- Updated man page, see #912 (@rlue)
+- Updated zsh completions, see #932 (@tmccombs)
 
 
 # v8.3.0
