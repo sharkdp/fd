@@ -16,6 +16,7 @@ pub struct DirEntry {
 }
 
 impl DirEntry {
+    #[inline]
     pub fn normal(e: ignore::DirEntry) -> Self {
         Self {
             inner: DirEntryInner::Normal(e),
@@ -65,5 +66,27 @@ impl DirEntry {
             DirEntryInner::Normal(e) => Some(e.depth()),
             DirEntryInner::BrokenSymlink(_) => None,
         }
+    }
+}
+
+impl PartialEq for DirEntry {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.path() == other.path()
+    }
+}
+impl Eq for DirEntry {}
+
+impl PartialOrd for DirEntry {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.path().partial_cmp(other.path())
+    }
+}
+
+impl Ord for DirEntry {
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.path().cmp(other.path())
     }
 }

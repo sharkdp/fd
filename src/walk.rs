@@ -310,7 +310,7 @@ impl<W: Write> ReceiverBuffer<W> {
     /// Stop looping.
     fn stop(&mut self) -> Result<(), ExitCode> {
         if self.mode == ReceiverMode::Buffering {
-            self.buffer.sort_by(|e1, e2| e1.path().cmp(e2.path()));
+            self.buffer.sort();
             self.stream()?;
         }
 
