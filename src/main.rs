@@ -222,6 +222,9 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
     let path_separator = matches
         .value_of("path-separator")
         .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
+    let actual_path_separator = path_separator
+        .clone()
+        .unwrap_or_else(|| std::path::MAIN_SEPARATOR.to_string());
     check_path_separator_length(path_separator.as_deref())?;
 
     let size_limits = extract_size_limits(&matches)?;
@@ -368,6 +371,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         owner_constraint,
         show_filesystem_errors: matches.is_present("show-errors"),
         path_separator,
+        actual_path_separator,
         max_results: matches
             .value_of("max-results")
             .map(|n| n.parse::<usize>())

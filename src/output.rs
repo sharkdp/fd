@@ -3,15 +3,12 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use lscolors::{Indicator, LsColors, Style};
-use once_cell::sync::Lazy;
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
-
-static MAIN_SEPARATOR_STR: Lazy<String> = Lazy::new(|| std::path::MAIN_SEPARATOR.to_string());
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -56,17 +53,13 @@ fn print_trailing_slash<W: Write>(
     style: Option<&Style>,
 ) -> io::Result<()> {
     if entry.file_type().map_or(false, |ft| ft.is_dir()) {
-        let separator = config
-            .path_separator
-            .as_ref()
-            .unwrap_or(&MAIN_SEPARATOR_STR);
         write!(
             stdout,
             "{}",
             style
                 .map(Style::to_ansi_term_style)
                 .unwrap_or_default()
-                .paint(separator)
+                .paint(&config.actual_path_separator)
         )?;
     }
     Ok(())
