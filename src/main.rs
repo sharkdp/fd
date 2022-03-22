@@ -256,7 +256,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
         case_sensitive,
         search_full_path: matches.is_present("full-path"),
         ignore_hidden: !(matches.is_present("hidden")
-            || matches.occurrences_of("rg-alias-hidden-ignore") >= 2),
+            || matches.is_present("rg-alias-hidden-ignore")),
         read_fdignore: !(matches.is_present("no-ignore")
             || matches.is_present("rg-alias-hidden-ignore")),
         read_vcsignore: !(matches.is_present("no-ignore")
