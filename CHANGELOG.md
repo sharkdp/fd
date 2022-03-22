@@ -10,7 +10,7 @@
 
 
 ## Changes
-
+- Changed `-u` flag to be equivalent to `-HI`. Multiple `-u` flags still allowed but do nothing, see #840 (@jacksontheel)
 
 ## Other
 - Added installation instructions for RHEL8, see #989 (@ethsol)
