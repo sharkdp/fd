@@ -13,7 +13,7 @@
 
 
 ## Other
-
+- Added installation instructions for RHEL8, see #123 (@ethsol)
 
 # v8.3.2
 
