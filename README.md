@@ -608,6 +608,22 @@ source /usr/share/bash-completion/completions/fd
 fd 
 ```
 
+### On CentOS 7.9
+
+Get the latest fd-v*-x86_64-unknown-linux-musl.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
+```
+tar xf fd-v*-x86_64-unknown-linux-musl.tar.gz
+chown -R root:root fd-v*-x86_64-unknown-linux-musl
+cd fd-v*-x86_64-unknown-linux-musl
+sudo cp fd /bin
+sudo gzip fd.1
+sudo chown root:root fd.1.gz
+sudo cp fd.1.gz /usr/share/man/man1
+sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
+source /usr/share/bash-completion/completions/fd
+fd 
+```
+
 ### On macOS
 
 You can install `fd` with [Homebrew](https://formulae.brew.sh/formula/fd):
