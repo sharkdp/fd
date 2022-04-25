@@ -650,6 +650,13 @@ Or via [Chocolatey](https://chocolatey.org):
 choco install fd
 ```
 
+### On GuixOS
+
+You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) from the official repo:
+```
+guix install fd
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
