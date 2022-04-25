@@ -601,7 +601,6 @@ tar xf fd-v*-x86_64-unknown-linux-gnu.tar.gz
 cd fd-v*-x86_64-unknown-linux-gnu
 cp fd /bin
 gzip fd.1
-chown root:root fd.1.gz
 cp fd.1.gz /usr/share/man/man1
 cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
@@ -617,7 +616,6 @@ tar xf fd-v*-x86_64-unknown-linux-musl.tar.gz
 cd fd-v*-x86_64-unknown-linux-musl
 cp fd /bin
 gzip fd.1
-chown root:root fd.1.gz
 cp fd.1.gz /usr/share/man/man1
 cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
