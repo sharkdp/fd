@@ -596,14 +596,14 @@ xbps-install -S fd
 
 Get the latest fd-v*-x86_64-unknown-linux-gnu.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
 ```
+sudo su # switching to root privileges to install fd to system directories
 tar xf fd-v*-x86_64-unknown-linux-gnu.tar.gz
-chown -R root:root fd-v*-x86_64-unknown-linux-gnu
 cd fd-v*-x86_64-unknown-linux-gnu
-sudo cp fd /bin
-sudo gzip fd.1
-sudo chown root:root fd.1.gz
-sudo cp fd.1.gz /usr/share/man/man1
-sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
+cp fd /bin
+gzip fd.1
+chown root:root fd.1.gz
+cp fd.1.gz /usr/share/man/man1
+cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
 fd 
 ```
@@ -612,14 +612,14 @@ fd
 
 Get the latest fd-v*-x86_64-unknown-linux-musl.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
 ```
+sudo su # switching to root privileges to install fd to system directories
 tar xf fd-v*-x86_64-unknown-linux-musl.tar.gz
-chown -R root:root fd-v*-x86_64-unknown-linux-musl
 cd fd-v*-x86_64-unknown-linux-musl
-sudo cp fd /bin
-sudo gzip fd.1
-sudo chown root:root fd.1.gz
-sudo cp fd.1.gz /usr/share/man/man1
-sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
+cp fd /bin
+gzip fd.1
+chown root:root fd.1.gz
+cp fd.1.gz /usr/share/man/man1
+cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
 fd 
 ```
