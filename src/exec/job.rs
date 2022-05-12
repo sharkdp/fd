@@ -62,17 +62,6 @@ pub fn batch(
                 None
             }
         });
-    if limit == 0 {
-        // no limit
-        return cmd.execute_batch(paths);
-    }
 
-    let mut exit_codes = Vec::new();
-    let mut peekable = paths.peekable();
-    while peekable.peek().is_some() {
-        let limited = peekable.by_ref().take(limit);
-        let exit_code = cmd.execute_batch(limited);
-        exit_codes.push(exit_code);
-    }
-    merge_exitcodes(exit_codes)
+    cmd.execute_batch(paths, limit)
 }

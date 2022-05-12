@@ -5,11 +5,14 @@ mod token;
 
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
+use std::io;
+use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 
 use anyhow::{bail, Result};
+use argmax::Command;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
@@ -89,20 +92,117 @@ impl CommandSet {
         execute_commands(commands, &out_perm, buffer_output)
     }
 
-    pub fn execute_batch<I>(&self, paths: I) -> ExitCode
+    pub fn execute_batch<I>(&self, paths: I, limit: usize) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
         let path_separator = self.path_separator.as_deref();
-        let mut paths = paths.collect::<Vec<_>>();
-        paths.sort();
-        for cmd in &self.commands {
-            let exit = cmd.generate_and_execute_batch(&paths, path_separator);
-            if exit != ExitCode::Success {
-                return exit;
+
+        let builders: io::Result<Vec<_>> = self
+            .commands
+            .iter()
+            .map(|c| CommandBuilder::new(c, limit))
+            .collect();
+
+        match builders {
+            Ok(mut builders) => {
+                for path in paths {
+                    for builder in &mut builders {
+                        if let Err(e) = builder.push(&path, path_separator) {
+                            return handle_cmd_error(Some(&builder.cmd), e);
+                        }
+                    }
+                }
+
+                for builder in &mut builders {
+                    if let Err(e) = builder.finish() {
+                        return handle_cmd_error(Some(&builder.cmd), e);
+                    }
+                }
+
+                ExitCode::Success
+            }
+            Err(e) => handle_cmd_error(None, e),
+        }
+    }
+}
+
+/// Represents a multi-exec command as it is built.
+#[derive(Debug)]
+struct CommandBuilder {
+    pre_args: Vec<OsString>,
+    path_arg: ArgumentTemplate,
+    post_args: Vec<OsString>,
+    cmd: Command,
+    count: usize,
+    limit: usize,
+}
+
+impl CommandBuilder {
+    fn new(template: &CommandTemplate, limit: usize) -> io::Result<Self> {
+        let mut pre_args = vec![];
+        let mut path_arg = None;
+        let mut post_args = vec![];
+
+        for arg in &template.args {
+            if arg.has_tokens() {
+                path_arg = Some(arg.clone());
+            } else if path_arg == None {
+                pre_args.push(arg.generate("", None));
+            } else {
+                post_args.push(arg.generate("", None));
             }
         }
-        ExitCode::Success
+
+        let cmd = Self::new_command(&pre_args)?;
+
+        Ok(Self {
+            pre_args,
+            path_arg: path_arg.unwrap(),
+            post_args,
+            cmd,
+            count: 0,
+            limit,
+        })
+    }
+
+    fn new_command(pre_args: &[OsString]) -> io::Result<Command> {
+        let mut cmd = Command::new(&pre_args[0]);
+        cmd.stdin(Stdio::inherit());
+        cmd.stdout(Stdio::inherit());
+        cmd.stderr(Stdio::inherit());
+        cmd.try_args(&pre_args[1..])?;
+        Ok(cmd)
+    }
+
+    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+        if self.limit > 0 && self.count >= self.limit {
+            self.finish()?;
+        }
+
+        let arg = self.path_arg.generate(path, separator);
+        if !self
+            .cmd
+            .args_would_fit(iter::once(&arg).chain(&self.post_args))
+        {
+            self.finish()?;
+        }
+
+        self.cmd.try_arg(arg)?;
+        self.count += 1;
+        Ok(())
+    }
+
+    fn finish(&mut self) -> io::Result<()> {
+        if self.count > 0 {
+            self.cmd.try_args(&self.post_args)?;
+            self.cmd.status()?;
+
+            self.cmd = Self::new_command(&self.pre_args)?;
+            self.count = 0;
+        }
+
+        Ok(())
     }
 }
 
@@ -192,45 +292,12 @@ impl CommandTemplate {
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build.
-    fn generate(&self, input: &Path, path_separator: Option<&str>) -> Command {
+    fn generate(&self, input: &Path, path_separator: Option<&str>) -> io::Result<Command> {
         let mut cmd = Command::new(self.args[0].generate(&input, path_separator));
         for arg in &self.args[1..] {
-            cmd.arg(arg.generate(&input, path_separator));
+            cmd.try_arg(arg.generate(&input, path_separator))?;
         }
-        cmd
-    }
-
-    fn generate_and_execute_batch(
-        &self,
-        paths: &[PathBuf],
-        path_separator: Option<&str>,
-    ) -> ExitCode {
-        let mut cmd = Command::new(self.args[0].generate("", None));
-        cmd.stdin(Stdio::inherit());
-        cmd.stdout(Stdio::inherit());
-        cmd.stderr(Stdio::inherit());
-
-        let mut has_path = false;
-
-        for arg in &self.args[1..] {
-            if arg.has_tokens() {
-                for path in paths {
-                    cmd.arg(arg.generate(path, path_separator));
-                    has_path = true;
-                }
-            } else {
-                cmd.arg(arg.generate("", None));
-            }
-        }
-
-        if has_path {
-            match cmd.spawn().and_then(|mut c| c.wait()) {
-                Ok(_) => ExitCode::Success,
-                Err(e) => handle_cmd_error(&cmd, e),
-            }
-        } else {
-            ExitCode::Success
-        }
+        Ok(cmd)
     }
 }
 

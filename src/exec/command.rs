@@ -1,7 +1,8 @@
 use std::io;
 use std::io::Write;
-use std::process::Command;
 use std::sync::Mutex;
+
+use argmax::Command;
 
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
@@ -50,13 +51,18 @@ impl<'a> OutputBuffer<'a> {
 }
 
 /// Executes a command.
-pub fn execute_commands<I: Iterator<Item = Command>>(
+pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     cmds: I,
     out_perm: &Mutex<()>,
     enable_output_buffering: bool,
 ) -> ExitCode {
     let mut output_buffer = OutputBuffer::new(out_perm);
-    for mut cmd in cmds {
+    for result in cmds {
+        let mut cmd = match result {
+            Ok(cmd) => cmd,
+            Err(e) => return handle_cmd_error(None, e),
+        };
+
         // Spawn the supplied command.
         let output = if enable_output_buffering {
             cmd.output()
@@ -79,7 +85,7 @@ pub fn execute_commands<I: Iterator<Item = Command>>(
             }
             Err(why) => {
                 output_buffer.write();
-                return handle_cmd_error(&cmd, why);
+                return handle_cmd_error(Some(&cmd), why);
             }
         }
     }
@@ -87,12 +93,15 @@ pub fn execute_commands<I: Iterator<Item = Command>>(
     ExitCode::Success
 }
 
-pub fn handle_cmd_error(cmd: &Command, err: io::Error) -> ExitCode {
-    if err.kind() == io::ErrorKind::NotFound {
-        print_error(format!("Command not found: {:?}", cmd));
-        ExitCode::GeneralError
-    } else {
-        print_error(format!("Problem while executing command: {}", err));
-        ExitCode::GeneralError
+pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
+    match (cmd, err) {
+        (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
+            print_error(format!("Command not found: {:?}", cmd));
+            ExitCode::GeneralError
+        }
+        (_, err) => {
+            print_error(format!("Problem while executing command: {}", err));
+            ExitCode::GeneralError
+        }
     }
 }
