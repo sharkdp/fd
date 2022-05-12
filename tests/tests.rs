@@ -1492,10 +1492,49 @@ fn test_exec_batch_multi() {
     }
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    te.assert_output(
-        &["foo",  "--exec-batch", "echo", "{}", ";", "--exec-batch", "echo", "{/}"],
-        "./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo
-        a.foo b.foo C.Foo2 c.foo d.foo directory_foo",
+    let output = te.assert_success_and_get_output(
+        ".",
+        &[
+            "foo",
+            "--exec-batch",
+            "echo",
+            "{}",
+            ";",
+            "--exec-batch",
+            "echo",
+            "{/}",
+        ],
+    );
+    let stdout = std::str::from_utf8(&output.stdout).unwrap();
+    let lines: Vec<_> = stdout
+        .lines()
+        .map(|l| {
+            let mut words: Vec<_> = l.split_whitespace().collect();
+            words.sort();
+            words
+        })
+        .collect();
+
+    assert_eq!(
+        lines,
+        &[
+            [
+                "./a.foo",
+                "./one/b.foo",
+                "./one/two/C.Foo2",
+                "./one/two/c.foo",
+                "./one/two/three/d.foo",
+                "./one/two/three/directory_foo"
+            ],
+            [
+                "C.Foo2",
+                "a.foo",
+                "b.foo",
+                "c.foo",
+                "d.foo",
+                "directory_foo"
+            ],
+        ]
     );
 }
 
@@ -1507,11 +1546,6 @@ fn test_exec_batch_with_limit() {
     }
 
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-
-    te.assert_output(
-        &["foo", "--batch-size", "0", "--exec-batch", "echo", "{}"],
-        "./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo",
-    );
 
     let output = te.assert_success_and_get_output(
         ".",

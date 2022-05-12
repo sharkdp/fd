@@ -36,6 +36,7 @@ version_check = "0.9"
 
 [dependencies]
 ansi_term = "0.12"
+argmax = "0.3.0"
 atty = "0.2"
 ignore = "0.4.3"
 num_cpus = "1.13"

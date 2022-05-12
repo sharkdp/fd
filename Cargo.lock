@@ -27,6 +27,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f9b8508dccb7687a1d6c4ce66b2b0ecef467c94667de27d8d7fe1f8d2a9cdc"
 
 [[package]]
+name = "argmax"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "932fb17af6e53a41ce7312f1ae1ba2a6f3f613fe36f38ad655b212906eb9657f"
+dependencies = [
+ "lazy_static",
+ "libc",
+ "nix 0.23.1",
+]
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -134,7 +145,7 @@ version = "3.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b37feaa84e6861e00a1f5e5aa8da3ee56d605c9992d33e082786754828e20865"
 dependencies = [
- "nix",
+ "nix 0.24.1",
  "winapi",
 ]
 
@@ -171,6 +182,7 @@ version = "8.3.2"
 dependencies = [
  "ansi_term",
  "anyhow",
+ "argmax",
  "atty",
  "chrono",
  "clap",
@@ -185,7 +197,7 @@ dependencies = [
  "jemallocator",
  "libc",
  "lscolors",
- "nix",
+ "nix 0.24.1",
  "normpath",
  "num_cpus",
  "once_cell",
@@ -329,9 +341,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.125"
+version = "0.2.126"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5916d2ae698f6de9bfb891ad7a8d65c09d232dc58cc4ac433c7da3b2fd84bc2b"
+checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
 
 [[package]]
 name = "log"
@@ -356,6 +368,28 @@ name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
+
+[[package]]
+name = "memoffset"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
+name = "nix"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f866317acbd3a240710c63f065ffb1e4fd466259045ccb504130b7f668f35c6"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if",
+ "libc",
+ "memoffset",
+]
 
 [[package]]
 name = "nix"
