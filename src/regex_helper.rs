@@ -15,19 +15,19 @@ pub fn pattern_has_uppercase_char(pattern: &str) -> bool {
 fn hir_has_uppercase_char(hir: &Hir) -> bool {
     use regex_syntax::hir::*;
 
-    match *hir.kind() {
+    match hir.kind() {
         HirKind::Literal(Literal::Unicode(c)) => c.is_uppercase(),
-        HirKind::Literal(Literal::Byte(b)) => char::from(b).is_uppercase(),
-        HirKind::Class(Class::Unicode(ref ranges)) => ranges
+        HirKind::Literal(Literal::Byte(b)) => char::from(*b).is_uppercase(),
+        HirKind::Class(Class::Unicode(ranges)) => ranges
             .iter()
             .any(|r| r.start().is_uppercase() || r.end().is_uppercase()),
-        HirKind::Class(Class::Bytes(ref ranges)) => ranges
+        HirKind::Class(Class::Bytes(ranges)) => ranges
             .iter()
             .any(|r| char::from(r.start()).is_uppercase() || char::from(r.end()).is_uppercase()),
-        HirKind::Group(Group { ref hir, .. }) | HirKind::Repetition(Repetition { ref hir, .. }) => {
+        HirKind::Group(Group { hir, .. }) | HirKind::Repetition(Repetition { hir, .. }) => {
             hir_has_uppercase_char(hir)
         }
-        HirKind::Concat(ref hirs) | HirKind::Alternation(ref hirs) => {
+        HirKind::Concat(hirs) | HirKind::Alternation(hirs) => {
             hirs.iter().any(hir_has_uppercase_char)
         }
         _ => false,
@@ -52,11 +52,11 @@ fn hir_matches_strings_with_leading_dot(hir: &Hir) -> bool {
     // "^\\.", i.e. a start text anchor and a literal dot character. There are a lot
     // of other patterns that ONLY match hidden files, e.g. ^(\\.foo|\\.bar) which are
     // not (yet) detected by this algorithm.
-    match *hir.kind() {
-        HirKind::Concat(ref hirs) => {
+    match hir.kind() {
+        HirKind::Concat(hirs) => {
             let mut hirs = hirs.iter();
             if let Some(hir) = hirs.next() {
-                if *hir.kind() != HirKind::Anchor(Anchor::StartText) {
+                if hir.kind() != &HirKind::Anchor(Anchor::StartText) {
                     return false;
                 }
             } else {
@@ -64,7 +64,7 @@ fn hir_matches_strings_with_leading_dot(hir: &Hir) -> bool {
             }
 
             if let Some(hir) = hirs.next() {
-                *hir.kind() == HirKind::Literal(Literal::Unicode('.'))
+                hir.kind() == &HirKind::Literal(Literal::Unicode('.'))
             } else {
                 false
             }

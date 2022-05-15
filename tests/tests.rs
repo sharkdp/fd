@@ -656,18 +656,6 @@ fn test_no_ignore_aliases() {
 
     te.assert_output(
         &["-u", "foo"],
-        "./a.foo
-        ./fdignored.foo
-        ./gitignored.foo
-        ./one/b.foo
-        ./one/two/c.foo
-        ./one/two/C.Foo2
-        ./one/two/three/d.foo
-        ./one/two/three/directory_foo/",
-    );
-
-    te.assert_output(
-        &["-uu", "foo"],
         "./.hidden.foo
         ./a.foo
         ./fdignored.foo
@@ -2039,7 +2027,7 @@ fn test_number_parsing_errors() {
 #[test_case("--no-ignore-vcs", &["--ignore-vcs"] ; "no-ignore-vcs")]
 #[test_case("--follow", &["--no-follow"] ; "follow")]
 #[test_case("--absolute-path", &["--relative-path"] ; "absolute-path")]
-#[test_case("-u", &["--ignore"] ; "u")]
+#[test_case("-u", &["--ignore", "--no-hidden"] ; "u")]
 #[test_case("-uu", &["--ignore", "--no-hidden"] ; "uu")]
 fn test_opposing(flag: &str, opposing_flags: &[&str]) {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);

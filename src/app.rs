@@ -102,12 +102,12 @@ pub fn build_app() -> Command<'static> {
                 .short('u')
                 .long("unrestricted")
                 .overrides_with_all(&["ignore", "no-hidden"])
-                .multiple_occurrences(true)
+                .multiple_occurrences(true) // Allowed for historical reasons
                 .hide_short_help(true)
-                .help("Alias for '--no-ignore', and '--hidden' when given twice")
+                .help("Unrestricted search, alias for '--no-ignore --hidden'")
                 .long_help(
-                    "Alias for '--no-ignore'. Can be repeated. '-uu' is an alias for \
-                         '--no-ignore --hidden'.",
+                    "Perform an unrestricted search, including ignored and hidden files. This is \
+                    an alias for '--no-ignore --hidden'."
                 ),
         )
         .arg(

@@ -5,16 +5,20 @@
 
 ## Features
 
+- Support multiple `--exec <cmd>` instances, see #406 and 
+#960 (@tmccombs)
 
 ## Bugfixes
 
 
 ## Changes
 
-- Directories are now printed with an additional path separator at the end: `foo/bar/`
+- Changed `-u` flag to be equivalent to `-HI`. Multiple `-u` flags still allowed but do nothing, see #840 (@jacksontheel)
+- Directories are now printed with an additional path separator at the end: `foo/bar/`, see #436 and #812 (@yyogo)
 
 ## Other
 
+- Added installation instructions for RHEL8, see #989 (@ethsol)
 
 # v8.3.2
 
