@@ -14,6 +14,7 @@
 ## Changes
 
 - Changed `-u` flag to be equivalent to `-HI`. Multiple `-u` flags still allowed but do nothing, see #840 (@jacksontheel)
+- Directories are now printed with an additional path separator at the end: `foo/bar/`, see #436 and #812 (@yyogo)
 
 ## Other
 

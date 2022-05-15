@@ -72,7 +72,7 @@ fn test_simple() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -82,14 +82,14 @@ fn test_empty_pattern() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     let expected = "./a.foo
     ./e1 e2
-    ./one
+    ./one/
     ./one/b.foo
-    ./one/two
+    ./one/two/
     ./one/two/c.foo
     ./one/two/C.Foo2
-    ./one/two/three
+    ./one/two/three/
     ./one/two/three/d.foo
-    ./one/two/three/directory_foo
+    ./one/two/three/directory_foo/
     ./symlink";
 
     te.assert_output(&["--regex"], expected);
@@ -171,24 +171,24 @@ fn test_explicit_root_path() {
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/d.foo
-        one/two/three/directory_foo",
+        one/two/three/directory_foo/",
     );
 
     te.assert_output(
         &["foo", "one/two/three"],
         "one/two/three/d.foo
-        one/two/three/directory_foo",
+        one/two/three/directory_foo/",
     );
 
     te.assert_output_subdirectory(
-        "one/two",
+        "one/two/",
         &["foo", "../../"],
         "../../a.foo
         ../../one/b.foo
         ../../one/two/c.foo
         ../../one/two/C.Foo2
         ../../one/two/three/d.foo
-        ../../one/two/three/directory_foo",
+        ../../one/two/three/directory_foo/",
     );
 
     te.assert_output_subdirectory(
@@ -196,9 +196,9 @@ fn test_explicit_root_path() {
         &["", ".."],
         "../c.foo
         ../C.Foo2
-        ../three
+        ../three/
         ../three/d.foo
-        ../three/directory_foo",
+        ../three/directory_foo/",
     );
 }
 
@@ -387,7 +387,7 @@ fn test_full_path() {
             &format!("^{prefix}.*three.*foo$", prefix = prefix),
         ],
         "./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -404,7 +404,7 @@ fn test_hidden() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -444,7 +444,7 @@ fn test_no_ignore() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 
     te.assert_output(
@@ -457,7 +457,7 @@ fn test_no_ignore() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -610,7 +610,7 @@ fn test_no_ignore_vcs() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -664,7 +664,7 @@ fn test_no_ignore_aliases() {
         ./one/two/c.foo
         ./one/two/C.Foo2
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -763,7 +763,7 @@ fn test_print0() {
         ./one/two/C.Foo2NULL
         ./one/two/c.fooNULL
         ./one/two/three/d.fooNULL
-        ./one/two/three/directory_fooNULL",
+        ./one/two/three/directory_foo/NULL",
     );
 }
 
@@ -776,12 +776,12 @@ fn test_max_depth() {
         &["--max-depth", "3"],
         "./a.foo
         ./e1 e2
-        ./one
+        ./one/
         ./one/b.foo
-        ./one/two
+        ./one/two/
         ./one/two/c.foo
         ./one/two/C.Foo2
-        ./one/two/three
+        ./one/two/three/
         ./symlink",
     );
 
@@ -789,9 +789,9 @@ fn test_max_depth() {
         &["--max-depth", "2"],
         "./a.foo
         ./e1 e2
-        ./one
+        ./one/
         ./one/b.foo
-        ./one/two
+        ./one/two/
         ./symlink",
     );
 
@@ -799,7 +799,7 @@ fn test_max_depth() {
         &["--max-depth", "1"],
         "./a.foo
         ./e1 e2
-        ./one
+        ./one/
         ./symlink",
     );
 }
@@ -813,15 +813,15 @@ fn test_min_depth() {
         &["--min-depth", "3"],
         "./one/two/c.foo
         ./one/two/C.Foo2
-        ./one/two/three
+        ./one/two/three/
         ./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 
     te.assert_output(
         &["--min-depth", "4"],
         "./one/two/three/d.foo
-        ./one/two/three/directory_foo",
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -834,7 +834,7 @@ fn test_exact_depth() {
         &["--exact-depth", "3"],
         "./one/two/c.foo
         ./one/two/C.Foo2
-        ./one/two/three",
+        ./one/two/three/",
     );
 }
 
@@ -854,19 +854,19 @@ fn test_prune() {
 
     te.assert_output(
         &["foo"],
-        "./foo
+        "./foo/
         ./foo/foo.file
         ./foo/bar/foo.file
         ./bar/foo.file
-        ./bar/foo
+        ./bar/foo/
         ./bar/foo/foo.file
         ./baz/foo.file",
     );
 
     te.assert_output(
         &["--prune", "foo"],
-        "./foo
-        ./bar/foo
+        "./foo/
+        ./bar/foo/
         ./bar/foo.file
         ./baz/foo.file",
     );
@@ -882,14 +882,14 @@ fn test_absolute_path() {
         &format!(
             "{abs_path}/a.foo
             {abs_path}/e1 e2
-            {abs_path}/one
+            {abs_path}/one/
             {abs_path}/one/b.foo
-            {abs_path}/one/two
+            {abs_path}/one/two/
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
-            {abs_path}/one/two/three
+            {abs_path}/one/two/three/
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo
+            {abs_path}/one/two/three/directory_foo/
             {abs_path}/symlink",
             abs_path = &abs_path
         ),
@@ -903,7 +903,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
+            {abs_path}/one/two/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -922,7 +922,7 @@ fn test_implicit_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
+            {abs_path}/one/two/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -942,7 +942,7 @@ fn test_normalized_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
+            {abs_path}/one/two/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -967,18 +967,18 @@ fn test_type() {
 
     te.assert_output(
         &["--type", "d"],
-        "./one
-        ./one/two
-        ./one/two/three
-        ./one/two/three/directory_foo",
+        "./one/
+        ./one/two/
+        ./one/two/three/
+        ./one/two/three/directory_foo/",
     );
 
     te.assert_output(
         &["--type", "d", "--type", "l"],
-        "./one
-        ./one/two
-        ./one/two/three
-        ./one/two/three/directory_foo
+        "./one/
+        ./one/two/
+        ./one/two/three/
+        ./one/two/three/directory_foo/
         ./symlink",
     );
 
@@ -1005,10 +1005,10 @@ fn test_type_executable() {
     te.assert_output(
         &["--type", "executable", "--type", "directory"],
         "./executable-file.sh
-        ./one
-        ./one/two
-        ./one/two/three
-        ./one/two/three/directory_foo",
+        ./one/
+        ./one/two/
+        ./one/two/three/
+        ./one/two/three/directory_foo/",
     );
 }
 
@@ -1025,18 +1025,18 @@ fn test_type_empty() {
     te.assert_output(
         &["--type", "empty"],
         "./0_bytes.foo
-        ./dir_empty",
+        ./dir_empty/",
     );
 
     te.assert_output(
         &["--type", "empty", "--type", "file", "--type", "directory"],
         "./0_bytes.foo
-        ./dir_empty",
+        ./dir_empty/",
     );
 
     te.assert_output(&["--type", "empty", "--type", "file"], "./0_bytes.foo");
 
-    te.assert_output(&["--type", "empty", "--type", "directory"], "./dir_empty");
+    te.assert_output(&["--type", "empty", "--type", "directory"], "./dir_empty/");
 }
 
 /// File extension (--extension)
@@ -1107,12 +1107,12 @@ fn test_no_extension() {
     te.assert_output(
         &["^[^.]+$"],
         "./aa
-        ./one
+        ./one/
         ./one/bb
-        ./one/two
-        ./one/two/three
+        ./one/two/
+        ./one/two/three/
         ./one/two/three/d
-        ./one/two/three/directory_foo
+        ./one/two/three/directory_foo/
         ./symlink",
     );
 
@@ -1152,14 +1152,14 @@ fn test_symlink_as_root() {
             "{dir}/a.foo
             {dir}/broken_symlink
             {dir}/e1 e2
-            {dir}/one
+            {dir}/one/
             {dir}/one/b.foo
-            {dir}/one/two
+            {dir}/one/two/
             {dir}/one/two/c.foo
             {dir}/one/two/C.Foo2
-            {dir}/one/two/three
+            {dir}/one/two/three/
             {dir}/one/two/three/d.foo
-            {dir}/one/two/three/directory_foo
+            {dir}/one/two/three/directory_foo/
             {dir}/symlink",
             dir = &parent_parent
         ),
@@ -1178,9 +1178,9 @@ fn test_symlink_and_absolute_path() {
         &format!(
             "{abs_path}/{expected_path}/c.foo
             {abs_path}/{expected_path}/C.Foo2
-            {abs_path}/{expected_path}/three
+            {abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
-            {abs_path}/{expected_path}/three/directory_foo",
+            {abs_path}/{expected_path}/three/directory_foo/",
             abs_path = &abs_path,
             expected_path = expected_path
         ),
@@ -1196,9 +1196,9 @@ fn test_symlink_as_absolute_root() {
         &format!(
             "{abs_path}/symlink/c.foo
             {abs_path}/symlink/C.Foo2
-            {abs_path}/symlink/three
+            {abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo",
+            {abs_path}/symlink/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -1220,9 +1220,9 @@ fn test_symlink_and_full_path() {
             &format!("^{prefix}.*three", prefix = prefix),
         ],
         &format!(
-            "{abs_path}/{expected_path}/three
+            "{abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
-            {abs_path}/{expected_path}/three/directory_foo",
+            {abs_path}/{expected_path}/three/directory_foo/",
             abs_path = &abs_path,
             expected_path = expected_path
         ),
@@ -1241,9 +1241,9 @@ fn test_symlink_and_full_path_abs_path() {
             &format!("{abs_path}/symlink", abs_path = abs_path),
         ],
         &format!(
-            "{abs_path}/symlink/three
+            "{abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo",
+            {abs_path}/symlink/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -1255,32 +1255,32 @@ fn test_excludes() {
 
     te.assert_output(
         &["--exclude", "*.foo"],
-        "./one
-        ./one/two
+        "./one/
+        ./one/two/
         ./one/two/C.Foo2
-        ./one/two/three
-        ./one/two/three/directory_foo
+        ./one/two/three/
+        ./one/two/three/directory_foo/
         ./e1 e2
         ./symlink",
     );
 
     te.assert_output(
         &["--exclude", "*.foo", "--exclude", "*.Foo2"],
-        "./one
-        ./one/two
-        ./one/two/three
-        ./one/two/three/directory_foo
+        "./one/
+        ./one/two/
+        ./one/two/three/
+        ./one/two/three/directory_foo/
         ./e1 e2
         ./symlink",
     );
 
     te.assert_output(
         &["--exclude", "*.foo", "--exclude", "*.Foo2", "foo"],
-        "./one/two/three/directory_foo",
+        "./one/two/three/directory_foo/",
     );
 
     te.assert_output(
-        &["--exclude", "one/two", "foo"],
+        &["--exclude", "one/two/", "foo"],
         "./a.foo
         ./one/b.foo",
     );
@@ -1289,11 +1289,11 @@ fn test_excludes() {
         &["--exclude", "one/**/*.foo"],
         "./a.foo
         ./e1 e2
-        ./one
-        ./one/two
+        ./one/
+        ./one/two/
         ./one/two/C.Foo2
-        ./one/two/three
-        ./one/two/three/directory_foo
+        ./one/two/three/
+        ./one/two/three/directory_foo/
         ./symlink",
     );
 }
@@ -1866,7 +1866,7 @@ fn test_custom_path_separator() {
         one=two=c.foo
         one=two=C.Foo2
         one=two=three=d.foo
-        one=two=three=directory_foo",
+        one=two=three=directory_foo=",
     );
 }
 
@@ -1877,20 +1877,20 @@ fn test_base_directory() {
     te.assert_output(
         &["--base-directory", "one"],
         "./b.foo
-        ./two
+        ./two/
         ./two/c.foo
         ./two/C.Foo2
-        ./two/three
+        ./two/three/
         ./two/three/d.foo
-        ./two/three/directory_foo",
+        ./two/three/directory_foo/",
     );
 
     te.assert_output(
-        &["--base-directory", "one/two", "foo"],
+        &["--base-directory", "one/two/", "foo"],
         "./c.foo
         ./C.Foo2
         ./three/d.foo
-        ./three/directory_foo",
+        ./three/directory_foo/",
     );
 
     // Explicit root path
@@ -1899,12 +1899,12 @@ fn test_base_directory() {
         "two/c.foo
         two/C.Foo2
         two/three/d.foo
-        two/three/directory_foo",
+        two/three/directory_foo/",
     );
 
     // Ignore base directory when absolute path is used
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
-    let abs_base_dir = &format!("{abs_path}/one/two", abs_path = &abs_path);
+    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = &abs_path);
     te.assert_output(
         &["--base-directory", abs_base_dir, "foo", &abs_path],
         &format!(
@@ -1913,7 +1913,7 @@ fn test_base_directory() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo",
+            {abs_path}/one/two/three/directory_foo/",
             abs_path = &abs_path
         ),
     );
@@ -2069,14 +2069,14 @@ fn test_strip_cwd_prefix() {
         &["--strip-cwd-prefix", "."],
         "a.foo
         e1 e2
-        one
+        one/
         one/b.foo
-        one/two
+        one/two/
         one/two/c.foo
         one/two/C.Foo2
-        one/two/three
+        one/two/three/
         one/two/three/d.foo
-        one/two/three/directory_foo
+        one/two/three/directory_foo/
         symlink",
     );
 }

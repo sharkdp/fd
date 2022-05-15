@@ -111,6 +111,9 @@ pub struct Config {
     /// The separator used to print file paths.
     pub path_separator: Option<String>,
 
+    /// The actual separator, either the system default separator or `path_separator`
+    pub actual_path_separator: String,
+
     /// The maximum number of search results
     pub max_results: Option<usize>,
 
