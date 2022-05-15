@@ -104,10 +104,10 @@ pub fn build_app() -> Command<'static> {
                 .overrides_with_all(&["ignore", "no-hidden"])
                 .multiple_occurrences(true) // Allowed for historical reasons
                 .hide_short_help(true)
-                .help("Alias for '--no-ignore', and '--hidden'")
+                .help("Unrestricted search, alias for '--no-ignore --hidden'")
                 .long_help(
-                    "Perform a search with no filters applied. Unfilters ignored \
-                         files and hidden files.",
+                    "Perform an unrestricted search, including ignored and hidden files. This is \
+                    an alias for '--no-ignore --hidden'."
                 ),
         )
         .arg(
