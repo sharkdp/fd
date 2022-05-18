@@ -1,8 +1,8 @@
-use std::{
-    fs::{FileType, Metadata},
-    path::{Path, PathBuf},
-};
+use std::ffi::OsString;
+use std::fs::{FileType, Metadata};
+use std::path::{Path, PathBuf};
 
+use lscolors::Colorable;
 use once_cell::unsync::OnceCell;
 
 use crate::config::Config;
@@ -96,6 +96,7 @@ impl PartialEq for DirEntry {
         self.path() == other.path()
     }
 }
+
 impl Eq for DirEntry {}
 
 impl PartialOrd for DirEntry {
@@ -109,5 +110,27 @@ impl Ord for DirEntry {
     #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.path().cmp(other.path())
+    }
+}
+
+impl Colorable for DirEntry {
+    fn path(&self) -> PathBuf {
+        self.path().to_owned()
+    }
+
+    fn file_name(&self) -> OsString {
+        let name = match &self.inner {
+            DirEntryInner::Normal(e) => e.file_name(),
+            DirEntryInner::BrokenSymlink(_) => todo!(),
+        };
+        name.to_owned()
+    }
+
+    fn file_type(&self) -> Option<FileType> {
+        self.file_type()
+    }
+
+    fn metadata(&self) -> Option<Metadata> {
+        self.metadata().cloned()
     }
 }
