@@ -91,7 +91,7 @@ fn print_entry_colorized<W: Write>(
     }
 
     let style = ls_colors
-        .style_for_path_with_metadata(path, entry.metadata())
+        .style_for(entry)
         .map(Style::to_ansi_term_style)
         .unwrap_or_default();
     write!(stdout, "{}", style.paint(&path_str[offset..]))?;
