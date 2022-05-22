@@ -404,12 +404,14 @@ pub fn build_app() -> Command<'static> {
                        '{/.}': basename without file extension\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
-                       - find all *.zip files and unzip them:\n\n      \
+                       - Find all *.zip files and unzip them:\n\n      \
                            fd -e zip -x unzip\n\n  \
-                       - find *.h and *.cpp files and run \"clang-format -i ..\" for each of them:\n\n      \
+                       - Find *.h and *.cpp files and run \"clang-format -i ..\" for each of them:\n\n      \
                            fd -e h -e cpp -x clang-format -i\n\n  \
                        - Convert all *.jpg files to *.png files:\n\n      \
-                           fd -e jpg -x convert {} {.}.png\
+                           fd -e jpg -x convert {} {.}.png\n\n  \
+                       - Echo all files that start with 'pat' and end in 'tern' in the directory some_path:\n\n      \
+                           fd '^pat.*tern$' ./some_path -x echo\
                     ",
                 ),
         )
