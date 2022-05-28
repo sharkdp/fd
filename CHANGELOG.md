@@ -1,24 +1,22 @@
 # Upcoming release
 
-## Performance improvements
-
-
 ## Features
 
-- Support multiple `--exec <cmd>` instances, see #406 and 
-#960 (@tmccombs)
+- Support multiple `--exec <cmd>` instances, see #406 and #960 (@tmccombs)
 
 ## Bugfixes
 
+- "Argument list too long" errors can not appear anymore when using `--exec-batch`/`-X`, as the command invocations are automatically batched at the maximum possible size, even if `--batch-size` is not given. See #410 and #1020 (@tavianator)
 
 ## Changes
 
-- Changed `-u` flag to be equivalent to `-HI`. Multiple `-u` flags still allowed but do nothing, see #840 (@jacksontheel)
+- The `-u` flag was changed to be equivalent to `-HI` (previously, a single `-u` was only equivalent to `-I`). Additional `-u` flags are still allowed, but ignored. See #840 and #986 (@jacksontheel)
 - Directories are now printed with an additional path separator at the end: `foo/bar/`, see #436 and #812 (@yyogo)
 
 ## Other
 
 - Added installation instructions for RHEL8, see #989 (@ethsol)
+
 
 # v8.3.2
 
