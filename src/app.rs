@@ -453,7 +453,9 @@ pub fn build_app() -> Command<'static> {
                 "Maximum number of arguments to pass to the command given with -X. \
                 If the number of results is greater than the given size, \
                 the command given with -X is run again with remaining arguments. \
-                A batch size of zero means there is no limit.",
+                A batch size of zero means there is no limit (default), but note \
+                that batching might still happen due to OS restrictions on the \
+                maximum length of command lines.",
             ),
         )
         .arg(

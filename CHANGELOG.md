@@ -10,8 +10,8 @@
 
 ## Changes
 
-- The `-u` flag was changed to be equivalent to `-HI` (previously, a single `-u` was only equivalent to `-I`). Additional `-u` flags are still allowed, but ignored. See #840 and #986 (@jacksontheel)
 - Directories are now printed with an additional path separator at the end: `foo/bar/`, see #436 and #812 (@yyogo)
+- The `-u` flag was changed to be equivalent to `-HI` (previously, a single `-u` was only equivalent to `-I`). Additional `-u` flags are still allowed, but ignored. See #840 and #986 (@jacksontheel)
 
 ## Other
 
