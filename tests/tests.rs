@@ -1510,7 +1510,7 @@ fn test_exec_batch_multi() {
         .lines()
         .map(|l| {
             let mut words: Vec<_> = l.split_whitespace().collect();
-            words.sort();
+            words.sort_unstable();
             words
         })
         .collect();
