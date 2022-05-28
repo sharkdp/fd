@@ -2,6 +2,21 @@
 
 ## Features
 
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
+
+
+# v8.4.0
+
+## Features
+
 - Support multiple `--exec <cmd>` instances, see #406 and #960 (@tmccombs)
 
 ## Bugfixes
