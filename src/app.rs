@@ -395,6 +395,7 @@ pub fn build_app() -> Command<'static> {
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
+                     --exec will eat everything that comes after it until ';', even if it is meant to be the path or pattern. \
                      It is therefore recommended to place the '-x'/'--exec' option last.\n\
                      The following placeholders are substituted before the command is executed:\n  \
                        '{}':   path (of the current search result)\n  \
