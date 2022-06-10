@@ -34,9 +34,11 @@ main() {
 
     enter "fd app"
 
-    enter "fd sh"
+    enter "fd fi"
 
-    enter "fd sh --type f"
+    enter "fd fi --type f"
+
+    enter "fd --type d"
 
     enter "fd -e md"
 
