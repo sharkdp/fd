@@ -1,6 +1,8 @@
 #!/bin/bash
 # Designed to be executed via svg-term from the fd root directory:
 # svg-term --command="bash doc/screencast.sh" --out doc/screencast.svg --padding=10
+# Then run this (workaround for #1003):
+# sed -i '' 's/<text/<text font-size="1.67"/g' doc/screencast.svg
 set -e
 set -u
 
