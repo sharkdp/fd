@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
+use crate::fmt::FormatTemplate;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -14,7 +15,10 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 
 // TODO: this function is performance critical and can probably be optimized
 pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) {
-    let r = if let Some(ref ls_colors) = config.ls_colors {
+    // TODO: use format if supplied
+    let r = if let Some(ref format) = config.format {
+        print_entry_format(stdout, entry, config, format)
+    } else if let Some(ref ls_colors) = config.ls_colors {
         print_entry_colorized(stdout, entry, config, ls_colors)
     } else {
         print_entry_uncolorized(stdout, entry, config)
@@ -52,6 +56,22 @@ fn print_trailing_slash<W: Write>(
         )?;
     }
     Ok(())
+}
+
+// TODO: this function is performance critical and can probably be optimized
+fn print_entry_format<W: Write>(
+    stdout: &mut W,
+    entry: &DirEntry,
+    config: &Config,
+    format: &FormatTemplate,
+) -> io::Result<()> {
+    let separator = if config.null_separator { "\0" } else { "\n" };
+    let output = format.generate(
+        entry.stripped_path(config),
+        config.path_separator.as_deref(),
+    );
+    // TODO: support writing raw bytes on unix?
+    write!(stdout, "{}{}", output.to_string_lossy(), separator)
 }
 
 // TODO: this function is performance critical and can probably be optimized

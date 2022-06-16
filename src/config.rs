@@ -8,6 +8,7 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
+use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
 pub struct Config {
@@ -84,6 +85,9 @@ pub struct Config {
     ///
     /// The value (if present) will be a lowercase string without leading dots.
     pub extensions: Option<RegexSet>,
+
+    /// A format string to use to format results, similarly to exec
+    pub format: Option<FormatTemplate>,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandSet>>,

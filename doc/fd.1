@@ -375,6 +375,30 @@ Set the path separator to use when printing file paths. The default is the OS-sp
 Provide paths to search as an alternative to the positional \fIpath\fR argument. Changes the usage to
 \'fd [FLAGS/OPTIONS] \-\-search\-path PATH \-\-search\-path PATH2 [PATTERN]\'
 .TP
+.BI "\-\-format " fmt
+Specify a template string that is used for printing a line for each file found.
+
+The following placeholders are substituted into the string for each file before printing:
+.RS
+.IP {}
+path (of the current search result)
+.IP {/}
+basename
+.IP {//}
+parent directory
+.IP {.}
+path without file extension
+.IP {/.}
+basename without file extension
+.IP {{
+literal '{' (an escape sequence)
+.IP }}
+literal '}' (an escape sequence)
+.P
+Notice that you can use "{{" and "}}" to escape "{" and "}" respectively, which is especially
+useful if you need to include the literal text of one of the above placeholders.
+.RE
+.TP
 .BI "\-x, \-\-exec " command
 .RS
 Execute
@@ -395,28 +419,11 @@ If parallelism is enabled, the order commands will be executed in is non-determi
 --threads=1, the order is determined by the operating system and may not be what you expect. Thus, it is
 recommended that you don't rely on any ordering of the results.
 
-The following placeholders are substituted before the command is executed:
-.RS
-.IP {}
-path (of the current search result)
-.IP {/}
-basename
-.IP {//}
-parent directory
-.IP {.}
-path without file extension
-.IP {/.}
-basename without file extension
-.IP {{
-literal '{' (an escape sequence)
-.IP }}
-literal '}' (an escape sequence)
-.RE
+Before executing the command, any placeholder patterns in the command are replaced with the
+corresponding values for the current file. The same placeholders are used as in the "\-\-format"
+option.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
-
-Notice that you can use "{{" and "}}" to escape "{" and "}" respectively, which is especially
-useful if you need to include the literal text of one of the above placeholders.
 
 Examples:
 
@@ -441,19 +448,9 @@ once, with all search results as arguments.
 
 The order of the arguments is non-deterministic and should not be relied upon.
 
-One of the following placeholders is substituted before the command is executed:
-.RS
-.IP {}
-path (of all search results)
-.IP {/}
-basename
-.IP {//}
-parent directory
-.IP {.}
-path without file extension
-.IP {/.}
-basename without file extension
-.RE
+This uses the same placeholders as "\-\-format" and "\-\-exec", but instead of expanding
+once per command invocation each argument containing a placeholder is expanding for every
+file in a batch and passed as separate arguments.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
 
