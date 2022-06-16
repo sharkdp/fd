@@ -7,6 +7,7 @@ mod exit_codes;
 mod filesystem;
 mod filetypes;
 mod filter;
+mod fmt;
 mod output;
 mod regex_helper;
 mod walk;
@@ -299,6 +300,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
                     .build()
             })
             .transpose()?,
+        format: opts
+            .format
+            .as_deref()
+            .map(crate::fmt::FormatTemplate::parse),
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
