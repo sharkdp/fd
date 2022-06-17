@@ -1,4 +1,27 @@
 use clap::{crate_version, AppSettings, Arg, ColorChoice, Command};
+#[cfg(all(unix, fd_full))]
+use crate::filter::OwnerFilter;
+
+#[cfg(not(fd_full))]
+mod dummy_parsers {
+    macro_rules! dummy_struct_with_parser {
+        ($struct_name:ident::$meth_name:ident) => {
+            #[derive(Clone)]
+            pub(crate) struct $struct_name;
+
+            impl $struct_name {
+                pub fn $meth_name(_: &str) -> Result<(), std::convert::Infallible> {
+                    Ok(())
+                }
+            }
+        }
+    }
+
+    dummy_struct_with_parser!(OwnerFilter::from_string);
+}
+
+#[cfg(not(fd_full))]
+use dummy_parsers::*;
 
 pub fn build_app() -> Command<'static> {
     let clap_color_choice = if std::env::var_os("NO_COLOR").is_none() {
@@ -726,12 +749,14 @@ pub fn build_app() -> Command<'static> {
                 )
         );
 
-    if cfg!(unix) {
+    #[cfg(unix)]
+    {
         app = app.arg(
             Arg::new("owner")
                 .long("owner")
                 .short('o')
                 .takes_value(true)
+                .value_parser(OwnerFilter::from_string)
                 .value_name("user:group")
                 .help("Filter by owning user and/or group")
                 .long_help(

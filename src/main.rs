@@ -213,7 +213,7 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
     }
 }
 
-fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Config> {
+fn construct_config(mut matches: clap::ArgMatches, pattern_regex: &str) -> Result<Config> {
     // The search will be case-sensitive if the command line flag is set or
     // if the pattern has an uppercase character (smart case).
     let case_sensitive = !matches.is_present("ignore-case")
@@ -230,10 +230,8 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
     let size_limits = extract_size_limits(&matches)?;
     let time_constraints = extract_time_constraints(&matches)?;
     #[cfg(unix)]
-    let owner_constraint = matches
-        .value_of("owner")
-        .map(OwnerFilter::from_string)
-        .transpose()?
+    let owner_constraint: Option<OwnerFilter> = matches
+        .remove_one("owner")
         .flatten();
 
     #[cfg(windows)]
