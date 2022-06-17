@@ -1464,7 +1464,13 @@ fn test_exec_batch() {
 
         te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo", "{}", "{}"],
-            "[fd error]: Only one placeholder allowed for batch commands",
+            "error: Only one placeholder allowed for batch commands\n\
+            \n\
+            USAGE:\n\
+            fd-find [OPTIONS] [--] [PATTERN] [PATH]...\n\
+            \n\
+            For more information try --help\n\
+            ",
         );
 
         te.assert_failure_with_error(
@@ -1479,7 +1485,13 @@ fn test_exec_batch() {
 
         te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo {}"],
-            "[fd error]: First argument of exec-batch is expected to be a fixed executable",
+            "error: First argument of exec-batch is expected to be a fixed executable\n\
+            \n\
+            USAGE:\n\
+            fd-find [OPTIONS] [--] [PATTERN] [PATH]...\n\
+            \n\
+            For more information try --help\n\
+            ",
         );
     }
 }

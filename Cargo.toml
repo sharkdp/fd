@@ -31,7 +31,6 @@ path = "src/main.rs"
 
 [build-dependencies]
 clap = { version = "3.2", features = ["cargo"] }
-clap_complete = "3.2"
 version_check = "0.9"
 
 [dependencies]
@@ -51,10 +50,11 @@ dirs-next = "2.0"
 normpath = "0.3.2"
 chrono = "0.4"
 once_cell = "1.13.1"
+clap_complete = {version = "3.2", optional = true}
 
 [dependencies.clap]
 version = "3.2"
-features = ["suggestions", "color", "wrap_help", "cargo", "unstable-grouped"]
+features = ["suggestions", "color", "wrap_help", "cargo", "unstable-grouped", "derive"]
 
 [target.'cfg(unix)'.dependencies]
 users = "0.11.0"
@@ -81,4 +81,6 @@ codegen-units = 1
 
 [features]
 use-jemalloc = ["jemallocator"]
-default = ["use-jemalloc"]
+completions = ["clap_complete"]
+base = ["use-jemalloc"]
+default = ["use-jemalloc", "completions"]

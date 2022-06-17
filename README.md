@@ -612,7 +612,7 @@ chown root:root fd.1.gz
 sudo cp fd.1.gz /usr/share/man/man1
 sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
-fd 
+fd
 ```
 
 ### On macOS
@@ -676,7 +676,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.56.0* or later is required.
+Note that rust version *1.56.1* or later is required.
 
 `make` is also needed for the build.
 

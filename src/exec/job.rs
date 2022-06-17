@@ -17,6 +17,7 @@ pub fn job(
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
     buffer_output: bool,
+    path_separator: Option<&str>,
 ) -> ExitCode {
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
@@ -39,7 +40,12 @@ pub fn job(
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
         // Generate a command, execute it and store its exit code.
-        results.push(cmd.execute(dir_entry.path(), Arc::clone(&out_perm), buffer_output))
+        results.push(cmd.execute(
+            dir_entry.path(),
+            path_separator,
+            Arc::clone(&out_perm),
+            buffer_output,
+        ))
     }
     // Returns error in case of any error.
     merge_exitcodes(results)
@@ -50,6 +56,7 @@ pub fn batch(
     cmd: &CommandSet,
     show_filesystem_errors: bool,
     limit: usize,
+    path_separator: Option<&str>,
 ) -> ExitCode {
     let paths = rx
         .into_iter()
@@ -63,5 +70,5 @@ pub fn batch(
             }
         });
 
-    cmd.execute_batch(paths, limit)
+    cmd.execute_batch(paths, limit, path_separator)
 }

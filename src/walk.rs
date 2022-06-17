@@ -349,11 +349,19 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
+                exec::batch(
+                    rx,
+                    cmd,
+                    show_filesystem_errors,
+                    config.batch_size,
+                    config.path_separator.as_deref(),
+                )
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
 
                 let out_perm = Arc::new(Mutex::new(()));
+
+                let path_separator = Arc::new(config.path_separator.clone());
 
                 // Each spawned job will store it's thread handle in here.
                 let mut handles = Vec::with_capacity(threads);
@@ -361,6 +369,8 @@ fn spawn_receiver(
                     let rx = Arc::clone(&shared_rx);
                     let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
+
+                    let path_separator = path_separator.clone();
 
                     // Spawn a job thread that will listen for and execute inputs.
                     let handle = thread::spawn(move || {
@@ -370,6 +380,7 @@ fn spawn_receiver(
                             out_perm,
                             show_filesystem_errors,
                             enable_output_buffering,
+                            path_separator.as_deref(),
                         )
                     });
 
@@ -377,6 +388,8 @@ fn spawn_receiver(
                     handles.push(handle);
                 }
 
+                // TODO: once our MSRV supports scoped threads, it would probablly make sense to
+                // use that here
                 // Wait for all threads to exit before exiting the program.
                 let exit_codes = handles
                     .into_iter()
