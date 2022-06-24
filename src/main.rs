@@ -67,14 +67,17 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let matches = app::build_app().get_matches_from(env::args_os());
+    let mut matches = app::build_app().get_matches_from(env::args_os());
 
     set_working_dir(&matches)?;
     let current_directory = Path::new(".");
     ensure_current_directory_exists(current_directory)?;
-    let search_paths = extract_search_paths(&matches, current_directory)?;
+    let search_paths = extract_search_paths(&mut matches, current_directory)?;
 
-    let pattern = extract_search_pattern(&matches)?;
+    let pattern: &str = matches
+        .get_one::<String>("pattern")
+        .map(|s| &**s)
+        .unwrap_or("");
     ensure_search_pattern_is_not_a_path(&matches, pattern)?;
     let pattern_regex = build_pattern_regex(&matches, pattern)?;
 
@@ -85,8 +88,7 @@ fn run() -> Result<ExitCode> {
 }
 
 fn set_working_dir(matches: &clap::ArgMatches) -> Result<()> {
-    if let Some(base_directory) = matches.value_of_os("base-directory") {
-        let base_directory = Path::new(base_directory);
+    if let Some(base_directory) = matches.get_one::<PathBuf>("base-directory") {
         if !filesystem::is_existing_directory(base_directory) {
             return Err(anyhow!(
                 "The '--base-directory' path '{}' is not a directory.",
@@ -113,37 +115,24 @@ fn ensure_current_directory_exists(current_directory: &Path) -> Result<()> {
     }
 }
 
-fn extract_search_pattern(matches: &clap::ArgMatches) -> Result<&'_ str> {
-    let pattern = matches
-        .value_of_os("pattern")
-        .map(|p| {
-            p.to_str()
-                .ok_or_else(|| anyhow!("The search pattern includes invalid UTF-8 sequences."))
-        })
-        .transpose()?
-        .unwrap_or("");
-    Ok(pattern)
-}
-
 fn extract_search_paths(
-    matches: &clap::ArgMatches,
+    matches: &mut clap::ArgMatches,
     current_directory: &Path,
 ) -> Result<Vec<PathBuf>> {
     let mut search_paths = matches
-        .values_of_os("path")
-        .or_else(|| matches.values_of_os("search-path"))
+        .get_many::<PathBuf>("path")
+        .or_else(|| matches.get_many("search-path"))
         .map_or_else(
             || vec![current_directory.to_path_buf()],
             |paths| {
                 paths
                     .filter_map(|path| {
-                        let path_buffer = PathBuf::from(path);
-                        if filesystem::is_existing_directory(&path_buffer) {
-                            Some(path_buffer)
+                        if filesystem::is_existing_directory(&path) {
+                            Some(path.clone())
                         } else {
                             print_error(format!(
                                 "Search path '{}' is not a directory.",
-                                path_buffer.to_string_lossy()
+                                path.to_string_lossy()
                             ));
                             None
                         }
@@ -220,8 +209,8 @@ fn construct_config(mut matches: clap::ArgMatches, pattern_regex: &str) -> Resul
         && (matches.is_present("case-sensitive") || pattern_has_uppercase_char(pattern_regex));
 
     let path_separator = matches
-        .value_of("path-separator")
-        .map_or_else(filesystem::default_path_separator, |s| Some(s.to_owned()));
+        .remove_one::<String>("path-separator")
+        .or_else(filesystem::default_path_separator);
     let actual_path_separator = path_separator
         .clone()
         .unwrap_or_else(|| std::path::MAIN_SEPARATOR.to_string());
@@ -230,9 +219,7 @@ fn construct_config(mut matches: clap::ArgMatches, pattern_regex: &str) -> Resul
     let size_limits = extract_size_limits(&mut matches);
     let time_constraints = extract_time_constraints(&matches)?;
     #[cfg(unix)]
-    let owner_constraint: Option<OwnerFilter> = matches
-        .remove_one("owner")
-        .flatten();
+    let owner_constraint: Option<OwnerFilter> = matches.remove_one("owner").flatten();
 
     #[cfg(windows)]
     let ansi_colors_support =
@@ -360,9 +347,8 @@ fn construct_config(mut matches: clap::ArgMatches, pattern_regex: &str) -> Resul
             .map(|v| v.map(|p| String::from("!") + p).collect())
             .unwrap_or_else(Vec::new),
         ignore_files: matches
-            .values_of("ignore-file")
-            .map(|vs| vs.map(PathBuf::from).collect())
-            .unwrap_or_else(Vec::new),
+            .remove_many("ignore-file")
+            .map_or_else(Vec::new, Iterator::collect),
         size_constraints: size_limits,
         time_constraints,
         #[cfg(unix)]

@@ -1,8 +1,10 @@
-use clap::{crate_version, AppSettings, Arg, ColorChoice, Command};
+use std::path::PathBuf;
+
 #[cfg(all(unix, fd_full))]
 use crate::filter::OwnerFilter;
 #[cfg(fd_full)]
 use crate::filter::SizeFilter;
+use clap::{crate_version, value_parser, AppSettings, Arg, ArgAction, ColorChoice, Command};
 
 #[cfg(not(fd_full))]
 mod dummy_parsers {
@@ -16,7 +18,7 @@ mod dummy_parsers {
                     Ok(())
                 }
             }
-        }
+        };
     }
 
     dummy_struct_with_parser!(OwnerFilter::from_string);
@@ -488,10 +490,9 @@ pub fn build_app() -> Command<'static> {
             Arg::new("exclude")
                 .long("exclude")
                 .short('E')
-                .takes_value(true)
                 .value_name("pattern")
                 .number_of_values(1)
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
                 .help("Exclude entries that match the given glob pattern")
                 .long_help(
                     "Exclude files/directories that match the given glob pattern. This \
@@ -505,10 +506,10 @@ pub fn build_app() -> Command<'static> {
         .arg(
             Arg::new("ignore-file")
                 .long("ignore-file")
-                .takes_value(true)
                 .value_name("path")
                 .number_of_values(1)
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
+                .value_parser(value_parser!(PathBuf))
                 .hide_short_help(true)
                 .help("Add custom ignore-file in '.gitignore' format")
                 .long_help(
@@ -681,7 +682,7 @@ pub fn build_app() -> Command<'static> {
                 .takes_value(true)
                 .value_name("path")
                 .number_of_values(1)
-                .allow_invalid_utf8(true)
+                .value_parser(value_parser!(PathBuf))
                 .hide_short_help(true)
                 .help("Change current working directory")
                 .long_help(
@@ -694,7 +695,7 @@ pub fn build_app() -> Command<'static> {
         )
         .arg(
             Arg::new("pattern")
-            .allow_invalid_utf8(true)
+            .default_value("")
             .help(
                 "the search pattern (a regular expression, unless '--glob' is used; optional)",
             ).long_help(
@@ -717,8 +718,9 @@ pub fn build_app() -> Command<'static> {
         )
         .arg(
             Arg::new("path")
-                .multiple_occurrences(true)
-                .allow_invalid_utf8(true)
+                .takes_value(true)
+                .multiple_values(true)
+                .value_parser(value_parser!(PathBuf))
                 .help("the root directory for the filesystem search (optional)")
                 .long_help(
                     "The directory where the filesystem search is rooted (optional). If \
@@ -730,10 +732,10 @@ pub fn build_app() -> Command<'static> {
                 .long("search-path")
                 .takes_value(true)
                 .conflicts_with("path")
-                .multiple_occurrences(true)
+                .action(ArgAction::Append)
                 .hide_short_help(true)
                 .number_of_values(1)
-                .allow_invalid_utf8(true)
+                .value_parser(value_parser!(PathBuf))
                 .help("Provide paths to search as an alternative to the positional <path>")
                 .long_help(
                     "Provide paths to search as an alternative to the positional <path> \
