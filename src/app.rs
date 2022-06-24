@@ -1,6 +1,8 @@
 use clap::{crate_version, AppSettings, Arg, ColorChoice, Command};
 #[cfg(all(unix, fd_full))]
 use crate::filter::OwnerFilter;
+#[cfg(fd_full)]
+use crate::filter::SizeFilter;
 
 #[cfg(not(fd_full))]
 mod dummy_parsers {
@@ -18,6 +20,7 @@ mod dummy_parsers {
     }
 
     dummy_struct_with_parser!(OwnerFilter::from_string);
+    dummy_struct_with_parser!(SizeFilter::from_string);
 }
 
 #[cfg(not(fd_full))]
@@ -548,6 +551,7 @@ pub fn build_app() -> Command<'static> {
                 .short('S')
                 .takes_value(true)
                 .number_of_values(1)
+                .value_parser(SizeFilter::from_string)
                 .allow_hyphen_values(true)
                 .multiple_occurrences(true)
                 .help("Limit results based on the size of files")

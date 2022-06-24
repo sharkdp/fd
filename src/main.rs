@@ -227,7 +227,7 @@ fn construct_config(mut matches: clap::ArgMatches, pattern_regex: &str) -> Resul
         .unwrap_or_else(|| std::path::MAIN_SEPARATOR.to_string());
     check_path_separator_length(path_separator.as_deref())?;
 
-    let size_limits = extract_size_limits(&matches)?;
+    let size_limits = extract_size_limits(&mut matches);
     let time_constraints = extract_time_constraints(&matches)?;
     #[cfg(unix)]
     let owner_constraint: Option<OwnerFilter> = matches
@@ -499,14 +499,10 @@ fn determine_ls_command(color_arg: &str, colored_output: bool) -> Result<Vec<&st
     Ok(cmd)
 }
 
-fn extract_size_limits(matches: &clap::ArgMatches) -> Result<Vec<SizeFilter>> {
-    matches.values_of("size").map_or(Ok(Vec::new()), |vs| {
-        vs.map(|sf| {
-            SizeFilter::from_string(sf)
-                .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", sf))
-        })
-        .collect::<Result<Vec<_>>>()
-    })
+fn extract_size_limits(matches: &mut clap::ArgMatches) -> Vec<SizeFilter> {
+    matches
+        .remove_many::<SizeFilter>("size")
+        .map_or(Vec::new(), Iterator::collect)
 }
 
 fn extract_time_constraints(matches: &clap::ArgMatches) -> Result<Vec<TimeFilter>> {
