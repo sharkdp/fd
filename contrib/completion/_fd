@@ -146,7 +146,7 @@ _fd() {
 
     + '(about)' # about flags
     '(: * -)'{-h,--help}'[display help message]'
-    '(: * -)'{-v,--version}'[display version information]'
+    '(: * -)'{-V,--version}'[display version information]'
 
     + path-sep # set path separator for output
     $no'(--path-separator)--path-separator=[set the path separator to use when printing file paths]:path separator'
