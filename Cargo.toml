@@ -31,7 +31,7 @@ path = "src/main.rs"
 
 [build-dependencies]
 clap = { version = "3.1", features = ["cargo"] }
-clap_complete = "3.1"
+clap_complete = "3.2"
 version_check = "0.9"
 
 [dependencies]
