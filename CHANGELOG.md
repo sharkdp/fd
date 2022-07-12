@@ -2,6 +2,7 @@
 
 ## Features
 
+- `--type executable`/`-t` now works on Windows, see #1051 and #1061
 
 ## Bugfixes
 
