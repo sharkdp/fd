@@ -177,6 +177,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "faccess"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59ae66425802d6a903e268ae1a08b8c38ba143520f227a205edf4e9c7e3e26d5"
+dependencies = [
+ "bitflags",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "fd-find"
 version = "8.4.0"
 dependencies = [
@@ -190,6 +201,7 @@ dependencies = [
  "ctrlc",
  "diff",
  "dirs-next",
+ "faccess",
  "filetime",
  "globset",
  "humantime",

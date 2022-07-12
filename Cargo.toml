@@ -63,6 +63,9 @@ nix = { version = "0.24.1", default-features = false, features = ["signal"] }
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
 
+[target.'cfg(windows)'.dependencies]
+faccess = "0.2.4"
+
 # FIXME: Re-enable jemalloc on macOS
 # jemalloc is currently disabled on macOS due to a bug in jemalloc in combination with macOS
 # Catalina. See https://github.com/sharkdp/fd/issues/498 for details.
