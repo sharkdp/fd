@@ -18,7 +18,7 @@ use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
 use atty::Stream;
-use clap::{CommandFactory,Parser};
+use clap::{CommandFactory, Parser};
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{RegexBuilder, RegexSetBuilder};

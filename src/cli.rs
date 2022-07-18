@@ -4,8 +4,8 @@ use std::time::Duration;
 #[cfg(feature = "completions")]
 use anyhow::anyhow;
 use clap::{
-    builder::RangedU64ValueParser, value_parser, AppSettings, Arg, ArgAction, ArgEnum, ArgGroup,
-    ArgMatches, Command, ErrorKind, Parser,
+    builder::RangedU64ValueParser, value_parser, AppSettings, Arg, ArgAction, ArgGroup, ArgMatches,
+    Command, ErrorKind, Parser, ValueEnum,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -92,7 +92,7 @@ pub struct Opts {
     /// Include hidden directories and files in the search results (default:
     /// hidden files and directories are skipped). Files and directories are considered
     /// to be hidden if their name starts with a `.` sign (dot).
-    /// The flag can be overriden with --no-hidden.
+    /// The flag can be overridden with --no-hidden.
     #[clap(long, short = 'H', action, overrides_with = "hidden")]
     pub hidden: bool,
     /// Do not respect .(git|fd)ignore files
@@ -187,7 +187,7 @@ pub struct Opts {
     ///
     /// By default, fd does not descend into symlinked directories. Using this
     /// flag, symbolic links are also traversed.
-    /// Flag can be overriden with --no-follow.
+    /// Flag can be overridden with --no-follow.
     #[clap(
         long,
         short = 'L',
@@ -200,9 +200,16 @@ pub struct Opts {
     ///
     /// By default, the search pattern is only matched against the filename (or
     /// directory name). Using this flag, the pattern is matched against the full
-    /// (absolute) path. Example:
+    /// (absolute) path.
+    /// Example:
     ///     fd --glob -p '**/.git/config'
-    #[clap(long, short = 'p', action, overrides_with("full-path"))]
+    #[clap(
+        long,
+        short = 'p',
+        action,
+        overrides_with("full-path"),
+        verbatim_doc_comment
+    )]
     pub full_path: bool,
     /// Separate results by the null character
     ///
@@ -247,8 +254,8 @@ pub struct Opts {
     /// you want to exclude specific directories, use the '--exclude=…' option.
     #[clap(long, hide_short_help = true, action, conflicts_with_all(&["size", "exact-depth"]))]
     pub prune: bool,
-    /// Filter by type: file (f), directory (d), symlink (l),\nexecutable (x),
-    /// empty (e), socket (s), pipe (p))
+    /// Filter by type: file (f), directory (d), symlink (l),
+    /// executable (x), empty (e), socket (s), pipe (p)
     ///
     /// Filter the search by type:
     ///
@@ -286,13 +293,12 @@ pub struct Opts {
     ///       fd --type empty --type directory
     ///       fd -te -td"
     #[clap(long = "type", short = 't', value_name = "filetype", hide_possible_values = true,
-        arg_enum, action = ArgAction::Append, number_of_values = 1)]
+        arg_enum, action = ArgAction::Append, number_of_values = 1, verbatim_doc_comment)]
     pub filetype: Option<Vec<FileType>>,
     /// Filter by file extension
     ///
     /// (Additionally) filter search results by their file extension. Multiple
     /// allowable file extensions can be specified.
-    ///
     /// If you want to search for files without extension,
     /// you can use the regex '^[^.]+$' as a normal search pattern.
     #[clap(long = "extension", short = 'e', value_name = "ext", action = ArgAction::Append, number_of_values = 1)]
@@ -320,14 +326,13 @@ pub struct Opts {
     pub batch_size: usize,
     /// Exclude entries that match the given glob pattern
     ///
-    /// "Exclude files/directories that match the given glob pattern. This
-    ///      overrides any other ignore logic. Multiple exclude patterns can be
-    ///      specified.
+    /// Exclude files/directories that match the given glob pattern. This overrides any other
+    /// ignore logic. Multiple exclude patterns can be specified.
     ///
-    ///      Examples:
-    ///        --exclude '*.pyc'
-    ///        --exclude node_modules
-    #[clap(long, short = 'E', value_name = "pattern", action = ArgAction::Append, number_of_values = 1)]
+    /// Examples:
+    ///   --exclude '*.pyc'
+    ///   --exclude node_modules
+    #[clap(long, short = 'E', value_name = "pattern", action = ArgAction::Append, number_of_values = 1, verbatim_doc_comment)]
     pub exclude: Vec<String>,
     /// Add custom ignore-file in '.gitignore' format
     ///
@@ -336,12 +341,18 @@ pub struct Opts {
     #[clap(long, value_name = "path", action = ArgAction::Append, number_of_values = 1, hide_short_help = true)]
     pub ignore_file: Vec<PathBuf>,
     /// When to use colors
+    ///
+    /// 'auto':      show colors if the output goes to an interactive console (default)
+    /// 'never':     do not use colorized output
+    /// 'always':    always use colorized output
     #[clap(
         long,
         short = 'c',
         arg_enum,
         default_value = "auto",
-        value_name = "when"
+        value_name = "when",
+        hide_possible_values = true,
+        verbatim_doc_comment
     )]
     pub color: ColorWhen,
     /// Set number of threads
@@ -368,7 +379,7 @@ pub struct Opts {
     ///     'mi': mebibytes
     ///     'gi': gibibytes
     ///     'ti': tebibytes
-    #[clap(long, short = 'S', number_of_values = 1, value_parser = SizeFilter::from_string, allow_hyphen_values = true, action = ArgAction::Append)]
+    #[clap(long, short = 'S', number_of_values = 1, value_parser = SizeFilter::from_string, allow_hyphen_values = true, action = ArgAction::Append, verbatim_doc_comment)]
     pub size: Vec<SizeFilter>,
     /// Milliseconds to buffer before streaming search results to console
     ///
@@ -378,8 +389,8 @@ pub struct Opts {
     pub max_buffer_time: Option<Duration>,
     /// Filter by file modification time (newer than)
     ///
-    /// Filter results based on the file modification time. The argument can be provided
-    /// as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min).
+    /// The argument can be provided as a specific point in time (YYYY-MM-DD HH:MM:SS)
+    /// or as a duration (10h, 1d, 35min).
     /// If the time is not specified, it defaults to 00:00:00.
     /// '--change-newer-than' or '--newer' can be used as aliases.
     /// Examples:
@@ -392,13 +403,14 @@ pub struct Opts {
         alias("newer"),
         value_name = "date|dur",
         number_of_values = 1,
+        verbatim_doc_comment,
         action
     )]
     pub changed_within: Option<String>,
     /// Filter by file modification time (older than)
     ///
-    /// Filter results based on the file modification time. The argument can be provided
-    /// as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min).
+    /// The argument can be provided as a specific point in time (YYYY-MM-DD HH:MM:SS)
+    /// or as a duration (10h, 1d, 35min).
     /// '--change-older-than' or '--older' can be used as aliases.
     ///
     /// Examples:
@@ -411,6 +423,7 @@ pub struct Opts {
         alias("older"),
         value_name = "date|dur",
         number_of_values = 1,
+        verbatim_doc_comment,
         action
     )]
     pub changed_before: Option<String>,
@@ -419,9 +432,8 @@ pub struct Opts {
     /// Limit the number of search results to 'count' and quit immediately.
     #[clap(long, value_name = "count", hide_short_help = true, value_parser)]
     max_results: Option<usize>,
-    /// Limit search to a single result
+    /// Limit search to a single result and quit immediately
     ///
-    /// Limit the search to a single result and quit immediately.
     /// This is an alias for '--max-results=1'.
     #[clap(
         short = '1',
@@ -437,7 +449,14 @@ pub struct Opts {
     /// exit code will be 1.
     ///
     /// '--has-results' can be used as an alias.
-    #[clap(long, short = 'q', alias = "has-results", hide_short_help = true, conflicts_with("max-results"), action)]
+    #[clap(
+        long,
+        short = 'q',
+        alias = "has-results",
+        hide_short_help = true,
+        conflicts_with("max-results"),
+        action
+    )]
     pub quiet: bool,
     /// Show filesystem errors
     ///
@@ -466,7 +485,7 @@ pub struct Opts {
     /// pattern (if --glob is used). If no pattern has been specified, every entry
     /// is considered a match. If your pattern starts with a dash (-), make sure to
     /// pass '--' first, or it will be considered as a flag (fd -- '-foo').
-    #[clap(value_parser, default_value = "")]
+    #[clap(value_parser, default_value = "", hide_default_value = true)]
     pub pattern: String,
     /// Set path separator when printing file paths
     /// Set the path separator to use when printing file paths. The default is
@@ -475,15 +494,13 @@ pub struct Opts {
     pub path_separator: Option<String>,
     /// the root directories for the filesystem search (optional)
     ///
-    /// The directories where the filesystem search is rooted (optional).
+    /// The directories where the filesystem search is rooted.
     /// If omitted, search the current working directory.
     #[clap(action = ArgAction::Append)]
     path: Vec<PathBuf>,
-    /// Provides paths to search as an alternative to the positional <path>
+    /// Provides paths to search as an alternative to the positional <path> argument
     ///
-    /// Provide paths to search as an alternative to the positional <path>
-    ///     argument. Changes the usage to `fd [OPTIONS] --search-path <path>
-    ///     --search-path <path2> [<pattern>]`
+    /// Changes the usage to `fd [OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`
     #[clap(long, conflicts_with("path"), action = ArgAction::Append, hide_short_help = true, number_of_values = 1)]
     search_path: Vec<PathBuf>,
     /// strip './' prefix from non-tty outputs
@@ -494,16 +511,15 @@ pub struct Opts {
     pub strip_cwd_prefix: bool,
     /// Filter by owning user and/or group
     ///
-    /// Filter files by their user and/or group.
-    /// Format: [(user|uid)][:(group|gid)]. Either side is optional.
-    /// Precede either side with a '!' to exclude files instead.
+    /// Filter files by their user and/or group. Format: [(user|uid)][:(group|gid)].
+    /// Either side is optional. Precede either side with a '!' to exclude files instead.
     ///
     /// Examples:
     ///     --owner john
     ///     --owner :students
     ///     --owner '!john:students'
     #[cfg(unix)]
-    #[clap(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group")]
+    #[clap(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group", verbatim_doc_comment)]
     pub owner: Option<OwnerFilter>,
     /// Do not descend into a different file system
     ///
@@ -581,7 +597,9 @@ impl Opts {
     }
 
     pub fn max_results(&self) -> Option<usize> {
-        self.max_results.filter(|&m| m > 0).or_else(|| self.max_one_result.then(|| 1))
+        self.max_results
+            .filter(|&m| m > 0)
+            .or_else(|| self.max_one_result.then(|| 1))
     }
 
     #[cfg(feature = "completions")]
@@ -599,7 +617,8 @@ impl Opts {
 #[cfg(feature = "completions")]
 fn guess_shell() -> anyhow::Result<Shell> {
     let env_shell = std::env::var_os("SHELL").map(PathBuf::from);
-    let shell = env_shell.as_ref()
+    let shell = env_shell
+        .as_ref()
         .and_then(|s| s.file_name())
         .and_then(|s| s.to_str())
         .ok_or_else(|| anyhow!("Unable to get shell from environment"))?;
@@ -608,7 +627,7 @@ fn guess_shell() -> anyhow::Result<Shell> {
         .map_err(|_| anyhow!("Unknown shell {}", shell))
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, ArgEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum FileType {
     #[clap(alias = "f")]
     File,
@@ -626,7 +645,7 @@ pub enum FileType {
     Pipe,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Debug, ArgEnum)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
 pub enum ColorWhen {
     /// show colors if the output goes to an interactive console (default)
     Auto,
