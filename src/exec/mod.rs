@@ -5,6 +5,7 @@ mod token;
 
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
+use std::fmt::{Display, Debug};
 use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
@@ -20,7 +21,7 @@ use crate::exit_codes::ExitCode;
 
 use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
-pub use self::job::{batch, job};
+pub use self::job::{batch, job, peek_job_commands};
 use self::token::Token;
 
 /// Execution mode of the command
@@ -36,11 +37,35 @@ pub enum ExecutionMode {
 pub struct CommandSet {
     mode: ExecutionMode,
     path_separator: Option<String>,
+    print: bool,
     commands: Vec<CommandTemplate>,
 }
 
+// Wrapper for displaying Commands.
+pub struct CommandSetDisplay<'a> {
+    command_set: &'a CommandSet,
+    input: PathBuf
+}
+
+impl <'a> CommandSetDisplay<'a> {
+    pub fn new( command_set: &'a CommandSet, input: PathBuf ) -> CommandSetDisplay {
+        CommandSetDisplay { command_set, input }
+    }
+}
+
+impl Display for CommandSetDisplay<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self
+            .command_set.commands
+            .iter()
+            .for_each(|c| { write!(f, "{:?}", c.generate_string(&self.input, Some("/"))); return ()});
+        Ok(())
+    }
+}
+
+
 impl CommandSet {
-    pub fn new<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
+    pub fn new<I, S>(input: I, path_separator: Option<String>, print: bool) -> Result<CommandSet>
     where
         I: IntoIterator<Item = Vec<S>>,
         S: AsRef<str>,
@@ -48,6 +73,7 @@ impl CommandSet {
         Ok(CommandSet {
             mode: ExecutionMode::OneByOne,
             path_separator,
+            print,
             commands: input
                 .into_iter()
                 .map(CommandTemplate::new)
@@ -55,7 +81,7 @@ impl CommandSet {
         })
     }
 
-    pub fn new_batch<I, S>(input: I, path_separator: Option<String>) -> Result<CommandSet>
+    pub fn new_batch<I, S>(input: I, path_separator: Option<String>, print: bool) -> Result<CommandSet>
     where
         I: IntoIterator<Item = Vec<S>>,
         S: AsRef<str>,
@@ -63,6 +89,7 @@ impl CommandSet {
         Ok(CommandSet {
             mode: ExecutionMode::Batch,
             path_separator,
+            print,
             commands: input
                 .into_iter()
                 .map(|args| {
@@ -81,6 +108,10 @@ impl CommandSet {
 
     pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
+    }
+
+    pub fn should_print(&self) -> bool {
+        self.print
     }
 
     pub fn execute(&self, input: &Path, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
@@ -215,6 +246,18 @@ struct CommandTemplate {
     args: Vec<ArgumentTemplate>,
 }
 
+impl Display for CommandTemplate {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for arg in self.args.iter() {
+            if let Err(e) = arg.fmt(f) {
+                return Err(e);
+            }
+        }
+        Ok(())
+    }
+}
+
+
 impl CommandTemplate {
     fn new<I, S>(input: I) -> Result<CommandTemplate>
     where
@@ -299,6 +342,15 @@ impl CommandTemplate {
         }
         Ok(cmd)
     }
+
+    fn generate_string(&self, input: &Path, path_separator: Option<&str>) -> OsString {
+        let mut res: OsString = self.args[0].generate(&input, path_separator);
+        for arg in &self.args[1..] {
+            res.push(" ");
+            res.push(arg.generate(&input, path_separator));
+        }
+        res
+    }
 }
 
 /// Represents a template for a single command argument.
@@ -310,6 +362,22 @@ enum ArgumentTemplate {
     Tokens(Vec<Token>),
     Text(String),
 }
+
+//impl Display for ArgumentTemplate {
+//    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//        match self {
+//            Self::Tokens(tokens) => {
+//                for token in tokens {
+//                    if let Err(e) = token.fmt(f) {
+//                        return Err(e)
+//                    }
+//                }
+//                Ok(())
+//            },
+//            Self::Text(text) => write!(f,"{}",text)
+//        }
+//    }
+//}
 
 impl ArgumentTemplate {
     pub fn has_tokens(&self) -> bool {
@@ -413,7 +481,7 @@ mod tests {
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
-            CommandSet::new(vec![vec![&"echo", &"${SHELL}:"]], None).unwrap(),
+            CommandSet::new(vec![vec![&"echo", &"${SHELL}:"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -422,6 +490,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::Placeholder]),
                     ]
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -431,7 +500,7 @@ mod tests {
     #[test]
     fn tokens_with_no_extension() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{.}"]], None).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{.}"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -439,6 +508,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::NoExt]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -448,7 +518,7 @@ mod tests {
     #[test]
     fn tokens_with_basename() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/}"]], None).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{/}"]], None,false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -456,6 +526,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::Basename]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -465,7 +536,7 @@ mod tests {
     #[test]
     fn tokens_with_parent() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{//}"]], None).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{//}"]], None,false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -473,6 +544,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::Parent]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -482,7 +554,7 @@ mod tests {
     #[test]
     fn tokens_with_basename_no_extension() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/.}"]], None).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{/.}"]], None,false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -490,6 +562,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::BasenameNoExt]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -499,7 +572,7 @@ mod tests {
     #[test]
     fn tokens_multiple() {
         assert_eq!(
-            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None).unwrap(),
+            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None,false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -511,6 +584,7 @@ mod tests {
                         ]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::OneByOne,
                 path_separator: None,
             }
@@ -520,7 +594,7 @@ mod tests {
     #[test]
     fn tokens_single_batch() {
         assert_eq!(
-            CommandSet::new_batch(vec![vec!["echo", "{.}"]], None).unwrap(),
+            CommandSet::new_batch(vec![vec!["echo", "{.}"]], None,false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -528,6 +602,7 @@ mod tests {
                         ArgumentTemplate::Tokens(vec![Token::NoExt]),
                     ],
                 }],
+                print: false,
                 mode: ExecutionMode::Batch,
                 path_separator: None,
             }
@@ -536,7 +611,7 @@ mod tests {
 
     #[test]
     fn tokens_multiple_batch() {
-        assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None).is_err());
+        assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None,false).is_err());
     }
 
     #[test]
@@ -546,7 +621,7 @@ mod tests {
 
     #[test]
     fn command_set_no_args() {
-        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None).is_err());
+        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None,false).is_err());
     }
 
     #[test]

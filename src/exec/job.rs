@@ -1,4 +1,6 @@
-use std::sync::mpsc::Receiver;
+use std::io::{Write, stdout};
+use std::path::PathBuf;
+use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 
 use crate::dir_entry::DirEntry;
@@ -6,7 +8,46 @@ use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::walk::WorkerResult;
 
-use super::CommandSet;
+use super::{CommandSet, CommandSetDisplay};
+
+pub fn print_command<W: Write>(stdout: &mut W, path: &PathBuf, cmd: &CommandSet) {
+    if let Err(e) = write!(stdout,"{}\n", CommandSetDisplay::new(cmd, path.to_path_buf())) {
+        print_error(format!("Could not write to output: {}", e));
+        ExitCode::GeneralError.exit();
+    }
+    return
+}
+
+/// Print commands in the reciever without running them.
+/// Returns a new channel with the same results to allow passing the
+/// return value to the `job`-function to run the commands concurrently.
+pub fn peek_job_commands(
+    rx: &Receiver<WorkerResult>,
+    cmd: &CommandSet,
+    show_filesystem_errors: bool,
+) -> Receiver<WorkerResult> {
+    let (send, rx_new) = channel::<WorkerResult>();
+    let res: Vec<PathBuf> = rx
+        .into_iter()
+        .filter_map(|worker_result| {
+            send.send(worker_result.to_owned()).unwrap();
+            match worker_result {
+            WorkerResult::Entry(dir_entry) => {
+                Some(dir_entry.into_path())
+            },
+            WorkerResult::Error(err) => {
+                if show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                None
+            }}
+        })
+        .collect();
+    for p in res.iter() {
+        print_command(&mut stdout(), p, cmd);
+    }
+    return rx_new
+}
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then
@@ -16,7 +57,7 @@ pub fn job(
     cmd: Arc<CommandSet>,
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
-    buffer_output: bool,
+    buffer_output: bool
 ) -> ExitCode {
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
@@ -38,9 +79,11 @@ pub fn job(
 
         // Drop the lock so that other threads can read from the receiver.
         drop(lock);
+
         // Generate a command, execute it and store its exit code.
         results.push(cmd.execute(dir_entry.path(), Arc::clone(&out_perm), buffer_output))
     }
+
     // Returns error in case of any error.
     merge_exitcodes(results)
 }

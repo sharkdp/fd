@@ -442,6 +442,15 @@ pub fn build_app() -> Command<'static> {
                 ),
         )
         .arg(
+            Arg::new("print-exec")
+                .long("print-exec")
+                .short('P')
+                .help("Print each command ran with -x or -X.")
+                .long_help(
+                    "Print each command to be ran. If -x or -X is not used, this argument has no effect."
+                ),
+        )
+        .arg(
             Arg::new("batch-size")
             .long("batch-size")
             .takes_value(true)

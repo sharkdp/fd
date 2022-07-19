@@ -34,6 +34,7 @@ enum ReceiverMode {
 }
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
+#[derive(Clone)]
 pub enum WorkerResult {
     Entry(DirEntry),
     Error(ignore::Error),
@@ -351,7 +352,12 @@ fn spawn_receiver(
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
             } else {
-                let shared_rx = Arc::new(Mutex::new(rx));
+
+                let shared_rx = if cmd.should_print() {
+                    Arc::new(Mutex::new( exec::peek_job_commands(&rx, cmd, show_filesystem_errors) ))
+                } else {
+                    Arc::new(Mutex::new(rx))
+                };
 
                 let out_perm = Arc::new(Mutex::new(()));
 
@@ -369,7 +375,7 @@ fn spawn_receiver(
                             cmd,
                             out_perm,
                             show_filesystem_errors,
-                            enable_output_buffering,
+                            enable_output_buffering
                         )
                     });
 
