@@ -7,6 +7,7 @@ use lscolors::{Indicator, LsColors, Style};
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
+use crate::exec::{CommandSet, CommandSetDisplay};
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
 
@@ -42,6 +43,24 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
     }
 }
 
+pub fn print_command_with_entry<W: Write>(
+    stdout: &mut W,
+    entry: &DirEntry,
+    cmd: &CommandSet,
+    config: &Config,
+) -> io::Result<()> {
+
+    let style: Option<ansi_term::Style> = if let Some(ref ls_colors) = config.ls_colors{
+        Some(get_entry_style(entry, ls_colors, config))
+    } else {
+        None
+    };
+
+    let cmd_display = CommandSetDisplay::new(cmd, entry.to_owned(), style);
+    write!(stdout, "{}",cmd_display)?;
+    Ok(())
+}
+
 // Display a trailing slash if the path is a directory and the config option is enabled.
 // If the path_separator option is set, display that instead.
 // The trailing slash will not be colored.
@@ -63,6 +82,37 @@ fn print_trailing_slash<W: Write>(
         )?;
     }
     Ok(())
+}
+
+fn get_entry_style(entry: &DirEntry, ls_colors: &LsColors, config: &Config) -> ansi_term::Style {
+
+    // Split the path between the parent and the last component
+    let mut offset = 0;
+    let path = stripped_path(entry, config);
+    let path_str = path.to_string_lossy();
+
+    if let Some(parent) = path.parent() {
+        offset = parent.to_string_lossy().len();
+        for c in path_str[offset..].chars() {
+            if std::path::is_separator(c) {
+                offset += c.len_utf8();
+            } else {
+                break;
+            }
+        }
+    }
+
+    if offset > 0 {
+        return ls_colors
+            .style_for_indicator(Indicator::Directory)
+            .map(Style::to_ansi_term_style)
+            .unwrap_or_default()
+    }
+
+    return ls_colors
+        .style_for_path_with_metadata(path, entry.metadata())
+        .map(Style::to_ansi_term_style)
+        .unwrap_or_default()
 }
 
 // TODO: this function is performance critical and can probably be optimized

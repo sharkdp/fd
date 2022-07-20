@@ -353,8 +353,10 @@ fn spawn_receiver(
                 exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
             } else {
 
+                // If printing commands, wait for results from the receiver to print them before
+                // running commands.
                 let shared_rx = if cmd.should_print() {
-                    Arc::new(Mutex::new( exec::peek_job_commands(&rx, cmd, show_filesystem_errors) ))
+                    Arc::new(Mutex::new(exec::peek_job_commands(&rx, cmd, &config, show_filesystem_errors)))
                 } else {
                     Arc::new(Mutex::new(rx))
                 };

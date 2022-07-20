@@ -5,7 +5,7 @@ mod token;
 
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
-use std::fmt::{Display, Debug};
+use std::fmt::{Display, Debug, Formatter};
 use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
@@ -17,6 +17,7 @@ use argmax::Command;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+use crate::dir_entry::DirEntry;
 use crate::exit_codes::ExitCode;
 
 use self::command::{execute_commands, handle_cmd_error};
@@ -44,25 +45,26 @@ pub struct CommandSet {
 // Wrapper for displaying Commands.
 pub struct CommandSetDisplay<'a> {
     command_set: &'a CommandSet,
-    input: PathBuf
+    input: DirEntry,
+    style: Option<ansi_term::Style>
 }
 
 impl <'a> CommandSetDisplay<'a> {
-    pub fn new( command_set: &'a CommandSet, input: PathBuf ) -> CommandSetDisplay {
-        CommandSetDisplay { command_set, input }
+    pub fn new( command_set: &'a CommandSet, input: DirEntry, style: Option<ansi_term::Style> ) -> CommandSetDisplay {
+        CommandSetDisplay { command_set, input, style }
     }
 }
 
 impl Display for CommandSetDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self
-            .command_set.commands
-            .iter()
-            .for_each(|c| { write!(f, "{:?}", c.generate_string(&self.input, Some("/"))); return ()});
+        for c in self.command_set.commands.iter() {
+            if let Err(e) = c.display_highlighted(f,&self.input, self.style) {
+                return Err(e);
+            }
+        }
         Ok(())
     }
 }
-
 
 impl CommandSet {
     pub fn new<I, S>(input: I, path_separator: Option<String>, print: bool) -> Result<CommandSet>
@@ -343,13 +345,24 @@ impl CommandTemplate {
         Ok(cmd)
     }
 
-    fn generate_string(&self, input: &Path, path_separator: Option<&str>) -> OsString {
-        let mut res: OsString = self.args[0].generate(&input, path_separator);
+    fn display_highlighted(
+        &self,
+        f: &mut Formatter,
+        entry: &DirEntry,
+        style: Option<ansi_term::Style>
+    ) -> std::fmt::Result {
+        let mut res: OsString = self.args[0].generate(&entry.path(), None);
         for arg in &self.args[1..] {
             res.push(" ");
-            res.push(arg.generate(&input, path_separator));
+            res.push(arg.generate(&entry.path(), None));
         }
-        res
+        if let Some(s) = style {
+            let as_str = res.to_str().unwrap();
+            write!(f,"{}\n",s.paint(as_str))?;
+        } else {
+            write!(f,"{:?}\n",res)?;
+        }
+        Ok(())
     }
 }
 
