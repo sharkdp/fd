@@ -17,8 +17,10 @@ use argmax::Command;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
+use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::exit_codes::ExitCode;
+use crate::output;
 
 use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
@@ -45,20 +47,24 @@ pub struct CommandSet {
 // Wrapper for displaying Commands.
 pub struct CommandSetDisplay<'a> {
     command_set: &'a CommandSet,
-    input: DirEntry,
-    style: Option<ansi_term::Style>
+    input: &'a DirEntry,
+    config: &'a Config
 }
 
 impl <'a> CommandSetDisplay<'a> {
-    pub fn new( command_set: &'a CommandSet, input: DirEntry, style: Option<ansi_term::Style> ) -> CommandSetDisplay {
-        CommandSetDisplay { command_set, input, style }
+    pub fn new(
+        command_set: &'a CommandSet,
+        input: &'a DirEntry,
+        config: &'a Config
+    ) -> CommandSetDisplay<'a> {
+        CommandSetDisplay { command_set, input, config }
     }
 }
 
 impl Display for CommandSetDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for c in self.command_set.commands.iter() {
-            if let Err(e) = c.display_highlighted(f,&self.input, self.style) {
+            if let Err(e) = c.display_highlighted(f,&self.input, self.config) {
                 return Err(e);
             }
         }
@@ -349,19 +355,14 @@ impl CommandTemplate {
         &self,
         f: &mut Formatter,
         entry: &DirEntry,
-        style: Option<ansi_term::Style>
+        config: &Config
     ) -> std::fmt::Result {
-        let mut res: OsString = self.args[0].generate(&entry.path(), None);
+        let mut res: OsString = self.args[0].generate_with_highlight(&entry.path(), None, None,None);
         for arg in &self.args[1..] {
             res.push(" ");
-            res.push(arg.generate(&entry.path(), None));
+            res.push( arg.generate_with_highlight(&entry.path(), None, Some(config), Some(entry) ));
         }
-        if let Some(s) = style {
-            let as_str = res.to_str().unwrap();
-            write!(f,"{}\n",s.paint(as_str))?;
-        } else {
-            write!(f,"{:?}\n",res)?;
-        }
+        write!(f,"{}\n",res.to_str().unwrap())?;
         Ok(())
     }
 }
@@ -376,22 +377,6 @@ enum ArgumentTemplate {
     Text(String),
 }
 
-//impl Display for ArgumentTemplate {
-//    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//        match self {
-//            Self::Tokens(tokens) => {
-//                for token in tokens {
-//                    if let Err(e) = token.fmt(f) {
-//                        return Err(e)
-//                    }
-//                }
-//                Ok(())
-//            },
-//            Self::Text(text) => write!(f,"{}",text)
-//        }
-//    }
-//}
-
 impl ArgumentTemplate {
     pub fn has_tokens(&self) -> bool {
         matches!(self, ArgumentTemplate::Tokens(_))
@@ -401,33 +386,60 @@ impl ArgumentTemplate {
     /// the path separator in all placeholder tokens. Text arguments and tokens are not affected by
     /// path separator substitution.
     pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
+        self.generate_with_highlight(path, path_separator, None,None)
+    }
+
+    fn generate_with_highlight(
+        &self,
+        path: impl AsRef<Path>,
+        path_separator: Option<&str>,
+        config: Option<&Config>,
+        entry: Option<&DirEntry>
+    ) -> OsString {
         use self::Token::*;
         let path = path.as_ref();
+
+        let hl = |token_text: &OsStr| -> OsString {
+            if let Some(cfg) = config {
+                let path_from_token = Path::new(token_text);
+                output::paint_entry(entry.unwrap(), path_from_token, cfg)
+            } else {
+                OsString::from(token_text)
+            }
+        };
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
                 let mut s = OsString::new();
                 for token in tokens {
                     match *token {
-                        Basename => s.push(Self::replace_separator(basename(path), path_separator)),
+                        Basename => s.push(hl(&Self::replace_separator(basename(path), path_separator))),
                         BasenameNoExt => s.push(Self::replace_separator(
                             &remove_extension(basename(path).as_ref()),
                             path_separator,
                         )),
-                        NoExt => s.push(Self::replace_separator(
-                            &remove_extension(path),
-                            path_separator,
-                        )),
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
+                        NoExt => {
+                            s.push(hl(&Self::replace_separator(
+                                &remove_extension(path),
+                                path_separator,
+                            )));
+                        },
                         Placeholder => {
-                            s.push(Self::replace_separator(path.as_ref(), path_separator))
+                            s.push(hl(&Self::replace_separator(path.as_ref(), path_separator)))
                         }
                         Text(ref string) => s.push(string),
                     }
                 }
-                s
+                return s
             }
-            ArgumentTemplate::Text(ref text) => OsString::from(text),
+            ArgumentTemplate::Text(ref text) => {
+                //if let Some(hl) = style {
+                //    OsString::from(&hl.paint(text).to_string())
+                //} else {
+                OsString::from(text)
+                //}
+            }
         }
     }
 

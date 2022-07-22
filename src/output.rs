@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::ffi::OsString;
 use std::io::{self, Write};
 use std::path::Path;
 
@@ -43,6 +44,52 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
     }
 }
 
+pub fn paint_entry(
+    entry: &DirEntry,
+    path: &Path,
+    config: &Config,
+) -> OsString {
+
+    if let Some(ls_colors) = &config.ls_colors {
+        let mut offset = 0;
+        let path_str = path.to_string_lossy();
+        let mut result = OsString::new();
+
+        if let Some(parent) = path.parent() {
+            offset = parent.to_string_lossy().len();
+            for c in path_str[offset..].chars() {
+                if std::path::is_separator(c) {
+                    offset += c.len_utf8();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if offset > 0 {
+            let mut parent_str = Cow::from(&path_str[..offset]);
+            if let Some(ref separator) = config.path_separator {
+                *parent_str.to_mut() = replace_path_separator(&parent_str, separator);
+            }
+
+            let style = ls_colors
+                .style_for_indicator(Indicator::Directory)
+                .map(Style::to_ansi_term_style)
+                .unwrap_or_default();
+            result.push(style.paint(parent_str).to_string());
+        }
+
+        let style = ls_colors
+            .style_for_path_with_metadata(path, entry.metadata())
+            .map(Style::to_ansi_term_style)
+            .unwrap_or_default();
+           result.push(style.paint(&path_str[offset..]).to_string());
+        result
+    } else {
+        OsString::from(path)
+    }
+}
+
 pub fn print_command_with_entry<W: Write>(
     stdout: &mut W,
     entry: &DirEntry,
@@ -50,13 +97,7 @@ pub fn print_command_with_entry<W: Write>(
     config: &Config,
 ) -> io::Result<()> {
 
-    let style: Option<ansi_term::Style> = if let Some(ref ls_colors) = config.ls_colors{
-        Some(get_entry_style(entry, ls_colors, config))
-    } else {
-        None
-    };
-
-    let cmd_display = CommandSetDisplay::new(cmd, entry.to_owned(), style);
+    let cmd_display = CommandSetDisplay::new(cmd, entry, config);
     write!(stdout, "{}",cmd_display)?;
     Ok(())
 }
@@ -82,37 +123,6 @@ fn print_trailing_slash<W: Write>(
         )?;
     }
     Ok(())
-}
-
-fn get_entry_style(entry: &DirEntry, ls_colors: &LsColors, config: &Config) -> ansi_term::Style {
-
-    // Split the path between the parent and the last component
-    let mut offset = 0;
-    let path = stripped_path(entry, config);
-    let path_str = path.to_string_lossy();
-
-    if let Some(parent) = path.parent() {
-        offset = parent.to_string_lossy().len();
-        for c in path_str[offset..].chars() {
-            if std::path::is_separator(c) {
-                offset += c.len_utf8();
-            } else {
-                break;
-            }
-        }
-    }
-
-    if offset > 0 {
-        return ls_colors
-            .style_for_indicator(Indicator::Directory)
-            .map(Style::to_ansi_term_style)
-            .unwrap_or_default()
-    }
-
-    return ls_colors
-        .style_for_path_with_metadata(path, entry.metadata())
-        .map(Style::to_ansi_term_style)
-        .unwrap_or_default()
 }
 
 // TODO: this function is performance critical and can probably be optimized
