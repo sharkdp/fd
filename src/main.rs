@@ -293,7 +293,7 @@ fn extract_command(opts: &mut Opts, colored_output: bool) -> Result<Option<Comma
             if !opts.list_details {
                 return None;
             }
-            let color_arg = format!("--color={:?}", opts.color);
+            let color_arg = format!("--color={}", opts.color.as_str());
 
             let res = determine_ls_command(&color_arg, colored_output)
                 .map(|cmd| CommandSet::new_batch([cmd]).unwrap());

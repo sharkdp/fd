@@ -655,6 +655,17 @@ pub enum ColorWhen {
     Never,
 }
 
+impl ColorWhen {
+    pub fn as_str(&self) -> &'static str {
+        use ColorWhen::*;
+        match *self {
+            Auto => "auto",
+            Always => "always",
+            Never => "never",
+        }
+    }
+}
+
 // there isn't a derive api for getting grouped values yet,
 // so we have to use hand-rolled parsing for exec and exec-batch
 pub struct Exec {
