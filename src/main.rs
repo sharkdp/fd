@@ -182,7 +182,7 @@ fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
         .unwrap_or_else(|| std::path::MAIN_SEPARATOR.to_string());
     check_path_separator_length(path_separator.as_deref())?;
 
-    let size_limits = std::mem::replace(&mut opts.size, vec![]);
+    let size_limits = std::mem::take(&mut opts.size);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
     let owner_constraint: Option<OwnerFilter> = opts.owner;
@@ -270,7 +270,7 @@ fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
-        ignore_files: std::mem::replace(&mut opts.ignore_file, vec![]),
+        ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
         #[cfg(unix)]

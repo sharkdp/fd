@@ -554,7 +554,7 @@ impl Opts {
         Ok(paths
             .iter()
             .filter_map(|path| {
-                if filesystem::is_existing_directory(&path) {
+                if filesystem::is_existing_directory(path) {
                     Some(self.normalize_path(path))
                 } else {
                     print_error(format!(
