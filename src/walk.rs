@@ -352,15 +352,7 @@ fn spawn_receiver(
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
             } else {
-
-                // If printing commands, wait for results from the receiver to print them before
-                // running commands.
-                let shared_rx = if cmd.should_print() {
-                    Arc::new(Mutex::new(exec::peek_job_commands(&rx, cmd, &config, show_filesystem_errors)))
-                } else {
-                    Arc::new(Mutex::new(rx))
-                };
-
+                let shared_rx = Arc::new(Mutex::new(rx));
                 let out_perm = Arc::new(Mutex::new(()));
 
                 // Each spawned job will store it's thread handle in here.
@@ -369,6 +361,7 @@ fn spawn_receiver(
                     let rx = Arc::clone(&shared_rx);
                     let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
+                    let config = Arc::clone(&config);
 
                     // Spawn a job thread that will listen for and execute inputs.
                     let handle = thread::spawn(move || {
@@ -377,7 +370,8 @@ fn spawn_receiver(
                             cmd,
                             out_perm,
                             show_filesystem_errors,
-                            enable_output_buffering
+                            enable_output_buffering,
+                            &config,
                         )
                     });
 

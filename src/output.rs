@@ -44,12 +44,7 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
     }
 }
 
-pub fn paint_entry(
-    entry: &DirEntry,
-    path: &Path,
-    config: &Config,
-) -> OsString {
-
+pub fn paint_entry(entry: &DirEntry, path: &Path, config: &Config) -> OsString {
     if let Some(ls_colors) = &config.ls_colors {
         let mut offset = 0;
         let path_str = path.to_string_lossy();
@@ -83,7 +78,7 @@ pub fn paint_entry(
             .style_for_path_with_metadata(path, entry.metadata())
             .map(Style::to_ansi_term_style)
             .unwrap_or_default();
-           result.push(style.paint(&path_str[offset..]).to_string());
+        result.push(style.paint(&path_str[offset..]).to_string());
         result
     } else {
         OsString::from(path)
@@ -96,9 +91,8 @@ pub fn print_command_with_entry<W: Write>(
     cmd: &CommandSet,
     config: &Config,
 ) -> io::Result<()> {
-
     let cmd_display = CommandSetDisplay::new(cmd, entry, config);
-    write!(stdout, "{}",cmd_display)?;
+    write!(stdout, "{}", cmd_display)?;
     Ok(())
 }
 

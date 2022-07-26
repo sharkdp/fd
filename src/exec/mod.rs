@@ -5,7 +5,7 @@ mod token;
 
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
-use std::fmt::{Display, Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
@@ -24,7 +24,7 @@ use crate::output;
 
 use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
-pub use self::job::{batch, job, peek_job_commands};
+pub use self::job::{batch, job};
 use self::token::Token;
 
 /// Execution mode of the command
@@ -48,23 +48,27 @@ pub struct CommandSet {
 pub struct CommandSetDisplay<'a> {
     command_set: &'a CommandSet,
     input: &'a DirEntry,
-    config: &'a Config
+    config: &'a Config,
 }
 
-impl <'a> CommandSetDisplay<'a> {
+impl<'a> CommandSetDisplay<'a> {
     pub fn new(
         command_set: &'a CommandSet,
         input: &'a DirEntry,
-        config: &'a Config
+        config: &'a Config,
     ) -> CommandSetDisplay<'a> {
-        CommandSetDisplay { command_set, input, config }
+        CommandSetDisplay {
+            command_set,
+            input,
+            config,
+        }
     }
 }
 
 impl Display for CommandSetDisplay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for c in self.command_set.commands.iter() {
-            if let Err(e) = c.display_highlighted(f,&self.input, self.config) {
+            if let Err(e) = c.display_highlighted(f, &self.input, self.config) {
                 return Err(e);
             }
         }
@@ -89,7 +93,11 @@ impl CommandSet {
         })
     }
 
-    pub fn new_batch<I, S>(input: I, path_separator: Option<String>, print: bool) -> Result<CommandSet>
+    pub fn new_batch<I, S>(
+        input: I,
+        path_separator: Option<String>,
+        print: bool,
+    ) -> Result<CommandSet>
     where
         I: IntoIterator<Item = Vec<S>>,
         S: AsRef<str>,
@@ -122,13 +130,26 @@ impl CommandSet {
         self.print
     }
 
-    pub fn execute(&self, input: &Path, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
+    pub fn execute(
+        &self,
+        input: &Path,
+        out_perm: Arc<Mutex<()>>,
+        buffer_output: bool,
+        cmd_display: Option<CommandSetDisplay>,
+    ) -> ExitCode {
         let path_separator = self.path_separator.as_deref();
+
+        let printed_command = if let Some(existing_display) = cmd_display {
+            Some(format!("{}", existing_display))
+        } else {
+            None
+        };
+
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands(commands, &out_perm, buffer_output)
+        execute_commands(commands, &out_perm, buffer_output, printed_command)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize) -> ExitCode
@@ -265,7 +286,6 @@ impl Display for CommandTemplate {
     }
 }
 
-
 impl CommandTemplate {
     fn new<I, S>(input: I) -> Result<CommandTemplate>
     where
@@ -355,14 +375,14 @@ impl CommandTemplate {
         &self,
         f: &mut Formatter,
         entry: &DirEntry,
-        config: &Config
+        config: &Config,
     ) -> std::fmt::Result {
-        let mut res: OsString = self.args[0].generate_with_highlight(&entry.path(), None, None,None);
+        let mut res: OsString = self.args[0].generate(&entry.path(), None);
         for arg in &self.args[1..] {
             res.push(" ");
-            res.push( arg.generate_with_highlight(&entry.path(), None, Some(config), Some(entry) ));
+            res.push(arg.generate_with_highlight(&entry, None, config));
         }
-        write!(f,"{}\n",res.to_str().unwrap())?;
+        write!(f, "{}\n", res.to_str().unwrap())?;
         Ok(())
     }
 }
@@ -385,62 +405,110 @@ impl ArgumentTemplate {
     /// Generate an argument from this template. If path_separator is Some, then it will replace
     /// the path separator in all placeholder tokens. Text arguments and tokens are not affected by
     /// path separator substitution.
-    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
-        self.generate_with_highlight(path, path_separator, None,None)
-    }
-
-    fn generate_with_highlight(
+    /// Apply a callback `cb` to each token's result where templates are substituted to allow further
+    /// processing. Eg. function `generate_with_highlight` will apply text highlighting via the
+    /// callback to highlight found entries in the generated string.
+    fn generate_with_callback(
         &self,
         path: impl AsRef<Path>,
         path_separator: Option<&str>,
-        config: Option<&Config>,
-        entry: Option<&DirEntry>
+        cb: Option<&dyn Fn(&OsStr, &Token) -> OsString>,
     ) -> OsString {
         use self::Token::*;
         let path = path.as_ref();
 
-        let hl = |token_text: &OsStr| -> OsString {
-            if let Some(cfg) = config {
-                let path_from_token = Path::new(token_text);
-                output::paint_entry(entry.unwrap(), path_from_token, cfg)
-            } else {
-                OsString::from(token_text)
-            }
-        };
+        enum TokenGen<'a> {
+            Template(Cow<'a, OsStr>),
+            TextOnly(&'a String),
+        }
 
         match *self {
             ArgumentTemplate::Tokens(ref tokens) => {
                 let mut s = OsString::new();
+                let mut push_token_text = |token_text: TokenGen, tkn: &Token| match token_text {
+                    TokenGen::Template(tmpl_text) => {
+                        if let Some(callback) = cb {
+                            s.push(callback(&tmpl_text, tkn))
+                        } else {
+                            s.push(tmpl_text)
+                        }
+                    }
+                    TokenGen::TextOnly(text) => s.push(text),
+                };
                 for token in tokens {
                     match *token {
-                        Basename => s.push(hl(&Self::replace_separator(basename(path), path_separator))),
-                        BasenameNoExt => s.push(Self::replace_separator(
-                            &remove_extension(basename(path).as_ref()),
-                            path_separator,
-                        )),
-                        Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
-                        NoExt => {
-                            s.push(hl(&Self::replace_separator(
+                        Basename => push_token_text(
+                            TokenGen::Template(Self::replace_separator(
+                                basename(path),
+                                path_separator,
+                            )),
+                            token,
+                        ),
+                        BasenameNoExt => push_token_text(
+                            TokenGen::Template(Self::replace_separator(
+                                &remove_extension(basename(path).as_ref()),
+                                path_separator,
+                            )),
+                            token,
+                        ),
+                        NoExt => push_token_text(
+                            TokenGen::Template(Self::replace_separator(
                                 &remove_extension(path),
                                 path_separator,
-                            )));
-                        },
-                        Placeholder => {
-                            s.push(hl(&Self::replace_separator(path.as_ref(), path_separator)))
-                        }
-                        Text(ref string) => s.push(string),
+                            )),
+                            token,
+                        ),
+                        Parent => push_token_text(
+                            TokenGen::Template(Self::replace_separator(
+                                &dirname(path),
+                                path_separator,
+                            )),
+                            token,
+                        ),
+                        Placeholder => push_token_text(
+                            TokenGen::Template(Self::replace_separator(
+                                path.as_ref(),
+                                path_separator,
+                            )),
+                            token,
+                        ),
+                        Text(ref string) => push_token_text(TokenGen::TextOnly(string), token),
                     }
                 }
-                return s
+                s
             }
-            ArgumentTemplate::Text(ref text) => {
-                //if let Some(hl) = style {
-                //    OsString::from(&hl.paint(text).to_string())
-                //} else {
-                OsString::from(text)
-                //}
-            }
+            ArgumentTemplate::Text(ref text) => OsString::from(text),
         }
+    }
+
+    /// Generate an argument from this template. If path_separator is Some, then it will replace
+    /// the path separator in all placeholder tokens. Text arguments and tokens are not affected by
+    /// path separator substitution.
+    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
+        self.generate_with_callback(path, path_separator, None)
+    }
+
+    // Same functionality as `generate` but result will have highlighted entires in the generated
+    // string.
+    fn generate_with_highlight(
+        &self,
+        entry: &DirEntry,
+        path_separator: Option<&str>,
+        config: &Config,
+    ) -> OsString {
+        use self::Token::*;
+        let path = entry.path();
+
+        let apply_highlight = |token_text: &OsStr, token: &Token| -> OsString {
+            let path_from_token = Path::new(token_text);
+            match *token {
+                Basename => output::paint_entry(entry, path_from_token, config),
+                NoExt => output::paint_entry(entry, path_from_token, config),
+                Placeholder => output::paint_entry(entry, path_from_token, config),
+                _ => OsString::from(token_text),
+            }
+        };
+        self.generate_with_callback(path, path_separator, Some(&apply_highlight))
     }
 
     /// Replace the path separator in the input with the custom separator string. If path_separator
@@ -543,7 +611,7 @@ mod tests {
     #[test]
     fn tokens_with_basename() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/}"]], None,false).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{/}"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -561,7 +629,7 @@ mod tests {
     #[test]
     fn tokens_with_parent() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{//}"]], None,false).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{//}"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -579,7 +647,7 @@ mod tests {
     #[test]
     fn tokens_with_basename_no_extension() {
         assert_eq!(
-            CommandSet::new(vec![vec!["echo", "{/.}"]], None,false).unwrap(),
+            CommandSet::new(vec![vec!["echo", "{/.}"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -597,7 +665,7 @@ mod tests {
     #[test]
     fn tokens_multiple() {
         assert_eq!(
-            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None,false).unwrap(),
+            CommandSet::new(vec![vec!["cp", "{}", "{/.}.ext"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -619,7 +687,7 @@ mod tests {
     #[test]
     fn tokens_single_batch() {
         assert_eq!(
-            CommandSet::new_batch(vec![vec!["echo", "{.}"]], None,false).unwrap(),
+            CommandSet::new_batch(vec![vec!["echo", "{.}"]], None, false).unwrap(),
             CommandSet {
                 commands: vec![CommandTemplate {
                     args: vec![
@@ -636,7 +704,7 @@ mod tests {
 
     #[test]
     fn tokens_multiple_batch() {
-        assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None,false).is_err());
+        assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]], None, false).is_err());
     }
 
     #[test]
@@ -646,7 +714,7 @@ mod tests {
 
     #[test]
     fn command_set_no_args() {
-        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None,false).is_err());
+        assert!(CommandSet::new(vec![vec!["echo"], vec![]], None, false).is_err());
     }
 
     #[test]

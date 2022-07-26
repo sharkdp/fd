@@ -397,14 +397,22 @@ fn extract_command(
     colored_output: bool,
 ) -> Result<Option<CommandSet>> {
     None.or_else(|| {
-        matches
-            .grouped_values_of("exec")
-            .map(|args| CommandSet::new(args, path_separator.map(str::to_string), matches.is_present("print-exec")))
+        matches.grouped_values_of("exec").map(|args| {
+            CommandSet::new(
+                args,
+                path_separator.map(str::to_string),
+                matches.is_present("print-exec"),
+            )
+        })
     })
     .or_else(|| {
-        matches
-            .grouped_values_of("exec-batch")
-            .map(|args| CommandSet::new_batch(args, path_separator.map(str::to_string), matches.is_present("print-exec")))
+        matches.grouped_values_of("exec-batch").map(|args| {
+            CommandSet::new_batch(
+                args,
+                path_separator.map(str::to_string),
+                matches.is_present("print-exec"),
+            )
+        })
     })
     .or_else(|| {
         if !matches.is_present("list-details") {
@@ -414,8 +422,9 @@ fn extract_command(
         let color = matches.value_of("color").unwrap_or("auto");
         let color_arg = format!("--color={}", color);
 
-        let res = determine_ls_command(&color_arg, colored_output)
-            .map(|cmd| CommandSet::new_batch([cmd], path_separator.map(str::to_string),false).unwrap());
+        let res = determine_ls_command(&color_arg, colored_output).map(|cmd| {
+            CommandSet::new_batch([cmd], path_separator.map(str::to_string), false).unwrap()
+        });
 
         Some(res)
     })

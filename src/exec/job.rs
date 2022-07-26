@@ -1,51 +1,13 @@
-use std::io::{Write, stdout};
-use std::sync::mpsc::{Receiver, channel};
+use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::output;
 use crate::walk::WorkerResult;
 
-use super::CommandSet;
-
-fn print_command<W: Write>(stdout: &mut W, entry: &DirEntry, cmd: &CommandSet, config: &Config) {
-    output::print_command_with_entry(stdout, entry, cmd, config);
-}
-
-/// Print commands from the `rx` receiver without running them.
-/// Returns a new channel with the same results to allow passing the return value to the
-/// `job`-function to then execute the printed commands in multiple threads.
-pub fn peek_job_commands(
-    rx: &Receiver<WorkerResult>,
-    cmd: &CommandSet,
-    config: &Config,
-    show_filesystem_errors: bool,
-) -> Receiver<WorkerResult> {
-    let (send, rx_new) = channel::<WorkerResult>();
-    let res: Vec<DirEntry> = rx
-        .into_iter()
-        .filter_map(|worker_result| {
-            send.send(worker_result.to_owned()).unwrap();
-            match worker_result {
-            WorkerResult::Entry(dir_entry) => {
-                    Some(dir_entry)
-            },
-            WorkerResult::Error(err) => {
-                if show_filesystem_errors {
-                    print_error(err.to_string());
-                }
-                None
-            }}
-        })
-        .collect();
-    for p in res.iter() {
-        print_command(&mut stdout(), p, cmd,config);
-    }
-    return rx_new
-}
+use super::{CommandSet, CommandSetDisplay};
 
 /// An event loop that listens for inputs from the `rx` receiver. Each received input will
 /// generate a command with the supplied command template. The generated command will then
@@ -55,7 +17,8 @@ pub fn job(
     cmd: Arc<CommandSet>,
     out_perm: Arc<Mutex<()>>,
     show_filesystem_errors: bool,
-    buffer_output: bool
+    buffer_output: bool,
+    config: &Config,
 ) -> ExitCode {
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
@@ -79,7 +42,16 @@ pub fn job(
         drop(lock);
 
         // Generate a command, execute it and store its exit code.
-        results.push(cmd.execute(dir_entry.path(), Arc::clone(&out_perm), buffer_output))
+        results.push(cmd.execute(
+            dir_entry.path(),
+            Arc::clone(&out_perm),
+            buffer_output,
+            if cmd.should_print() {
+                Some(CommandSetDisplay::new(&cmd, &dir_entry, config))
+            } else {
+                None
+            },
+        ))
     }
 
     // Returns error in case of any error.
