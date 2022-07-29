@@ -8,7 +8,6 @@ use lscolors::{Indicator, LsColors, Style};
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
-use crate::exec::{CommandSet, CommandSetDisplay};
 use crate::exit_codes::ExitCode;
 use crate::filesystem::strip_current_dir;
 
@@ -83,17 +82,6 @@ pub fn paint_entry(entry: &DirEntry, path: &Path, config: &Config) -> OsString {
     } else {
         OsString::from(path)
     }
-}
-
-pub fn print_command_with_entry<W: Write>(
-    stdout: &mut W,
-    entry: &DirEntry,
-    cmd: &CommandSet,
-    config: &Config,
-) -> io::Result<()> {
-    let cmd_display = CommandSetDisplay::new(cmd, entry, config);
-    write!(stdout, "{}", cmd_display)?;
-    Ok(())
 }
 
 // Display a trailing slash if the path is a directory and the config option is enabled.

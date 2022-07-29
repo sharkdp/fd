@@ -63,11 +63,12 @@ pub fn batch(
     cmd: &CommandSet,
     show_filesystem_errors: bool,
     limit: usize,
+    config: &Config,
 ) -> ExitCode {
-    let paths = rx
+    let entries = rx
         .into_iter()
         .filter_map(|worker_result| match worker_result {
-            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_path()),
+            WorkerResult::Entry(dir_entry) => Some(dir_entry),
             WorkerResult::Error(err) => {
                 if show_filesystem_errors {
                     print_error(err.to_string());
@@ -76,5 +77,13 @@ pub fn batch(
             }
         });
 
-    cmd.execute_batch(paths, limit)
+    cmd.execute_batch(
+        entries,
+        limit,
+        if cmd.should_print() {
+            Some(config)
+        } else {
+            None
+        },
+    )
 }

@@ -34,7 +34,6 @@ enum ReceiverMode {
 }
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
-#[derive(Clone)]
 pub enum WorkerResult {
     Entry(DirEntry),
     Error(ignore::Error),
@@ -350,7 +349,7 @@ fn spawn_receiver(
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, show_filesystem_errors, config.batch_size)
+                exec::batch(rx, cmd, show_filesystem_errors, config.batch_size, &config)
             } else {
                 let shared_rx = Arc::new(Mutex::new(rx));
                 let out_perm = Arc::new(Mutex::new(()));

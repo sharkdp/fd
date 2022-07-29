@@ -5,13 +5,11 @@ use std::{
 
 use once_cell::unsync::OnceCell;
 
-#[derive(Clone)]
 enum DirEntryInner {
     Normal(ignore::DirEntry),
     BrokenSymlink(PathBuf),
 }
 
-#[derive(Clone)]
 pub struct DirEntry {
     inner: DirEntryInner,
     metadata: OnceCell<Option<Metadata>>,
