@@ -70,10 +70,7 @@ fn run() -> Result<ExitCode> {
     let matches = app::build_app().get_matches_from(env::args_os());
 
     set_working_dir(&matches)?;
-    let current_directory = Path::new(".");
-    ensure_current_directory_exists(current_directory)?;
-    let search_paths = extract_search_paths(&matches, current_directory)?;
-
+    let search_paths = extract_search_paths(&matches)?;
     let pattern = extract_search_pattern(&matches)?;
     ensure_search_pattern_is_not_a_path(&matches, pattern)?;
     let pattern_regex = build_pattern_regex(&matches, pattern)?;
@@ -125,32 +122,34 @@ fn extract_search_pattern(matches: &clap::ArgMatches) -> Result<&'_ str> {
     Ok(pattern)
 }
 
-fn extract_search_paths(
-    matches: &clap::ArgMatches,
-    current_directory: &Path,
-) -> Result<Vec<PathBuf>> {
-    let mut search_paths = matches
+fn extract_search_paths(matches: &clap::ArgMatches) -> Result<Vec<PathBuf>> {
+    let current_directory = Path::new(".");
+
+    let parameter_paths = matches
         .values_of_os("path")
-        .or_else(|| matches.values_of_os("search-path"))
-        .map_or_else(
-            || vec![current_directory.to_path_buf()],
-            |paths| {
-                paths
-                    .filter_map(|path| {
-                        let path_buffer = PathBuf::from(path);
-                        if filesystem::is_existing_directory(&path_buffer) {
-                            Some(path_buffer)
-                        } else {
-                            print_error(format!(
-                                "Search path '{}' is not a directory.",
-                                path_buffer.to_string_lossy()
-                            ));
-                            None
-                        }
-                    })
-                    .collect()
-            },
-        );
+        .or_else(|| matches.values_of_os("search-path"));
+
+    let mut search_paths = match parameter_paths {
+        Some(paths) => paths
+            .filter_map(|path| {
+                let path_buffer = PathBuf::from(path);
+                if filesystem::is_existing_directory(&path_buffer) {
+                    Some(path_buffer)
+                } else {
+                    print_error(format!(
+                        "Search path '{}' is not a directory.",
+                        path_buffer.to_string_lossy(),
+                    ));
+                    None
+                }
+            })
+            .collect(),
+        None => {
+            ensure_current_directory_exists(current_directory)?;
+            vec![current_directory.to_path_buf()]
+        }
+    };
+
     if search_paths.is_empty() {
         return Err(anyhow!("No valid search paths given."));
     }
