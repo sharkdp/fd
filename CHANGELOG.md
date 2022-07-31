@@ -5,6 +5,8 @@
 
 ## Bugfixes
 
+- fd returns an error when current working directory does not exist while a search path is specified, see #1072 (@vijfhoek)
+
 
 ## Changes
 
