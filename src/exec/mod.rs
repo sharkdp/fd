@@ -6,9 +6,8 @@ mod token;
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{Debug, Display};
-use std::io::{self, stdout, StdoutLock, Write};
+use std::io::{self, stdout, Write};
 use std::iter;
-use std::os::unix::prelude::OsStrExt;
 use std::path::{Component, Path, Prefix};
 use std::process::Stdio;
 use std::sync::{Arc, Mutex};
@@ -78,6 +77,49 @@ impl CommandSetDisplay<'_> {
         }
         res.push_str("\n");
         Some(res)
+    }
+
+    fn write_entry_string(
+        entry: &DirEntry,
+        argt: &ArgumentTemplate,
+        config: &Config,
+        path_separator: Option<&str>,
+    ) -> Result<(), std::io::Error> {
+        let mut stdout = stdout().lock();
+        if let Some(argt_str) = argt
+            .generate_with_highlight(entry, path_separator, config)
+            .to_str()
+        {
+            write!(stdout, "{} ", argt_str)?;
+        }
+        stdout.flush()
+    }
+
+    fn print_pre_args(args: &Vec<OsString>) -> std::io::Result<()> {
+        let stdout = io::stdout();
+        let mut stdout = stdout.lock();
+
+        // Print pre-args; arguments before entry templates.
+        for arg in args {
+            if let Some(arg_str) = arg.to_str() {
+                write!(stdout, "{} ", arg_str)?;
+            }
+        }
+        stdout.flush()
+    }
+
+    fn print_post_args(args: &Vec<OsString>) -> std::io::Result<()> {
+        let stdout = io::stdout();
+        let mut stdout = stdout.lock();
+
+        // Print post-args, arguments after entry templates.
+        for arg in args {
+            if let Some(arg_str) = arg.to_str() {
+                write!(stdout, "{} ", arg_str)?;
+            }
+        }
+        write!(stdout, "\n")?;
+        stdout.flush()
     }
 }
 
@@ -164,27 +206,23 @@ impl CommandSet {
     {
         let path_separator = self.path_separator.as_deref();
 
-        let mut cmd_display: Option<BatchCommandSetDisplay> = None;
         let builders: io::Result<Vec<_>> = self
             .commands
             .iter()
-            .map(|c| {
-                if let Some(config) = print_with_config {
-                    let display = BatchCommandSetDisplay::new(c, config);
-                    display.print_pre_args();
-                    cmd_display = Some(display);
-                }
-                CommandBuilder::new(c, limit)
-            })
+            .map(|c| CommandBuilder::new(c, limit, print_with_config.is_some()))
             .collect();
 
         match builders {
             Ok(mut builders) => {
                 for entry in entries {
                     for builder in &mut builders {
+                        if let Err(e) = builder.push(entry.path(), path_separator) {
+                            return handle_cmd_error(Some(&builder.cmd), e);
+                        }
+
                         // If provided print config, print command arguments.
                         if let Some(config) = print_with_config {
-                            if let Err(e) = BatchCommandSetDisplay::write_entry_string(
+                            if let Err(e) = CommandSetDisplay::write_entry_string(
                                 &entry,
                                 &builder.path_arg,
                                 config,
@@ -193,14 +231,7 @@ impl CommandSet {
                                 return handle_cmd_error(Some(&builder.cmd), e);
                             }
                         }
-                        if let Err(e) = builder.push(entry.path(), path_separator) {
-                            return handle_cmd_error(Some(&builder.cmd), e);
-                        }
                     }
-                }
-
-                if let Some(display) = cmd_display {
-                    display.print_post_args();
                 }
 
                 for builder in &mut builders {
@@ -216,75 +247,6 @@ impl CommandSet {
     }
 }
 
-struct BatchCommandSetDisplay<'a> {
-    template: &'a CommandTemplate,
-    config: &'a Config,
-    post_args: Vec<OsString>,
-    pre_args: Vec<OsString>,
-}
-
-impl<'a> BatchCommandSetDisplay<'a> {
-    pub fn new(template: &'a CommandTemplate, config: &'a Config) -> BatchCommandSetDisplay<'a> {
-        let mut pre_args = vec![];
-        let mut post_args = vec![];
-
-        // Get arguments.
-        let mut path_arg = None;
-        for arg in &template.args {
-            if arg.has_tokens() {
-                path_arg = Some(arg.clone());
-            } else if path_arg == None {
-                pre_args.push(arg.generate("", None));
-            } else {
-                post_args.push(arg.generate("", None));
-            }
-        }
-
-        BatchCommandSetDisplay {
-            template,
-            config,
-            post_args,
-            pre_args,
-        }
-    }
-
-    pub fn print_pre_args(&self) {
-        let mut stdout = stdout().lock();
-        // Print pre-args, arguments before entry templates.
-        for arg in &self.pre_args {
-            stdout.write_all(arg.as_bytes());
-            stdout.write_all(b" ");
-        }
-        stdout.flush();
-    }
-
-    pub fn print_post_args(&self) {
-        let mut stdout = stdout().lock();
-        // Print pre-args, arguments before entry templates.
-        for arg in &self.post_args {
-            stdout.write_all(arg.as_bytes());
-            stdout.write_all(b" ");
-        }
-        stdout.write_all(b"\n");
-        stdout.flush();
-    }
-
-    fn write_entry_string(
-        entry: &DirEntry,
-        argt: &ArgumentTemplate,
-        config: &Config,
-        path_separator: Option<&str>,
-    ) -> Result<(), std::io::Error> {
-        let mut stdout = stdout().lock();
-        stdout.write_all(
-            argt.generate_with_highlight(entry, path_separator, config)
-                .as_bytes(),
-        )?;
-        stdout.write_all(b" ")?;
-        stdout.flush()
-    }
-}
-
 /// Represents a multi-exec command as it is built.
 #[derive(Debug)]
 struct CommandBuilder {
@@ -294,10 +256,11 @@ struct CommandBuilder {
     cmd: Command,
     count: usize,
     limit: usize,
+    print: bool,
 }
 
 impl CommandBuilder {
-    fn new(template: &CommandTemplate, limit: usize) -> io::Result<Self> {
+    fn new(template: &CommandTemplate, limit: usize, print: bool) -> io::Result<Self> {
         let mut pre_args = vec![];
         let mut path_arg = None;
         let mut post_args = vec![];
@@ -321,6 +284,7 @@ impl CommandBuilder {
             cmd,
             count: 0,
             limit,
+            print,
         })
     }
 
@@ -346,6 +310,11 @@ impl CommandBuilder {
             self.finish()?;
         }
 
+        // If started a new command, print the arguments before printing entry templates.
+        if self.count == 0 && self.print {
+            CommandSetDisplay::print_pre_args(&self.pre_args)?;
+        }
+
         self.cmd.try_arg(arg)?;
         self.count += 1;
         Ok(())
@@ -353,6 +322,9 @@ impl CommandBuilder {
 
     fn finish(&mut self) -> io::Result<()> {
         if self.count > 0 {
+            if self.print {
+                CommandSetDisplay::print_post_args(&self.post_args)?;
+            }
             self.cmd.try_args(&self.post_args)?;
             self.cmd.status()?;
 

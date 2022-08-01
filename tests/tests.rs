@@ -1654,6 +1654,69 @@ fn test_exec_with_separator() {
     );
 }
 
+/// Shell script execution (--exec and --exec-batch) with printing
+#[test]
+fn test_print_exec() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let te = te.normalize_line(true);
+
+    // TODO Windows tests: D:file.txt \file.txt \\server\share\file.txt ...
+    if !cfg!(windows) {
+        te.assert_output(
+            &["foo", "--print-exec", "--exec", "echo", "{}"],
+            "echo ./a.foo
+            echo ./one/b.foo
+            echo ./one/two/C.Foo2
+            echo ./one/two/c.foo
+            echo ./one/two/three/d.foo
+            echo ./one/two/three/directory_foo
+            ./a.foo
+            ./one/b.foo
+            ./one/two/C.Foo2
+            ./one/two/c.foo
+            ./one/two/three/d.foo
+            ./one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--print-exec", "--exec", "echo", "{.}"],
+            "echo a
+            echo one/b
+            echo one/two/C
+            echo one/two/c
+            echo one/two/three/d
+            echo one/two/three/directory_foo
+            a
+            one/b
+            one/two/C
+            one/two/c
+            one/two/three/d
+            one/two/three/directory_foo",
+        );
+        te.assert_output(
+            &["foo", "--print-exec", "--exec", "echo", "{/}"],
+            "echo a.foo
+            echo b.foo
+            echo C.Foo2
+            echo c.foo
+            echo d.foo
+            echo directory_foo
+            a.foo
+            b.foo
+            C.Foo2
+            c.foo
+            d.foo
+            directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--print-exec", "--exec-batch", "echo", "beginarg", "{}", "endarg"],
+            "echo beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg
+            beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg",
+        );
+    }
+}
+
 /// Non-zero exit code (--quiet)
 #[test]
 fn test_quiet() {

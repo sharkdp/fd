@@ -2,6 +2,8 @@
 
 ## Features
 
+- Added flag `--print-exec` for printing commands before they are ran.
+
 
 ## Bugfixes
 
