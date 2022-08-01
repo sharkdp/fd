@@ -123,8 +123,6 @@ fn extract_search_pattern(matches: &clap::ArgMatches) -> Result<&'_ str> {
 }
 
 fn extract_search_paths(matches: &clap::ArgMatches) -> Result<Vec<PathBuf>> {
-    let current_directory = Path::new(".");
-
     let parameter_paths = matches
         .values_of_os("path")
         .or_else(|| matches.values_of_os("search-path"));
@@ -145,6 +143,7 @@ fn extract_search_paths(matches: &clap::ArgMatches) -> Result<Vec<PathBuf>> {
             })
             .collect(),
         None => {
+            let current_directory = Path::new(".");
             ensure_current_directory_exists(current_directory)?;
             vec![current_directory.to_path_buf()]
         }
