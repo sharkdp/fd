@@ -6,7 +6,7 @@ mod token;
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{Debug, Display};
-use std::io::{self, stdout, Write};
+use std::io::{self, Write};
 use std::iter;
 use std::path::{Component, Path, Prefix};
 use std::process::Stdio;
@@ -85,7 +85,8 @@ impl CommandSetDisplay<'_> {
         config: &Config,
         path_separator: Option<&str>,
     ) -> Result<(), std::io::Error> {
-        let mut stdout = stdout().lock();
+        let stdout = io::stdout();
+        let mut stdout = stdout.lock();
         if let Some(argt_str) = argt
             .generate_with_highlight(entry, path_separator, config)
             .to_str()
