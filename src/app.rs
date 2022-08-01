@@ -445,8 +445,10 @@ pub fn build_app() -> Command<'static> {
             Arg::new("print-exec")
                 .long("print-exec")
                 .help("Print each command ran with -x or -X.")
+                .requires("exec-batch")
+                .requires("exec")
                 .long_help(
-                    "Print each command to be ran. If -x or -X is not used, this argument has no effect."
+                    "Print each command before it is executed. Must be ran with -x or -X."
                 ),
         )
         .arg(
