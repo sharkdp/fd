@@ -1,7 +1,7 @@
 mod testenv;
 
 use std::fs;
-use std::io::Write;
+use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 use test_case::test_case;
@@ -1739,6 +1739,69 @@ fn test_print_exec() {
             &["foo", "--print-exec", "--exec-batch", "echo", "beginarg", "{}", "endarg"],
             "echo beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg
             beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg",
+        );
+
+        te.assert_output(
+            &[
+                "--absolute-path",
+                "foo",
+                "--print-exec",
+                "--exec",
+                "echo",
+                ";",
+                "--exec",
+                "echo",
+                "test",
+                "{/}",
+            ],
+            &format!(
+                "echo {abs_path}/a.foo; echo test a.foo
+                    echo {abs_path}/one/b.foo; echo test b.foo
+                    echo {abs_path}/one/two/C.Foo2; echo test C.Foo2
+                    echo {abs_path}/one/two/c.foo; echo test c.foo
+                    echo {abs_path}/one/two/three/d.foo; echo test d.foo
+                    echo {abs_path}/one/two/three/directory_foo; echo test directory_foo
+                    {abs_path}/a.foo
+                    {abs_path}/one/b.foo
+                    {abs_path}/one/two/C.Foo2
+                    {abs_path}/one/two/c.foo
+                    {abs_path}/one/two/three/d.foo
+                    {abs_path}/one/two/three/directory_foo
+                    test a.foo
+                    test b.foo
+                    test C.Foo2
+                    test c.foo
+                    test d.foo
+                    test directory_foo",
+                abs_path = &abs_path
+            ),
+        );
+
+        te.assert_output(
+            &[
+                "foo",
+                "--print-exec",
+                "--exec",
+                "echo",
+                "-n",
+                "{/}: ",
+                ";",
+                "--exec",
+                "echo",
+                "{//}",
+            ],
+            "echo -n a.foo: ; echo .
+            echo -n b.foo: ; echo ./one
+            echo -n C.Foo2: ; echo ./one/two
+            echo -n c.foo: ; echo ./one/two
+            echo -n d.foo: ; echo ./one/two/three
+            echo -n directory_foo: ; echo ./one/two/three
+            a.foo: .
+            b.foo: ./one
+            C.Foo2: ./one/two
+            c.foo: ./one/two
+            d.foo: ./one/two/three
+            directory_foo: ./one/two/three",
         );
     }
 }

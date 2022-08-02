@@ -68,7 +68,10 @@ impl<'a> CommandSetDisplay<'a> {
 impl CommandSetDisplay<'_> {
     fn get_command_string(&self, path_separator: Option<&str>) -> Option<String> {
         let mut res = String::new();
-        for c in self.command_set.commands.iter() {
+        for (i, c) in self.command_set.commands.iter().enumerate() {
+            if i > 0 {
+                res.push_str(&"; ");
+            }
             let cmd_hl = c.generate_highlighted_string(self.entry, self.config, path_separator);
             match cmd_hl {
                 None => return None,
@@ -77,50 +80,6 @@ impl CommandSetDisplay<'_> {
         }
         res.push('\n');
         Some(res)
-    }
-
-    fn print_entry_string(
-        entry: &DirEntry,
-        argt: &ArgumentTemplate,
-        config: &Config,
-        path_separator: Option<&str>,
-    ) -> Result<(), std::io::Error> {
-        let stdout = io::stdout();
-        let mut stdout = stdout.lock();
-        if let Some(argt_str) = argt
-            .generate_with_highlight(entry, path_separator, config)
-            .to_str()
-        {
-            write!(stdout, "{} ", argt_str)?;
-        }
-        stdout.flush()
-    }
-
-    fn print_pre_args(args: &[OsString]) -> std::io::Result<()> {
-        let stdout = io::stdout();
-        let mut stdout = stdout.lock();
-
-        // Print pre-args; arguments before entry templates.
-        for arg in args {
-            if let Some(arg_str) = arg.to_str() {
-                write!(stdout, "{} ", arg_str)?;
-            }
-        }
-        stdout.flush()
-    }
-
-    fn print_post_args(args: &[OsString]) -> std::io::Result<()> {
-        let stdout = io::stdout();
-        let mut stdout = stdout.lock();
-
-        // Print post-args, arguments after entry templates.
-        for arg in args {
-            if let Some(arg_str) = arg.to_str() {
-                write!(stdout, "{} ", arg_str)?;
-            }
-        }
-        writeln!(stdout)?;
-        stdout.flush()
     }
 }
 
@@ -223,14 +182,7 @@ impl CommandSet {
 
                         // If provided print config, print command arguments.
                         if let Some(config) = print_with_config {
-                            if let Err(e) = CommandSetDisplay::print_entry_string(
-                                &entry,
-                                &builder.path_arg,
-                                config,
-                                path_separator,
-                            ) {
-                                return handle_cmd_error(Some(&builder.cmd), e);
-                            }
+                            builder.push_display_entry(&entry, config, path_separator)
                         }
                     }
                 }
@@ -258,6 +210,7 @@ struct CommandBuilder {
     count: usize,
     limit: usize,
     print: bool,
+    entries_to_print: OsString,
 }
 
 impl CommandBuilder {
@@ -286,6 +239,7 @@ impl CommandBuilder {
             count: 0,
             limit,
             print,
+            entries_to_print: OsString::new(),
         })
     }
 
@@ -296,6 +250,20 @@ impl CommandBuilder {
         cmd.stderr(Stdio::inherit());
         cmd.try_args(&pre_args[1..])?;
         Ok(cmd)
+    }
+
+    fn push_display_entry(
+        &mut self,
+        entry: &DirEntry,
+        config: &Config,
+        path_separator: Option<&str>,
+    ) {
+        self.entries_to_print
+            .push(
+                self.path_arg
+                    .generate_with_highlight(entry, path_separator, config),
+            );
+        self.entries_to_print.push(" ");
     }
 
     fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
@@ -311,21 +279,40 @@ impl CommandBuilder {
             self.finish()?;
         }
 
-        // If started a new command, print the arguments before printing entry templates.
-        if self.count == 0 && self.print {
-            CommandSetDisplay::print_pre_args(&self.pre_args)?;
-        }
-
         self.cmd.try_arg(arg)?;
         self.count += 1;
         Ok(())
     }
 
     fn finish(&mut self) -> io::Result<()> {
-        if self.count > 0 {
-            if self.print {
-                CommandSetDisplay::print_post_args(&self.post_args)?;
+        if self.print {
+            let mut to_print = OsString::new();
+
+            for arg in &self.pre_args {
+                to_print.push(arg);
+                to_print.push(" ");
             }
+
+            to_print.push(&self.entries_to_print);
+
+            for (i, arg) in self.post_args.iter().enumerate() {
+                if i > 0 {
+                    to_print.push(" ");
+                }
+                to_print.push(arg);
+            }
+
+            let stdout = io::stdout();
+            let mut stdout = stdout.lock();
+
+            if let Some(to_print_str) = to_print.to_str() {
+                writeln!(stdout, "{}", to_print_str)?;
+            }
+
+            stdout.flush()?;
+            self.entries_to_print = OsString::new();
+        }
+        if self.count > 0 {
             self.cmd.try_args(&self.post_args)?;
             self.cmd.status()?;
 

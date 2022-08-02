@@ -58,6 +58,13 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     cmd_display_result: Option<String>,
 ) -> ExitCode {
     let mut output_buffer = OutputBuffer::new(out_perm);
+
+    if let Some(ref d) = cmd_display_result {
+        // Print command.
+        let cmd_bytes: Vec<u8> = d.clone().as_bytes().to_vec();
+        output_buffer.push(cmd_bytes, vec![]);
+    }
+
     for result in cmds {
         let mut cmd = match result {
             Ok(cmd) => cmd,
@@ -72,11 +79,6 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
             // Allows for viewing and interacting with intermediate command output
             cmd.spawn().and_then(|c| c.wait_with_output())
         };
-
-        if let Some(ref d) = cmd_display_result {
-            let cmd_bytes: Vec<u8> = d.clone().as_bytes().to_vec();
-            output_buffer.push(cmd_bytes, vec![]);
-        }
 
         // Then wait for the command to exit, if it was spawned.
         match output {
