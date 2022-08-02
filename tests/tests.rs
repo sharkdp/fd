@@ -1710,6 +1710,32 @@ fn test_print_exec() {
         );
 
         te.assert_output(
+            &[
+                "--path-separator=#",
+                "--print-exec",
+                "--absolute-path",
+                "foo",
+                "--exec",
+                "echo",
+            ],
+            &format!(
+                "echo {abs_path}#a.foo
+                echo {abs_path}#one#b.foo
+                echo {abs_path}#one#two#C.Foo2
+                echo {abs_path}#one#two#c.foo
+                echo {abs_path}#one#two#three#d.foo
+                echo {abs_path}#one#two#three#directory_foo
+                {abs_path}#a.foo
+                {abs_path}#one#b.foo
+                {abs_path}#one#two#C.Foo2
+                {abs_path}#one#two#c.foo
+                {abs_path}#one#two#three#d.foo
+                {abs_path}#one#two#three#directory_foo",
+                abs_path = abs_path.replace(std::path::MAIN_SEPARATOR, "#"),
+            ),
+        );
+
+        te.assert_output(
             &["foo", "--print-exec", "--exec-batch", "echo", "beginarg", "{}", "endarg"],
             "echo beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg
             beginarg ./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo endarg",

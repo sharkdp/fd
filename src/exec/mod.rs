@@ -75,11 +75,11 @@ impl CommandSetDisplay<'_> {
                 Some(cmd_hl_str) => res.push_str(&cmd_hl_str),
             }
         }
-        res.push_str("\n");
+        res.push('\n');
         Some(res)
     }
 
-    fn write_entry_string(
+    fn print_entry_string(
         entry: &DirEntry,
         argt: &ArgumentTemplate,
         config: &Config,
@@ -96,7 +96,7 @@ impl CommandSetDisplay<'_> {
         stdout.flush()
     }
 
-    fn print_pre_args(args: &Vec<OsString>) -> std::io::Result<()> {
+    fn print_pre_args(args: &[OsString]) -> std::io::Result<()> {
         let stdout = io::stdout();
         let mut stdout = stdout.lock();
 
@@ -109,7 +109,7 @@ impl CommandSetDisplay<'_> {
         stdout.flush()
     }
 
-    fn print_post_args(args: &Vec<OsString>) -> std::io::Result<()> {
+    fn print_post_args(args: &[OsString]) -> std::io::Result<()> {
         let stdout = io::stdout();
         let mut stdout = stdout.lock();
 
@@ -119,7 +119,7 @@ impl CommandSetDisplay<'_> {
                 write!(stdout, "{} ", arg_str)?;
             }
         }
-        write!(stdout, "\n")?;
+        writeln!(stdout)?;
         stdout.flush()
     }
 }
@@ -223,7 +223,7 @@ impl CommandSet {
 
                         // If provided print config, print command arguments.
                         if let Some(config) = print_with_config {
-                            if let Err(e) = CommandSetDisplay::write_entry_string(
+                            if let Err(e) = CommandSetDisplay::print_entry_string(
                                 &entry,
                                 &builder.path_arg,
                                 config,
@@ -453,7 +453,7 @@ impl CommandTemplate {
             res.push(" ");
             res.push(arg.generate_with_highlight(entry, path_separator, config));
         }
-        return res.to_str().and_then(|s| Some(String::from(s)));
+        return res.to_str().map(|s| String::from(s));
     }
 }
 
