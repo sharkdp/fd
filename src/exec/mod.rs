@@ -70,7 +70,7 @@ impl CommandSetDisplay<'_> {
         let mut res = String::new();
         for (i, c) in self.command_set.commands.iter().enumerate() {
             if i > 0 {
-                res.push_str(&"; ");
+                res.push_str("; ");
             }
             let cmd_hl = c.generate_highlighted_string(self.entry, self.config, path_separator);
             match cmd_hl {
@@ -440,7 +440,7 @@ impl CommandTemplate {
             res.push(" ");
             res.push(arg.generate_with_highlight(entry, path_separator, config));
         }
-        return res.to_str().map(|s| String::from(s));
+        return res.to_str().map(String::from);
     }
 }
 
