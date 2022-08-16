@@ -58,7 +58,7 @@ The global fd ignore file (usually
 The flag can be overridden with '--ignore'.
 .TP
 .B \-u, \-\-unrestricted
-Alias for '--no-ignore'. Can be repeated; '-uu' is an alias for '--no-ignore --hidden'.
+Perform an unrestricted search, including ignored and hidden files. This is an alias for '--hidden --no-ignore'.
 .TP
 .B \-\-no\-ignore\-vcs
 Show search results from files and directories that would otherwise be ignored by gitignore files
@@ -416,7 +416,8 @@ Examples:
 .BI "\-\-batch-size " size
 Maximum number of arguments to pass to the command given with -X. If the number of results is
 greater than the given size, the command given with -X is run again with remaining arguments. A
-batch size of zero means there is no limit.
+batch size of zero means there is no limit (default), but note that batching might still happen
+due to OS restrictions on the maximum length of command lines.
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 
@@ -454,11 +455,5 @@ $ fd -e py
 .TP
 .RI "Open all search results with vim:"
 $ fd pattern -X vim
-.TP
-.BI "\-\-batch\-size " size
-Pass at most
-.I size
-arguments to each call to the command given with -X.
-.TP
 .SH SEE ALSO
 .BR find (1)

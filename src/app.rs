@@ -102,12 +102,12 @@ pub fn build_app() -> Command<'static> {
                 .short('u')
                 .long("unrestricted")
                 .overrides_with_all(&["ignore", "no-hidden"])
-                .multiple_occurrences(true)
+                .multiple_occurrences(true) // Allowed for historical reasons
                 .hide_short_help(true)
-                .help("Alias for '--no-ignore', and '--hidden' when given twice")
+                .help("Unrestricted search, alias for '--no-ignore --hidden'")
                 .long_help(
-                    "Alias for '--no-ignore'. Can be repeated. '-uu' is an alias for \
-                         '--no-ignore --hidden'.",
+                    "Perform an unrestricted search, including ignored and hidden files. This is \
+                    an alias for '--no-ignore --hidden'."
                 ),
         )
         .arg(
@@ -453,7 +453,9 @@ pub fn build_app() -> Command<'static> {
                 "Maximum number of arguments to pass to the command given with -X. \
                 If the number of results is greater than the given size, \
                 the command given with -X is run again with remaining arguments. \
-                A batch size of zero means there is no limit.",
+                A batch size of zero means there is no limit (default), but note \
+                that batching might still happen due to OS restrictions on the \
+                maximum length of command lines.",
             ),
         )
         .arg(

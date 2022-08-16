@@ -1,8 +1,7 @@
 use std::ffi::OsStr;
-use std::fs::{FileType, Metadata};
 use std::io;
 use std::mem;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
@@ -13,10 +12,10 @@ use std::{borrow::Cow, io::Write};
 use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
-use once_cell::unsync::OnceCell;
 use regex::bytes::Regex;
 
 use crate::config::Config;
+use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
@@ -36,7 +35,7 @@ enum ReceiverMode {
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
 pub enum WorkerResult {
-    Entry(PathBuf),
+    Entry(DirEntry),
     Error(ignore::Error),
 }
 
@@ -181,7 +180,7 @@ struct ReceiverBuffer<W> {
     /// The deadline to switch to streaming mode.
     deadline: Instant,
     /// The buffer of quickly received paths.
-    buffer: Vec<PathBuf>,
+    buffer: Vec<DirEntry>,
     /// Result count.
     num_results: usize,
 }
@@ -242,20 +241,20 @@ impl<W: Write> ReceiverBuffer<W> {
     /// Wait for a result or state change.
     fn poll(&mut self) -> Result<(), ExitCode> {
         match self.recv() {
-            Ok(WorkerResult::Entry(path)) => {
+            Ok(WorkerResult::Entry(dir_entry)) => {
                 if self.config.quiet {
                     return Err(ExitCode::HasResults(true));
                 }
 
                 match self.mode {
                     ReceiverMode::Buffering => {
-                        self.buffer.push(path);
+                        self.buffer.push(dir_entry);
                         if self.buffer.len() > MAX_BUFFER_LENGTH {
                             self.stream()?;
                         }
                     }
                     ReceiverMode::Streaming => {
-                        self.print(&path)?;
+                        self.print(&dir_entry)?;
                         self.flush()?;
                     }
                 }
@@ -284,8 +283,8 @@ impl<W: Write> ReceiverBuffer<W> {
     }
 
     /// Output a path.
-    fn print(&mut self, path: &Path) -> Result<(), ExitCode> {
-        output::print_entry(&mut self.stdout, path, &self.config);
+    fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
+        output::print_entry(&mut self.stdout, entry, &self.config);
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
             // Ignore any errors on flush, because we're about to exit anyway
@@ -394,62 +393,6 @@ fn spawn_receiver(
             rxbuffer.process()
         }
     })
-}
-
-enum DirEntryInner {
-    Normal(ignore::DirEntry),
-    BrokenSymlink(PathBuf),
-}
-
-pub struct DirEntry {
-    inner: DirEntryInner,
-    metadata: OnceCell<Option<Metadata>>,
-}
-
-impl DirEntry {
-    fn normal(e: ignore::DirEntry) -> Self {
-        Self {
-            inner: DirEntryInner::Normal(e),
-            metadata: OnceCell::new(),
-        }
-    }
-
-    fn broken_symlink(path: PathBuf) -> Self {
-        Self {
-            inner: DirEntryInner::BrokenSymlink(path),
-            metadata: OnceCell::new(),
-        }
-    }
-
-    pub fn path(&self) -> &Path {
-        match &self.inner {
-            DirEntryInner::Normal(e) => e.path(),
-            DirEntryInner::BrokenSymlink(pathbuf) => pathbuf.as_path(),
-        }
-    }
-
-    pub fn file_type(&self) -> Option<FileType> {
-        match &self.inner {
-            DirEntryInner::Normal(e) => e.file_type(),
-            DirEntryInner::BrokenSymlink(_) => self.metadata().map(|m| m.file_type()),
-        }
-    }
-
-    pub fn metadata(&self) -> Option<&Metadata> {
-        self.metadata
-            .get_or_init(|| match &self.inner {
-                DirEntryInner::Normal(e) => e.metadata().ok(),
-                DirEntryInner::BrokenSymlink(path) => path.symlink_metadata().ok(),
-            })
-            .as_ref()
-    }
-
-    pub fn depth(&self) -> Option<usize> {
-        match &self.inner {
-            DirEntryInner::Normal(e) => Some(e.depth()),
-            DirEntryInner::BrokenSymlink(_) => None,
-        }
-    }
 }
 
 fn spawn_senders(
@@ -602,7 +545,7 @@ fn spawn_senders(
                 }
             }
 
-            let send_result = tx_thread.send(WorkerResult::Entry(entry_path.to_owned()));
+            let send_result = tx_thread.send(WorkerResult::Entry(entry));
 
             if send_result.is_err() {
                 return ignore::WalkState::Quit;

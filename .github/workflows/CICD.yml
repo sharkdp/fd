@@ -53,12 +53,12 @@ jobs:
         toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
         default: true
         components: clippy
+        profile: minimal
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --locked --all-targets --all-features
-        profile: minimal # minimal component installation (ie, no documentation)
     - name: Run tests
       uses: actions-rs/cargo@v1
       with:
@@ -77,9 +77,9 @@ jobs:
           - { os: ubuntu-20.04, target: aarch64-unknown-linux-gnu   , use-cross: true }
           - { os: ubuntu-20.04, target: i686-unknown-linux-gnu      , use-cross: true }
           - { os: ubuntu-20.04, target: i686-unknown-linux-musl     , use-cross: true }
-          - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu    }
+          - { os: ubuntu-20.04, target: x86_64-unknown-linux-gnu    , use-cross: true }
           - { os: ubuntu-20.04, target: x86_64-unknown-linux-musl   , use-cross: true }
-          - { os: macos-10.15 , target: x86_64-apple-darwin         }
+          - { os: macos-latest , target: x86_64-apple-darwin         }
           # - { os: windows-2019, target: i686-pc-windows-gnu         }  ## disabled; error: linker `i686-w64-mingw32-gcc` not found
           - { os: windows-2019, target: i686-pc-windows-msvc        }
           - { os: windows-2019, target: x86_64-pc-windows-gnu       }

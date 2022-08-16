@@ -1,5 +1,5 @@
+use crate::dir_entry;
 use crate::filesystem;
-use crate::walk;
 
 /// Whether or not to show
 #[derive(Default)]
@@ -14,7 +14,7 @@ pub struct FileTypes {
 }
 
 impl FileTypes {
-    pub fn should_ignore(&self, entry: &walk::DirEntry) -> bool {
+    pub fn should_ignore(&self, entry: &dir_entry::DirEntry) -> bool {
         if let Some(ref entry_type) = entry.file_type() {
             (!self.files && entry_type.is_file())
                 || (!self.directories && entry_type.is_dir())
