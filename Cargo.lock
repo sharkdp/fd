@@ -197,7 +197,7 @@ dependencies = [
  "jemallocator",
  "libc",
  "lscolors",
- "nix 0.24.2",
+ "nix 0.25.0",
  "normpath",
  "num_cpus",
  "once_cell",
@@ -389,17 +389,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
-]
-
-[[package]]
-name = "nix"
-version = "0.24.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "195cdbc1741b8134346d515b3a56a1c94b0912758009cfd53f99ea0f57b065fc"
-dependencies = [
- "bitflags",
- "cfg-if",
- "libc",
 ]
 
 [[package]]
