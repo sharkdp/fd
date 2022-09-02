@@ -31,7 +31,7 @@ path = "src/main.rs"
 
 [build-dependencies]
 clap = { version = "3.1", features = ["cargo"] }
-clap_complete = "3.1"
+clap_complete = "3.2"
 version_check = "0.9"
 
 [dependencies]
@@ -44,7 +44,7 @@ regex = "1.6.0"
 regex-syntax = "0.6"
 ctrlc = "3.2"
 humantime = "2.1"
-lscolors = "0.11"
+lscolors = "0.12"
 globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
