@@ -210,7 +210,7 @@ The terminal output of commands run from parallel threads using `-x` will not be
 so `fd -x` can be used to rudimentarily parallelize a task run over many files. 
 An example of this is calculating the checksum of each individual file within a directory.
 ```
-fd -x md5sum
+fd -tf -x md5sum > file_checksums.txt
 ```
 
 #### Placeholder syntax
