@@ -341,9 +341,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.126"
+version = "0.2.132"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349d5a591cd28b49e1d1037471617a32ddcda5731b99419008085f72d5a53836"
+checksum = "8371e4e5341c3a96db127eb2465ac681ced4c433e01dd0e938adbef26ba93ba5"
 
 [[package]]
 name = "log"
@@ -356,9 +356,9 @@ dependencies = [
 
 [[package]]
 name = "lscolors"
-version = "0.11.0"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a24e014efe73b727e5792b6f422a23c04b10ba9d8cdc74b197a25a08db7eac86"
+checksum = "074bff749d092e2e818fe954952102f88e21f67fc69f4d350621aab15a1810f1"
 dependencies = [
  "ansi_term",
 ]
