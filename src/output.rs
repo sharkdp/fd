@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::ffi::OsString;
 use std::io::{self, Write};
 use std::path::Path;
 
@@ -39,6 +40,47 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
             print_error(format!("Could not write to output: {}", e));
             ExitCode::GeneralError.exit();
         }
+    }
+}
+
+pub fn paint_entry(entry: &DirEntry, path: &Path, config: &Config) -> OsString {
+    if let Some(ls_colors) = &config.ls_colors {
+        let mut offset = 0;
+        let path_str = path.to_string_lossy();
+        let mut result = OsString::new();
+
+        if let Some(parent) = path.parent() {
+            offset = parent.to_string_lossy().len();
+            for c in path_str[offset..].chars() {
+                if std::path::is_separator(c) {
+                    offset += c.len_utf8();
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if offset > 0 {
+            let mut parent_str = Cow::from(&path_str[..offset]);
+            if let Some(ref separator) = config.path_separator {
+                *parent_str.to_mut() = replace_path_separator(&parent_str, separator);
+            }
+
+            let style = ls_colors
+                .style_for_indicator(Indicator::Directory)
+                .map(Style::to_ansi_term_style)
+                .unwrap_or_default();
+            result.push(style.paint(parent_str).to_string());
+        }
+
+        let style = ls_colors
+            .style_for_path_with_metadata(path, entry.metadata())
+            .map(Style::to_ansi_term_style)
+            .unwrap_or_default();
+        result.push(style.paint(&path_str[offset..]).to_string());
+        result
+    } else {
+        OsString::from(path)
     }
 }
 

@@ -442,6 +442,16 @@ pub fn build_app() -> Command<'static> {
                 ),
         )
         .arg(
+            Arg::new("print-exec")
+                .long("print-exec")
+                .help("Print each command ran with -x or -X.")
+                .requires("exec-batch")
+                .requires("exec")
+                .long_help(
+                    "Print each command before it is executed. Must be ran with -x or -X."
+                ),
+        )
+        .arg(
             Arg::new("batch-size")
             .long("batch-size")
             .takes_value(true)

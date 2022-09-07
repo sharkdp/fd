@@ -55,8 +55,16 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     cmds: I,
     out_perm: &Mutex<()>,
     enable_output_buffering: bool,
+    cmd_display_result: Option<String>,
 ) -> ExitCode {
     let mut output_buffer = OutputBuffer::new(out_perm);
+
+    if let Some(ref d) = cmd_display_result {
+        // Print command.
+        let cmd_bytes: Vec<u8> = d.clone().as_bytes().to_vec();
+        output_buffer.push(cmd_bytes, vec![]);
+    }
+
     for result in cmds {
         let mut cmd = match result {
             Ok(cmd) => cmd,
