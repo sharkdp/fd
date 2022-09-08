@@ -93,31 +93,26 @@ pub struct Opts {
     /// hidden files and directories are skipped). Files and directories are considered
     /// to be hidden if their name starts with a `.` sign (dot).
     /// The flag can be overridden with --no-hidden.
-    #[clap(long, short = 'H', action, overrides_with = "hidden")]
+    #[clap(long, short = 'H', action)]
     pub hidden: bool,
     /// Do not respect .(git|fd)ignore files
     ///
     /// Show search results from files and directories that would otherwise be
     ///   ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
     ///   The flag can be overridden with --ignore.
-    #[clap(long, short = 'I', action, overrides_with = "no-ignore")]
+    #[clap(long, short = 'I', action)]
     pub no_ignore: bool,
     /// Do not respect .gitignore files
     ///
     ///Show search results from files and directories that would otherwise be
     ///ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.
-    #[clap(long, action, overrides_with = "no-ignore-vcs", hide_short_help = true)]
+    #[clap(long, action, hide_short_help = true)]
     pub no_ignore_vcs: bool,
     /// Do not respect .(git|fd)ignore files in parent directories
     ///
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.
-    #[clap(
-        long,
-        action,
-        overrides_with = "no-ignore-parent",
-        hide_short_help = true
-    )]
+    #[clap(long, action, hide_short_help = true)]
     pub no_ignore_parent: bool,
     /// Do not respect the global ignore file
     #[clap(long, action, hide = true)]
@@ -132,48 +127,36 @@ pub struct Opts {
     ///
     ///Perform a case-sensitive search. By default, fd uses case-insensitive
     ///searches, unless the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 's', action, overrides_with_all(&["ignore-case", "case-sensitive"]))]
+    #[clap(long, short = 's', action, overrides_with("ignore-case"))]
     pub case_sensitive: bool,
     /// Case-insensitive search (default: smart case)
     ///
     /// Perform a case-insensitive search. By default, fd uses case-insensitive searches, unless
     /// the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 'i', action, overrides_with_all(&["case-sensitive", "ignore-case"]))]
+    #[clap(long, short = 'i', action, overrides_with("case-sensitive"))]
     pub ignore_case: bool,
     /// Glob-based search (default: regular expression)
     ///
     /// Perform a glob-based search instead of a regular expression search.
-    #[clap(
-        long,
-        short = 'g',
-        action,
-        conflicts_with("fixed-strings"),
-        overrides_with("glob")
-    )]
+    #[clap(long, short = 'g', action, conflicts_with("fixed-strings"))]
     pub glob: bool,
     /// Regular-expression based search (default)
     ///
     ///Perform a regular-expression based search (default). This can be used to override --glob.
-    #[clap(long, action, overrides_with_all(&["glob", "regex"]), hide_short_help = true)]
+    #[clap(long, action, overrides_with("glob"), hide_short_help = true)]
     pub regex: bool,
     /// Treat pattern as literal string instead of regex
     ///
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
     /// exact filename, consider using '--glob'.
-    #[clap(
-        long,
-        short = 'F',
-        alias = "literal",
-        overrides_with("fixed-strings"),
-        hide_short_help = true
-    )]
+    #[clap(long, short = 'F', alias = "literal", hide_short_help = true)]
     pub fixed_strings: bool,
     /// Show absolute instead of relative paths
     ///
     /// Shows the full path starting with the root as opposed to relative paths.
     /// The flag can be overridden with --relative-path.
-    #[clap(long, short = 'a', action, overrides_with("absolute-path"))]
+    #[clap(long, short = 'a', action)]
     pub absolute_path: bool,
     /// Use a long listing format with file metadata
     ///
@@ -188,13 +171,7 @@ pub struct Opts {
     /// By default, fd does not descend into symlinked directories. Using this
     /// flag, symbolic links are also traversed.
     /// Flag can be overridden with --no-follow.
-    #[clap(
-        long,
-        short = 'L',
-        alias = "dereference",
-        action,
-        overrides_with("follow")
-    )]
+    #[clap(long, short = 'L', alias = "dereference", action)]
     pub follow: bool,
     /// Search full abs. path (default: filename only)
     ///
@@ -203,13 +180,7 @@ pub struct Opts {
     /// (absolute) path.
     /// Example:
     ///     fd --glob -p '**/.git/config'
-    #[clap(
-        long,
-        short = 'p',
-        action,
-        overrides_with("full-path"),
-        verbatim_doc_comment
-    )]
+    #[clap(long, short = 'p', action, verbatim_doc_comment)]
     pub full_path: bool,
     /// Separate results by the null character
     ///
@@ -219,7 +190,6 @@ pub struct Opts {
         long = "print0",
         short = '0',
         action,
-        overrides_with("print0"),
         conflicts_with("list-details"),
         hide_short_help = true
     )]
@@ -292,8 +262,15 @@ pub struct Opts {
     ///   - Find empty directories:
     ///       fd --type empty --type directory
     ///       fd -te -td"
-    #[clap(long = "type", short = 't', value_name = "filetype", hide_possible_values = true,
-        arg_enum, action = ArgAction::Append, number_of_values = 1, verbatim_doc_comment)]
+    #[clap(
+        long = "type",
+        short = 't',
+        action,
+        value_name = "filetype",
+        hide_possible_values = true,
+        value_enum,
+        verbatim_doc_comment
+    )]
     pub filetype: Option<Vec<FileType>>,
     /// Filter by file extension
     ///
@@ -301,7 +278,7 @@ pub struct Opts {
     /// allowable file extensions can be specified.
     /// If you want to search for files without extension,
     /// you can use the regex '^[^.]+$' as a normal search pattern.
-    #[clap(long = "extension", short = 'e', value_name = "ext", action = ArgAction::Append, number_of_values = 1)]
+    #[clap(long = "extension", short = 'e', value_name = "ext", action)]
     pub extensions: Option<Vec<String>>,
 
     #[clap(flatten)]
@@ -332,13 +309,13 @@ pub struct Opts {
     /// Examples:
     ///   --exclude '*.pyc'
     ///   --exclude node_modules
-    #[clap(long, short = 'E', value_name = "pattern", action = ArgAction::Append, number_of_values = 1, verbatim_doc_comment)]
+    #[clap(long, short = 'E', value_name = "pattern", verbatim_doc_comment)]
     pub exclude: Vec<String>,
     /// Add custom ignore-file in '.gitignore' format
     ///
     /// Add a custom ignore-file in '.gitignore' format. These files have a low
     /// precedence.
-    #[clap(long, value_name = "path", action = ArgAction::Append, number_of_values = 1, hide_short_help = true)]
+    #[clap(long, value_name = "path", action, hide_short_help = true)]
     pub ignore_file: Vec<PathBuf>,
     /// When to use colors
     ///
@@ -348,8 +325,8 @@ pub struct Opts {
     #[clap(
         long,
         short = 'c',
-        arg_enum,
-        default_value = "auto",
+        value_enum,
+        default_value_t = ColorWhen::Auto,
         value_name = "when",
         hide_possible_values = true,
         verbatim_doc_comment
@@ -379,7 +356,7 @@ pub struct Opts {
     ///     'mi': mebibytes
     ///     'gi': gibibytes
     ///     'ti': tebibytes
-    #[clap(long, short = 'S', number_of_values = 1, value_parser = SizeFilter::from_string, allow_hyphen_values = true, action = ArgAction::Append, verbatim_doc_comment)]
+    #[clap(long, short = 'S', value_parser = SizeFilter::from_string, allow_hyphen_values = true, action, verbatim_doc_comment)]
     pub size: Vec<SizeFilter>,
     /// Milliseconds to buffer before streaming search results to console
     ///
@@ -402,7 +379,6 @@ pub struct Opts {
         alias("change-newer-than"),
         alias("newer"),
         value_name = "date|dur",
-        number_of_values = 1,
         verbatim_doc_comment,
         action
     )]
@@ -422,7 +398,6 @@ pub struct Opts {
         alias("change-older-than"),
         alias("older"),
         value_name = "date|dur",
-        number_of_values = 1,
         verbatim_doc_comment,
         action
     )]
@@ -462,7 +437,7 @@ pub struct Opts {
     ///
     ///Enable the display of filesystem errors for situations such as
     ///insufficient permissions or dead symlinks.
-    #[clap(long, hide_short_help = true, overrides_with("show-errors"), action)]
+    #[clap(long, hide_short_help = true, action)]
     pub show_errors: bool,
     /// Change current working directory
     ///
@@ -471,13 +446,7 @@ pub struct Opts {
     /// path. Note that relative paths which are passed to fd via the positional
     /// <path> argument or the '--search-path' option will also be resolved
     /// relative to this directory.
-    #[clap(
-        long,
-        value_name = "path",
-        number_of_values = 1,
-        action,
-        hide_short_help = true
-    )]
+    #[clap(long, value_name = "path", action, hide_short_help = true)]
     pub base_directory: Option<PathBuf>,
     /// the search pattern (a regular expression, unless '--glob' is used; optional)
     ///
@@ -501,7 +470,7 @@ pub struct Opts {
     /// Provides paths to search as an alternative to the positional <path> argument
     ///
     /// Changes the usage to `fd [OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`
-    #[clap(long, conflicts_with("path"), action = ArgAction::Append, hide_short_help = true, number_of_values = 1)]
+    #[clap(long, conflicts_with("path"), action, hide_short_help = true)]
     search_path: Vec<PathBuf>,
     /// strip './' prefix from non-tty outputs
     ///
