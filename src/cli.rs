@@ -150,7 +150,7 @@ pub struct Opts {
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
     /// exact filename, consider using '--glob'.
-    #[clap(long, short = 'F', alias = "literal", hide_short_help = true)]
+    #[clap(long, short = 'F', action, alias = "literal", hide_short_help = true)]
     pub fixed_strings: bool,
     /// Show absolute instead of relative paths
     ///
