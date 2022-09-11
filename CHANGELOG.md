@@ -6,6 +6,7 @@
 ## Bugfixes
 
 - fd returns an error when current working directory does not exist while a search path is specified, see #1072 (@vijfhoek)
+- Improved "command not found" error message, see #1083 and #1109 (@themkat)
 
 
 ## Changes
