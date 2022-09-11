@@ -96,7 +96,7 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
-            print_error(format!("Command not found: {:?}", cmd));
+            print_error(format!("Command not found: {:?}", cmd.get_program()));
             ExitCode::GeneralError
         }
         (_, err) => {
