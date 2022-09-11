@@ -12,8 +12,9 @@ pub fn build_app() -> Command<'static> {
         .color(clap_color_choice)
         .setting(AppSettings::DeriveDisplayOrder)
         .dont_collapse_args_in_usage(true)
-        .after_help("Bugs can be reported on Github: https://github.com/sharkdp/fd\n\n\
-            Note: `fd -h` prints a short and concise overview while `fd --help` gives all details.",
+        .after_help(
+            "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
+                 details.",
         )
         .arg(
             Arg::new("hidden")
