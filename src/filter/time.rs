@@ -3,7 +3,7 @@ use chrono::{offset::TimeZone, DateTime, Local, NaiveDate};
 use std::time::SystemTime;
 
 /// Filter based on time ranges.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TimeFilter {
     Before(SystemTime),
     After(SystemTime),

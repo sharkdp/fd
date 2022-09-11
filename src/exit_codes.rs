@@ -3,7 +3,7 @@ use std::process;
 #[cfg(unix)]
 use nix::sys::signal::{raise, signal, SigHandler, Signal};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExitCode {
     Success,
     HasResults(bool),

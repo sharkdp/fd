@@ -4,7 +4,7 @@ use regex::Regex;
 static SIZE_CAPTURES: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SizeFilter {
     Max(u64),
     Min(u64),
