@@ -13,6 +13,7 @@
 
 ## Other
 
+- Added link back to GitHub in man page, see #1086 (@scottchiefbaker)
 
 
 # v8.4.0
