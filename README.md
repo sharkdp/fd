@@ -599,7 +599,7 @@ You can install `fd` via xbps-install:
 xbps-install -S fd
 ```
 
-### On RedHat Enterprise Linux 8 (RHEL8) or Almalinux 8 or Rocky Linux 8
+### On RedHat Enterprise Linux 8 (RHEL8), Almalinux 8, EuroLinux 8 or Rocky Linux 8
 
 Get the latest fd-v*-x86_64-unknown-linux-gnu.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
 ```
