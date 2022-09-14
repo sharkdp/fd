@@ -16,6 +16,9 @@ pub fn build_app() -> Command<'static> {
             "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
                  details.",
         )
+        .after_long_help(
+            "Bugs can be reported on Github: https://github.com/sharkdp/fd"
+        )
         .arg(
             Arg::new("hidden")
                 .long("hidden")
