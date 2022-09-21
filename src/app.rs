@@ -719,10 +719,10 @@ pub fn build_app() -> Command<'static> {
                 .long("strip-cwd-prefix")
                 .conflicts_with_all(&["path", "search-path"])
                 .hide_short_help(true)
-                .help("strip './' prefix from non-tty outputs")
+                .help("strip './' prefix from -0/--print0 output")
                 .long_help(
-                    "By default, relative paths are prefixed with './' when the output goes to a non \
-                     interactive terminal (TTY). Use this flag to disable this behaviour."
+                    "By default, relative paths are prefixed with './' when -0/--print0 is given, to \
+                     make them safer for use with xargs. Use this flag to disable this behaviour."
                 )
         );
 
