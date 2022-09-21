@@ -385,7 +385,7 @@ fn construct_config(matches: clap::ArgMatches, pattern_regex: &str) -> Result<Co
             }),
         strip_cwd_prefix: (!matches.is_present("path")
             && !matches.is_present("search-path")
-            && (interactive_terminal || matches.is_present("strip-cwd-prefix"))),
+            && (!matches.is_present("null_separator") || matches.is_present("strip-cwd-prefix"))),
     })
 }
 
