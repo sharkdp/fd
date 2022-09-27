@@ -1328,6 +1328,16 @@ fn test_exec() {
         );
 
         te.assert_output(
+            &["foo", "--strip-cwd-prefix", "--exec", "echo", "{}"],
+            "a.foo
+            one/b.foo
+            one/two/C.Foo2
+            one/two/c.foo
+            one/two/three/d.foo
+            one/two/three/directory_foo",
+        );
+
+        te.assert_output(
             &["foo", "--exec", "echo", "{.}"],
             "a
             one/b
@@ -1450,6 +1460,11 @@ fn test_exec_batch() {
         te.assert_output(
             &["foo", "--exec-batch", "echo", "{}"],
             "./a.foo ./one/b.foo ./one/two/C.Foo2 ./one/two/c.foo ./one/two/three/d.foo ./one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--strip-cwd-prefix", "--exec-batch", "echo", "{}"],
+            "a.foo one/b.foo one/two/C.Foo2 one/two/c.foo one/two/three/d.foo one/two/three/directory_foo",
         );
 
         te.assert_output(

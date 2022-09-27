@@ -724,8 +724,10 @@ pub fn build_app() -> Command<'static> {
                 .hide_short_help(true)
                 .help("strip './' prefix from -0/--print0 output")
                 .long_help(
-                    "By default, relative paths are prefixed with './' when -0/--print0 is given, to \
-                     make them safer for use with xargs. Use this flag to disable this behaviour."
+                    "By default, relative paths are prefixed with './' when -x/--exec, \
+                     -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a \
+                     path starting with '-' being treated as a command line option. Use \
+                     this flag to disable this behaviour."
                 )
         );
 
