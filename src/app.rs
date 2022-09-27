@@ -17,7 +17,7 @@ pub fn build_app() -> Command<'static> {
                  details.",
         )
         .after_long_help(
-            "Bugs can be reported on Github: https://github.com/sharkdp/fd"
+            "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues"
         )
         .arg(
             Arg::new("hidden")
