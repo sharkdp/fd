@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
-use std::path::Path;
 
 use lscolors::{Indicator, LsColors, Style};
 
@@ -8,19 +7,9 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
-use crate::filesystem::strip_current_dir;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
-}
-
-fn stripped_path<'a>(entry: &'a DirEntry, config: &Config) -> &'a Path {
-    let path = entry.path();
-    if config.strip_cwd_prefix {
-        strip_current_dir(path)
-    } else {
-        path
-    }
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -74,7 +63,7 @@ fn print_entry_colorized<W: Write>(
 ) -> io::Result<()> {
     // Split the path between the parent and the last component
     let mut offset = 0;
-    let path = stripped_path(entry, config);
+    let path = entry.stripped_path(config);
     let path_str = path.to_string_lossy();
 
     if let Some(parent) = path.parent() {
@@ -130,7 +119,7 @@ fn print_entry_uncolorized_base<W: Write>(
     config: &Config,
 ) -> io::Result<()> {
     let separator = if config.null_separator { "\0" } else { "\n" };
-    let path = stripped_path(entry, config);
+    let path = entry.stripped_path(config);
 
     let mut path_string = path.to_string_lossy();
     if let Some(ref separator) = config.path_separator {
@@ -164,7 +153,7 @@ fn print_entry_uncolorized<W: Write>(
     } else {
         // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
         let separator = if config.null_separator { b"\0" } else { b"\n" };
-        stdout.write_all(stripped_path(entry, config).as_os_str().as_bytes())?;
+        stdout.write_all(entry.stripped_path(config).as_os_str().as_bytes())?;
         print_trailing_slash(stdout, entry, config, None)?;
         stdout.write_all(separator)
     }
