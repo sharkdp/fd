@@ -7,9 +7,9 @@
 ## Bugfixes
 
 - Fixed differences between piped / non-piped output. This changes `fd`s behavior back to what we
-  had before 8.3.0, i.e. there will be no leading `./` prefixes, unless the `--print0`/`-0` option
-  is used. `--strip-cwd-prefix` can be used to strip that prefix even when `--print0` is used,
-  see #1046 and #1115 (@tavianator)
+  had before 8.3.0, i.e. there will be no leading `./` prefixes, unless `--exec`/`-x`,
+  `--exec-batch`/`-X`, or `--print0`/`-0` are used. `--strip-cwd-prefix` can be used to strip that
+  prefix in those cases. See #1046, #1115, and #1121 (@tavianator)
 - fd returns an error when current working directory does not exist while a search path is
   specified, see #1072 (@vijfhoek)
 - Improved "command not found" error message, see #1083 and #1109 (@themkat)
