@@ -404,8 +404,13 @@ pub fn build_app() -> Command<'static> {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
-                       '{/.}': basename without file extension\n\n\
-                     If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                       '{/.}': basename without file extension\n \
+                       '{N}':  text matched by the N-th group in the first pattern ocurrence. Text outside groups are discarted.\n\
+                       '{M.N}':text matched in the M-th pattern ocurrence by the N-th group over the the path or filename.\n\n\
+                       '{N:-D}': text matched by the optional ocurrence/group or defaults to 'D' when not matched.\n\
+                     Obs:\n
+                       - Using 0 for M/N substitutes by the text from all groups or all ocurrences respectively.\n\
+                       - If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
                        - find all *.zip files and unzip them:\n\n      \
                            fd -e zip -x unzip\n\n  \
@@ -413,6 +418,8 @@ pub fn build_app() -> Command<'static> {
                            fd -e h -e cpp -x clang-format -i\n\n  \
                        - Convert all *.jpg files to *.png files:\n\n      \
                            fd -e jpg -x convert {} {.}.png\
+                       - Rename all *.jpeg files with extension *.jpg:\n\n      \
+                           fd '(.+)\\.(jpg)$' -x mv {} {1}.{2}\
                     ",
                 ),
         )
@@ -434,7 +441,7 @@ pub fn build_app() -> Command<'static> {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
-                       '{/.}': basename without file extension\n\n\
+                       '{/.}': basename without file extension\n \
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
                        - Find all test_*.py files and open them in your favorite editor:\n\n      \

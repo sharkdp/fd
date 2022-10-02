@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::io;
 use std::mem;
 use std::path::PathBuf;
@@ -7,7 +6,7 @@ use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use std::{borrow::Cow, io::Write};
+use std::io::Write;
 
 use anyhow::{anyhow, Result};
 use ignore::overrides::OverrideBuilder;
@@ -413,7 +412,7 @@ fn spawn_senders(
                 return ignore::WalkState::Quit;
             }
 
-            let entry = match entry_o {
+            let mut entry = match entry_o {
                 Ok(ref e) if e.depth() == 0 => {
                     // Skip the root directory entry.
                     return ignore::WalkState::Continue;
@@ -456,29 +455,12 @@ fn spawn_senders(
                 }
             }
 
-            // Check the name first, since it doesn't require metadata
-            let entry_path = entry.path();
-
-            let search_str: Cow<OsStr> = if config.search_full_path {
-                let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                    .expect("Retrieving absolute path succeeds");
-                Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-            } else {
-                match entry_path.file_name() {
-                    Some(filename) => Cow::Borrowed(filename),
-                    None => unreachable!(
-                        "Encountered file system entry without a file name. This should only \
-                         happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                         appear in a file system traversal."
-                    ),
-                }
-            };
-
-            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
+           if !entry.is_match(pattern.as_ref(), config.search_full_path) {
                 return ignore::WalkState::Continue;
-            }
+           }
 
             // Filter out unwanted extensions.
+            let entry_path = entry.path();
             if let Some(ref exts_regex) = config.extensions {
                 if let Some(path_str) = entry_path.file_name() {
                     if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {

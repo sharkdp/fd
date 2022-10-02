@@ -1,9 +1,15 @@
+use std::ffi::OsStr;
 use std::{
     fs::{FileType, Metadata},
     path::{Path, PathBuf},
+    collections::HashMap,
 };
+use std::borrow::Cow;
 
 use once_cell::unsync::OnceCell;
+use regex::bytes::Regex;
+
+use crate::filesystem;
 
 enum DirEntryInner {
     Normal(ignore::DirEntry),
@@ -13,6 +19,7 @@ enum DirEntryInner {
 pub struct DirEntry {
     inner: DirEntryInner,
     metadata: OnceCell<Option<Metadata>>,
+    match_list: HashMap<usize, HashMap<usize, String>>,
 }
 
 impl DirEntry {
@@ -21,6 +28,7 @@ impl DirEntry {
         Self {
             inner: DirEntryInner::Normal(e),
             metadata: OnceCell::new(),
+            match_list: HashMap::new(),
         }
     }
 
@@ -28,6 +36,7 @@ impl DirEntry {
         Self {
             inner: DirEntryInner::BrokenSymlink(path),
             metadata: OnceCell::new(),
+            match_list: HashMap::new(),
         }
     }
 
@@ -36,6 +45,10 @@ impl DirEntry {
             DirEntryInner::Normal(e) => e.path(),
             DirEntryInner::BrokenSymlink(pathbuf) => pathbuf.as_path(),
         }
+    }
+
+    pub fn matches(&self) -> &HashMap<usize, HashMap<usize, String>> {
+        &self.match_list
     }
 
     pub fn into_path(self) -> PathBuf {
@@ -66,6 +79,46 @@ impl DirEntry {
             DirEntryInner::Normal(e) => Some(e.depth()),
             DirEntryInner::BrokenSymlink(_) => None,
         }
+    }
+
+    pub fn is_match(&mut self, pattern: &Regex, search_full_path: bool) -> bool {
+        let search_str = self.get_search_str(search_full_path);
+        let search_res = filesystem::osstr_to_bytes(search_str.as_ref());
+        let mut found: HashMap<usize, HashMap<usize, String>> = HashMap::new();
+
+        for (ocurrence, matched) in pattern.captures_iter(&search_res).enumerate() {
+            let mut matched_groups: HashMap<usize, String> = HashMap::new();
+            for (group, group_match) in matched.iter().enumerate() {
+                if let Some(value) = group_match {
+                    let cap = value.as_bytes();
+                    let text = String::from_utf8(cap.to_vec()).unwrap();
+                    matched_groups.insert(group, text );
+                }
+            }
+            found.insert(ocurrence, matched_groups);
+        }
+        self.match_list = found;
+        !self.match_list.is_empty()
+    }
+
+    fn get_search_str(&self, search_full_path: bool) -> Cow<OsStr> {
+        let entry_path = self.path();
+
+        let search_str: Cow<OsStr> = if search_full_path {
+            let path_abs_buf = filesystem::path_absolute_form(entry_path)
+                .expect("Retrieving absolute path succeeds");
+            Cow::Owned(path_abs_buf.as_os_str().to_os_string())
+        } else {
+            match entry_path.file_name() {
+                Some(filename) => Cow::Borrowed(filename),
+                None => unreachable!(
+                    "Encountered file system entry without a file name. This should only \
+                        happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                        appear in a file system traversal."
+                ),
+            }
+        };
+        search_str
     }
 }
 

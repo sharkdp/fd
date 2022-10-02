@@ -9,7 +9,9 @@ use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::Stdio;
+use std::str;
 use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 
 use anyhow::{bail, Result};
 use argmax::Command;
@@ -83,12 +85,12 @@ impl CommandSet {
         self.mode == ExecutionMode::Batch
     }
 
-    pub fn execute(&self, input: &Path, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
+    pub fn execute(&self, input: &Path, matches: &HashMap<usize, HashMap<usize, String>>, out_perm: Arc<Mutex<()>>, buffer_output: bool) -> ExitCode {
         let path_separator = self.path_separator.as_deref();
         let commands = self
             .commands
             .iter()
-            .map(|c| c.generate(input, path_separator));
+            .map(|c| c.generate(input, path_separator, matches));
         execute_commands(commands, &out_perm, buffer_output)
     }
 
@@ -108,7 +110,7 @@ impl CommandSet {
             Ok(mut builders) => {
                 for path in paths {
                     for builder in &mut builders {
-                        if let Err(e) = builder.push(&path, path_separator) {
+                        if let Err(e) = builder.push(&path, path_separator, &HashMap::new()) {
                             return handle_cmd_error(Some(&builder.cmd), e);
                         }
                     }
@@ -148,9 +150,9 @@ impl CommandBuilder {
             if arg.has_tokens() {
                 path_arg = Some(arg.clone());
             } else if path_arg == None {
-                pre_args.push(arg.generate("", None));
+                pre_args.push(arg.generate("", None, &HashMap::new()));
             } else {
-                post_args.push(arg.generate("", None));
+                post_args.push(arg.generate("", None, &HashMap::new()));
             }
         }
 
@@ -175,12 +177,12 @@ impl CommandBuilder {
         Ok(cmd)
     }
 
-    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+    fn push(&mut self, path: &Path, separator: Option<&str>, matches: &HashMap<usize, HashMap<usize, String>>) -> io::Result<()> {
         if self.limit > 0 && self.count >= self.limit {
             self.finish()?;
         }
 
-        let arg = self.path_arg.generate(path, separator);
+        let arg = self.path_arg.generate(path, separator, matches);
         if !self
             .cmd
             .args_would_fit(iter::once(&arg).chain(&self.post_args))
@@ -221,8 +223,11 @@ impl CommandTemplate {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
+        // GNU Parallel: /?\.?|//
+        // Positional  : (?:(\d+)(?:\.(\d+))?(?::-([^\}]+)?)?)
+        static PLACEHOLDER_REGEX: &str = r"\{(?:/?\.?|//|(?:(\d+)(?:\.(\d+))?(?::-([^\}]+)?)?))\}";
         static PLACEHOLDER_PATTERN: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
+            Lazy::new(|| Regex::new(PLACEHOLDER_REGEX).unwrap());
 
         let mut args = Vec::new();
         let mut has_placeholder = false;
@@ -233,8 +238,9 @@ impl CommandTemplate {
             let mut tokens = Vec::new();
             let mut start = 0;
 
-            for placeholder in PLACEHOLDER_PATTERN.find_iter(arg) {
+            for matched_text in PLACEHOLDER_PATTERN.captures_iter(arg) {
                 // Leading text before the placeholder.
+                let placeholder = matched_text.get(0).unwrap();
                 if placeholder.start() > start {
                     tokens.push(Token::Text(arg[start..placeholder.start()].to_owned()));
                 }
@@ -247,7 +253,17 @@ impl CommandTemplate {
                     "{/}" => tokens.push(Token::Basename),
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
-                    _ => unreachable!("Unhandled placeholder"),
+                    _ => {
+                        // regex pattern assures that ocurrence and group always are numbers
+                        let num1: usize = matched_text.get(1).unwrap().as_str().parse().unwrap();
+                        let default = matched_text.get(3).map_or("", |m| m.as_str()).to_string();
+                        let token_regex = if let Some(num2) = matched_text.get(2) {
+                            Token::Positional(num1, num2.as_str().parse().unwrap(), default)
+                        } else {
+                            Token::Positional(1, num1, default)
+                        };
+                        tokens.push(token_regex)
+                    }
                 }
 
                 has_placeholder = true;
@@ -292,10 +308,10 @@ impl CommandTemplate {
     ///
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build.
-    fn generate(&self, input: &Path, path_separator: Option<&str>) -> io::Result<Command> {
-        let mut cmd = Command::new(self.args[0].generate(&input, path_separator));
+    fn generate(&self, input: &Path, path_separator: Option<&str>, matches: &HashMap<usize, HashMap<usize, String>>) -> io::Result<Command> {
+        let mut cmd = Command::new(self.args[0].generate(&input, path_separator, matches));
         for arg in &self.args[1..] {
-            cmd.try_arg(arg.generate(&input, path_separator))?;
+            cmd.try_arg(arg.generate(&input, path_separator, matches))?;
         }
         Ok(cmd)
     }
@@ -319,7 +335,7 @@ impl ArgumentTemplate {
     /// Generate an argument from this template. If path_separator is Some, then it will replace
     /// the path separator in all placeholder tokens. Text arguments and tokens are not affected by
     /// path separator substitution.
-    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
+    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>, matches: &HashMap<usize, HashMap<usize, String>>) -> OsString {
         use self::Token::*;
         let path = path.as_ref();
 
@@ -342,6 +358,25 @@ impl ArgumentTemplate {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
                         }
                         Text(ref string) => s.push(string),
+                        Positional(ocurrence, group, ref default) => {
+                            // {0}, {M.0}, or {0.N} gets text from all ocurrences/matches
+                            let match_count = matches.len() - 1; 
+                            let applied_matches = if ocurrence < 1 { 
+                                0..=match_count
+                            } else {
+                                let single_match = ocurrence - 1;
+                                single_match..=single_match
+                            };
+                            for match_num in applied_matches {
+                                if let Some(groups) = matches.get(&match_num) {
+                                    if let Some(re_group) = groups.get(&group) {
+                                        s.push(re_group);
+                                        continue
+                                    }
+                                    s.push(default)
+                                }
+                            }
+                        }
                     }
                 }
                 s
@@ -554,7 +589,7 @@ mod tests {
         let arg = ArgumentTemplate::Tokens(vec![Token::Placeholder]);
         macro_rules! check {
             ($input:expr, $expected:expr) => {
-                assert_eq!(arg.generate($input, Some("#")), OsString::from($expected));
+                assert_eq!(arg.generate($input, Some("#"), &HashMap::new()), OsString::from($expected));
             };
         }
 
@@ -569,7 +604,7 @@ mod tests {
         let arg = ArgumentTemplate::Tokens(vec![Token::Placeholder]);
         macro_rules! check {
             ($input:expr, $expected:expr) => {
-                assert_eq!(arg.generate($input, Some("#")), OsString::from($expected));
+                assert_eq!(arg.generate($input, Some("#"), &HashMap::new()), OsString::from($expected));
             };
         }
 
