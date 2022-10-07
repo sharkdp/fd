@@ -441,7 +441,7 @@ fn spawn_senders(
             };
 
             if let Some(min_depth) = config.min_depth {
-                if entry.depth().map_or(true, |d| d < min_depth) {
+                if !entry.deeper(min_depth) {
                     return ignore::WalkState::Continue;
                 }
             }

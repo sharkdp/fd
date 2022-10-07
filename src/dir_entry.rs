@@ -82,10 +82,12 @@ impl DirEntry {
             .as_ref()
     }
 
-    pub fn depth(&self) -> Option<usize> {
+    /// Returns true if the entry has the depth greater or equal compared to `depth`
+    pub fn deeper(&self, depth: usize) -> bool {
         match &self.inner {
-            DirEntryInner::Normal(e) => Some(e.depth()),
-            DirEntryInner::BrokenSymlink(_) => None,
+            DirEntryInner::Normal(e) => e.depth() >= depth,
+            // broken symlink passes match if it is just longer thatn the `depth`
+            DirEntryInner::BrokenSymlink(p) => p.components().count() - 1 >= depth,
         }
     }
 }
