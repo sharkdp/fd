@@ -208,6 +208,7 @@ fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
         None
     };
     let command = extract_command(&mut opts, colored_output)?;
+    let has_command = command.is_some();
 
     Ok(Config {
         case_sensitive,
@@ -280,7 +281,7 @@ fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: (opts.no_search_paths()
-            && (opts.strip_cwd_prefix || !(opts.null_separator || opts.exec.command.is_some()))),
+            && (opts.strip_cwd_prefix || !(opts.null_separator || has_command))),
     })
 }
 
