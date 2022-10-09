@@ -2,17 +2,25 @@
 
 ## Features
 
+- `--type executable`/`-t` now works on Windows, see #1051 and #1061 (@tavianator)
 
 ## Bugfixes
 
-- fd returns an error when current working directory does not exist while a search path is specified, see #1072 (@vijfhoek)
-
+- Fixed differences between piped / non-piped output. This changes `fd`s behavior back to what we
+  had before 8.3.0, i.e. there will be no leading `./` prefixes, unless `--exec`/`-x`,
+  `--exec-batch`/`-X`, or `--print0`/`-0` are used. `--strip-cwd-prefix` can be used to strip that
+  prefix in those cases. See #1046, #1115, and #1121 (@tavianator)
+- fd returns an error when current working directory does not exist while a search path is
+  specified, see #1072 (@vijfhoek)
+- Improved "command not found" error message, see #1083 and #1109 (@themkat)
 
 ## Changes
 
+- No leading `./` prefix for non-interactive results, see above.
 
 ## Other
 
+- Added link back to GitHub in man page and `--help` text, see #1086 (@scottchiefbaker)
 
 
 # v8.4.0

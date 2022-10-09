@@ -24,7 +24,7 @@ pub use self::job::{batch, job};
 use self::token::Token;
 
 /// Execution mode of the command
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutionMode {
     /// Command is executed for each search result
     OneByOne,

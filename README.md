@@ -207,7 +207,7 @@ Here, `{}` is a placeholder for the search result. `{.}` is the same, without th
 See below for more details on the placeholder syntax.
 
 The terminal output of commands run from parallel threads using `-x` will not be interlaced or garbled,
-so `fd -x` can be used to rudimentarily parallelize a task run over many files. 
+so `fd -x` can be used to rudimentarily parallelize a task run over many files.
 An example of this is calculating the checksum of each individual file within a directory.
 ```
 fd -tf -x md5sum > file_checksums.txt
@@ -599,7 +599,7 @@ You can install `fd` via xbps-install:
 xbps-install -S fd
 ```
 
-### On RedHat Enterprise Linux 8 (RHEL8) or Almalinux 8 or Rocky Linux 8
+### On RedHat Enterprise Linux 8 (RHEL8), Almalinux 8, EuroLinux 8 or Rocky Linux 8
 
 Get the latest fd-v*-x86_64-unknown-linux-gnu.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
 ```
@@ -676,7 +676,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.56.1* or later is required.
+Note that rust version *1.57.0* or later is required.
 
 `make` is also needed for the build.
 

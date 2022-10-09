@@ -4,7 +4,7 @@ use std::fmt::{self, Display, Formatter};
 ///
 /// Each `Token` contains either text, or a placeholder variant, which will be used to generate
 /// commands after all tokens for a given command template have been collected.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Token {
     Placeholder,
     Basename,

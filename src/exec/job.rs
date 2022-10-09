@@ -1,6 +1,7 @@
 use std::sync::mpsc::Receiver;
 use std::sync::{Arc, Mutex};
 
+use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
@@ -15,10 +16,11 @@ pub fn job(
     rx: Arc<Mutex<Receiver<WorkerResult>>>,
     cmd: Arc<CommandSet>,
     out_perm: Arc<Mutex<()>>,
-    show_filesystem_errors: bool,
-    buffer_output: bool,
-    path_separator: Option<&str>,
+    config: &Config,
 ) -> ExitCode {
+    // Output should be buffered when only running a single thread
+    let buffer_output: bool = config.threads > 1;
+
     let mut results: Vec<ExitCode> = Vec::new();
     loop {
         // Create a lock on the shared receiver for this thread.
@@ -29,7 +31,7 @@ pub fn job(
         let dir_entry: DirEntry = match lock.recv() {
             Ok(WorkerResult::Entry(dir_entry)) => dir_entry,
             Ok(WorkerResult::Error(err)) => {
-                if show_filesystem_errors {
+                if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
                 continue;
@@ -41,8 +43,8 @@ pub fn job(
         drop(lock);
         // Generate a command, execute it and store its exit code.
         results.push(cmd.execute(
-            dir_entry.path(),
-            path_separator,
+            dir_entry.stripped_path(config),
+            config.path_separator.as_deref(),
             Arc::clone(&out_perm),
             buffer_output,
         ))
@@ -51,24 +53,18 @@ pub fn job(
     merge_exitcodes(results)
 }
 
-pub fn batch(
-    rx: Receiver<WorkerResult>,
-    cmd: &CommandSet,
-    show_filesystem_errors: bool,
-    limit: usize,
-    path_separator: Option<&str>,
-) -> ExitCode {
+pub fn batch(rx: Receiver<WorkerResult>, cmd: &CommandSet, config: &Config) -> ExitCode {
     let paths = rx
         .into_iter()
         .filter_map(|worker_result| match worker_result {
-            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_path()),
+            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
             WorkerResult::Error(err) => {
-                if show_filesystem_errors {
+                if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
                 None
             }
         });
 
-    cmd.execute_batch(paths, limit, path_separator)
+    cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
 }

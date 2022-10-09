@@ -87,6 +87,7 @@ impl clap::Args for Negations {
     dont_collapse_args_in_usage = true,
     after_help = "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
     details.",
+    after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     args_override_self = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "has_results", "count"])),
@@ -477,10 +478,12 @@ pub struct Opts {
     /// Changes the usage to `fd [OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`
     #[clap(long, conflicts_with("path"), action, hide_short_help = true)]
     search_path: Vec<PathBuf>,
-    /// strip './' prefix from non-tty outputs
+    /// strip './' prefix from -0/--print-0 output
     ///
-    /// By default, relative paths are prefixed with './' when the output goes to a non
-    /// interactive terminal (TTY). Use this flag to disable this behaviour.
+    /// By default, relative paths are prefixed with './' when -x/--exec,
+    /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
+    /// path starting with '-' being treated as a command line option. Use
+    /// this flag to disable this behaviour.
     #[clap(long, conflicts_with_all(&["path", "search_path"]), hide_short_help = true, action)]
     pub strip_cwd_prefix: bool,
     /// Filter by owning user and/or group

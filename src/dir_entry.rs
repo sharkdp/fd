@@ -5,6 +5,9 @@ use std::{
 
 use once_cell::unsync::OnceCell;
 
+use crate::config::Config;
+use crate::filesystem::strip_current_dir;
+
 enum DirEntryInner {
     Normal(ignore::DirEntry),
     BrokenSymlink(PathBuf),
@@ -42,6 +45,24 @@ impl DirEntry {
         match self.inner {
             DirEntryInner::Normal(e) => e.into_path(),
             DirEntryInner::BrokenSymlink(p) => p,
+        }
+    }
+
+    /// Returns the path as it should be presented to the user.
+    pub fn stripped_path(&self, config: &Config) -> &Path {
+        if config.strip_cwd_prefix {
+            strip_current_dir(self.path())
+        } else {
+            self.path()
+        }
+    }
+
+    /// Returns the path as it should be presented to the user.
+    pub fn into_stripped_path(self, config: &Config) -> PathBuf {
+        if config.strip_cwd_prefix {
+            self.stripped_path(config).to_path_buf()
+        } else {
+            self.into_path()
         }
     }
 

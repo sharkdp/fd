@@ -1,5 +1,5 @@
 fn main() {
-    let min_version = "1.56";
+    let min_version = "1.57";
 
     match version_check::is_min_version(min_version) {
         Some(true) => {}
