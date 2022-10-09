@@ -1466,10 +1466,9 @@ fn test_exec_batch() {
             &["foo", "--exec-batch", "echo", "{}", "{}"],
             "error: Only one placeholder allowed for batch commands\n\
             \n\
-            USAGE:\n\
-            fd-find [OPTIONS] [--] [PATTERN] [PATH]...\n\
+            Usage: fd-find [OPTIONS] [PATTERN] [PATH]...\n\
             \n\
-            For more information try --help\n\
+            For more information try '--help'\n\
             ",
         );
 
@@ -1487,10 +1486,9 @@ fn test_exec_batch() {
             &["foo", "--exec-batch", "echo {}"],
             "error: First argument of exec-batch is expected to be a fixed executable\n\
             \n\
-            USAGE:\n\
-            fd-find [OPTIONS] [--] [PATTERN] [PATH]...\n\
+            Usage: fd-find [OPTIONS]  [PATTERN] [PATH]...\n\
             \n\
-            For more information try --help\n\
+            For more information try '--help'\n\
             ",
         );
     }

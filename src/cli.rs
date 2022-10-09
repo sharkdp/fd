@@ -4,8 +4,8 @@ use std::time::Duration;
 #[cfg(feature = "completions")]
 use anyhow::anyhow;
 use clap::{
-    builder::RangedU64ValueParser, value_parser, AppSettings, Arg, ArgAction, ArgGroup, ArgMatches,
-    Command, ErrorKind, Parser, ValueEnum,
+    builder::RangedU64ValueParser, error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup,
+    ArgMatches, Command, Parser, ValueEnum,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -23,23 +23,24 @@ use crate::filter::SizeFilter;
 struct Negations;
 
 impl clap::FromArgMatches for Negations {
-    fn from_arg_matches(_: &ArgMatches) -> clap::Result<Self> {
+    fn from_arg_matches(_: &ArgMatches) -> clap::error::Result<Self> {
         Ok(Negations)
     }
 
-    fn update_from_arg_matches(&mut self, _: &ArgMatches) -> clap::Result<()> {
+    fn update_from_arg_matches(&mut self, _: &ArgMatches) -> clap::error::Result<()> {
         Ok(())
     }
 }
 
 impl clap::Args for Negations {
-    fn augment_args(cmd: Command<'_>) -> Command<'_> {
+    fn augment_args(cmd: Command) -> Command {
         Self::augment_args_for_update(cmd)
     }
 
-    fn augment_args_for_update(cmd: Command<'_>) -> Command<'_> {
+    fn augment_args_for_update(cmd: Command) -> Command {
         cmd.arg(
-            Arg::new("no-hidden")
+            Arg::new("no_hidden")
+                .action(ArgAction::Count)
                 .long("no-hidden")
                 .overrides_with("hidden")
                 .hide(true)
@@ -47,27 +48,31 @@ impl clap::Args for Negations {
         )
         .arg(
             Arg::new("ignore")
+                .action(ArgAction::Count)
                 .long("ignore")
-                .overrides_with("no-ignore")
+                .overrides_with("no_ignore")
                 .hide(true)
                 .long_help("Overrides --no-ignore."),
         )
         .arg(
-            Arg::new("ignore-vcs")
+            Arg::new("ignore_vcs")
+                .action(ArgAction::Count)
                 .long("ignore-vcs")
-                .overrides_with("no-ignore-vcs")
+                .overrides_with("no_ignore_vcs")
                 .hide(true)
                 .long_help("Overrides --no-ignore-vcs."),
         )
         .arg(
-            Arg::new("relative-path")
+            Arg::new("relative_path")
+                .action(ArgAction::Count)
                 .long("relative-path")
-                .overrides_with("absolute-path")
+                .overrides_with("absolute_path")
                 .hide(true)
                 .long_help("Overrides --absolute-path."),
         )
         .arg(
-            Arg::new("no-follow")
+            Arg::new("no_follow")
+                .action(ArgAction::Count)
                 .long("no-follow")
                 .overrides_with("follow")
                 .hide(true)
@@ -79,12 +84,12 @@ impl clap::Args for Negations {
 #[derive(Parser)]
 #[clap(
     version,
-    setting(AppSettings::DeriveDisplayOrder),
     dont_collapse_args_in_usage = true,
     after_help = "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
     details.",
-    group(ArgGroup::new("execs").args(&["exec", "exec-batch", "list-details"]).conflicts_with_all(&[
-            "max-results", "has-results", "count"])),
+    args_override_self = true,
+    group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
+            "max_results", "has_results", "count"])),
 )]
 pub struct Opts {
     /// Search hidden files and directories
@@ -121,24 +126,24 @@ pub struct Opts {
     ///
     ///Perform an unrestricted search, including ignored and hidden files. This is
     ///an alias for '--no-ignore --hidden'.
-    #[clap(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no-hidden"]), action(ArgAction::Count), hide_short_help = true)]
+    #[clap(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true)]
     rg_alias_hidden_ignore: u8,
     /// Case-sensitive search (default: smart case)
     ///
     ///Perform a case-sensitive search. By default, fd uses case-insensitive
     ///searches, unless the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 's', action, overrides_with("ignore-case"))]
+    #[clap(long, short = 's', action, overrides_with("ignore_case"))]
     pub case_sensitive: bool,
     /// Case-insensitive search (default: smart case)
     ///
     /// Perform a case-insensitive search. By default, fd uses case-insensitive searches, unless
     /// the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 'i', action, overrides_with("case-sensitive"))]
+    #[clap(long, short = 'i', action, overrides_with("case_sensitive"))]
     pub ignore_case: bool,
     /// Glob-based search (default: regular expression)
     ///
     /// Perform a glob-based search instead of a regular expression search.
-    #[clap(long, short = 'g', action, conflicts_with("fixed-strings"))]
+    #[clap(long, short = 'g', action, conflicts_with("fixed_strings"))]
     pub glob: bool,
     /// Regular-expression based search (default)
     ///
@@ -164,7 +169,7 @@ pub struct Opts {
     /// for '--exec-batch ls -l' with some additional 'ls' options. This can be
     /// used to see more metadata, to show symlink targets and to achieve a
     /// deterministic sort order.
-    #[clap(long, short = 'l', action, conflicts_with("absolute-path"))]
+    #[clap(long, short = 'l', action, conflicts_with("absolute_path"))]
     pub list_details: bool,
     /// Follow symbolic links
     ///
@@ -190,7 +195,7 @@ pub struct Opts {
         long = "print0",
         short = '0',
         action,
-        conflicts_with("list-details"),
+        conflicts_with("list_details"),
         hide_short_help = true
     )]
     pub null_separator: bool,
@@ -216,13 +221,13 @@ pub struct Opts {
     ///
     /// Only show search results at the exact given depth. This is an alias for
     /// '--min-depth <depth> --max-depth <depth>'.
-    #[clap(long, value_name = "depth", hide_short_help = true, value_parser, conflicts_with_all(&["max-depth", "min-depth"]))]
+    #[clap(long, value_name = "depth", hide_short_help = true, value_parser, conflicts_with_all(&["max_depth", "min_depth"]))]
     exact_depth: Option<usize>,
     /// Do not travers into matching directories
     ///
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
-    #[clap(long, hide_short_help = true, action, conflicts_with_all(&["size", "exact-depth"]))]
+    #[clap(long, hide_short_help = true, action, conflicts_with_all(&["size", "exact_depth"]))]
     pub prune: bool,
     /// Filter by type: file (f), directory (d), symlink (l),
     /// executable (x), empty (e), socket (s), pipe (p)
@@ -296,7 +301,7 @@ pub struct Opts {
         long,
         value_name = "size",
         hide_short_help = true,
-        requires("exec-batch"),
+        requires("exec_batch"),
         value_parser = value_parser!(usize),
         default_value_t
     )]
@@ -413,7 +418,7 @@ pub struct Opts {
     #[clap(
         short = '1',
         hide_short_help = true,
-        overrides_with("max-results"),
+        overrides_with("max_results"),
         action
     )]
     max_one_result: bool,
@@ -429,7 +434,7 @@ pub struct Opts {
         short = 'q',
         alias = "has-results",
         hide_short_help = true,
-        conflicts_with("max-results"),
+        conflicts_with("max_results"),
         action
     )]
     pub quiet: bool,
@@ -476,7 +481,7 @@ pub struct Opts {
     ///
     /// By default, relative paths are prefixed with './' when the output goes to a non
     /// interactive terminal (TTY). Use this flag to disable this behaviour.
-    #[clap(long, conflicts_with_all(&["path", "search-path"]), hide_short_help = true, action)]
+    #[clap(long, conflicts_with_all(&["path", "search_path"]), hide_short_help = true, action)]
     pub strip_cwd_prefix: bool,
     /// Filter by owning user and/or group
     ///
@@ -501,7 +506,7 @@ pub struct Opts {
     pub one_file_system: bool,
 
     #[cfg(feature = "completions")]
-    #[clap(long, value_parser = value_parser!(Shell), hide = true, exclusive = true)]
+    #[clap(long, action, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
 
     #[clap(flatten)]
@@ -642,13 +647,13 @@ pub struct Exec {
 }
 
 impl clap::FromArgMatches for Exec {
-    fn from_arg_matches(matches: &ArgMatches) -> clap::Result<Self> {
+    fn from_arg_matches(matches: &ArgMatches) -> clap::error::Result<Self> {
         let command = matches
             .grouped_values_of("exec")
             .map(CommandSet::new)
             .or_else(|| {
                 matches
-                    .grouped_values_of("exec-batch")
+                    .grouped_values_of("exec_batch")
                     .map(CommandSet::new_batch)
             })
             .transpose()
@@ -656,23 +661,23 @@ impl clap::FromArgMatches for Exec {
         Ok(Exec { command })
     }
 
-    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::Result<()> {
+    fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {
         *self = Self::from_arg_matches(matches)?;
         Ok(())
     }
 }
 
 impl clap::Args for Exec {
-    fn augment_args(cmd: Command<'_>) -> Command<'_> {
+    fn augment_args(cmd: Command) -> Command {
         cmd.arg(Arg::new("exec")
+            .action(ArgAction::Append)
             .long("exec")
             .short('x')
-            .min_values(1)
-                .multiple_occurrences(true)
+            .num_args(1..)
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with("list-details")
+                .conflicts_with("list_details")
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
@@ -696,15 +701,15 @@ impl clap::Args for Exec {
                 ),
         )
         .arg(
-            Arg::new("exec-batch")
+            Arg::new("exec_batch")
+                .action(ArgAction::Append)
                 .long("exec-batch")
                 .short('X')
-                .min_values(1)
-                .multiple_occurrences(true)
+                .num_args(1..)
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with_all(&["exec", "list-details"])
+                .conflicts_with_all(&["exec", "list_details"])
                 .help("Execute a command with all search results at once")
                 .long_help(
                     "Execute the given command once, with all search results as arguments.\n\
@@ -725,7 +730,7 @@ impl clap::Args for Exec {
         )
     }
 
-    fn augment_args_for_update(cmd: Command<'_>) -> Command<'_> {
+    fn augment_args_for_update(cmd: Command) -> Command {
         Self::augment_args(cmd)
     }
 }
@@ -743,4 +748,3 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
         ))
     }
 }
-
