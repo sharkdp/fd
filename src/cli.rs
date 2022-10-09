@@ -605,7 +605,7 @@ fn guess_shell() -> anyhow::Result<Shell> {
     } else {
         // Assume powershell on windows
         #[cfg(windows)]
-        return Ok(Shell::Powershell);
+        return Ok(Shell::PowerShell);
         #[cfg(not(windows))]
         return Err(anyhow!("Unable to get shell from environment"));
     }
