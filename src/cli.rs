@@ -591,14 +591,21 @@ impl Opts {
 #[cfg(feature = "completions")]
 fn guess_shell() -> anyhow::Result<Shell> {
     let env_shell = std::env::var_os("SHELL").map(PathBuf::from);
-    let shell = env_shell
+    if let Some(shell) = env_shell
         .as_ref()
         .and_then(|s| s.file_name())
         .and_then(|s| s.to_str())
-        .ok_or_else(|| anyhow!("Unable to get shell from environment"))?;
-    shell
-        .parse::<Shell>()
-        .map_err(|_| anyhow!("Unknown shell {}", shell))
+    {
+        shell
+            .parse::<Shell>()
+            .map_err(|_| anyhow!("Unknown shell {}", shell))
+    } else {
+        // Assume powershell on windows
+        #[cfg(windows)]
+        return Ok(Shell::Powershell);
+        #[cfg(not(windows))]
+        return Err(anyhow!("Unable to get shell from environment"));
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
