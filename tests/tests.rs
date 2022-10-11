@@ -1501,7 +1501,7 @@ fn test_exec_batch() {
             &["foo", "--exec-batch", "echo {}"],
             "error: First argument of exec-batch is expected to be a fixed executable\n\
             \n\
-            Usage: fd-find [OPTIONS]  [PATTERN] [PATH]...\n\
+            Usage: fd-find [OPTIONS] [PATTERN] [PATH]...\n\
             \n\
             For more information try '--help'\n\
             ",
