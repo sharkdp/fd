@@ -82,9 +82,8 @@ impl clap::Args for Negations {
 }
 
 #[derive(Parser)]
-#[clap(
+#[command(
     version,
-    dont_collapse_args_in_usage = true,
     after_help = "Note: `fd -h` prints a short and concise overview while `fd --help` gives all \
     details.",
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
@@ -99,70 +98,70 @@ pub struct Opts {
     /// hidden files and directories are skipped). Files and directories are considered
     /// to be hidden if their name starts with a `.` sign (dot).
     /// The flag can be overridden with --no-hidden.
-    #[clap(long, short = 'H', action)]
+    #[arg(long, short = 'H')]
     pub hidden: bool,
     /// Do not respect .(git|fd)ignore files
     ///
     /// Show search results from files and directories that would otherwise be
     ///   ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
     ///   The flag can be overridden with --ignore.
-    #[clap(long, short = 'I', action)]
+    #[arg(long, short = 'I')]
     pub no_ignore: bool,
     /// Do not respect .gitignore files
     ///
     ///Show search results from files and directories that would otherwise be
     ///ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.
-    #[clap(long, action, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub no_ignore_vcs: bool,
     /// Do not respect .(git|fd)ignore files in parent directories
     ///
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.
-    #[clap(long, action, hide_short_help = true)]
+    #[arg(long, hide_short_help = true)]
     pub no_ignore_parent: bool,
     /// Do not respect the global ignore file
-    #[clap(long, action, hide = true)]
+    #[arg(long, hide = true)]
     pub no_global_ignore_file: bool,
     /// Unrestricted search, alias for '--no-ignore --hidden'
     ///
     ///Perform an unrestricted search, including ignored and hidden files. This is
     ///an alias for '--no-ignore --hidden'.
-    #[clap(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true)]
+    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true)]
     rg_alias_hidden_ignore: u8,
     /// Case-sensitive search (default: smart case)
     ///
     ///Perform a case-sensitive search. By default, fd uses case-insensitive
     ///searches, unless the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 's', action, overrides_with("ignore_case"))]
+    #[arg(long, short = 's', overrides_with("ignore_case"))]
     pub case_sensitive: bool,
     /// Case-insensitive search (default: smart case)
     ///
     /// Perform a case-insensitive search. By default, fd uses case-insensitive searches, unless
     /// the pattern contains an uppercase character (smart case).
-    #[clap(long, short = 'i', action, overrides_with("case_sensitive"))]
+    #[arg(long, short = 'i', overrides_with("case_sensitive"))]
     pub ignore_case: bool,
     /// Glob-based search (default: regular expression)
     ///
     /// Perform a glob-based search instead of a regular expression search.
-    #[clap(long, short = 'g', action, conflicts_with("fixed_strings"))]
+    #[arg(long, short = 'g', conflicts_with("fixed_strings"))]
     pub glob: bool,
     /// Regular-expression based search (default)
     ///
     ///Perform a regular-expression based search (default). This can be used to override --glob.
-    #[clap(long, action, overrides_with("glob"), hide_short_help = true)]
+    #[arg(long, overrides_with("glob"), hide_short_help = true)]
     pub regex: bool,
     /// Treat pattern as literal string instead of regex
     ///
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
     /// exact filename, consider using '--glob'.
-    #[clap(long, short = 'F', action, alias = "literal", hide_short_help = true)]
+    #[arg(long, short = 'F', alias = "literal", hide_short_help = true)]
     pub fixed_strings: bool,
     /// Show absolute instead of relative paths
     ///
     /// Shows the full path starting with the root as opposed to relative paths.
     /// The flag can be overridden with --relative-path.
-    #[clap(long, short = 'a', action)]
+    #[arg(long, short = 'a')]
     pub absolute_path: bool,
     /// Use a long listing format with file metadata
     ///
@@ -170,14 +169,14 @@ pub struct Opts {
     /// for '--exec-batch ls -l' with some additional 'ls' options. This can be
     /// used to see more metadata, to show symlink targets and to achieve a
     /// deterministic sort order.
-    #[clap(long, short = 'l', action, conflicts_with("absolute_path"))]
+    #[arg(long, short = 'l', conflicts_with("absolute_path"))]
     pub list_details: bool,
     /// Follow symbolic links
     ///
     /// By default, fd does not descend into symlinked directories. Using this
     /// flag, symbolic links are also traversed.
     /// Flag can be overridden with --no-follow.
-    #[clap(long, short = 'L', alias = "dereference", action)]
+    #[arg(long, short = 'L', alias = "dereference")]
     pub follow: bool,
     /// Search full abs. path (default: filename only)
     ///
@@ -186,16 +185,15 @@ pub struct Opts {
     /// (absolute) path.
     /// Example:
     ///     fd --glob -p '**/.git/config'
-    #[clap(long, short = 'p', action, verbatim_doc_comment)]
+    #[arg(long, short = 'p', verbatim_doc_comment)]
     pub full_path: bool,
     /// Separate results by the null character
     ///
     /// Separate search results by the null character (instead of newlines).
     /// Useful for piping results to 'xargs'.
-    #[clap(
+    #[arg(
         long = "print0",
         short = '0',
-        action,
         conflicts_with("list_details"),
         hide_short_help = true
     )]
@@ -204,31 +202,25 @@ pub struct Opts {
     ///
     /// Limit the directory traversal to a given depth. By default, there is no
     /// limit on the search depth.
-    #[clap(
-        long,
-        short = 'd',
-        value_name = "depth",
-        value_parser,
-        alias("maxdepth")
-    )]
+    #[arg(long, short = 'd', value_name = "depth", alias("maxdepth"))]
     max_depth: Option<usize>,
     /// Only show results starting at given depth
     ///
     /// Only show search results starting at the given depth.
     /// See also: '--max-depth' and '--exact-depth'
-    #[clap(long, value_name = "depth", hide_short_help = true, value_parser)]
+    #[arg(long, value_name = "depth", hide_short_help = true)]
     min_depth: Option<usize>,
     /// Only show results at exact given depth
     ///
     /// Only show search results at the exact given depth. This is an alias for
     /// '--min-depth <depth> --max-depth <depth>'.
-    #[clap(long, value_name = "depth", hide_short_help = true, value_parser, conflicts_with_all(&["max_depth", "min_depth"]))]
+    #[arg(long, value_name = "depth", hide_short_help = true, conflicts_with_all(&["max_depth", "min_depth"]))]
     exact_depth: Option<usize>,
     /// Do not travers into matching directories
     ///
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
-    #[clap(long, hide_short_help = true, action, conflicts_with_all(&["size", "exact_depth"]))]
+    #[arg(long, hide_short_help = true, conflicts_with_all(&["size", "exact_depth"]))]
     pub prune: bool,
     /// Filter by type: file (f), directory (d), symlink (l),
     /// executable (x), empty (e), socket (s), pipe (p)
@@ -268,10 +260,9 @@ pub struct Opts {
     ///   - Find empty directories:
     ///       fd --type empty --type directory
     ///       fd -te -td"
-    #[clap(
+    #[arg(
         long = "type",
         short = 't',
-        action,
         value_name = "filetype",
         hide_possible_values = true,
         value_enum,
@@ -284,10 +275,10 @@ pub struct Opts {
     /// allowable file extensions can be specified.
     /// If you want to search for files without extension,
     /// you can use the regex '^[^.]+$' as a normal search pattern.
-    #[clap(long = "extension", short = 'e', value_name = "ext", action)]
+    #[arg(long = "extension", short = 'e', value_name = "ext")]
     pub extensions: Option<Vec<String>>,
 
-    #[clap(flatten)]
+    #[command(flatten)]
     pub exec: Exec,
 
     /// Max number of arguments to run as a batch with -X
@@ -298,7 +289,7 @@ pub struct Opts {
     /// A batch size of zero means there is no limit (default), but note
     /// that batching might still happen due to OS restrictions on the
     /// maximum length of command lines.
-    #[clap(
+    #[arg(
         long,
         value_name = "size",
         hide_short_help = true,
@@ -315,20 +306,20 @@ pub struct Opts {
     /// Examples:
     ///   --exclude '*.pyc'
     ///   --exclude node_modules
-    #[clap(long, short = 'E', value_name = "pattern", verbatim_doc_comment)]
+    #[arg(long, short = 'E', value_name = "pattern", verbatim_doc_comment)]
     pub exclude: Vec<String>,
     /// Add custom ignore-file in '.gitignore' format
     ///
     /// Add a custom ignore-file in '.gitignore' format. These files have a low
     /// precedence.
-    #[clap(long, value_name = "path", action, hide_short_help = true)]
+    #[arg(long, value_name = "path", hide_short_help = true)]
     pub ignore_file: Vec<PathBuf>,
     /// When to use colors
     ///
     /// 'auto':      show colors if the output goes to an interactive console (default)
     /// 'never':     do not use colorized output
     /// 'always':    always use colorized output
-    #[clap(
+    #[arg(
         long,
         short = 'c',
         value_enum,
@@ -342,7 +333,7 @@ pub struct Opts {
     ///
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[clap(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = RangedU64ValueParser::<usize>::from(1..))]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = RangedU64ValueParser::<usize>::from(1..))]
     pub threads: Option<usize>,
     /// Limit results based on the size of files
     ///
@@ -362,13 +353,13 @@ pub struct Opts {
     ///     'mi': mebibytes
     ///     'gi': gibibytes
     ///     'ti': tebibytes
-    #[clap(long, short = 'S', value_parser = SizeFilter::from_string, allow_hyphen_values = true, action, verbatim_doc_comment)]
+    #[arg(long, short = 'S', value_parser = SizeFilter::from_string, allow_hyphen_values = true, verbatim_doc_comment)]
     pub size: Vec<SizeFilter>,
     /// Milliseconds to buffer before streaming search results to console
     ///
     /// Amount of time in milliseconds to buffer, before streaming the search
     /// results to the console.
-    #[clap(long, hide = true, action, value_parser = parse_millis)]
+    #[arg(long, hide = true, value_parser = parse_millis)]
     pub max_buffer_time: Option<Duration>,
     /// Filter by file modification time (newer than)
     ///
@@ -380,13 +371,12 @@ pub struct Opts {
     ///     --changed-within 2weeks
     ///     --change-newer-than '2018-10-27 10:00:00'
     ///     --newer 2018-10-27
-    #[clap(
+    #[arg(
         long,
         alias("change-newer-than"),
         alias("newer"),
         value_name = "date|dur",
-        verbatim_doc_comment,
-        action
+        verbatim_doc_comment
     )]
     pub changed_within: Option<String>,
     /// Filter by file modification time (older than)
@@ -399,29 +389,23 @@ pub struct Opts {
     ///     --changed-before '2018-10-27 10:00:00'
     ///     --change-older-than 2weeks
     ///     --older 2018-10-27
-    #[clap(
+    #[arg(
         long,
         alias("change-older-than"),
         alias("older"),
         value_name = "date|dur",
-        verbatim_doc_comment,
-        action
+        verbatim_doc_comment
     )]
     pub changed_before: Option<String>,
     /// Limit number of search results
     ///
     /// Limit the number of search results to 'count' and quit immediately.
-    #[clap(long, value_name = "count", hide_short_help = true, value_parser)]
+    #[arg(long, value_name = "count", hide_short_help = true)]
     max_results: Option<usize>,
     /// Limit search to a single result and quit immediately
     ///
     /// This is an alias for '--max-results=1'.
-    #[clap(
-        short = '1',
-        hide_short_help = true,
-        overrides_with("max_results"),
-        action
-    )]
+    #[arg(short = '1', hide_short_help = true, overrides_with("max_results"))]
     max_one_result: bool,
     /// Print nothing, exit code 0 if match found, 1 otherwise
     ///
@@ -430,20 +414,19 @@ pub struct Opts {
     /// exit code will be 1.
     ///
     /// '--has-results' can be used as an alias.
-    #[clap(
+    #[arg(
         long,
         short = 'q',
         alias = "has-results",
         hide_short_help = true,
-        conflicts_with("max_results"),
-        action
+        conflicts_with("max_results")
     )]
     pub quiet: bool,
     /// Show filesystem errors
     ///
     ///Enable the display of filesystem errors for situations such as
     ///insufficient permissions or dead symlinks.
-    #[clap(long, hide_short_help = true, action)]
+    #[arg(long, hide_short_help = true)]
     pub show_errors: bool,
     /// Change current working directory
     ///
@@ -452,7 +435,7 @@ pub struct Opts {
     /// path. Note that relative paths which are passed to fd via the positional
     /// <path> argument or the '--search-path' option will also be resolved
     /// relative to this directory.
-    #[clap(long, value_name = "path", action, hide_short_help = true)]
+    #[arg(long, value_name = "path", hide_short_help = true)]
     pub base_directory: Option<PathBuf>,
     /// the search pattern (a regular expression, unless '--glob' is used; optional)
     ///
@@ -460,23 +443,23 @@ pub struct Opts {
     /// pattern (if --glob is used). If no pattern has been specified, every entry
     /// is considered a match. If your pattern starts with a dash (-), make sure to
     /// pass '--' first, or it will be considered as a flag (fd -- '-foo').
-    #[clap(value_parser, default_value = "", hide_default_value = true)]
+    #[arg(default_value = "", hide_default_value = true)]
     pub pattern: String,
     /// Set path separator when printing file paths
     /// Set the path separator to use when printing file paths. The default is
     /// the OS-specific separator ('/' on Unix, '\\' on Windows).
-    #[clap(long, value_name = "separator", hide_short_help = true, action)]
+    #[arg(long, value_name = "separator", hide_short_help = true)]
     pub path_separator: Option<String>,
     /// the root directories for the filesystem search (optional)
     ///
     /// The directories where the filesystem search is rooted.
     /// If omitted, search the current working directory.
-    #[clap(action = ArgAction::Append)]
+    #[arg(action = ArgAction::Append)]
     path: Vec<PathBuf>,
     /// Provides paths to search as an alternative to the positional <path> argument
     ///
     /// Changes the usage to `fd [OPTIONS] --search-path <path> --search-path <path2> [<pattern>]`
-    #[clap(long, conflicts_with("path"), action, hide_short_help = true)]
+    #[arg(long, conflicts_with("path"), hide_short_help = true)]
     search_path: Vec<PathBuf>,
     /// strip './' prefix from -0/--print-0 output
     ///
@@ -484,7 +467,7 @@ pub struct Opts {
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
     /// this flag to disable this behaviour.
-    #[clap(long, conflicts_with_all(&["path", "search_path"]), hide_short_help = true, action)]
+    #[arg(long, conflicts_with_all(&["path", "search_path"]), hide_short_help = true)]
     pub strip_cwd_prefix: bool,
     /// Filter by owning user and/or group
     ///
@@ -496,7 +479,7 @@ pub struct Opts {
     ///     --owner :students
     ///     --owner '!john:students'
     #[cfg(unix)]
-    #[clap(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group", verbatim_doc_comment)]
+    #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group", verbatim_doc_comment)]
     pub owner: Option<OwnerFilter>,
     /// Do not descend into a different file system
     ///
@@ -505,11 +488,11 @@ pub struct Opts {
     /// different file system than the one it started in. Comparable to the -mount
     /// or -xdev filters of find(1).
     #[cfg(any(unix, windows))]
-    #[clap(long, aliases(&["mount", "xdev"]), hide_short_help = true)]
+    #[arg(long, aliases(&["mount", "xdev"]), hide_short_help = true)]
     pub one_file_system: bool,
 
     #[cfg(feature = "completions")]
-    #[clap(long, action, hide = true, exclusive = true)]
+    #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
 
     #[clap(flatten)]
@@ -613,19 +596,19 @@ fn guess_shell() -> anyhow::Result<Shell> {
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum FileType {
-    #[clap(alias = "f")]
+    #[value(alias = "f")]
     File,
-    #[clap(alias = "d")]
+    #[value(alias = "d")]
     Directory,
-    #[clap(alias = "l")]
+    #[value(alias = "l")]
     Symlink,
-    #[clap(alias = "x")]
+    #[value(alias = "x")]
     Executable,
-    #[clap(alias = "e")]
+    #[value(alias = "e")]
     Empty,
-    #[clap(alias = "s")]
+    #[value(alias = "s")]
     Socket,
-    #[clap(alias = "p")]
+    #[value(alias = "p")]
     Pipe,
 }
 
