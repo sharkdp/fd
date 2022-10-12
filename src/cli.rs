@@ -4,7 +4,7 @@ use std::time::Duration;
 #[cfg(feature = "completions")]
 use anyhow::anyhow;
 use clap::{
-    builder::RangedU64ValueParser, error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup,
+    error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup,
     ArgMatches, Command, Parser, ValueEnum,
 };
 #[cfg(feature = "completions")]
@@ -333,8 +333,8 @@ pub struct Opts {
     ///
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = RangedU64ValueParser::<usize>::from(1..))]
-    pub threads: Option<usize>,
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = 1..)]
+    pub threads: Option<u32>,
     /// Limit results based on the size of files
     ///
     /// Limit results based on the size of files using the format <+-><NUM><UNIT>.
@@ -553,7 +553,12 @@ impl Opts {
     }
 
     pub fn threads(&self) -> usize {
-        std::cmp::max(self.threads.unwrap_or_else(num_cpus::get), 1)
+        // This will panic if the number of threads passed in is more than usize::MAX in an environment
+        // where usize is less than 32 bits (for example 16-bit architectures). It's pretty
+        // unlikely fd will be running in such an environment, and even more unlikely someone would
+        // be trying to use that many threads on such an environment, so I think panicing is an
+        // appropriate way to handle that.
+        std::cmp::max(self.threads.map_or_else(num_cpus::get, |n| n.try_into().expect("too many threads")), 1)
     }
 
     pub fn max_results(&self) -> Option<usize> {
