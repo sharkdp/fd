@@ -1496,6 +1496,8 @@ fn test_exec_batch() {
             &["foo", "--exec-batch", "echo {}"],
             "[fd error]: First argument of exec-batch is expected to be a fixed executable",
         );
+
+        te.assert_failure_with_error(&["a.foo", "--exec-batch", "bash", "-c", "exit 1"], "");
     }
 }
 
@@ -1550,6 +1552,20 @@ fn test_exec_batch_multi() {
                 "directory_foo"
             ],
         ]
+    );
+
+    te.assert_failure_with_error(
+        &[
+            "a.foo",
+            "--exec-batch",
+            "echo",
+            ";",
+            "--exec-batch",
+            "bash",
+            "-c",
+            "exit 1",
+        ],
+        "",
     );
 }
 

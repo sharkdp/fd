@@ -16,7 +16,7 @@ use argmax::Command;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::exit_codes::ExitCode;
+use crate::exit_codes::{merge_exitcodes, ExitCode};
 
 use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
@@ -120,7 +120,7 @@ impl CommandSet {
                     }
                 }
 
-                ExitCode::Success
+                merge_exitcodes(builders.iter().map(|b| b.exit_code()))
             }
             Err(e) => handle_cmd_error(None, e),
         }
@@ -136,6 +136,7 @@ struct CommandBuilder {
     cmd: Command,
     count: usize,
     limit: usize,
+    exit_code: ExitCode,
 }
 
 impl CommandBuilder {
@@ -163,6 +164,7 @@ impl CommandBuilder {
             cmd,
             count: 0,
             limit,
+            exit_code: ExitCode::Success,
         })
     }
 
@@ -196,13 +198,19 @@ impl CommandBuilder {
     fn finish(&mut self) -> io::Result<()> {
         if self.count > 0 {
             self.cmd.try_args(&self.post_args)?;
-            self.cmd.status()?;
+            if !self.cmd.status()?.success() {
+                self.exit_code = ExitCode::GeneralError;
+            }
 
             self.cmd = Self::new_command(&self.pre_args)?;
             self.count = 0;
         }
 
         Ok(())
+    }
+
+    fn exit_code(&self) -> ExitCode {
+        self.exit_code
     }
 }
 
