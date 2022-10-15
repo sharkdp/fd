@@ -4,8 +4,8 @@ use std::time::Duration;
 #[cfg(feature = "completions")]
 use anyhow::anyhow;
 use clap::{
-    error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup,
-    ArgMatches, Command, Parser, ValueEnum,
+    error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser,
+    ValueEnum,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -558,7 +558,11 @@ impl Opts {
         // unlikely fd will be running in such an environment, and even more unlikely someone would
         // be trying to use that many threads on such an environment, so I think panicing is an
         // appropriate way to handle that.
-        std::cmp::max(self.threads.map_or_else(num_cpus::get, |n| n.try_into().expect("too many threads")), 1)
+        std::cmp::max(
+            self.threads
+                .map_or_else(num_cpus::get, |n| n.try_into().expect("too many threads")),
+            1,
+        )
     }
 
     pub fn max_results(&self) -> Option<usize> {
