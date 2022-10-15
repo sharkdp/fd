@@ -18,7 +18,7 @@ use regex::Regex;
 
 use crate::exit_codes::ExitCode;
 
-use self::command::{execute_commands, handle_cmd_error};
+use self::command::{execute_commands, handle_cmd_error, print_cmd_error, CommandError};
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
 use self::token::Token;
@@ -109,20 +109,23 @@ impl CommandSet {
                 for path in paths {
                     for builder in &mut builders {
                         if let Err(e) = builder.push(&path, path_separator) {
-                            return handle_cmd_error(Some(&builder.cmd), e);
+                            return handle_cmd_error(&builder.cmd, e);
                         }
                     }
                 }
 
                 for builder in &mut builders {
                     if let Err(e) = builder.finish() {
-                        return handle_cmd_error(Some(&builder.cmd), e);
+                        return handle_cmd_error(&builder.cmd, e);
                     }
                 }
 
                 ExitCode::Success
             }
-            Err(e) => handle_cmd_error(None, e),
+            Err(e) => {
+                print_cmd_error(e);
+                ExitCode::GeneralError
+            }
         }
     }
 }
@@ -175,7 +178,7 @@ impl CommandBuilder {
         Ok(cmd)
     }
 
-    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+    fn push(&mut self, path: &Path, separator: Option<&str>) -> Result<(), CommandError> {
         if self.limit > 0 && self.count >= self.limit {
             self.finish()?;
         }
@@ -193,10 +196,12 @@ impl CommandBuilder {
         Ok(())
     }
 
-    fn finish(&mut self) -> io::Result<()> {
+    fn finish(&mut self) -> Result<(), CommandError> {
         if self.count > 0 {
             self.cmd.try_args(&self.post_args)?;
-            self.cmd.status()?;
+            if !self.cmd.status()?.success() {
+                return Err(CommandError::Failed);
+            }
 
             self.cmd = Self::new_command(&self.pre_args)?;
             self.count = 0;

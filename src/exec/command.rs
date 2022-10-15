@@ -60,7 +60,10 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     for result in cmds {
         let mut cmd = match result {
             Ok(cmd) => cmd,
-            Err(e) => return handle_cmd_error(None, e),
+            Err(e) => {
+                print_cmd_error(e);
+                return ExitCode::GeneralError;
+            }
         };
 
         // Spawn the supplied command.
@@ -85,7 +88,7 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
             }
             Err(why) => {
                 output_buffer.write();
-                return handle_cmd_error(Some(&cmd), why);
+                return handle_cmd_error(&cmd, CommandError::Io(why));
             }
         }
     }
@@ -93,18 +96,33 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
-pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
+pub enum CommandError {
+    Io(io::Error),
+    Failed,
+}
+
+impl From<io::Error> for CommandError {
+    fn from(e: io::Error) -> Self {
+        CommandError::Io(e)
+    }
+}
+
+pub fn handle_cmd_error(cmd: &Command, err: CommandError) -> ExitCode {
     match (cmd, err) {
-        (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
+        (_, CommandError::Failed) => {
+            // The child process probably already wrote an error message if appropriate
+        }
+        (cmd, CommandError::Io(err)) if err.kind() == io::ErrorKind::NotFound => {
             print_error(format!(
                 "Command not found: {}",
                 cmd.get_program().to_string_lossy()
             ));
-            ExitCode::GeneralError
         }
-        (_, err) => {
-            print_error(format!("Problem while executing command: {}", err));
-            ExitCode::GeneralError
-        }
-    }
+        (_, CommandError::Io(err)) => print_cmd_error(err),
+    };
+    ExitCode::GeneralError
+}
+
+pub fn print_cmd_error(err: io::Error) {
+    print_error(format!("Problem while executing command: {}", err));
 }
