@@ -151,7 +151,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     let receiver_thread = spawn_receiver(&config, &quit_flag, &interrupt_flag, rx);
 
     // Spawn the sender threads.
-    spawn_senders(&config, &quit_flag, pattern, parallel_walker, tx);
+    spawn_senders(&config, &quit_flag, pattern, parallel_walker, tx, path_vec);
 
     // Wait for the receiver thread to print out all results.
     let exit_code = receiver_thread.join().unwrap();
@@ -391,6 +391,7 @@ fn spawn_senders(
     pattern: Arc<Regex>,
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
+    root_paths: &[PathBuf],
 ) {
     parallel_walker.run(|| {
         let config = Arc::clone(config);
@@ -441,7 +442,7 @@ fn spawn_senders(
             };
 
             if let Some(min_depth) = config.min_depth {
-                if !entry.deeper(min_depth) {
+                if !entry.deeper(min_depth, root_paths) {
                     return ignore::WalkState::Continue;
                 }
             }

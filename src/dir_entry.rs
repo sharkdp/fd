@@ -83,11 +83,22 @@ impl DirEntry {
     }
 
     /// Returns true if the entry has the depth greater or equal compared to `depth`
-    pub fn deeper(&self, depth: usize) -> bool {
+    pub fn deeper(&self, depth: usize, root_paths: &[PathBuf]) -> bool {
         match &self.inner {
             DirEntryInner::Normal(e) => e.depth() >= depth,
-            // broken symlink passes match if it is just longer thatn the `depth`
-            DirEntryInner::BrokenSymlink(p) => p.components().count() - 1 >= depth,
+            DirEntryInner::BrokenSymlink(path) => {
+                for root_path in root_paths {
+                    // Detect which root path originates to current `path`
+                    if path.starts_with(root_path) {
+                        let root_depth = root_path.components().count();
+                        let entry_depth = path.components().count();
+                        if entry_depth >= root_depth + depth {
+                            return true;
+                        }
+                    }
+                }
+                false
+            }
         }
     }
 }
