@@ -829,23 +829,76 @@ fn test_min_depth() {
 #[test]
 fn test_min_depth_broken_link() {
     let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-    te.create_broken_symlink("one/two/broken_symlink")
+    te.create_broken_symlink("one/two/three/foo_broken_symlink")
         .expect("Failed to create broken symlink.");
 
     te.assert_output(
-        &["--min-depth", "3"],
-        "one/two/broken_symlink
+        &["-L", "--min-depth", "3"],
+        "one/two/three/foo_broken_symlink
         one/two/c.foo
         one/two/C.Foo2
         one/two/three/
+        one/two/three/d.foo
+        one/two/three/directory_foo/
+        symlink/three/foo_broken_symlink
+        symlink/three/d.foo
+        symlink/three/directory_foo/",
+    );
+
+    te.assert_output(
+        &["-L", "--min-depth", "4"],
+        "one/two/three/foo_broken_symlink
+        one/two/three/d.foo
+        one/two/three/directory_foo/",
+    );
+
+    // Symlink is properly located
+    te.assert_output(
+        &["-L", "foo", "one/two", "--min-depth", "1"],
+        "one/two/three/foo_broken_symlink
+        one/two/c.foo
+        one/two/C.Foo2
         one/two/three/d.foo
         one/two/three/directory_foo/",
     );
 
     te.assert_output(
-        &["--min-depth", "4"],
-        "one/two/three/d.foo
+        &["-L", "foo", "one/two", "--min-depth", "2"],
+        "one/two/three/foo_broken_symlink
+        one/two/three/d.foo
         one/two/three/directory_foo/",
+    );
+
+    te.assert_output(
+        &["-L", "foo", "one/two/three", "--min-depth", "1"],
+        "one/two/three/directory_foo/
+        one/two/three/foo_broken_symlink
+        one/two/three/d.foo",
+    );
+
+    // Symlink must be skipped at this depth because root already has depth=3
+    te.assert_output(&["-L", "foo", "one/two/three", "--min-depth", "3"], "");
+
+    te.assert_output(&["-L", "foo", "one/two/three", "--min-depth", "2"], "");
+
+    // Also works with multiple roots
+    te.assert_output(
+        &[
+            "-L",
+            "--search-path",
+            ".git",
+            "--search-path",
+            "one",
+            "foo",
+            "--min-depth",
+            "1",
+        ],
+        "one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three/directory_foo/
+        one/two/three/foo_broken_symlink
+        one/two/three/d.foo",
     );
 }
 
