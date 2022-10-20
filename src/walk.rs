@@ -367,9 +367,6 @@ fn spawn_receiver(
                     handles.push(handle);
                 }
 
-                // TODO: once our MSRV supports scoped threads, it would probablly make sense to
-                // use that here
-                // Wait for all threads to exit before exiting the program.
                 let exit_codes = handles
                     .into_iter()
                     .map(|handle| handle.join().unwrap())
