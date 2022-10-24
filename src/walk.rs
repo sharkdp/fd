@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
-use crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender};
+use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
@@ -51,7 +51,9 @@ pub const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
     let first_path = &paths[0];
-    let (tx, rx) = unbounded();
+
+    // Channel capacity was chosen empircally to perform similarly to an unbounded channel
+    let (tx, rx) = bounded(0x4000 * config.threads);
 
     let mut override_builder = OverrideBuilder::new(first_path);
 
