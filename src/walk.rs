@@ -3,13 +3,13 @@ use std::io;
 use std::mem;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
+use crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
@@ -51,7 +51,7 @@ pub const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
     let first_path = &paths[0];
-    let (tx, rx) = channel();
+    let (tx, rx) = unbounded();
 
     let mut override_builder = OverrideBuilder::new(first_path);
 
@@ -222,11 +222,7 @@ impl<W: Write> ReceiverBuffer<W> {
         match self.mode {
             ReceiverMode::Buffering => {
                 // Wait at most until we should switch to streaming
-                let now = Instant::now();
-                self.deadline
-                    .checked_duration_since(now)
-                    .ok_or(RecvTimeoutError::Timeout)
-                    .and_then(|t| self.rx.recv_timeout(t))
+                self.rx.recv_deadline(self.deadline)
             }
             ReceiverMode::Streaming => {
                 // Wait however long it takes for a result
@@ -345,15 +341,13 @@ fn spawn_receiver(
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, &config)
             } else {
-                let shared_rx = Arc::new(Mutex::new(rx));
-
                 let out_perm = Arc::new(Mutex::new(()));
 
                 // Each spawned job will store it's thread handle in here.
                 let mut handles = Vec::with_capacity(threads);
                 for _ in 0..threads {
                     let config = Arc::clone(&config);
-                    let rx = Arc::clone(&shared_rx);
+                    let rx = rx.clone();
                     let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
 
