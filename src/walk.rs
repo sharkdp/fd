@@ -49,14 +49,11 @@ pub const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
-    let mut path_iter = path_vec.iter();
-    let first_path_buf = path_iter
-        .next()
-        .expect("Error: Path vector can not be empty");
+pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
+    let first_path = &paths[0];
     let (tx, rx) = channel();
 
-    let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
+    let mut override_builder = OverrideBuilder::new(first_path);
 
     for pattern in &config.exclude_patterns {
         override_builder
@@ -67,7 +64,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         .build()
         .map_err(|_| anyhow!("Mismatch in exclude patterns"))?;
 
-    let mut walker = WalkBuilder::new(first_path_buf.as_path());
+    let mut walker = WalkBuilder::new(first_path);
     walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_fdignore)
@@ -121,8 +118,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         }
     }
 
-    for path_entry in path_iter {
-        walker.add(path_entry.as_path());
+    for path in &paths[1..] {
+        walker.add(path);
     }
 
     let parallel_walker = walker.threads(config.threads).build_parallel();
