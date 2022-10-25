@@ -121,7 +121,15 @@ impl Colorable for DirEntry {
     fn file_name(&self) -> OsString {
         let name = match &self.inner {
             DirEntryInner::Normal(e) => e.file_name(),
-            DirEntryInner::BrokenSymlink(_) => todo!(),
+            DirEntryInner::BrokenSymlink(path) => {
+                // Path::file_name() only works if the last component is Normal,
+                // but we want it for all component types, so we open code it.
+                // Copied from LsColors::style_for_path_with_metadata().
+                path.components()
+                    .last()
+                    .map(|c| c.as_os_str())
+                    .unwrap_or_else(|| path.as_os_str())
+            }
         };
         name.to_owned()
     }
