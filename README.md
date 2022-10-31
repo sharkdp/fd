@@ -207,7 +207,7 @@ Here, `{}` is a placeholder for the search result. `{.}` is the same, without th
 See below for more details on the placeholder syntax.
 
 The terminal output of commands run from parallel threads using `-x` will not be interlaced or garbled,
-so `fd -x` can be used to rudimentarily parallelize a task run over many files. 
+so `fd -x` can be used to rudimentarily parallelize a task run over many files.
 An example of this is calculating the checksum of each individual file within a directory.
 ```
 fd -tf -x md5sum > file_checksums.txt
@@ -612,7 +612,7 @@ chown root:root fd.1.gz
 sudo cp fd.1.gz /usr/share/man/man1
 sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
 source /usr/share/bash-completion/completions/fd
-fd 
+fd
 ```
 
 ### On macOS
