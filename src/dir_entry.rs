@@ -2,7 +2,8 @@ use std::ffi::OsString;
 use std::fs::{FileType, Metadata};
 use std::path::{Path, PathBuf};
 
-use lscolors::Colorable;
+use lscolors::{Colorable, LsColors, Style};
+
 use once_cell::unsync::OnceCell;
 
 use crate::config::Config;
@@ -16,6 +17,7 @@ enum DirEntryInner {
 pub struct DirEntry {
     inner: DirEntryInner,
     metadata: OnceCell<Option<Metadata>>,
+    style: OnceCell<Option<Style>>,
 }
 
 impl DirEntry {
@@ -24,6 +26,7 @@ impl DirEntry {
         Self {
             inner: DirEntryInner::Normal(e),
             metadata: OnceCell::new(),
+            style: OnceCell::new(),
         }
     }
 
@@ -31,6 +34,7 @@ impl DirEntry {
         Self {
             inner: DirEntryInner::BrokenSymlink(path),
             metadata: OnceCell::new(),
+            style: OnceCell::new(),
         }
     }
 
@@ -87,6 +91,12 @@ impl DirEntry {
             DirEntryInner::Normal(e) => Some(e.depth()),
             DirEntryInner::BrokenSymlink(_) => None,
         }
+    }
+
+    pub fn style(&self, ls_colors: &LsColors) -> Option<&Style> {
+        self.style
+            .get_or_init(|| ls_colors.style_for(self).cloned())
+            .as_ref()
     }
 }
 

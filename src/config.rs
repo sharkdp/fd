@@ -120,3 +120,10 @@ pub struct Config {
     /// Whether or not to strip the './' prefix for search results
     pub strip_cwd_prefix: bool,
 }
+
+impl Config {
+    /// Check whether results are being printed.
+    pub fn is_printing(&self) -> bool {
+        self.command.is_none()
+    }
+}

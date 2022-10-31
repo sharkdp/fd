@@ -535,6 +535,13 @@ fn spawn_senders(
                 }
             }
 
+            if config.is_printing() {
+                if let Some(ls_colors) = &config.ls_colors {
+                    // Try to compute colors in parallel
+                    entry.style(ls_colors);
+                }
+            }
+
             let send_result = tx_thread.send(WorkerResult::Entry(entry));
 
             if send_result.is_err() {
