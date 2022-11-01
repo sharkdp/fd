@@ -10,6 +10,10 @@
   had before 8.3.0, i.e. there will be no leading `./` prefixes, unless `--exec`/`-x`,
   `--exec-batch`/`-X`, or `--print0`/`-0` are used. `--strip-cwd-prefix` can be used to strip that
   prefix in those cases. See #1046, #1115, and #1121 (@tavianator)
+- `fd` could previously crash with a panic due to a race condition in Rusts standard library
+  (see https://github.com/rust-lang/rust/issues/39364). This has been fixed by switching to a different
+  message passing implementation, see #1060 and #1146 (@tavianator)
+- `fd`s memory usage will not grow unboundedly on huge directory trees, see #1146 (@tavianator)
 - fd returns an error when current working directory does not exist while a search path is
   specified, see #1072 (@vijfhoek)
 - Improved "command not found" error message, see #1083 and #1109 (@themkat)
@@ -17,9 +21,9 @@
 ## Changes
 
 - No leading `./` prefix for non-interactive results, see above.
+- fd now colorizes paths in parallel, significantly improving performance, see #1148 (@tavianator)
 - fd can now avoid `stat` syscalls even when colorizing paths, as long as the color scheme doesn't
   require metadata, see #1148 (@tavianator)
-- fd now colorizes paths in parallel, significantly improving performance, see #1148 (@tavianator)
 
 ## Other
 
