@@ -1,4 +1,4 @@
-# Upcoming release
+# v8.5.0
 
 ## Features
 
@@ -25,6 +25,8 @@
 - fd now colorizes paths in parallel, significantly improving performance, see #1148 (@tavianator)
 - fd can now avoid `stat` syscalls even when colorizing paths, as long as the color scheme doesn't
   require metadata, see #1148 (@tavianator)
+- The statically linked `musl` versions of `fd` now use `jmalloc`, leading to a significant performance
+  improvement, see #1062 (@tavianator)
 
 ## Other
 

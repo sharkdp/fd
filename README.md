@@ -542,7 +542,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_8.4.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i fd_8.5.0_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Debian
@@ -676,7 +676,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.57.0* or later is required.
+Note that rust version *1.60.0* or later is required.
 
 `make` is also needed for the build.
 
