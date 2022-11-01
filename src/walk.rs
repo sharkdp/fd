@@ -3,13 +3,13 @@ use std::io;
 use std::mem;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{borrow::Cow, io::Write};
 
 use anyhow::{anyhow, Result};
+use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender};
 use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
@@ -49,14 +49,13 @@ pub const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
-    let mut path_iter = path_vec.iter();
-    let first_path_buf = path_iter
-        .next()
-        .expect("Error: Path vector can not be empty");
-    let (tx, rx) = channel();
+pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
+    let first_path = &paths[0];
 
-    let mut override_builder = OverrideBuilder::new(first_path_buf.as_path());
+    // Channel capacity was chosen empircally to perform similarly to an unbounded channel
+    let (tx, rx) = bounded(0x4000 * config.threads);
+
+    let mut override_builder = OverrideBuilder::new(first_path);
 
     for pattern in &config.exclude_patterns {
         override_builder
@@ -67,7 +66,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         .build()
         .map_err(|_| anyhow!("Mismatch in exclude patterns"))?;
 
-    let mut walker = WalkBuilder::new(first_path_buf.as_path());
+    let mut walker = WalkBuilder::new(first_path);
     walker
         .hidden(config.ignore_hidden)
         .ignore(config.read_fdignore)
@@ -121,8 +120,8 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
         }
     }
 
-    for path_entry in path_iter {
-        walker.add(path_entry.as_path());
+    for path in &paths[1..] {
+        walker.add(path);
     }
 
     let parallel_walker = walker.threads(config.threads).build_parallel();
@@ -225,11 +224,7 @@ impl<W: Write> ReceiverBuffer<W> {
         match self.mode {
             ReceiverMode::Buffering => {
                 // Wait at most until we should switch to streaming
-                let now = Instant::now();
-                self.deadline
-                    .checked_duration_since(now)
-                    .ok_or(RecvTimeoutError::Timeout)
-                    .and_then(|t| self.rx.recv_timeout(t))
+                self.rx.recv_deadline(self.deadline)
             }
             ReceiverMode::Streaming => {
                 // Wait however long it takes for a result
@@ -348,15 +343,13 @@ fn spawn_receiver(
             if cmd.in_batch_mode() {
                 exec::batch(rx, cmd, &config)
             } else {
-                let shared_rx = Arc::new(Mutex::new(rx));
-
                 let out_perm = Arc::new(Mutex::new(()));
 
                 // Each spawned job will store it's thread handle in here.
                 let mut handles = Vec::with_capacity(threads);
                 for _ in 0..threads {
                     let config = Arc::clone(&config);
-                    let rx = Arc::clone(&shared_rx);
+                    let rx = rx.clone();
                     let cmd = Arc::clone(cmd);
                     let out_perm = Arc::clone(&out_perm);
 
