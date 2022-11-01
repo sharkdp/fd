@@ -636,7 +636,6 @@ impl Opts {
     }
 }
 
-// TODO: windows?
 #[cfg(feature = "completions")]
 fn guess_shell() -> anyhow::Result<Shell> {
     let env_shell = std::env::var_os("SHELL").map(PathBuf::from);
