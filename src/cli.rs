@@ -352,7 +352,7 @@ pub struct Opts {
         long,
         value_name = "path",
         hide_short_help = true,
-        long_help = "Add a custom ignore-file in '.gitignore' format. These files have a low precedence"
+        long_help = "Add a custom ignore-file in '.gitignore' format. These files have a low precedence."
     )]
     pub ignore_file: Vec<PathBuf>,
     /// When to use colors
