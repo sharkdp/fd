@@ -83,6 +83,7 @@ impl clap::Args for Negations {
 
 #[derive(Parser)]
 #[command(
+    name = "fd",
     version,
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     args_override_self = true,
