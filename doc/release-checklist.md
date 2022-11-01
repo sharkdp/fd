@@ -31,6 +31,7 @@ necessary changes for the upcoming release.
 
 ## Release
 
+- [ ] Merge your release branch (should be a fast-forward merge).
 - [ ] Create a tag and push it: `git tag vX.Y.Z; git push origin tag vX.Y.Z`.
       This will trigger the deployment via GitHub Actions.
       REMINDER: If your `origin` is a fork, don't forget to push to e.g. `upstream`
@@ -49,15 +50,17 @@ necessary changes for the upcoming release.
 
 - [ ] Prepare a new *"Upcoming release"* section at the top of `CHANGELOG.md`.
       Put this at the top:
-      ```
+
       # Upcoming release
 
       ## Features
 
+
       ## Bugfixes
+
 
       ## Changes
 
+
       ## Other
 
-      ```
