@@ -17,6 +17,7 @@
 - fd returns an error when current working directory does not exist while a search path is
   specified, see #1072 (@vijfhoek)
 - Improved "command not found" error message, see #1083 and #1109 (@themkat)
+- Preserve command exit codes when using `--exec-batch`, see #1136 and #1137 (@amesgen)
 
 ## Changes
 
@@ -28,7 +29,7 @@
 ## Other
 
 - Added link back to GitHub in man page and `--help` text, see #1086 (@scottchiefbaker)
-
+- Major update in how `fd` handles command line options internally, see #1067 (@tmccombs)
 
 # v8.4.0
 
