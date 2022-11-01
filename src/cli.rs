@@ -278,6 +278,20 @@ pub struct Opts {
         )]
     exact_depth: Option<usize>,
 
+    /// Exclude entries that match the given glob pattern
+    #[arg(
+        long,
+        short = 'E',
+        value_name = "pattern",
+        long_help = "Exclude files/directories that match the given glob pattern. This \
+                         overrides any other ignore logic. Multiple exclude patterns can be \
+                         specified.\n\n\
+                         Examples:\n  \
+                           --exclude '*.pyc'\n  \
+                           --exclude node_modules"
+    )]
+    pub exclude: Vec<String>,
+
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
     #[arg(long, hide_short_help = true, conflicts_with_all(&["size", "exact_depth"]),
@@ -339,65 +353,6 @@ pub struct Opts {
     )]
     pub extensions: Option<Vec<String>>,
 
-    #[command(flatten)]
-    pub exec: Exec,
-
-    /// Max number of arguments to run as a batch size with -X
-    #[arg(
-        long,
-        value_name = "size",
-        hide_short_help = true,
-        requires("exec_batch"),
-        value_parser = value_parser!(usize),
-        default_value_t,
-        long_help = "Maximum number of arguments to pass to the command given with -X. \
-                If the number of results is greater than the given size, \
-                the command given with -X is run again with remaining arguments. \
-                A batch size of zero means there is no limit (default), but note \
-                that batching might still happen due to OS restrictions on the \
-                maximum length of command lines.",
-    )]
-    pub batch_size: usize,
-
-    /// Exclude entries that match the given glob pattern
-    #[arg(
-        long,
-        short = 'E',
-        value_name = "pattern",
-        long_help = "Exclude files/directories that match the given glob pattern. This \
-                         overrides any other ignore logic. Multiple exclude patterns can be \
-                         specified.\n\n\
-                         Examples:\n  \
-                           --exclude '*.pyc'\n  \
-                           --exclude node_modules"
-    )]
-    pub exclude: Vec<String>,
-
-    /// Add a custom ignore-file in '.gitignore' format
-    #[arg(
-        long,
-        value_name = "path",
-        hide_short_help = true,
-        long_help = "Add a custom ignore-file in '.gitignore' format. These files have a low precedence."
-    )]
-    pub ignore_file: Vec<PathBuf>,
-
-    /// When to use colors
-    #[arg(
-        long,
-        short = 'c',
-        value_enum,
-        default_value_t = ColorWhen::Auto,
-        value_name = "when",
-        long_help = "Declare when to use color for the pattern match output",
-    )]
-    pub color: ColorWhen,
-
-    /// Set number of threads to use for searching & executing (default: number
-    /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = 1..)]
-    pub threads: Option<u32>,
-
     /// Limit results based on the size of files
     #[arg(long, short = 'S', value_parser = SizeFilter::from_string, allow_hyphen_values = true, verbatim_doc_comment, value_name = "size",
         long_help = "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
@@ -418,13 +373,6 @@ pub struct Opts {
                          'ti': tebibytes",
         )]
     pub size: Vec<SizeFilter>,
-
-    /// Milliseconds to buffer before streaming search results to console
-    ///
-    /// Amount of time in milliseconds to buffer, before streaming the search
-    /// results to the console.
-    #[arg(long, hide = true, value_parser = parse_millis)]
-    pub max_buffer_time: Option<Duration>,
 
     /// Filter by file modification time (newer than)
     #[arg(
@@ -458,6 +406,71 @@ pub struct Opts {
                          --older 2018-10-27"
     )]
     pub changed_before: Option<String>,
+
+    /// Filter by owning user and/or group
+    #[cfg(unix)]
+    #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group",
+        long_help = "Filter files by their user and/or group. \
+                     Format: [(user|uid)][:(group|gid)]. Either side is optional. \
+                     Precede either side with a '!' to exclude files instead.\n\
+                     Examples:\n    \
+                         --owner john\n    \
+                         --owner :students\n    \
+                         --owner '!john:students'"
+        )]
+    pub owner: Option<OwnerFilter>,
+
+    #[command(flatten)]
+    pub exec: Exec,
+
+    /// Max number of arguments to run as a batch size with -X
+    #[arg(
+        long,
+        value_name = "size",
+        hide_short_help = true,
+        requires("exec_batch"),
+        value_parser = value_parser!(usize),
+        default_value_t,
+        long_help = "Maximum number of arguments to pass to the command given with -X. \
+                If the number of results is greater than the given size, \
+                the command given with -X is run again with remaining arguments. \
+                A batch size of zero means there is no limit (default), but note \
+                that batching might still happen due to OS restrictions on the \
+                maximum length of command lines.",
+    )]
+    pub batch_size: usize,
+
+    /// Add a custom ignore-file in '.gitignore' format
+    #[arg(
+        long,
+        value_name = "path",
+        hide_short_help = true,
+        long_help = "Add a custom ignore-file in '.gitignore' format. These files have a low precedence."
+    )]
+    pub ignore_file: Vec<PathBuf>,
+
+    /// When to use colors
+    #[arg(
+        long,
+        short = 'c',
+        value_enum,
+        default_value_t = ColorWhen::Auto,
+        value_name = "when",
+        long_help = "Declare when to use color for the pattern match output",
+    )]
+    pub color: ColorWhen,
+
+    /// Set number of threads to use for searching & executing (default: number
+    /// of available CPU cores)
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = 1..)]
+    pub threads: Option<u32>,
+
+    /// Milliseconds to buffer before streaming search results to console
+    ///
+    /// Amount of time in milliseconds to buffer, before streaming the search
+    /// results to the console.
+    #[arg(long, hide = true, value_parser = parse_millis)]
+    pub max_buffer_time: Option<Duration>,
 
     /// Limit number of search results
     #[arg(
@@ -568,18 +581,6 @@ pub struct Opts {
     )]
     pub strip_cwd_prefix: bool,
 
-    /// Filter by owning user and/or group
-    #[cfg(unix)]
-    #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group",
-        long_help = "Filter files by their user and/or group. \
-                     Format: [(user|uid)][:(group|gid)]. Either side is optional. \
-                     Precede either side with a '!' to exclude files instead.\n\
-                     Examples:\n    \
-                         --owner john\n    \
-                         --owner :students\n    \
-                         --owner '!john:students'"
-        )]
-    pub owner: Option<OwnerFilter>,
     #[cfg(any(unix, windows))]
     #[arg(long, aliases(&["mount", "xdev"]), hide_short_help = true,
         long_help = "By default, fd will traverse the file system tree as far as other options \
