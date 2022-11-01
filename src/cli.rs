@@ -100,6 +100,7 @@ pub struct Opts {
                          The flag can be overridden with --no-hidden."
     )]
     pub hidden: bool,
+
     /// Do not respect .(git|fd)ignore files
     #[arg(
         long,
@@ -109,6 +110,7 @@ pub struct Opts {
                          The flag can be overridden with --ignore."
     )]
     pub no_ignore: bool,
+
     /// Do not respect .gitignore files
     #[arg(
         long,
@@ -117,6 +119,7 @@ pub struct Opts {
                          ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs."
     )]
     pub no_ignore_vcs: bool,
+
     /// Do not respect .(git|fd)ignore files in parent directories
     #[arg(
         long,
@@ -125,15 +128,18 @@ pub struct Opts {
                      ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories."
     )]
     pub no_ignore_parent: bool,
+
     /// Do not respect the global ignore file
     #[arg(long, hide = true)]
     pub no_global_ignore_file: bool,
+
     /// Unrestricted search, alias for '--no-ignore --hidden'
     #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
     long_help = "Perform an unrestricted search, including ignored and hidden files. This is \
                  an alias for '--no-ignore --hidden'."
         )]
     rg_alias_hidden_ignore: u8,
+
     /// Case-sensitive search (default: smart case)
     #[arg(
         long,
@@ -144,6 +150,7 @@ pub struct Opts {
                      case)."
     )]
     pub case_sensitive: bool,
+
     /// Case-insensitive search (default: smart case)
     #[arg(
         long,
@@ -154,6 +161,7 @@ pub struct Opts {
                      case)."
     )]
     pub ignore_case: bool,
+
     /// Glob-based search (default: regular expression)
     #[arg(
         long,
@@ -162,6 +170,7 @@ pub struct Opts {
         long_help = "Perform a glob-based search instead of a regular expression search."
     )]
     pub glob: bool,
+
     /// Regular-expression based search (default)
     #[arg(
         long,
@@ -171,6 +180,7 @@ pub struct Opts {
                      override --glob."
     )]
     pub regex: bool,
+
     /// Treat pattern as literal string stead of regex
     #[arg(
         long,
@@ -182,6 +192,7 @@ pub struct Opts {
                      exact filename, consider using '--glob'."
     )]
     pub fixed_strings: bool,
+
     /// Show absolute instead of relative paths
     #[arg(
         long,
@@ -190,6 +201,7 @@ pub struct Opts {
                      The flag can be overridden with --relative-path."
     )]
     pub absolute_path: bool,
+
     /// Use a long listing format with file metadata
     #[arg(
         long,
@@ -201,6 +213,7 @@ pub struct Opts {
                      deterministic sort order."
     )]
     pub list_details: bool,
+
     /// Follow symbolic links
     #[arg(
         long,
@@ -211,6 +224,7 @@ pub struct Opts {
                      Flag can be overriden with --no-follow."
     )]
     pub follow: bool,
+
     /// Search full abs. path (default: filename only)
     #[arg(
         long,
@@ -221,6 +235,7 @@ pub struct Opts {
                        fd --glob -p '**/.git/config'"
     )]
     pub full_path: bool,
+
     /// Separate search results by the null character
     #[arg(
         long = "print0",
@@ -231,6 +246,7 @@ pub struct Opts {
                      Useful for piping results to 'xargs'."
     )]
     pub null_separator: bool,
+
     /// Set maximum search depth (default: none)
     #[arg(
         long,
@@ -241,6 +257,7 @@ pub struct Opts {
                      limit on the search depth."
     )]
     max_depth: Option<usize>,
+
     /// Only show search results starting at the given depth.
     #[arg(
         long,
@@ -250,12 +267,14 @@ pub struct Opts {
                      See also: '--max-depth' and '--exact-depth'"
     )]
     min_depth: Option<usize>,
+
     /// Only show search results at the exact given depth
     #[arg(long, value_name = "depth", hide_short_help = true, conflicts_with_all(&["max_depth", "min_depth"]),
     long_help = "Only show search results at the exact given depth. This is an alias for \
                  '--min-depth <depth> --max-depth <depth>'.",
         )]
     exact_depth: Option<usize>,
+
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
     #[arg(long, hide_short_help = true, conflicts_with_all(&["size", "exact_depth"]),
@@ -263,6 +282,7 @@ pub struct Opts {
                      you want to exclude specific directories, use the '--exclude=…' option.",
         )]
     pub prune: bool,
+
     /// Filter by type: file (f), directory (d), symlink (l),
     /// executable (x), empty (e), socket (s), pipe (p)
     #[arg(
@@ -303,6 +323,7 @@ pub struct Opts {
                            fd -te -td"
     )]
     pub filetype: Option<Vec<FileType>>,
+
     /// Filter by file extension
     #[arg(
         long = "extension",
@@ -334,6 +355,7 @@ pub struct Opts {
                 maximum length of command lines.",
     )]
     pub batch_size: usize,
+
     /// Exclude entries that match the given glob pattern
     #[arg(
         long,
@@ -347,6 +369,7 @@ pub struct Opts {
                            --exclude node_modules"
     )]
     pub exclude: Vec<String>,
+
     /// Add a custom ignore-file in '.gitignore' format
     #[arg(
         long,
@@ -355,6 +378,7 @@ pub struct Opts {
         long_help = "Add a custom ignore-file in '.gitignore' format. These files have a low precedence."
     )]
     pub ignore_file: Vec<PathBuf>,
+
     /// When to use colors
     #[arg(
         long,
@@ -365,10 +389,12 @@ pub struct Opts {
         long_help = "Declare when to use color for the pattern match output",
     )]
     pub color: ColorWhen,
+
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = 1..)]
     pub threads: Option<u32>,
+
     /// Limit results based on the size of files
     #[arg(long, short = 'S', value_parser = SizeFilter::from_string, allow_hyphen_values = true, verbatim_doc_comment, value_name = "size",
         long_help = "Limit results based on the size of files using the format <+-><NUM><UNIT>.\n   \
@@ -389,12 +415,14 @@ pub struct Opts {
                          'ti': tebibytes",
         )]
     pub size: Vec<SizeFilter>,
+
     /// Milliseconds to buffer before streaming search results to console
     ///
     /// Amount of time in milliseconds to buffer, before streaming the search
     /// results to the console.
     #[arg(long, hide = true, value_parser = parse_millis)]
     pub max_buffer_time: Option<Duration>,
+
     /// Filter by file modification time (newer than)
     #[arg(
         long,
@@ -411,6 +439,7 @@ pub struct Opts {
                          --newer 2018-10-27"
     )]
     pub changed_within: Option<String>,
+
     /// Filter by file modification time (older than)
     #[arg(
         long,
@@ -426,6 +455,7 @@ pub struct Opts {
                          --older 2018-10-27"
     )]
     pub changed_before: Option<String>,
+
     /// Limit number of search results
     #[arg(
         long,
@@ -434,6 +464,7 @@ pub struct Opts {
         long_help = "Limit the number of search results to 'count' and quit immediately."
     )]
     max_results: Option<usize>,
+
     /// Limit search to a single result
     #[arg(
         short = '1',
@@ -443,6 +474,7 @@ pub struct Opts {
                                 This is an alias for '--max-results=1'."
     )]
     max_one_result: bool,
+
     /// Print nothing, exit code 0 if match found, 1 otherwise
     #[arg(
         long,
@@ -456,6 +488,7 @@ pub struct Opts {
                      '--has-results' can be used as an alias."
     )]
     pub quiet: bool,
+
     /// Show filesystem errors
     #[arg(
         long,
@@ -464,6 +497,7 @@ pub struct Opts {
                      insufficient permissions or dead symlinks."
     )]
     pub show_errors: bool,
+
     /// Change current working directory
     #[arg(
         long,
@@ -476,6 +510,7 @@ pub struct Opts {
                          relative to this directory."
     )]
     pub base_directory: Option<PathBuf>,
+
     /// the search pattern (a regular expression, unless '--glob' is used; optional)
     #[arg(
         default_value = "",
@@ -487,6 +522,7 @@ pub struct Opts {
                  pass '--' first, or it will be considered as a flag (fd -- '-foo')."
     )]
     pub pattern: String,
+
     /// Set path separator when printing file paths
     #[arg(
         long,
@@ -496,6 +532,7 @@ pub struct Opts {
                          the OS-specific separator ('/' on Unix, '\\' on Windows)."
     )]
     pub path_separator: Option<String>,
+
     /// the root directories for the filesystem search (optional)
     #[arg(action = ArgAction::Append,
         value_name = "path",
@@ -503,6 +540,7 @@ pub struct Opts {
                      omitted, search the current working directory.",
         )]
     path: Vec<PathBuf>,
+
     /// Provides paths to search as an alternative to the positional <path> argument
     #[arg(
         long,
@@ -514,6 +552,7 @@ pub struct Opts {
                      --search-path <path2> [<pattern>]`"
     )]
     search_path: Vec<PathBuf>,
+
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
@@ -525,6 +564,7 @@ pub struct Opts {
     this flag to disable this behaviour.",
     )]
     pub strip_cwd_prefix: bool,
+
     /// Filter by owning user and/or group
     #[cfg(unix)]
     #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group",
