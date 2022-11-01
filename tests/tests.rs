@@ -1506,6 +1506,8 @@ fn test_exec_batch() {
             For more information try '--help'\n\
             ",
         );
+
+        te.assert_failure_with_error(&["a.foo", "--exec-batch", "bash", "-c", "exit 1"], "");
     }
 }
 
@@ -1560,6 +1562,20 @@ fn test_exec_batch_multi() {
                 "directory_foo"
             ],
         ]
+    );
+
+    te.assert_failure_with_error(
+        &[
+            "a.foo",
+            "--exec-batch",
+            "echo",
+            ";",
+            "--exec-batch",
+            "bash",
+            "-c",
+            "exit 1",
+        ],
+        "",
     );
 }
 
