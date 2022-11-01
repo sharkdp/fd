@@ -40,6 +40,7 @@ pub fn job(
         // Generate a command, execute it and store its exit code.
         results.push(cmd.execute(
             dir_entry.stripped_path(config),
+            config.path_separator.as_deref(),
             Arc::clone(&out_perm),
             buffer_output,
         ))
@@ -61,5 +62,5 @@ pub fn batch(rx: Receiver<WorkerResult>, cmd: &CommandSet, config: &Config) -> E
             }
         });
 
-    cmd.execute_batch(paths, config.batch_size)
+    cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
 }

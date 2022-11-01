@@ -360,7 +360,6 @@ fn spawn_receiver(
                     handles.push(handle);
                 }
 
-                // Wait for all threads to exit before exiting the program.
                 let exit_codes = handles
                     .into_iter()
                     .map(|handle| handle.join().unwrap())
