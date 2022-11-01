@@ -21,7 +21,7 @@ use atty::Stream;
 use clap::{CommandFactory, Parser};
 use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{RegexBuilder, RegexSetBuilder};
+use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
 
 use crate::cli::{ColorWhen, Opts};
 use crate::config::Config;
@@ -81,12 +81,28 @@ fn run() -> Result<ExitCode> {
     }
 
     ensure_search_pattern_is_not_a_path(&opts)?;
-    let pattern_regex = build_pattern_regex(&opts)?;
+    let pattern = &opts.pattern;
+    let exprs = &opts.exprs;
+    let empty = Vec::new();
 
-    let config = construct_config(opts, &pattern_regex)?;
-    ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regex)?;
-    let re = build_regex(pattern_regex, &config)?;
-    walk::scan(&search_paths, Arc::new(re), Arc::new(config))
+    let pattern_regexps = exprs
+        .as_ref()
+        .unwrap_or(&empty)
+        .iter()
+        .chain([pattern])
+        .map(|pat| build_pattern_regex(pat, &opts))
+        .collect::<Result<Vec<String>>>()?;
+
+    let config = construct_config(opts, &pattern_regexps)?;
+
+    ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regexps)?;
+
+    let regexps = pattern_regexps
+        .into_iter()
+        .map(|pat| build_regex(pat, &config))
+        .collect::<Result<Vec<Regex>>>()?;
+
+    walk::scan(&search_paths, Arc::new(regexps), Arc::new(config))
 }
 
 #[cfg(feature = "completions")]
@@ -145,8 +161,7 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     }
 }
 
-fn build_pattern_regex(opts: &Opts) -> Result<String> {
-    let pattern = &opts.pattern;
+fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
@@ -172,11 +187,14 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
     }
 }
 
-fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
+fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config> {
     // The search will be case-sensitive if the command line flag is set or
-    // if the pattern has an uppercase character (smart case).
-    let case_sensitive =
-        !opts.ignore_case && (opts.case_sensitive || pattern_has_uppercase_char(pattern_regex));
+    // if any of the patterns has an uppercase character (smart case).
+    let case_sensitive = !opts.ignore_case
+        && (opts.case_sensitive
+            || pattern_regexps
+                .iter()
+                .any(|pat| pattern_has_uppercase_char(pat)));
 
     let path_separator = opts
         .path_separator
@@ -415,14 +433,18 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
 
 fn ensure_use_hidden_option_for_leading_dot_pattern(
     config: &Config,
-    pattern_regex: &str,
+    pattern_regexps: &[String],
 ) -> Result<()> {
-    if cfg!(unix) && config.ignore_hidden && pattern_matches_strings_with_leading_dot(pattern_regex)
+    if cfg!(unix)
+        && config.ignore_hidden
+        && pattern_regexps
+            .iter()
+            .any(|pat| pattern_matches_strings_with_leading_dot(pat))
     {
         Err(anyhow!(
-            "The pattern seems to only match files with a leading dot, but hidden files are \
+            "The pattern(s) seems to only match files with a leading dot, but hidden files are \
             filtered by default. Consider adding -H/--hidden to search hidden files as well \
-            or adjust your search pattern."
+            or adjust your search pattern(s)."
         ))
     } else {
         Ok(())

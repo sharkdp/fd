@@ -47,12 +47,12 @@ pub const MAX_BUFFER_LENGTH: usize = 1000;
 /// Default duration until output buffering switches to streaming.
 pub const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 
-/// Recursively scan the given search path for files / pathnames matching the pattern.
+/// Recursively scan the given search path for files / pathnames matching the patterns.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Result<ExitCode> {
+pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -> Result<ExitCode> {
     let first_path = &paths[0];
 
     // Channel capacity was chosen empircally to perform similarly to an unbounded channel
@@ -153,7 +153,7 @@ pub fn scan(paths: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> Resu
     let receiver_thread = spawn_receiver(&config, &quit_flag, &interrupt_flag, rx);
 
     // Spawn the sender threads.
-    spawn_senders(&config, &quit_flag, pattern, parallel_walker, tx);
+    spawn_senders(&config, &quit_flag, patterns, parallel_walker, tx);
 
     // Wait for the receiver thread to print out all results.
     let exit_code = receiver_thread.join().unwrap();
@@ -383,13 +383,13 @@ fn spawn_receiver(
 fn spawn_senders(
     config: &Arc<Config>,
     quit_flag: &Arc<AtomicBool>,
-    pattern: Arc<Regex>,
+    patterns: Arc<Vec<Regex>>,
     parallel_walker: ignore::WalkParallel,
     tx: Sender<WorkerResult>,
 ) {
     parallel_walker.run(|| {
         let config = Arc::clone(config);
-        let pattern = Arc::clone(&pattern);
+        let patterns = Arc::clone(&patterns);
         let tx_thread = tx.clone();
         let quit_flag = Arc::clone(quit_flag);
 
@@ -459,7 +459,10 @@ fn spawn_senders(
                 }
             };
 
-            if !pattern.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())) {
+            if !patterns
+                .iter()
+                .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
+            {
                 return ignore::WalkState::Continue;
             }
 
