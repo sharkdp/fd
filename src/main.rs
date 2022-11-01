@@ -96,7 +96,6 @@ fn print_completions(shell: clap_complete::Shell) -> Result<ExitCode> {
     let program_name = env::args().next().unwrap_or_else(|| "fd".to_string());
     let mut cmd = Opts::command();
     cmd.build();
-    // TODO: fix panic
     clap_complete::generate(shell, &mut cmd, &program_name, &mut std::io::stdout());
     Ok(ExitCode::Success)
 }
