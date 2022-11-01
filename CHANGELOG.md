@@ -17,6 +17,9 @@
 ## Changes
 
 - No leading `./` prefix for non-interactive results, see above.
+- fd can now avoid `stat` syscalls even when colorizing paths, as long as the color scheme doesn't
+  require metadata, see #1148 (@tavianator)
+- fd now colorizes paths in parallel, significantly improving performance, see #1148 (@tavianator)
 
 ## Other
 

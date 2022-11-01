@@ -132,7 +132,7 @@ pub fn scan(path_vec: &[PathBuf], pattern: Arc<Regex>, config: Arc<Config>) -> R
     // Flag specifically for quitting due to ^C
     let interrupt_flag = Arc::new(AtomicBool::new(false));
 
-    if config.ls_colors.is_some() && config.command.is_none() {
+    if config.ls_colors.is_some() && config.is_printing() {
         let quit_flag = Arc::clone(&quit_flag);
         let interrupt_flag = Arc::clone(&interrupt_flag);
 
@@ -531,6 +531,13 @@ fn spawn_senders(
                 }
                 if !matched {
                     return ignore::WalkState::Continue;
+                }
+            }
+
+            if config.is_printing() {
+                if let Some(ls_colors) = &config.ls_colors {
+                    // Compute colors in parallel
+                    entry.style(ls_colors);
                 }
             }
 
