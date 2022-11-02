@@ -28,17 +28,11 @@ jobs:
         profile: minimal # minimal component installation (ie, no documentation)
         components: clippy, rustfmt
     - name: Ensure `cargo fmt` has been run
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
+      run: cargo fmt --check
     - name: Ensure MSRV is set in `clippy.toml`
       run: grep "^msrv = \"${{ env.MIN_SUPPORTED_RUST_VERSION }}\"\$" clippy.toml
     - name: Run clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --locked --all-targets --all-features
+      run: cargo clippy --locked --all-targets --all-features
 
   min_version:
     name: Minimum supported rust version
@@ -55,15 +49,9 @@ jobs:
         components: clippy
         profile: minimal
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --locked --all-targets --all-features
+      run: cargo clippy --locked --all-targets --all-features
     - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --locked
+      run: cargo test --locked
 
   build:
     name: ${{ matrix.job.os }} (${{ matrix.job.target }})
@@ -122,12 +110,20 @@ jobs:
         cargo -V
         rustc -V
 
+    - name: Set cargo cmd
+      run: |
+        echo "CARGO_CMD=cargo" >> $GITHUB_ENV
+        echo "CARGO_CMD=cargo" >> $Env:GITHUB_ENV
+
+    - name: Install cross
+      if: ${{ matrix.job.use-cross == true }}
+      run: |
+        cargo install cross
+        echo "CARGO_CMD=cross" >> $GITHUB_ENV
+        echo "CARGO_CMD=cross" >> $Env:GITHUB_ENV
+
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: ${{ matrix.job.use-cross }}
-        command: build
-        args: --locked --release --target=${{ matrix.job.target }}
+      run: ${{ env.CARGO_CMD }} build --locked --release --target=${{ matrix.job.target }}
 
     - name: Strip debug information from executable
       id: strip
@@ -175,11 +171,7 @@ jobs:
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
     - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: ${{ matrix.job.use-cross }}
-        command: test
-        args: --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      run: ${{ env.CARGO_CMD }} test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
 
     - name: Generate completions
       id: completions
