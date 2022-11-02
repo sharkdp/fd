@@ -462,7 +462,7 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = 1..)]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = clap::value_parser!(u32).range(1..))]
     pub threads: Option<u32>,
 
     /// Milliseconds to buffer before streaming search results to console
