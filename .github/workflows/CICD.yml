@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install rust toolchain
       uses: actions-rs/toolchain@v1
       with:
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
       uses: actions-rs/toolchain@v1
@@ -86,7 +86,7 @@ jobs:
           - { os: windows-2019, target: x86_64-pc-windows-msvc      }
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install prerequisites
       shell: bash
