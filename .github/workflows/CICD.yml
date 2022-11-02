@@ -21,12 +21,11 @@ jobs:
     - name: Checkout source code
       uses: actions/checkout@v3
     - name: Install rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        default: true
-        profile: minimal # minimal component installation (ie, no documentation)
-        components: clippy, rustfmt
+      run: |
+        rm -f "${HOME}/.cargo/bin/"{rustfmt,cargo-fmt}
+        rustup set profile minimal
+        rustup toolchain install stable -c "clippy,rustfmt"
+        rustup default stable
     - name: Ensure `cargo fmt` has been run
       run: cargo fmt --check
     - name: Ensure MSRV is set in `clippy.toml`
@@ -42,12 +41,10 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
-        default: true
-        components: clippy
-        profile: minimal
+      run: |
+        rustup set profile minimal
+        rustup toolchain install ${{ env.MIN_SUPPORTED_RUST_VERSION }} -c clippy
+        rustup default ${{ env.MIN_SUPPORTED_RUST_VERSION }}
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
       run: cargo clippy --locked --all-targets --all-features
     - name: Run tests
@@ -93,12 +90,11 @@ jobs:
         echo "PROJECT_HOMEPAGE=$(sed -n 's/^homepage = "\(.*\)"/\1/p' Cargo.toml)" >> $GITHUB_ENV
 
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.job.target }}
-        override: true
-        profile: minimal # minimal component installation (ie, no documentation)
+      run: |
+        rustup set profile minimal
+        rustup toolchain install stable
+        rustup override set stable
+        rustup target add ${{ matrix.job.target }}
 
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
