@@ -2066,6 +2066,14 @@ fn test_list_details() {
     te.assert_success_and_get_output(".", &["--list-details"]);
 }
 
+#[test]
+fn test_single_and_multithreaded_execution() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--threads=1", "a.foo"], "a.foo");
+    te.assert_output(&["--threads=16", "a.foo"], "a.foo");
+}
+
 /// Make sure that fd fails if numeric arguments can not be parsed
 #[test]
 fn test_number_parsing_errors() {
