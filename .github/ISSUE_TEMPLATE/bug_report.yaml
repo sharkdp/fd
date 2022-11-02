@@ -9,6 +9,7 @@ body:
         Please check out the [troubleshooting section](https://github.com/sharkdp/fd#troubleshooting) first.
   - type: checkboxes
     attributes:
+      label: Checks
       options:
         - label: I have read the troubleshooting section and still think this is a bug.
           required: true
