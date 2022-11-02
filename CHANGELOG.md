@@ -1,16 +1,8 @@
-# Upcoming release
-
-## Features
-
+# v8.5.1
 
 ## Bugfixes
 
-
-## Changes
-
-
-## Other
-
+- Fix --threads/-j option value parsing, see #1160 and #1162 (@sharkdp)
 
 
 # v8.5.0

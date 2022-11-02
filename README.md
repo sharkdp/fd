@@ -540,7 +540,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_8.5.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i fd_8.5.1_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Debian
