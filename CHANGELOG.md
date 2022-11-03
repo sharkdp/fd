@@ -1,15 +1,8 @@
-# Upcoming release
-
-## Features
-
+# v8.5.2
 
 ## Bugfixes
 
-
-## Changes
-
-
-## Other
+- Fix --owner option value parsing, see #1163 and #1164 (@tmccombs)
 
 
 # v8.5.1
