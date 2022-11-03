@@ -1949,7 +1949,7 @@ fn test_owner_current_group() {
     }
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 #[test]
 fn test_owner_root() {
     // This test assumes the current user isn't root
