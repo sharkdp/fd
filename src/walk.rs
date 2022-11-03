@@ -34,7 +34,10 @@ enum ReceiverMode {
 }
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
+#[allow(clippy::large_enum_variant)]
 pub enum WorkerResult {
+    // Errors should be rare, so it's probably better to allow large_enum_variant than
+    // to box the Entry variant
     Entry(DirEntry),
     Error(ignore::Error),
 }
