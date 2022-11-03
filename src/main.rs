@@ -184,7 +184,7 @@ fn construct_config(mut opts: Opts, pattern_regex: &str) -> Result<Config> {
     let size_limits = std::mem::take(&mut opts.size);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
-    let owner_constraint: Option<OwnerFilter> = opts.owner;
+    let owner_constraint: Option<OwnerFilter> = opts.owner.and_then(OwnerFilter::filter_ignore);
 
     #[cfg(windows)]
     let ansi_colors_support =

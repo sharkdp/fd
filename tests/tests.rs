@@ -1919,6 +1919,50 @@ fn test_modified_absolute() {
     );
 }
 
+#[cfg(unix)]
+#[test]
+fn test_owner_ignore_all() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.assert_output(&["--owner", ":", "a.foo"], "a.foo");
+    te.assert_output(&["--owner", "", "a.foo"], "a.foo");
+}
+
+#[cfg(unix)]
+#[test]
+fn test_owner_current_user() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let uid = users::get_current_uid();
+    te.assert_output(&["--owner", &uid.to_string(), "a.foo"], "a.foo");
+    if let Some(username) = users::get_current_username().map(|u| u.into_string().unwrap()) {
+        te.assert_output(&["--owner", &username, "a.foo"], "a.foo");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn test_owner_current_group() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let gid = users::get_current_gid();
+    te.assert_output(&["--owner", &format!(":{}", gid), "a.foo"], "a.foo");
+    if let Some(groupname) = users::get_current_groupname().map(|u| u.into_string().unwrap()) {
+        te.assert_output(&["--owner", &format!(":{}", groupname), "a.foo"], "a.foo");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn test_owner_root() {
+    // This test assumes the current user isn't root
+    if users::get_current_uid() == 0 || users::get_current_gid() == 0 {
+        return;
+    }
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.assert_output(&["--owner", "root", "a.foo"], "");
+    te.assert_output(&["--owner", "0", "a.foo"], "");
+    te.assert_output(&["--owner", ":root", "a.foo"], "");
+    te.assert_output(&["--owner", ":0", "a.foo"], "");
+}
+
 #[test]
 fn test_custom_path_separator() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
