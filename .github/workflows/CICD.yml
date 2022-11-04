@@ -26,6 +26,8 @@ jobs:
         rustup set profile minimal
         rustup toolchain install stable -c "clippy,rustfmt"
         rustup default stable
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
     - name: Ensure `cargo fmt` has been run
       run: cargo fmt --check
     - name: Ensure MSRV is set in `clippy.toml`
@@ -45,6 +47,8 @@ jobs:
         rustup set profile minimal
         rustup toolchain install ${{ env.MIN_SUPPORTED_RUST_VERSION }} -c clippy
         rustup default ${{ env.MIN_SUPPORTED_RUST_VERSION }}
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
       run: cargo clippy --locked --all-targets --all-features
     - name: Run tests
@@ -111,12 +115,20 @@ jobs:
         echo "CARGO_CMD=cargo" >> $GITHUB_ENV
         echo "CARGO_CMD=cargo" >> $Env:GITHUB_ENV
 
-    - name: Install cross
+    - name: Set cargo cmd to cross
       if: ${{ matrix.job.use-cross == true }}
       run: |
-        cargo install cross
         echo "CARGO_CMD=cross" >> $GITHUB_ENV
         echo "CARGO_CMD=cross" >> $Env:GITHUB_ENV
+
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
+      with:
+        key: ${{ matrix.job.os }}-${{ matrix.job.target }}
+
+    - name: Install cross
+      if: ${{ matrix.job.use-cross == true }}
+      run: cargo install cross
 
     - name: Build
       run: ${{ env.CARGO_CMD }} build --locked --release --target=${{ matrix.job.target }}
