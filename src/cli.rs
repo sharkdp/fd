@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-#[cfg(feature = "completions")]
 use anyhow::anyhow;
 use clap::{
     error::ErrorKind, value_parser, Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser,
