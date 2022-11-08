@@ -807,7 +807,7 @@ impl clap::Args for Exec {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with_all(&["exec", "list_details"])
+                .conflicts_with_all(["exec", "list_details"])
                 .help("Execute a command with all search results at once")
                 .long_help(
                     "Execute the given command once, with all search results as arguments.\n\
