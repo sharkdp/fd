@@ -148,7 +148,7 @@ impl CommandBuilder {
         for arg in &template.args {
             if arg.has_tokens() {
                 path_arg = Some(arg.clone());
-            } else if path_arg == None {
+            } else if path_arg.is_none() {
                 pre_args.push(arg.generate("", None));
             } else {
                 post_args.push(arg.generate("", None));
@@ -301,9 +301,9 @@ impl CommandTemplate {
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build.
     fn generate(&self, input: &Path, path_separator: Option<&str>) -> io::Result<Command> {
-        let mut cmd = Command::new(self.args[0].generate(&input, path_separator));
+        let mut cmd = Command::new(self.args[0].generate(input, path_separator));
         for arg in &self.args[1..] {
-            cmd.try_arg(arg.generate(&input, path_separator))?;
+            cmd.try_arg(arg.generate(input, path_separator))?;
         }
         Ok(cmd)
     }
