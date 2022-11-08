@@ -673,29 +673,9 @@ impl Opts {
         self.gen_completions
             .map(|maybe_shell| match maybe_shell {
                 Some(sh) => Ok(sh),
-                None => guess_shell(),
+                None => Shell::from_env().ok_or_else(|| anyhow!("Unable to get shell from environment")),
             })
             .transpose()
-    }
-}
-
-#[cfg(feature = "completions")]
-fn guess_shell() -> anyhow::Result<Shell> {
-    let env_shell = std::env::var_os("SHELL").map(PathBuf::from);
-    if let Some(shell) = env_shell
-        .as_ref()
-        .and_then(|s| s.file_name())
-        .and_then(|s| s.to_str())
-    {
-        shell
-            .parse::<Shell>()
-            .map_err(|_| anyhow!("Unknown shell {}", shell))
-    } else {
-        // Assume powershell on windows
-        #[cfg(windows)]
-        return Ok(Shell::PowerShell);
-        #[cfg(not(windows))]
-        return Err(anyhow!("Unable to get shell from environment"));
     }
 }
 
