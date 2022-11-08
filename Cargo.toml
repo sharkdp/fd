@@ -53,7 +53,7 @@ crossbeam-channel = "0.5.6"
 clap_complete = {version = "4.0.5", optional = true}
 
 [dependencies.clap]
-version = "4.0.12"
+version = "4.0.22"
 features = ["suggestions", "color", "wrap_help", "cargo", "unstable-grouped", "derive"]
 
 [target.'cfg(unix)'.dependencies]

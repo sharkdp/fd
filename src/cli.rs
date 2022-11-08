@@ -17,69 +17,6 @@ use crate::filesystem;
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
-// Type for options that don't have any values, but are used to negate
-// earlier options
-struct Negations;
-
-impl clap::FromArgMatches for Negations {
-    fn from_arg_matches(_: &ArgMatches) -> clap::error::Result<Self> {
-        Ok(Negations)
-    }
-
-    fn update_from_arg_matches(&mut self, _: &ArgMatches) -> clap::error::Result<()> {
-        Ok(())
-    }
-}
-
-impl clap::Args for Negations {
-    fn augment_args(cmd: Command) -> Command {
-        Self::augment_args_for_update(cmd)
-    }
-
-    fn augment_args_for_update(cmd: Command) -> Command {
-        cmd.arg(
-            Arg::new("no_hidden")
-                .action(ArgAction::Count)
-                .long("no-hidden")
-                .overrides_with("hidden")
-                .hide(true)
-                .long_help("Overrides --hidden."),
-        )
-        .arg(
-            Arg::new("ignore")
-                .action(ArgAction::Count)
-                .long("ignore")
-                .overrides_with("no_ignore")
-                .hide(true)
-                .long_help("Overrides --no-ignore."),
-        )
-        .arg(
-            Arg::new("ignore_vcs")
-                .action(ArgAction::Count)
-                .long("ignore-vcs")
-                .overrides_with("no_ignore_vcs")
-                .hide(true)
-                .long_help("Overrides --no-ignore-vcs."),
-        )
-        .arg(
-            Arg::new("relative_path")
-                .action(ArgAction::Count)
-                .long("relative-path")
-                .overrides_with("absolute_path")
-                .hide(true)
-                .long_help("Overrides --absolute-path."),
-        )
-        .arg(
-            Arg::new("no_follow")
-                .action(ArgAction::Count)
-                .long("no-follow")
-                .overrides_with("follow")
-                .hide(true)
-                .long_help("Overrides --follow."),
-        )
-    }
-}
-
 #[derive(Parser)]
 #[command(
     name = "fd",
@@ -103,6 +40,10 @@ pub struct Opts {
     )]
     pub hidden: bool,
 
+    /// Overrides --hidden
+    #[arg(long, overrides_with = "hidden", hide = true, action = ArgAction::SetTrue)]
+    no_hidden: (),
+
     /// Do not respect .(git|fd)ignore files
     #[arg(
         long,
@@ -113,6 +54,10 @@ pub struct Opts {
     )]
     pub no_ignore: bool,
 
+    /// Overrides --no-ignore
+    #[arg(long, overrides_with = "no_ignore", hide = true, action = ArgAction::SetTrue)]
+    ignore: (),
+
     /// Do not respect .gitignore files
     #[arg(
         long,
@@ -121,6 +66,10 @@ pub struct Opts {
                          ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs."
     )]
     pub no_ignore_vcs: bool,
+
+    /// Overrides --no-ignore-vcs
+    #[arg(long, overrides_with = "no_ignore_vcs", hide = true, action = ArgAction::SetTrue)]
+    ignore_vcs: (),
 
     /// Do not respect .(git|fd)ignore files in parent directories
     #[arg(
@@ -204,6 +153,10 @@ pub struct Opts {
     )]
     pub absolute_path: bool,
 
+    /// Overrides --absolute-path
+    #[arg(long, overrides_with = "absolute_path", hide = true, action = ArgAction::SetTrue)]
+    relative_path: (),
+
     /// Use a long listing format with file metadata
     #[arg(
         long,
@@ -226,6 +179,10 @@ pub struct Opts {
                      Flag can be overriden with --no-follow."
     )]
     pub follow: bool,
+
+    /// Overrides --follow
+    #[arg(long, overrides_with = "follow", hide = true, action = ArgAction::SetTrue)]
+    no_follow: (),
 
     /// Search full abs. path (default: filename only)
     #[arg(
@@ -591,9 +548,6 @@ pub struct Opts {
     #[cfg(feature = "completions")]
     #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
-
-    #[clap(flatten)]
-    _negations: Negations,
 }
 
 impl Opts {
@@ -673,7 +627,9 @@ impl Opts {
         self.gen_completions
             .map(|maybe_shell| match maybe_shell {
                 Some(sh) => Ok(sh),
-                None => Shell::from_env().ok_or_else(|| anyhow!("Unable to get shell from environment")),
+                None => {
+                    Shell::from_env().ok_or_else(|| anyhow!("Unable to get shell from environment"))
+                }
             })
             .transpose()
     }
