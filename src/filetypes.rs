@@ -1,6 +1,8 @@
 use crate::dir_entry;
 use crate::filesystem;
 
+use faccess::PathExt;
+
 /// Whether or not to show
 #[derive(Default)]
 pub struct FileTypes {
@@ -21,11 +23,7 @@ impl FileTypes {
                 || (!self.symlinks && entry_type.is_symlink())
                 || (!self.sockets && filesystem::is_socket(*entry_type))
                 || (!self.pipes && filesystem::is_pipe(*entry_type))
-                || (self.executables_only
-                    && !entry
-                        .metadata()
-                        .map(|md| filesystem::is_executable(entry.path(), md))
-                        .unwrap_or(false))
+                || (self.executables_only && !entry.path().executable())
                 || (self.empty_only && !filesystem::is_empty(entry))
                 || !(entry_type.is_file()
                     || entry_type.is_dir()
