@@ -2208,7 +2208,7 @@ fn test_invalid_cwd() {
     std::env::set_current_dir(&root).unwrap();
     fs::remove_dir(&root).unwrap();
 
-    let output = std::process::Command::new(&te.test_exe())
+    let output = std::process::Command::new(te.test_exe())
         .arg("query")
         .arg(te.test_root())
         .output()
