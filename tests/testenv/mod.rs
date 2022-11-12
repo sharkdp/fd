@@ -186,6 +186,7 @@ impl TestEnv {
     }
 
     /// Get the path of the fd executable.
+    #[cfg_attr(windows, allow(unused))]
     pub fn test_exe(&self) -> &PathBuf {
         &self.fd_exe
     }
