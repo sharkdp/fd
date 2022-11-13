@@ -93,10 +93,16 @@ fn run() -> Result<ExitCode> {
 #[cold]
 fn print_completions(shell: clap_complete::Shell) -> Result<ExitCode> {
     // The program name is the first argument.
-    let program_name = env::args().next().unwrap_or_else(|| "fd".to_string());
+    let first_arg = env::args().next();
+    let program_name = first_arg
+        .as_ref()
+        .map(Path::new)
+        .and_then(|path| path.file_name())
+        .and_then(|file| file.to_str())
+        .unwrap_or("fd");
     let mut cmd = Opts::command();
     cmd.build();
-    clap_complete::generate(shell, &mut cmd, &program_name, &mut std::io::stdout());
+    clap_complete::generate(shell, &mut cmd, program_name, &mut std::io::stdout());
     Ok(ExitCode::Success)
 }
 
