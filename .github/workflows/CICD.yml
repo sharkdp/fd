@@ -111,15 +111,13 @@ jobs:
         rustc -V
 
     - name: Set cargo cmd
-      run: |
-        echo "CARGO_CMD=cargo" >> $GITHUB_ENV
-        echo "CARGO_CMD=cargo" >> $Env:GITHUB_ENV
+      shell: bash
+      run: echo "CARGO_CMD=cargo" >> $GITHUB_ENV
 
     - name: Set cargo cmd to cross
+      shell: bash
       if: ${{ matrix.job.use-cross == true }}
-      run: |
-        echo "CARGO_CMD=cross" >> $GITHUB_ENV
-        echo "CARGO_CMD=cross" >> $Env:GITHUB_ENV
+      run: echo "CARGO_CMD=cross" >> $GITHUB_ENV
 
     - name: Rust cache
       uses: Swatinem/rust-cache@v2
