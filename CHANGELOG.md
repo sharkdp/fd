@@ -1,3 +1,12 @@
+# Upcoming release
+
+# v8.5.3
+
+## Bugfixes
+
+- Fix completion generation to not include full path of fd command
+- Fix build error if completions feature is disabled
+
 # v8.5.2
 
 ## Bugfixes
