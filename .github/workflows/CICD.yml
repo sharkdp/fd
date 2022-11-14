@@ -19,51 +19,40 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Install rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        default: true
-        profile: minimal # minimal component installation (ie, no documentation)
-        components: clippy, rustfmt
+      run: |
+        rm -f "${HOME}/.cargo/bin/"{rustfmt,cargo-fmt}
+        rustup set profile minimal
+        rustup toolchain install stable -c "clippy,rustfmt"
+        rustup default stable
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
     - name: Ensure `cargo fmt` has been run
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check
+      run: cargo fmt --check
     - name: Ensure MSRV is set in `clippy.toml`
       run: grep "^msrv = \"${{ env.MIN_SUPPORTED_RUST_VERSION }}\"\$" clippy.toml
     - name: Run clippy
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --locked --all-targets --all-features
+      run: cargo clippy --locked --all-targets --all-features
 
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install rust toolchain (v${{ env.MIN_SUPPORTED_RUST_VERSION }})
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ env.MIN_SUPPORTED_RUST_VERSION }}
-        default: true
-        components: clippy
-        profile: minimal
+      run: |
+        rustup set profile minimal
+        rustup toolchain install ${{ env.MIN_SUPPORTED_RUST_VERSION }} -c clippy
+        rustup default ${{ env.MIN_SUPPORTED_RUST_VERSION }}
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      uses: actions-rs/cargo@v1
-      with:
-        command: clippy
-        args: --locked --all-targets --all-features
+      run: cargo clippy --locked --all-targets --all-features
     - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --locked
+      run: cargo test --locked
 
   build:
     name: ${{ matrix.job.os }} (${{ matrix.job.target }})
@@ -86,7 +75,7 @@ jobs:
           - { os: windows-2019, target: x86_64-pc-windows-msvc      }
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Install prerequisites
       shell: bash
@@ -105,12 +94,11 @@ jobs:
         echo "PROJECT_HOMEPAGE=$(sed -n 's/^homepage = "\(.*\)"/\1/p' Cargo.toml)" >> $GITHUB_ENV
 
     - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.job.target }}
-        override: true
-        profile: minimal # minimal component installation (ie, no documentation)
+      run: |
+        rustup set profile minimal
+        rustup toolchain install stable
+        rustup override set stable
+        rustup target add ${{ matrix.job.target }}
 
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
@@ -122,12 +110,26 @@ jobs:
         cargo -V
         rustc -V
 
-    - name: Build
-      uses: actions-rs/cargo@v1
+    - name: Set cargo cmd
+      shell: bash
+      run: echo "CARGO_CMD=cargo" >> $GITHUB_ENV
+
+    - name: Set cargo cmd to cross
+      shell: bash
+      if: ${{ matrix.job.use-cross == true }}
+      run: echo "CARGO_CMD=cross" >> $GITHUB_ENV
+
+    - name: Rust cache
+      uses: Swatinem/rust-cache@v2
       with:
-        use-cross: ${{ matrix.job.use-cross }}
-        command: build
-        args: --locked --release --target=${{ matrix.job.target }}
+        key: ${{ matrix.job.os }}-${{ matrix.job.target }}
+
+    - name: Install cross
+      if: ${{ matrix.job.use-cross == true }}
+      run: cargo install cross
+
+    - name: Build
+      run: ${{ env.CARGO_CMD }} build --locked --release --target=${{ matrix.job.target }}
 
     - name: Strip debug information from executable
       id: strip
@@ -175,11 +177,7 @@ jobs:
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
     - name: Run tests
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: ${{ matrix.job.use-cross }}
-        command: test
-        args: --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      run: ${{ env.CARGO_CMD }} test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
 
     - name: Generate completions
       id: completions
