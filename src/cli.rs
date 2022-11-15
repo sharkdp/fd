@@ -643,6 +643,7 @@ pub enum FileType {
     Directory,
     #[value(alias = "l")]
     Symlink,
+    /// A file which is executable by the current effective user
     #[value(alias = "x")]
     Executable,
     #[value(alias = "e")]
