@@ -1,17 +1,27 @@
 # Upcoming release
 
+## Features
+
+
+## Changes
+
+- Breaking: On Unix-like systems, `--type executable` now additionally checks if
+  the file is executable by the current user, see #1106 and #1169 (@ptipiak)
+
+
+## Bugfixes
+
+
+## Other
+
+
+
 # v8.5.3
 
 ## Bugfixes
 
 - Fix completion generation to not include full path of fd command
 - Fix build error if completions feature is disabled
-
-## Changes
-
-- On Unix-like system change the detection of executable,
-  `--type executable` now checks if file is executable by the current user,
-  see #1106 (@ptipiak)
 
 # v8.5.2
 
