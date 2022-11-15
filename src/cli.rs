@@ -335,8 +335,11 @@ pub struct Opts {
         long,
         alias("change-newer-than"),
         alias("newer"),
+        alias("changed-after"),
         value_name = "date|dur",
-        long_help = "Filter results based on the file modification time. The argument can be provided \
+        long_help = "Filter results based on the file modification time. \
+                     Files with modification times greater than the argument are returned. \
+                     The argument can be provided \
                      as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
                      If the time is not specified, it defaults to 00:00:00. \
                      '--change-newer-than' or '--newer' can be used as aliases.\n\
@@ -353,7 +356,9 @@ pub struct Opts {
         alias("change-older-than"),
         alias("older"),
         value_name = "date|dur",
-        long_help = "Filter results based on the file modification time. The argument can be provided \
+        long_help = "Filter results based on the file modification time. \
+                     Files with modification times less than the argument are returned. \
+                     The argument can be provided \
                      as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min). \
                      '--change-older-than' or '--older' can be used as aliases.\n\
                      Examples:\n    \
