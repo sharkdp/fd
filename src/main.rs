@@ -97,7 +97,7 @@ fn print_completions(shell: clap_complete::Shell) -> Result<ExitCode> {
     let program_name = first_arg
         .as_ref()
         .map(Path::new)
-        .and_then(|path| path.file_name())
+        .and_then(|path| path.file_stem())
         .and_then(|file| file.to_str())
         .unwrap_or("fd");
     let mut cmd = Opts::command();
