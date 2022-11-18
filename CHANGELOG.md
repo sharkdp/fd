@@ -11,9 +11,10 @@
 
 ## Bugfixes
 
+- Use fd instead of fd.exe for Powershell completions (when completions are generated on windows)
+
 
 ## Other
-
 
 
 # v8.5.3
