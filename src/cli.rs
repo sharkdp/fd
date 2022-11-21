@@ -151,7 +151,8 @@ pub struct Opts {
         long_help = "Add additional required search patterns, all of which must be matched. Multiple \
                      additional patterns can be specified. The patterns are regular expressions, \
                      unless '--glob' or '--fixed-strings' is used.",
-        hide_short_help = true
+        hide_short_help = true,
+        allow_hyphen_values = true
     )]
     pub exprs: Option<Vec<String>>,
 
