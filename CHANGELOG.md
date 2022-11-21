@@ -2,6 +2,8 @@
 
 ## Features
 
+- Added `--changed-after` as alias for `--changed-within`, to have a name consistent with `--changed-before`.
+
 
 ## Changes
 
