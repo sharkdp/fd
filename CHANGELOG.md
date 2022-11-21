@@ -2,6 +2,8 @@
 
 ## Features
 
+- New `--and <pattern>` option to add additional patterns that must also be matched. See #315
+  and #1139 (@Uthar)
 - Added `--changed-after` as alias for `--changed-within`, to have a name consistent with `--changed-before`.
 
 
