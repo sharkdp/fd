@@ -504,8 +504,8 @@ pub struct Opts {
     #[arg(
         long = "and",
         value_name = "pattern",
-        long_help = "Add additional required search patterns, all of which must be fulfilled. Multiple \
-                     additional patterns can be specified. The patterns are regular expressions,
+        long_help = "Add additional required search patterns, all of which must be matched. Multiple \
+                     additional patterns can be specified. The patterns are regular expressions, \
                      unless '--glob' or '--fixed-strings' is used.",
         hide_short_help = true
     )]
