@@ -144,6 +144,18 @@ pub struct Opts {
     )]
     pub fixed_strings: bool,
 
+    /// Additional search patterns that need to be matched
+    #[arg(
+        long = "and",
+        value_name = "pattern",
+        long_help = "Add additional required search patterns, all of which must be matched. Multiple \
+                     additional patterns can be specified. The patterns are regular expressions, \
+                     unless '--glob' or '--fixed-strings' is used.",
+        hide_short_help = true,
+        allow_hyphen_values = true
+    )]
+    pub exprs: Option<Vec<String>>,
+
     /// Show absolute instead of relative paths
     #[arg(
         long,
