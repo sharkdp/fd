@@ -1197,6 +1197,13 @@ fn test_type_executable() {
         .open(te.test_root().join("executable-file.sh"))
         .unwrap();
 
+    fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .mode(0o645)
+        .open(te.test_root().join("not-user-executable-file.sh"))
+        .unwrap();
+
     te.assert_output(&["--type", "executable"], "executable-file.sh");
 
     te.assert_output(
