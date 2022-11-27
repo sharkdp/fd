@@ -371,12 +371,13 @@ pub struct Opts {
     /// greater than the argument are returned. The argument can be provided
     /// as a specific point in time (YYYY-MM-DD HH:MM:SS) or as a duration (10h, 1d, 35min).
     /// If the time is not specified, it defaults to 00:00:00.
-    /// '--change-newer-than' or '--newer' can be used as aliases.
+    /// '--change-newer-than', '--newer', or '--changed-after' can be used as aliases.
     ///
     /// Examples:
     /// {n}    --changed-within 2weeks
     /// {n}    --change-newer-than '2018-10-27 10:00:00'
     /// {n}    --newer 2018-10-27
+    /// {n}    --changed-after 1day
     #[arg(
         long,
         alias("change-newer-than"),
