@@ -8,7 +8,7 @@ use std::os::windows;
 use std::path::{Path, PathBuf};
 use std::process;
 
-use tempdir::TempDir;
+use tempfile::TempDir;
 
 /// Environment for the integration tests.
 pub struct TestEnv {
@@ -27,7 +27,7 @@ fn create_working_directory(
     directories: &[&'static str],
     files: &[&'static str],
 ) -> Result<TempDir, io::Error> {
-    let temp_dir = TempDir::new("fd-tests")?;
+    let temp_dir = tempfile::Builder::new().prefix("fd-tests").tempdir()?;
 
     {
         let root = temp_dir.path();
@@ -169,7 +169,9 @@ impl TestEnv {
         let root = self.test_root();
         let broken_symlink_link = root.join(link_path);
         {
-            let temp_target_dir = TempDir::new("fd-tests-broken-symlink")?;
+            let temp_target_dir = tempfile::Builder::new()
+                .prefix("fd-tests-broken-symlink")
+                .tempdir()?;
             let broken_symlink_target = temp_target_dir.path().join("broken_symlink_target");
             fs::File::create(&broken_symlink_target)?;
             #[cfg(unix)]
