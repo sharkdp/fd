@@ -1,4 +1,5 @@
-use chrono::{offset::TimeZone, DateTime, Local, NaiveDate};
+use time::format_description::{parse as time_format, well_known::Rfc3339};
+use time::{Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
 use std::time::SystemTime;
 
@@ -9,23 +10,45 @@ pub enum TimeFilter {
     After(SystemTime),
 }
 
+fn parse_local_time(s: &str) -> time::Result<OffsetDateTime> {
+    const DAY_FORMAT: &'static str = "[year]-[month]-[day]";
+    const DATETIME_FORMAT: &'static str = "[year]-[month]-[day] [hour repr:24]:[minute]:[second]";
+    let primitive = Date::parse(s, &time_format(DAY_FORMAT).unwrap())
+        .map(|d| d.midnight())
+        .or_else(|_| PrimitiveDateTime::parse(s, &time_format(DATETIME_FORMAT).unwrap()))?;
+    let offset = get_offset_for_local_time(primitive)?;
+    let local_time = primitive.assume_offset(offset);
+
+    Ok(local_time)
+}
+
+#[cfg(not(test))]
+fn get_offset_for_local_time(
+    time: PrimitiveDateTime,
+) -> Result<UtcOffset, time::error::IndeterminateOffset> {
+    UtcOffset::local_offset_at(time.assume_utc())
+}
+
+/// While running tests, there can be multiple threads, and `UtcOffset::local_offset_at` will fail
+/// on unix if there are multiple threads, so during tests, we use a shim that just always returns
+/// an offset of -4
+#[cfg(test)]
+fn get_offset_for_local_time(
+    _time: PrimitiveDateTime,
+) -> Result<UtcOffset, time::error::ComponentRange> {
+    UtcOffset::from_hms(-4, 0, 0)
+}
+
 impl TimeFilter {
     fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
         humantime::parse_duration(s)
             .map(|duration| *ref_time - duration)
             .ok()
             .or_else(|| {
-                DateTime::parse_from_rfc3339(s)
+                OffsetDateTime::parse(s, &Rfc3339)
+                    .or_else(|_| parse_local_time(s))
                     .map(|dt| dt.into())
                     .ok()
-                    .or_else(|| {
-                        NaiveDate::parse_from_str(s, "%F")
-                            .map(|nd| nd.and_hms(0, 0, 0))
-                            .ok()
-                            .and_then(|ndt| Local.from_local_datetime(&ndt).single())
-                    })
-                    .or_else(|| Local.datetime_from_str(s, "%F %T").ok())
-                    .map(|dt| dt.into())
             })
     }
 
@@ -52,10 +75,7 @@ mod tests {
 
     #[test]
     fn is_time_filter_applicable() {
-        let ref_time = Local
-            .datetime_from_str("2010-10-10 10:10:10", "%F %T")
-            .unwrap()
-            .into();
+        let ref_time = parse_local_time("2010-10-10 10:10:10").unwrap().into();
 
         assert!(TimeFilter::after(&ref_time, "1min")
             .unwrap()
@@ -109,7 +129,7 @@ mod tests {
             .unwrap()
             .applies_to(&t1m_ago));
 
-        let ref_time = DateTime::parse_from_rfc3339("2010-10-10T10:10:10+00:00")
+        let ref_time = OffsetDateTime::parse("2010-10-10T10:10:10+00:00", &Rfc3339)
             .unwrap()
             .into();
         let t1m_ago = ref_time - Duration::from_secs(60);
