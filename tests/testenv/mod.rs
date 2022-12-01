@@ -27,7 +27,7 @@ fn create_working_directory(
     directories: &[&'static str],
     files: &[&'static str],
 ) -> Result<TempDir, io::Error> {
-    let temp_dir = tempfile::Builder::new().prefix("fd-tests").tempdir()?;
+    let temp_dir = tempfile::Builder::new().prefix("fd-tests").rand_bytes(2).tempdir()?;
 
     {
         let root = temp_dir.path();
