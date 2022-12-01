@@ -46,7 +46,7 @@ fn print_trailing_slash<W: Write>(
             stdout,
             "{}",
             style
-                .map(Style::to_ansi_term_style)
+                .map(Style::to_nu_ansi_term_style)
                 .unwrap_or_default()
                 .paint(&config.actual_path_separator)
         )?;
@@ -85,14 +85,14 @@ fn print_entry_colorized<W: Write>(
 
         let style = ls_colors
             .style_for_indicator(Indicator::Directory)
-            .map(Style::to_ansi_term_style)
+            .map(Style::to_nu_ansi_term_style)
             .unwrap_or_default();
         write!(stdout, "{}", style.paint(parent_str))?;
     }
 
     let style = entry
         .style(ls_colors)
-        .map(Style::to_ansi_term_style)
+        .map(Style::to_nu_ansi_term_style)
         .unwrap_or_default();
     write!(stdout, "{}", style.paint(&path_str[offset..]))?;
 

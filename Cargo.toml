@@ -33,7 +33,7 @@ path = "src/main.rs"
 version_check = "0.9"
 
 [dependencies]
-ansi_term = "0.12"
+nu-ansi-term = "0.46"
 argmax = "0.3.1"
 atty = "0.2"
 ignore = "0.4.3"
@@ -42,7 +42,6 @@ regex = "1.6.0"
 regex-syntax = "0.6"
 ctrlc = "3.2"
 humantime = "2.1"
-lscolors = "0.12"
 globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
@@ -56,6 +55,11 @@ faccess = "0.2.4"
 [dependencies.clap]
 version = "4.0.22"
 features = ["suggestions", "color", "wrap_help", "cargo", "unstable-grouped", "derive"]
+
+[dependencies.lscolors]
+version = "0.13"
+default-features = false
+features = ["nu-ansi-term"]
 
 [target.'cfg(unix)'.dependencies]
 users = "0.11.0"
