@@ -212,7 +212,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
 
     #[cfg(windows)]
     let ansi_colors_support =
-        ansi_term::enable_ansi_support().is_ok() || std::env::var_os("TERM").is_some();
+        nu_ansi_term::enable_ansi_support().is_ok() || std::env::var_os("TERM").is_some();
     #[cfg(not(windows))]
     let ansi_colors_support = true;
 
