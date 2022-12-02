@@ -1,5 +1,4 @@
 PROFILE=release
-EXE=target/$(PROFILE)/fd
 CARGO_CMD=cargo
 prefix=/usr/local
 bindir=$(prefix)/bin
@@ -7,8 +6,15 @@ datadir=$(prefix)/share
 exe_name=fd
 build_opts=--locked --profile $(PROFILE)
 
+ifeq ($(PROFILE),dev)
+	profile_dir=debug
+else
+	profile_dir=$(PROFILE)
+endif
+EXE=target/$(profile_dir)/fd
+
 ifdef TARGET
-	EXE=target/$(TARGET)/$(PROFILE)/fd
+	EXE=target/$(TARGET)/$(profile_dir)/fd
 	build_opts+=--target $(TARGET)
 endif
 
