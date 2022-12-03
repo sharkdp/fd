@@ -263,12 +263,26 @@ fn test_and_plus_full_path() {
     let te = TestEnv::new(DEFAULT_DIRS, AND_EXTRA_FILES);
 
     te.assert_output(
-        &["three", "--full-path", "--and", "_foo", "--and", "/dir"],
+        &[
+            "three",
+            "--full-path",
+            "--and",
+            "_foo",
+            "--and",
+            r"[/\\]dir",
+        ],
         "one/two/three/directory_foo/",
     );
 
     te.assert_output(
-        &["three", "--full-path", "--and", "/two", "--and", "/dir"],
+        &[
+            "three",
+            "--full-path",
+            "--and",
+            r"[/\\]two",
+            "--and",
+            r"[/\\]dir",
+        ],
         "one/two/three/directory_foo/",
     );
 }
