@@ -20,8 +20,8 @@ impl TimeFilter {
                     .ok()
                     .or_else(|| {
                         NaiveDate::parse_from_str(s, "%F")
-                            .map(|nd| nd.and_hms(0, 0, 0))
                             .ok()
+                            .and_then(|nd| nd.and_hms_opt(0, 0, 0))
                             .and_then(|ndt| Local.from_local_datetime(&ndt).single())
                     })
                     .or_else(|| Local.datetime_from_str(s, "%F %T").ok())
