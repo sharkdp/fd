@@ -1,3 +1,13 @@
+# Upcoming release
+
+## Features
+
+## Bugfixes
+
+## Changes
+
+## Other
+
 # v8.6.0
 
 ## Features
