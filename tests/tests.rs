@@ -879,6 +879,45 @@ fn test_no_ignore_aliases() {
     );
 }
 
+#[test]
+fn test_global_ignore() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES).global_ignore_file("one");
+    te.assert_output(
+        &[],
+        "a.foo
+    e1 e2
+    symlink",
+    );
+}
+
+#[test_case("--unrestricted", ".hidden.foo
+a.foo
+fdignored.foo
+gitignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "unrestricted")]
+#[test_case("--no-ignore", "a.foo
+fdignored.foo
+gitignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "no-ignore")]
+#[test_case("--no-global-ignore-file", "a.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "no-global-ignore-file")]
+fn test_no_global_ignore(flag: &str, expected_output: &str) {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES).global_ignore_file("one");
+    te.assert_output(&[flag, "foo"], expected_output);
+}
+
 /// Symlinks (--follow)
 #[test]
 fn test_follow() {
