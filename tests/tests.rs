@@ -879,6 +879,7 @@ fn test_no_ignore_aliases() {
     );
 }
 
+#[cfg(not(windows))]
 #[test]
 fn test_global_ignore() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES).global_ignore_file("one");
@@ -890,6 +891,7 @@ fn test_global_ignore() {
     );
 }
 
+#[cfg(not(windows))]
 #[test_case("--unrestricted", ".hidden.foo
 a.foo
 fdignored.foo
