@@ -1202,6 +1202,13 @@ fn test_type() {
 fn test_type_executable() {
     use std::os::unix::fs::OpenOptionsExt;
 
+    // This test assumes the current user isn't root
+    // (otherwise if the executable bit is set for any level, it is executable for the current
+    // user)
+    if users::get_current_uid() == 0 {
+        return;
+    }
+
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     fs::OpenOptions::new()
