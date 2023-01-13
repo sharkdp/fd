@@ -2,6 +2,8 @@
 
 ## Features
 
+- Add flag --no-require-git to always respect gitignore files, see #1216 (@vegerot)
+
 ## Bugfixes
 
 - Fix logic for when to use global ignore file. There was a bug where the only case where the
