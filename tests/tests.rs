@@ -2500,3 +2500,32 @@ fn test_invalid_cwd() {
         panic!("{:?}", output);
     }
 }
+
+/// Read config file from FD_CONFIG_PATH environment variable if present
+#[test]
+#[cfg(unix)]
+fn test_fd_config_path() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.set_environment_variable("FD_CONFIG_PATH", "fd.conf");
+
+    fs::File::create(te.test_root().join("fd.conf"))
+        .unwrap()
+        // test flags separated by spaces and newlines
+        .write_all(
+            b"--hidden --ignore-case
+              --no-ignore-vcs
+              --maxdepth=2",
+        )
+        .unwrap();
+
+    te.assert_output(
+        &["foo"],
+        ".hidden.foo
+         a.foo
+         gitignored.foo
+         one/b.foo",
+    );
+
+    te.remove_environment_variable("FD_CONFIG_PATH");
+}

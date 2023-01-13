@@ -18,7 +18,7 @@ use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
 use atty::Stream;
-use clap::{CommandFactory, Parser};
+use clap::{CommandFactory, FromArgMatches};
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
@@ -67,7 +67,7 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let opts = Opts::parse();
+    let opts = parse_opts();
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {
@@ -103,6 +103,40 @@ fn run() -> Result<ExitCode> {
         .collect::<Result<Vec<Regex>>>()?;
 
     walk::scan(&search_paths, Arc::new(regexps), Arc::new(config))
+}
+
+fn parse_opts() -> Opts {
+    let mut cli_args = std::env::args_os(); // [/usr/bin/fd, --hidden, --etc]
+    let mut args: Vec<std::ffi::OsString> = args_from_config_file(); // [--no-require-git]
+
+    // TODO(vegerot): If `args` is empty we can just skip the next two lines and not pay the cost
+    // of moving things around
+    args.insert(0, cli_args.next().unwrap()); // [/usr/bin/fd, --no-require-git]
+
+    // this way, CLI arguments override config-file arguments
+    args.extend(cli_args.skip(1)); // [/usr/bin/fd, --no-require-git, --hidden, --etc]
+
+    let mut matches = Opts::command().get_matches_from(args);
+    let res =
+        Opts::from_arg_matches_mut(&mut matches).map_err(|err| err.format(&mut Opts::command()));
+
+    match res {
+        Ok(s) => s,
+        Err(e) => e.exit(),
+    }
+}
+
+fn args_from_config_file() -> Vec<std::ffi::OsString> {
+    let config_path = match std::env::var_os("FD_CONFIG_PATH") {
+        Some(path) => path,
+        None => return vec![],
+    };
+
+    // TODO(vegerot): 🚀
+    match std::fs::read_to_string(config_path) {
+        Ok(config) => config.split_whitespace().map(|conf| conf.into()).collect(),
+        Err(_) => vec![],
+    }
 }
 
 #[cfg(feature = "completions")]

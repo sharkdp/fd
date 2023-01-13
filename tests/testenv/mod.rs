@@ -161,6 +161,14 @@ impl TestEnv {
         }
     }
 
+    pub fn set_environment_variable(&self, key: &str, value: &str) {
+        env::set_var(key, value);
+    }
+
+    pub fn remove_environment_variable(&self, key: &str) {
+        env::remove_var(key);
+    }
+
     /// Create a broken symlink at the given path in the temp_dir.
     pub fn create_broken_symlink<P: AsRef<Path>>(
         &mut self,
