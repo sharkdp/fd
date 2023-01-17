@@ -13,11 +13,11 @@ give us the chance to discuss any potential changes first.
 ## Add an entry to the changelog
 
 If your contribution changes the behavior of `fd` (as opposed to a typo-fix
-in the documentation), please update the [`CHANGELOG.md`](CHANGELOG.md) file
+in the documentation), please update the [`CHANGELOG.md`](CHANGELOG.md#upcoming-release) file
 and describe your changes. This makes the release process much easier and
 therefore helps to get your changes into a new `fd` release faster.
 
-The top of the `CHANGELOG` contains a *"unreleased"* section with a few
+The top of the `CHANGELOG` contains an *"Upcoming release"* section with a few
 subsections (Features, Bugfixes, …). Please add your entry to the subsection
 that best describes your change.
 

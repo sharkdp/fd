@@ -74,6 +74,28 @@ pub struct Opts {
     #[arg(long, overrides_with = "no_ignore_vcs", hide = true, action = ArgAction::SetTrue)]
     ignore_vcs: (),
 
+    /// Do not require a git repository to respect gitignores.
+    /// By default, fd will only respect global gitignore rules, .gitignore rules,
+    /// and local exclude rules if fd detects that you are searching inside a
+    /// git repository. This flag allows you to relax this restriction such that
+    /// fd will respect all git related ignore rules regardless of whether you're
+    /// searching in a git repository or not.
+    ///
+    ///
+    /// This flag can be disabled with --require-git.
+    #[arg(
+        long,
+        overrides_with = "require_git",
+        hide_short_help = true,
+        // same description as ripgrep's flag: ripgrep/crates/core/app.rs
+        long_help
+    )]
+    pub no_require_git: bool,
+
+    /// Overrides --no-require-git
+    #[arg(long, overrides_with = "no_require_git", hide = true, action = ArgAction::SetTrue)]
+    require_git: (),
+
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.
     #[arg(

@@ -77,6 +77,7 @@ pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -
         .git_ignore(config.read_vcsignore)
         .git_global(config.read_vcsignore)
         .git_exclude(config.read_vcsignore)
+        .require_git(config.require_git_to_read_vcsignore)
         .overrides(overrides)
         .follow_links(config.follow_links)
         // No need to check for supported platforms, option is unavailable on unsupported ones
