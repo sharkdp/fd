@@ -361,10 +361,7 @@ fn spawn_receiver(
                         // Push the handle of the spawned thread into the vector for later joining.
                         handles.push(handle);
                     }
-                    let exit_codes = handles
-                        .into_iter()
-                        .map(|handle| handle.join().unwrap())
-                        .collect::<Vec<_>>();
+                    let exit_codes = handles.into_iter().map(|handle| handle.join().unwrap());
                     merge_exitcodes(exit_codes)
                 })
             }
