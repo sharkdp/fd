@@ -6,6 +6,8 @@ use regex::bytes::RegexSet;
 use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
+use crate::filter::ContextFilter;
+#[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
 
@@ -107,6 +109,10 @@ pub struct Config {
     #[cfg(unix)]
     /// User/group ownership constraint
     pub owner_constraint: Option<OwnerFilter>,
+
+    #[cfg(unix)]
+    /// SELinux context constraint
+    pub context_constraint: Option<ContextFilter>,
 
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,

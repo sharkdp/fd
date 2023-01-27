@@ -334,6 +334,14 @@ Examples:
   \-\-owner :students
   \-\-owner "!john:students"
 .TP
+.BI "\-\-context " security_context
+Filter files by their SELinux security context. The matching uses \fIsecurity_context\fR as
+a regular expressions for the pattern.
+
+Examples:
+  \-\-context unlabeled_t
+  \-\-context ^user_u:object_r:*
+.TP
 .BI "\-\-base\-directory " path
 Change the current working directory of fd to the provided path. This means that search results will
 be shown with respect to the given base path. Note that relative paths which are passed to fd via the

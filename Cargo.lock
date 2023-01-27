@@ -354,6 +354,7 @@ dependencies = [
  "test-case",
  "users",
  "version_check",
+ "xattr",
 ]
 
 [[package]]
@@ -1219,3 +1220,12 @@ name = "windows_x86_64_msvc"
 version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a515f5799fe4961cb532f983ce2b23082366b898e52ffbce459c86f67c8378a"
+
+[[package]]
+name = "xattr"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea263437ca03c1522846a4ddafbca2542d0ad5ed9b784909d4b27b76f62bc34a"
+dependencies = [
+ "libc",
+]

@@ -303,6 +303,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         time_constraints,
         #[cfg(unix)]
         owner_constraint,
+        #[cfg(unix)]
+        context_constraint: opts.context.take(),
         show_filesystem_errors: opts.show_errors,
         path_separator,
         actual_path_separator,
