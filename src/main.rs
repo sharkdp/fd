@@ -205,6 +205,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         .unwrap_or_else(|| std::path::MAIN_SEPARATOR.to_string());
     check_path_separator_length(path_separator.as_deref())?;
 
+    #[cfg(unix)]
+    let inode_number = std::mem::take(&mut opts.inum);
     let size_limits = std::mem::take(&mut opts.size);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
@@ -298,6 +300,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
         ignore_files: std::mem::take(&mut opts.ignore_file),
+        #[cfg(unix)]
+        inode_number,
         size_constraints: size_limits,
         time_constraints,
         #[cfg(unix)]

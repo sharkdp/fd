@@ -365,6 +365,20 @@ pub struct Opts {
     )]
     pub extensions: Option<Vec<String>>,
 
+    /// Filter files by their inode number.
+    /// Format: [inum].
+    ///
+    /// Examples:
+    /// {n}    --inum 4242
+    #[cfg(unix)]
+    #[arg(
+        long,
+        value_name = "inode-number",
+        help = "Filter by inode number",
+        long_help
+    )]
+    pub inum: Option<u64>,
+
     /// Limit results based on the size of files using the format <+-><NUM><UNIT>.
     ///    '+': file size must be greater than or equal to this
     ///    '-': file size must be less than or equal to this

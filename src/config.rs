@@ -45,6 +45,10 @@ pub struct Config {
     /// Whether elements of output should be separated by a null character
     pub null_separator: bool,
 
+    #[cfg(unix)]
+    /// The inode number to search for.
+    pub inode_number: Option<u64>,
+
     /// The maximum search depth, or `None` if no maximum search depth should be set.
     ///
     /// A depth of `1` includes all files under the current directory, a depth of `2` also includes

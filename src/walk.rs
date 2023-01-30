@@ -1,6 +1,8 @@
 use std::ffi::OsStr;
 use std::io;
 use std::mem;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -481,6 +483,18 @@ fn spawn_senders(
             // Filter out unwanted file types.
             if let Some(ref file_types) = config.file_types {
                 if file_types.should_ignore(&entry) {
+                    return ignore::WalkState::Continue;
+                }
+            }
+
+            // Filter out unwanted inode numbers.
+            #[cfg(unix)]
+            if let Some(inode_number) = config.inode_number {
+                if let Some(metadata) = entry.metadata() {
+                    if inode_number != metadata.ino() {
+                        return ignore::WalkState::Continue;
+                    }
+                } else {
                     return ignore::WalkState::Continue;
                 }
             }

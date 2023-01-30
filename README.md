@@ -316,6 +316,7 @@ Options:
   -t, --type <filetype>            Filter by type: file (f), directory (d), symlink (l),
                                    executable (x), empty (e), socket (s), pipe (p)
   -e, --extension <ext>            Filter by file extension
+      --inum <num>                 Filter by inode number
   -S, --size <size>                Limit results based on the size of files
       --changed-within <date|dur>  Filter by file modification time (newer than)
       --changed-before <date|dur>  Filter by file modification time (older than)
