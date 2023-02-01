@@ -760,11 +760,11 @@ pub struct Exec {
 impl clap::FromArgMatches for Exec {
     fn from_arg_matches(matches: &ArgMatches) -> clap::error::Result<Self> {
         let command = matches
-            .grouped_values_of("exec")
+            .get_occurrences::<String>("exec")
             .map(CommandSet::new)
             .or_else(|| {
                 matches
-                    .grouped_values_of("exec_batch")
+                    .get_occurrences::<String>("exec_batch")
                     .map(CommandSet::new_batch)
             })
             .transpose()
