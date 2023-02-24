@@ -1,4 +1,4 @@
-# Upcoming release
+# v8.7.0
 
 ## Features
 

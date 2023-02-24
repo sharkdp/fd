@@ -324,8 +324,8 @@ Options:
   -X, --exec-batch <cmd>...        Execute a command with all search results at once
   -c, --color <when>               When to use colors [default: auto] [possible values: auto,
                                    always, never]
-  -h, --help                       Print help information (use `--help` for more detail)
-  -V, --version                    Print version information
+  -h, --help                       Print help (see more with '--help')
+  -V, --version                    Print version
 ```
 
 ## Benchmark
@@ -540,7 +540,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_8.6.0_amd64.deb  # adapt version number and architecture
+sudo dpkg -i fd_8.7.0_amd64.deb  # adapt version number and architecture
 ```
 
 ### On Debian
@@ -679,7 +679,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.60.0* or later is required.
+Note that rust version *1.64.0* or later is required.
 
 `make` is also needed for the build.
 
