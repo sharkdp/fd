@@ -1,3 +1,13 @@
+# Upcoming Release
+
+## Features
+
+## Bugfixes
+
+## Changes
+
+## Other
+
 # v8.7.0
 
 ## Features
@@ -9,10 +19,6 @@
 - Fix logic for when to use global ignore file. There was a bug where the only case where the
   global ignore file wasn't processed was if `--no-ignore` was passed, but neither `--unrestricted`
   nor `--no-global-ignore-file` is passed. See #1209
-
-## Changes
-
-## Other
 
 # v8.6.0
 
