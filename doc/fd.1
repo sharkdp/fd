@@ -71,6 +71,14 @@ git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
 The flag can be overridden with '--ignore-vcs'.
 .TP
+.B \-\-no\-require\-git
+Do not require a git repository to respect gitignores. By default, fd will only
+respect global gitignore rules, .gitignore rules and local exclude rules if fd
+detects that you are searching inside a git repository. This flag allows you to
+relax this restriction such that fd will respect all git related ignore rules
+regardless of whether you’re searching in a git repository or not. The flag can
+be overridden with '--require-git'.
+.TP
 .B \-\-no\-ignore\-parent
 Show search results from files and directories that would otherwise be ignored by gitignore files in
 parent directories.
