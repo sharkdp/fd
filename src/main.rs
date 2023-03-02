@@ -253,7 +253,6 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
             }
         }
 
-        dbg!(&matchers);
         matchers
     };
 
