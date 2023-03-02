@@ -538,9 +538,16 @@ fn spawn_senders(
                             .iter()
                             .any(|glob| glob.is_match(&path))
                         {
-                            // emulate Git's behavior of skipping any matched directory entirely
-                            // see https://git-scm.com/docs/gitignore#_pattern_format
-                            return ignore::WalkState::Skip;
+                            // Ideally we want to return `WalkState::Skip` to emulate gitignore's
+                            // behavior of skipping any matched directory entirely
+                            // Unfortunately this will make the search behaviour inconsistent
+                            // because this filter happens outside of the directory walker
+                            //
+                            // E.g. Given directory structure `/foo/bar/` and CWD `/`:
+                            // - `fd --exclude-absolute '/foo'` will return nothing
+                            // - `fd --exclude-absolute '/foo' bar` will return '/foo/bar'
+                            // Obviously this makes no sense
+                            return ignore::WalkState::Continue;
                         }
                     }
                     Err(err) => {
