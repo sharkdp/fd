@@ -110,6 +110,7 @@ _fd() {
     '*'{-t+,--type=}"[filter search by type]:type:(($fd_types))"
     '*'{-e+,--extension=}'[filter search by file extension]:extension'
     '*'{-E+,--exclude=}'[exclude files/directories that match the given glob pattern]:glob pattern'
+    '*--exclude-absolute=[exclude files/directories whose absolute path match the given glob pattern]:glob pattern'
     '*'{-S+,--size=}'[limit search by file size]:size limit:->size'
     '(-o --owner)'{-o+,--owner=}'[filter by owning user and/or group]:owner and/or group:->owner'
 
