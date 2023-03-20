@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use crossbeam_channel::Receiver;
 
@@ -15,8 +15,8 @@ use super::CommandSet;
 /// be executed, and this process will continue until the receiver's sender has closed.
 pub fn job(
     rx: Receiver<WorkerResult>,
-    cmd: Arc<CommandSet>,
-    out_perm: Arc<Mutex<()>>,
+    cmd: &CommandSet,
+    out_perm: &Mutex<()>,
     config: &Config,
 ) -> ExitCode {
     // Output should be buffered when only running a single thread
@@ -41,7 +41,7 @@ pub fn job(
         results.push(cmd.execute(
             dir_entry.stripped_path(config),
             config.path_separator.as_deref(),
-            Arc::clone(&out_perm),
+            out_perm,
             buffer_output,
         ))
     }

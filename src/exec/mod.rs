@@ -9,7 +9,7 @@ use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::Stdio;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use anyhow::{bail, Result};
 use argmax::Command;
@@ -86,14 +86,14 @@ impl CommandSet {
         &self,
         input: &Path,
         path_separator: Option<&str>,
-        out_perm: Arc<Mutex<()>>,
+        out_perm: &Mutex<()>,
         buffer_output: bool,
     ) -> ExitCode {
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands(commands, &out_perm, buffer_output)
+        execute_commands(commands, out_perm, buffer_output)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode

@@ -18,7 +18,7 @@ readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
 version = "8.7.0"
 edition= "2021"
-rust-version = "1.64.0"
+rust-version = "1.67.0"
 
 [badges.appveyor]
 repository = "sharkdp/fd"
