@@ -102,6 +102,11 @@ Perform a regular-expression based search (default). This can be used to overrid
 Treat the pattern as a literal string instead of a regular expression. Note that this also
 performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'.
 .TP
+.BI "\-\-and " pattern
+Add additional required search patterns, all of which must be matched. Multiple additional
+patterns can be specified. The patterns are regular expressions, unless '\-\-glob'
+or '\-\-fixed\-strings' is used.
+.TP
 .B \-a, \-\-absolute\-path
 Shows the full path starting from the root as opposed to relative paths.
 The flag can be overridden with '--relative-path'.
