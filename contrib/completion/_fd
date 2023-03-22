@@ -36,7 +36,7 @@ _fd() {
   # for all of the potential negation options listed below!
   if
     # (--[bpsu]* => match all options marked with '$no')
-    [[ $PREFIX$SUFFIX == --[bopsu]* ]] ||
+    [[ $PREFIX$SUFFIX == --[bopsun]* ]] ||
     zstyle -t ":complete:$curcontext:*" complete-all
   then
     no=
@@ -69,6 +69,9 @@ _fd() {
     + '(no-regex-pattern)' # non-regex-based search pattern
     {-g,--glob}'[perform a glob-based search]'
     {-F,--fixed-strings}'[treat pattern as literal string instead of a regex]'
+
+    + '(no-require-git)'
+    "$no(no-ignore-full --no-ignore-vcs --no-require-git)--no-require-git[don't require git repo to respect gitignores]"
 
     + '(match-full)' # match against full path
     {-p,--full-path}'[match the pattern against the full path instead of the basename]'
@@ -118,6 +121,7 @@ _fd() {
 
     + '(filter-mtime-newer)' # filter by files modified after than
     '--changed-within=[limit search to files/directories modified within the given date/duration]:date or duration'
+    '--changed-after=[alias for --changed-within]:date/duration'
     '!--change-newer-than=:date/duration'
     '!--newer=:date/duration'
 
@@ -157,6 +161,10 @@ _fd() {
 
     + strip-cwd-prefix
     $no'(strip-cwd-prefix exec-cmds)--strip-cwd-prefix[Strip ./ prefix when output is redirected]'
+
+    + and
+    '--and=[additional required search path]:pattern'
+
 
     + args # positional arguments
     '1: :_guard "^-*" pattern'
