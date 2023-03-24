@@ -1,12 +1,25 @@
 PROFILE=release
-EXE=target/$(PROFILE)/fd
+CARGO_CMD=cargo
 prefix=/usr/local
 bindir=$(prefix)/bin
 datadir=$(prefix)/share
 exe_name=fd
+build_opts=--locked --profile $(PROFILE)
+
+ifeq ($(PROFILE),dev)
+	profile_dir=debug
+else
+	profile_dir=$(PROFILE)
+endif
+EXE=target/$(profile_dir)/fd
+
+ifdef TARGET
+	EXE=target/$(TARGET)/$(profile_dir)/fd
+	build_opts+=--target $(TARGET)
+endif
 
 $(EXE): Cargo.toml src/**/*.rs
-	cargo build --profile $(PROFILE)
+	$(CARGO_CMD) build $(build_opts)
 
 .PHONY: completions
 completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/fd.ps1 autocomplete/_fd
