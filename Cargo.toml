@@ -87,6 +87,7 @@ test-case = "2.2"
 
 [profile.release]
 lto = true
+strip = true
 codegen-units = 1
 
 [features]
