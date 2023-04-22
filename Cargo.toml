@@ -44,7 +44,7 @@ ctrlc = "3.2"
 humantime = "2.1"
 globset = "0.4"
 anyhow = "1.0"
-dirs-next = "2.0"
+etcetera = "0.8"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.8"
 clap_complete = {version = "4.3.0", optional = true}
