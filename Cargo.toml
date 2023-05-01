@@ -83,7 +83,7 @@ jemallocator = {version = "0.5.0", optional = true}
 diff = "0.1"
 tempfile = "3.5"
 filetime = "0.2"
-test-case = "3.0"
+test-case = "3.1"
 
 [profile.release]
 lto = true
