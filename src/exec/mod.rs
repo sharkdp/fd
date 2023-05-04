@@ -9,18 +9,17 @@ use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::Stdio;
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
 
 use anyhow::{bail, Result};
 use argmax::Command;
-use regex::Regex;
 
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 
 use self::command::{execute_commands, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
 pub use self::job::{batch, job};
-use self::token::Token;
+use self::token::{tokenize, Token};
 
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -230,52 +229,15 @@ impl CommandTemplate {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        static PLACEHOLDER_PATTERN: OnceLock<Regex> = OnceLock::new();
-
         let mut args = Vec::new();
         let mut has_placeholder = false;
 
         for arg in input {
             let arg = arg.as_ref();
 
-            let mut tokens = Vec::new();
-            let mut start = 0;
-
-            let pattern =
-                PLACEHOLDER_PATTERN.get_or_init(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
-
-            for placeholder in pattern.find_iter(arg) {
-                // Leading text before the placeholder.
-                if placeholder.start() > start {
-                    tokens.push(Token::Text(arg[start..placeholder.start()].to_owned()));
-                }
-
-                start = placeholder.end();
-
-                match placeholder.as_str() {
-                    "{}" => tokens.push(Token::Placeholder),
-                    "{.}" => tokens.push(Token::NoExt),
-                    "{/}" => tokens.push(Token::Basename),
-                    "{//}" => tokens.push(Token::Parent),
-                    "{/.}" => tokens.push(Token::BasenameNoExt),
-                    _ => unreachable!("Unhandled placeholder"),
-                }
-
-                has_placeholder = true;
-            }
-
-            // Without a placeholder, the argument is just fixed text.
-            if tokens.is_empty() {
-                args.push(ArgumentTemplate::Text(arg.to_owned()));
-                continue;
-            }
-
-            if start < arg.len() {
-                // Trailing text after last placeholder.
-                tokens.push(Token::Text(arg[start..].to_owned()));
-            }
-
-            args.push(ArgumentTemplate::Tokens(tokens));
+            let tmpl = tokenize(arg);
+            has_placeholder |= tmpl.has_tokens();
+            args.push(tmpl);
         }
 
         // We need to check that we have at least one argument, because if not
@@ -421,6 +383,14 @@ impl ArgumentTemplate {
 mod tests {
     use super::*;
 
+    fn generate_str(template: &CommandTemplate, input: &str) -> Vec<String> {
+        template
+            .args
+            .iter()
+            .map(|arg| arg.generate(input, None).into_string().unwrap())
+            .collect()
+    }
+
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
@@ -500,6 +470,21 @@ mod tests {
                 mode: ExecutionMode::OneByOne,
             }
         );
+    }
+
+    #[test]
+    fn tokens_with_literal_braces() {
+        let template = CommandTemplate::new(vec!["{{}}", "{{", "{.}}"]).unwrap();
+        assert_eq!(
+            generate_str(&template, "foo"),
+            vec!["{}", "{", "{.}", "foo"]
+        );
+    }
+
+    #[test]
+    fn tokens_with_literal_braces_and_placeholder() {
+        let template = CommandTemplate::new(vec!["{{{},end}"]).unwrap();
+        assert_eq!(generate_str(&template, "foo"), vec!["{foo,end}"]);
     }
 
     #[test]

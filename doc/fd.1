@@ -380,9 +380,14 @@ parent directory
 path without file extension
 .IP {/.}
 basename without file extension
+.IP {{}
+literal '{'
 .RE
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
+
+If you need to include the literal text of one of the placeholders, you can use "{{}" to
+escape the first "{". For example "{{}}" expands to "{}", and "{{}{{}}}" expands to "{{}".
 
 Examples:
 
