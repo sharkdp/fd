@@ -232,7 +232,7 @@ impl CommandTemplate {
         S: AsRef<str>,
     {
         static PLACEHOLDER_PATTERN: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
+            Lazy::new(|| Regex::new(r"\{(/?\.?|//|\{)\}").unwrap());
 
         let mut args = Vec::new();
         let mut has_placeholder = false;
@@ -257,6 +257,11 @@ impl CommandTemplate {
                     "{/}" => tokens.push(Token::Basename),
                     "{//}" => tokens.push(Token::Parent),
                     "{/.}" => tokens.push(Token::BasenameNoExt),
+                    "{{}" => {
+                        tokens.push(Token::Text("{".to_owned()));
+                        // Continue, because this isn't a real placeholder
+                        continue;
+                    }
                     _ => unreachable!("Unhandled placeholder"),
                 }
 
@@ -420,6 +425,14 @@ impl ArgumentTemplate {
 mod tests {
     use super::*;
 
+    fn generate_str(template: &CommandTemplate, input: &str) -> Vec<String> {
+        template
+            .args
+            .iter()
+            .map(|arg| arg.generate(input, None).into_string().unwrap())
+            .collect()
+    }
+
     #[test]
     fn tokens_with_placeholder() {
         assert_eq!(
@@ -499,6 +512,21 @@ mod tests {
                 mode: ExecutionMode::OneByOne,
             }
         );
+    }
+
+    #[test]
+    fn tokens_with_literal_braces() {
+        let template = CommandTemplate::new(vec!["{{}}", "{{}", "{{}.}"]).unwrap();
+        assert_eq!(
+            generate_str(&template, "foo"),
+            vec!["{}", "{", "{.}", "foo"]
+        );
+    }
+
+    #[test]
+    fn tokens_with_literal_braces_and_placeholder() {
+        let template = CommandTemplate::new(vec!["{{}{},end}"]).unwrap();
+        assert_eq!(generate_str(&template, "foo"), vec!["{foo,end}"]);
     }
 
     #[test]

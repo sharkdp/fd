@@ -799,7 +799,8 @@ impl clap::Args for Exec {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
-                       '{/.}': basename without file extension\n\n\
+                       '{/.}': basename without file extension\n  \
+                       '{{}':  literal '{' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
                        - find all *.zip files and unzip them:\n\n      \
@@ -829,7 +830,8 @@ impl clap::Args for Exec {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
-                       '{/.}': basename without file extension\n\n\
+                       '{/.}': basename without file extension\n  \
+                       '{{}':  literal '{' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
                        - Find all test_*.py files and open them in your favorite editor:\n\n      \
