@@ -47,7 +47,7 @@ globset = "0.4"
 anyhow = "1.0"
 dirs-next = "2.0"
 normpath = "1.1.1"
-once_cell = "1.17.1"
+once_cell = "1.17.2"
 crossbeam-channel = "0.5.8"
 clap_complete = {version = "4.2.1", optional = true}
 faccess = "0.2.4"
