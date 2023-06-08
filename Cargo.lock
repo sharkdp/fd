@@ -347,7 +347,6 @@ dependencies = [
  "normpath",
  "nu-ansi-term",
  "num_cpus",
- "once_cell",
  "regex",
  "regex-syntax",
  "tempfile",

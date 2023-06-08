@@ -1,10 +1,9 @@
+use std::cell::OnceCell;
 use std::ffi::OsString;
 use std::fs::{FileType, Metadata};
 use std::path::{Path, PathBuf};
 
 use lscolors::{Colorable, LsColors, Style};
-
-use once_cell::unsync::OnceCell;
 
 use crate::config::Config;
 use crate::filesystem::strip_current_dir;
