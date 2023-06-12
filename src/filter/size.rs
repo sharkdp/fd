@@ -1,9 +1,9 @@
+use std::sync::OnceLock;
+
 use anyhow::anyhow;
-use once_cell::sync::Lazy;
 use regex::Regex;
 
-static SIZE_CAPTURES: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
+static SIZE_CAPTURES: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SizeFilter {
@@ -31,11 +31,13 @@ impl SizeFilter {
     }
 
     fn parse_opt(s: &str) -> Option<Self> {
-        if !SIZE_CAPTURES.is_match(s) {
+        let pattern =
+            SIZE_CAPTURES.get_or_init(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
+        if !pattern.is_match(s) {
             return None;
         }
 
-        let captures = SIZE_CAPTURES.captures(s)?;
+        let captures = pattern.captures(s)?;
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
         let quantity = captures
             .get(2)

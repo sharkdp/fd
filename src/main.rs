@@ -12,12 +12,12 @@ mod regex_helper;
 mod walk;
 
 use std::env;
+use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
 use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
-use atty::Stream;
 use clap::{CommandFactory, Parser};
 use globset::GlobBuilder;
 use lscolors::LsColors;
@@ -217,7 +217,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     #[cfg(not(windows))]
     let ansi_colors_support = true;
 
-    let interactive_terminal = atty::is(Stream::Stdout);
+    let interactive_terminal = std::io::stdout().is_terminal();
     let colored_output = match opts.color {
         ColorWhen::Always => true,
         ColorWhen::Never => false,

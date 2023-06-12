@@ -9,11 +9,10 @@ use std::io;
 use std::iter;
 use std::path::{Component, Path, PathBuf, Prefix};
 use std::process::Stdio;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use anyhow::{bail, Result};
 use argmax::Command;
-use once_cell::sync::Lazy;
 use regex::Regex;
 
 use crate::exit_codes::{merge_exitcodes, ExitCode};
@@ -231,8 +230,7 @@ impl CommandTemplate {
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        static PLACEHOLDER_PATTERN: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
+        static PLACEHOLDER_PATTERN: OnceLock<Regex> = OnceLock::new();
 
         let mut args = Vec::new();
         let mut has_placeholder = false;
@@ -243,7 +241,10 @@ impl CommandTemplate {
             let mut tokens = Vec::new();
             let mut start = 0;
 
-            for placeholder in PLACEHOLDER_PATTERN.find_iter(arg) {
+            let pattern =
+                PLACEHOLDER_PATTERN.get_or_init(|| Regex::new(r"\{(/?\.?|//)\}").unwrap());
+
+            for placeholder in pattern.find_iter(arg) {
                 // Leading text before the placeholder.
                 if placeholder.start() > start {
                     tokens.push(Token::Text(arg[start..placeholder.start()].to_owned()));
