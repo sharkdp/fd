@@ -46,7 +46,7 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
+    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore files.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
@@ -106,7 +106,7 @@ pub struct Opts {
     )]
     pub no_ignore_parent: bool,
 
-    /// Do not respect the global ignore file
+    /// Do not respect the global ignore files
     #[arg(long, hide = true)]
     pub no_global_ignore_file: bool,
 
@@ -299,6 +299,21 @@ pub struct Opts {
         long_help
     )]
     pub exclude: Vec<String>,
+
+    /// Exclude files/directories whose absolute path match the given glob pattern.
+    /// This filter is applied on top of all other ignore logic. Multiple exclude patterns
+    /// can be specified.
+    ///
+    /// Note that using this filter causes fd to perform an extra canonicalization
+    /// for every path traversed, which incurs a non-trivial performance penalty.
+    /// Use at your own discretion.
+    #[arg(
+        long,
+        value_name = "pattern",
+        help = "Exclude entries whose absolute path match the given glob pattern",
+        long_help
+    )]
+    pub exclude_absolute: Vec<String>,
 
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.

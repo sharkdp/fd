@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
+use globset::GlobMatcher;
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
@@ -95,6 +96,9 @@ pub struct Config {
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
 
+    /// A list of glob matchers that should exclude matched entries by their absolute paths.
+    pub exclude_absolute_matchers: Vec<GlobMatcher>,
+
     /// A list of custom ignore files.
     pub ignore_files: Vec<PathBuf>,
 
@@ -129,4 +133,20 @@ impl Config {
     pub fn is_printing(&self) -> bool {
         self.command.is_none()
     }
+}
+
+/// Get the platform-specific config directory for fd.
+pub fn get_fd_config_dir() -> Option<PathBuf> {
+    #[cfg(target_os = "macos")]
+    let mut dir = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .filter(|p| p.is_absolute())
+        .or_else(|| dirs_next::home_dir().map(|d| d.join(".config")))?;
+
+    #[cfg(not(target_os = "macos"))]
+    let mut dir = dirs_next::config_dir()?;
+
+    dir.push("fd");
+
+    Some(dir)
 }

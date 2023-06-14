@@ -19,12 +19,13 @@ use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{CommandFactory, Parser};
-use globset::GlobBuilder;
+use globset::{Glob, GlobBuilder, GlobMatcher};
 use lscolors::LsColors;
 use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
 
 use crate::cli::{ColorWhen, Opts};
-use crate::config::Config;
+use crate::config::{get_fd_config_dir, Config};
+use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
@@ -234,6 +235,28 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
 
+    let read_global_ignore =
+        !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_global_ignore_file);
+    let exclude_absolute_matchers = {
+        let mut matchers = vec![];
+
+        // absolute excludes from CLI
+        for glob_str in opts.exclude_absolute.iter() {
+            // invalid globs from CLI are hard errors
+            let m = Glob::new(glob_str)?.compile_matcher();
+            matchers.push(m);
+        }
+        // absolute excludes from global `ignore-absolute` file
+        if read_global_ignore {
+            match read_and_build_global_exclude_absolute_matchers() {
+                Ok(mut v) => matchers.append(&mut v),
+                Err(err) => print_error(format!("Cannot read global ignore-absolute file. {err}.")),
+            }
+        }
+
+        matchers
+    };
+
     Ok(Config {
         case_sensitive,
         search_full_path: opts.full_path,
@@ -242,9 +265,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
         require_git_to_read_vcsignore: !opts.no_require_git,
         read_parent_ignore: !opts.no_ignore_parent,
-        read_global_ignore: !(opts.no_ignore
-            || opts.rg_alias_ignore()
-            || opts.no_global_ignore_file),
+        read_global_ignore,
         follow_links: opts.follow,
         one_file_system: opts.one_file_system,
         null_separator: opts.null_separator,
@@ -298,6 +319,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
+        exclude_absolute_matchers,
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
@@ -468,4 +490,45 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
                 e.to_string()
             )
         })
+}
+
+fn read_and_build_global_exclude_absolute_matchers() -> Result<Vec<GlobMatcher>> {
+    let file_content = match get_fd_config_dir()
+        .map(|p| p.join("ignore-absolute"))
+        .filter(|p| p.is_file())
+    {
+        Some(path) => std::fs::read_to_string(path)?,
+        // not an error if the file doesn't exist
+        None => return Ok(vec![]),
+    };
+
+    let matchers = file_content
+        .lines()
+        // trim trailing spaces, unless escaped with backslash (`\`)
+        .map(|raw| {
+            let naive_trimmed = raw.trim_end_matches(' ');
+            if raw.len() == naive_trimmed.len() {
+                raw
+            } else if naive_trimmed.ends_with('\\') {
+                &raw[..naive_trimmed.len() + 1]
+            } else {
+                naive_trimmed
+            }
+        })
+        // skip empty lines and comments
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        // build matchers
+        .filter_map(|line| match Glob::new(line) {
+            Ok(glob) => Some(glob.compile_matcher()),
+            // invalid globs from config file are warnings
+            Err(err) => {
+                print_error(format!(
+                    "Malformed pattern in global ignore-absolute file. {err}."
+                ));
+                None
+            }
+        })
+        .collect();
+
+    Ok(matchers)
 }

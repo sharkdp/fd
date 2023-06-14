@@ -14,6 +14,7 @@ use ignore::overrides::OverrideBuilder;
 use ignore::{self, WalkBuilder};
 use regex::bytes::Regex;
 
+use crate::config::get_fd_config_dir;
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
@@ -89,17 +90,8 @@ pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -
     }
 
     if config.read_global_ignore {
-        #[cfg(target_os = "macos")]
-        let config_dir_op = std::env::var_os("XDG_CONFIG_HOME")
-            .map(PathBuf::from)
-            .filter(|p| p.is_absolute())
-            .or_else(|| dirs_next::home_dir().map(|d| d.join(".config")));
-
-        #[cfg(not(target_os = "macos"))]
-        let config_dir_op = dirs_next::config_dir();
-
-        if let Some(global_ignore_file) = config_dir_op
-            .map(|p| p.join("fd").join("ignore"))
+        if let Some(global_ignore_file) = get_fd_config_dir()
+            .map(|p| p.join("ignore"))
             .filter(|p| p.is_file())
         {
             let result = walker.add_ignore(global_ignore_file);
@@ -526,6 +518,36 @@ fn spawn_senders(
                 }
                 if !matched {
                     return ignore::WalkState::Continue;
+                }
+            }
+
+            // Exclude by absolute path
+            // `ignore` crate does not intend to support this, so it's implemented here independently
+            // see https://github.com/BurntSushi/ripgrep/issues/2366
+            // This is done last because canonicalisation has non-trivial cost
+            if !config.exclude_absolute_matchers.is_empty() {
+                match entry_path.canonicalize() {
+                    Ok(path) => {
+                        if config
+                            .exclude_absolute_matchers
+                            .iter()
+                            .any(|glob| glob.is_match(&path))
+                        {
+                            // Ideally we want to return `WalkState::Skip` to emulate gitignore's
+                            // behavior of skipping any matched directory entirely
+                            // Unfortunately this will make the search behaviour inconsistent
+                            // because this filter happens outside of the directory walker
+                            //
+                            // E.g. Given directory structure `/foo/bar/` and CWD `/`:
+                            // - `fd --exclude-absolute '/foo'` will return nothing
+                            // - `fd --exclude-absolute '/foo' bar` will return '/foo/bar'
+                            // Obviously this makes no sense
+                            return ignore::WalkState::Continue;
+                        }
+                    }
+                    Err(err) => {
+                        print_error(format!("Cannot canonicalize {entry_path:?}. {err}."));
+                    }
                 }
             }
 
