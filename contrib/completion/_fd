@@ -26,6 +26,8 @@ _fd() {
     {l,symlink}'\:"symbolic links"'
     {e,empty}'\:"empty files or directories"'
     {x,executable}'\:"executable (files)"'
+    {b,block-device}'\:"block devices"'
+    {c,char-device}'\:"character devices"'
     {s,socket}'\:"sockets"'
     {p,pipe}'\:"named pipes (FIFOs)"'
   )
