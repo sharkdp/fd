@@ -313,6 +313,8 @@ pub struct Opts {
     /// {n}  'l' or 'symlink':      symbolic links
     /// {n}  's' or 'socket':       socket
     /// {n}  'p' or 'pipe':         named pipe (FIFO)
+    /// {n}  'b' or 'block-device': block device
+    /// {n}  'c' or 'char-device':  character device
     /// {n}{n}  'x' or 'executable':   executables
     /// {n}  'e' or 'empty':        empty files or directories
     ///
@@ -346,7 +348,8 @@ pub struct Opts {
         hide_possible_values = true,
         value_enum,
         help = "Filter by type: file (f), directory (d), symlink (l), \
-                executable (x), empty (e), socket (s), pipe (p)",
+                executable (x), empty (e), socket (s), pipe (p), \
+                char-device (c), block-device (b)",
         long_help
     )]
     pub filetype: Option<Vec<FileType>>,
@@ -720,6 +723,10 @@ pub enum FileType {
     Directory,
     #[value(alias = "l")]
     Symlink,
+    #[value(alias = "b")]
+    BlockDevice,
+    #[value(alias = "c")]
+    CharDevice,
     /// A file which is executable by the current effective user
     #[value(alias = "x")]
     Executable,

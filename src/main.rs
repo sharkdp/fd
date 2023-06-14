@@ -269,6 +269,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
                         file_types.files = true;
                     }
                     Empty => file_types.empty_only = true,
+                    BlockDevice => file_types.block_devices = true,
+                    CharDevice => file_types.char_devices = true,
                     Socket => file_types.sockets = true,
                     Pipe => file_types.pipes = true,
                 }

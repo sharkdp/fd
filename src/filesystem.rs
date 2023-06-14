@@ -60,6 +60,26 @@ pub fn is_empty(entry: &dir_entry::DirEntry) -> bool {
 }
 
 #[cfg(any(unix, target_os = "redox"))]
+pub fn is_block_device(ft: fs::FileType) -> bool {
+    ft.is_block_device()
+}
+
+#[cfg(windows)]
+pub fn is_block_device(_: fs::FileType) -> bool {
+    false
+}
+
+#[cfg(any(unix, target_os = "redox"))]
+pub fn is_char_device(ft: fs::FileType) -> bool {
+    ft.is_char_device()
+}
+
+#[cfg(windows)]
+pub fn is_char_device(_: fs::FileType) -> bool {
+    false
+}
+
+#[cfg(any(unix, target_os = "redox"))]
 pub fn is_socket(ft: fs::FileType) -> bool {
     ft.is_socket()
 }
