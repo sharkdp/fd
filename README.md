@@ -599,19 +599,14 @@ xbps-install -S fd
 
 ### On RedHat Enterprise Linux 8 (RHEL8), Almalinux 8, EuroLinux 8 or Rocky Linux 8
 
-Get the latest fd-v*-x86_64-unknown-linux-gnu.tar.gz file from [sharkdp on github](https://github.com/sharkdp/fd/releases)
+You can install [the `fd` package](https://copr.fedorainfracloud.org/coprs/tkbcopr/fd/) from Fedora Copr.
+
+```bash
+dnf copr enable tkbcopr/fd
+dnf install fd
 ```
-tar xf fd-v*-x86_64-unknown-linux-gnu.tar.gz
-chown -R root:root fd-v*-x86_64-unknown-linux-gnu
-cd fd-v*-x86_64-unknown-linux-gnu
-sudo cp fd /bin
-gzip fd.1
-chown root:root fd.1.gz
-sudo cp fd.1.gz /usr/share/man/man1
-sudo cp autocomplete/fd.bash /usr/share/bash-completion/completions/fd
-source /usr/share/bash-completion/completions/fd
-fd
-```
+
+A different version using the [slower](https://github.com/sharkdp/fd/pull/481#issuecomment-534494592) malloc [instead of jemalloc](https://bugzilla.redhat.com/show_bug.cgi?id=2216193#c1) is also available from the EPEL8 repo.
 
 ### On macOS
 
