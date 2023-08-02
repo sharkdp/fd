@@ -329,7 +329,7 @@ dependencies = [
  "lscolors",
  "nix 0.26.2",
  "normpath",
- "nu-ansi-term 0.47.0",
+ "nu-ansi-term",
  "num_cpus",
  "regex",
  "regex-syntax",
@@ -547,7 +547,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bf7015a04103ad78abb77e4b79ed151e767922d1cfde5f62640471c629a2320d"
 dependencies = [
- "nu-ansi-term 0.49.0",
+ "nu-ansi-term",
 ]
 
 [[package]]
@@ -586,15 +586,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec60c60a693226186f5d6edf073232bfb6464ed97eb22cf3b01c1e8198fd97f5"
 dependencies = [
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "nu-ansi-term"
-version = "0.47.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1df031e117bca634c262e9bd3173776844b6c17a90b3741c9163663b4385af76"
-dependencies = [
- "windows-sys 0.45.0",
 ]
 
 [[package]]
