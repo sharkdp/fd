@@ -34,7 +34,7 @@ path = "src/main.rs"
 version_check = "0.9"
 
 [dependencies]
-nu-ansi-term = "0.47"
+nu-ansi-term = "0.49"
 argmax = "0.3.1"
 ignore = "0.4.20"
 num_cpus = "1.16"
