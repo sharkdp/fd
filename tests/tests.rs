@@ -76,6 +76,14 @@ fn test_simple() {
     );
 }
 
+static AND_QUOTE_FILES: &[&str] = &[
+    "one'two.quo",
+    "one two.quo",
+    "one\"two.quo",
+    "one$two.quo",
+    "one'two$.quo",
+];
+
 static AND_EXTRA_FILES: &[&str] = &[
     "a.foo",
     "one/b.foo",
@@ -2524,6 +2532,20 @@ fn test_strip_cwd_prefix() {
         one/two/three/d.foo
         one/two/three/directory_foo/
         symlink",
+    );
+}
+
+#[test]
+fn test_quoting() {
+    let te = TestEnv::new(DEFAULT_DIRS, AND_QUOTE_FILES);
+
+    te.assert_output(
+        &["--quote", ".quo"],
+        "'one two.quo'
+        \"one'two.quo\"
+        \"one'two\\$.quo\"
+        'one\"two.quo'
+        'one$two.quo'",
     );
 }
 
