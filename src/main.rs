@@ -249,6 +249,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         one_file_system: opts.one_file_system,
         null_separator: opts.null_separator,
         quiet: opts.quiet,
+        use_quoting: opts.use_quoting,
         max_depth: opts.max_depth(),
         min_depth: opts.min_depth(),
         prune: opts.prune,

@@ -621,6 +621,14 @@ pub struct Opts {
     #[arg(long, aliases(&["mount", "xdev"]), hide_short_help = true, long_help)]
     pub one_file_system: bool,
 
+    /// By default we output matched files/dirs raw. When the user specifies
+    /// --quote we output the files wrapped in quotes per the rules laid out
+    /// in coreutils: https://www.gnu.org/software/coreutils/quotes.html
+    /// This should mimic the `ls -lsa` output style
+    #[cfg(any(unix, windows))]
+    #[arg(long, aliases(&["quote"]), hide_short_help = true, long_help)]
+    pub use_quoting: bool,
+
     #[cfg(feature = "completions")]
     #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
