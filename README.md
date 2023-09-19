@@ -488,16 +488,17 @@ In emacs, run `M-x find-file-in-project-by-selected` to find matching files. Alt
 
 ### Printing the output as a tree
 
-To format the output of `fd` similar to the `tree` command, install [`as-tree`] and pipe the output
-of `fd` to `as-tree`:
+To format the output of `fd` as a file-tree you can use the `tree` command with
+`--fromfile`:
 ```bash
-fd | as-tree
+❯ fd | tree --fromfile
 ```
 
-This can be more useful than running `tree` by itself because `tree` does not ignore any files by
-default, nor does it support as rich a set of options as `fd` does to control what to print:
+This can be more useful than running `tree` by itself because `tree` does not
+ignore any files by default, nor does it support as rich a set of options as
+`fd` does to control what to print:
 ```bash
-❯ fd --extension rs | as-tree
+❯ fd --extension rs | tree --fromfile
 .
 ├── build.rs
 └── src
@@ -505,9 +506,10 @@ default, nor does it support as rich a set of options as `fd` does to control wh
     └── error.rs
 ```
 
-For more information about `as-tree`, see [the `as-tree` README][`as-tree`].
-
-[`as-tree`]: https://github.com/jez/as-tree
+On bash and similar you can simply create an alias:
+```bash
+❯ alias as-tree='tree --fromfile'
+```
 
 ### Using fd with `xargs` or `parallel`
 
