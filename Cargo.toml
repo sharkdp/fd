@@ -75,7 +75,7 @@ libc = "0.2"
 # jemalloc is currently disabled on macOS due to a bug in jemalloc in combination with macOS
 # Catalina. See https://github.com/sharkdp/fd/issues/498 for details.
 [target.'cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_os = "freebsd"), not(target_os = "openbsd"), not(all(target_env = "musl", target_pointer_width = "32")), not(target_arch = "riscv64")))'.dependencies]
-jemallocator = {version = "0.5.0", optional = true}
+jemallocator = {version = "0.5.4", optional = true}
 
 [dev-dependencies]
 diff = "0.1"
