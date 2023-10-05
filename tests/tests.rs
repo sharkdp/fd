@@ -2384,6 +2384,11 @@ fn test_max_results() {
     };
     assert_just_one_result_with_option("--max-results=1");
     assert_just_one_result_with_option("-1");
+
+    // check that --max-results & -1 conflic with --exec
+    te.assert_failure(&["thing", "--max-results=0", "--exec=cat"]);
+    te.assert_failure(&["thing", "-1", "--exec=cat"]);
+    te.assert_failure(&["thing", "--max-results=1", "-1", "--exec=cat"]);
 }
 
 /// Filenames with non-utf8 paths are passed to the executed program unchanged
