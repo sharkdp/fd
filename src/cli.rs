@@ -26,7 +26,7 @@ use crate::filter::SizeFilter;
     max_term_width = 98,
     args_override_self = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
-            "max_results", "has_results", "count", "max_one_result"])),
+            "max_results", "quiet", "max_one_result"])),
 )]
 pub struct Opts {
     /// Include hidden directories and files in the search results (default:
