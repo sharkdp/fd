@@ -70,7 +70,7 @@ pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -
     if config.read_vcsignore {
         override_builder
             .add("!.git")
-            .map_err(|e| anyhow!("Malformed default exclude pattern: {}", e))?;
+            .expect("Invalid exclude pattern");
     }
 
     let overrides = override_builder
