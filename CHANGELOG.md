@@ -1,10 +1,11 @@
-# Upcoming Release
+# v8.7.1
 
 ## Bugfixes
 
 - `-1` properly conflicts with the exec family of options.
 - `--max-results` overrides `-1`
 - `--quiet` properly conflicts with the exec family of options. This used to be the case, but broke during the switch to clap-derive
+- `--changed-within` now accepts a space as well as a "T" as the separator between date and time (due to update of chrono dependency)
 
 ## Other
 - Many dependencies were updated
