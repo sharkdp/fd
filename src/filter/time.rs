@@ -1,4 +1,4 @@
-use chrono::{offset::TimeZone, DateTime, Local, NaiveDate};
+use chrono::{DateTime, Local, NaiveDate, NaiveDateTime};
 
 use std::time::SystemTime;
 
@@ -20,11 +20,17 @@ impl TimeFilter {
                     .ok()
                     .or_else(|| {
                         NaiveDate::parse_from_str(s, "%F")
-                            .ok()
-                            .and_then(|nd| nd.and_hms_opt(0, 0, 0))
-                            .and_then(|ndt| Local.from_local_datetime(&ndt).single())
+                            .ok()?
+                            .and_hms_opt(0, 0, 0)?
+                            .and_local_timezone(Local)
+                            .latest()
                     })
-                    .or_else(|| Local.datetime_from_str(s, "%F %T").ok())
+                    .or_else(|| {
+                        NaiveDateTime::parse_from_str(s, "%F %T")
+                            .ok()?
+                            .and_local_timezone(Local)
+                            .latest()
+                    })
                     .map(|dt| dt.into())
             })
     }
@@ -52,8 +58,10 @@ mod tests {
 
     #[test]
     fn is_time_filter_applicable() {
-        let ref_time = Local
-            .datetime_from_str("2010-10-10 10:10:10", "%F %T")
+        let ref_time = NaiveDateTime::parse_from_str("2010-10-10 10:10:10", "%F %T")
+            .unwrap()
+            .and_local_timezone(Local)
+            .latest()
             .unwrap()
             .into();
 
