@@ -1,16 +1,14 @@
 # Upcoming Release
 
-## Features
-
 ## Bugfixes
 
 - `-1` properly conflicts with the exec family of options.
 - `--max-results` overrides `-1`
 - `--quiet` properly conflicts with the exec family of options. This used to be the case, but broke during the switch to clap-derive
 
-## Changes
-
 ## Other
+- Many dependencies were updated
+- Some documentation was updated and fixed
 
 # v8.7.0
 
