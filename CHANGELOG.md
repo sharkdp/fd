@@ -1,5 +1,8 @@
 # v8.7.1
 
+- Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or 
+  `--no-ignore-vcs` to override, see #1387 and #1396 (@skoriop)
+
 ## Bugfixes
 
 - `-1` properly conflicts with the exec family of options.

@@ -66,6 +66,13 @@ pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -
             .add(pattern)
             .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
     }
+
+    if config.read_vcsignore {
+        override_builder
+            .add("!.git")
+            .expect("Invalid exclude pattern");
+    }
+
     let overrides = override_builder
         .build()
         .map_err(|_| anyhow!("Mismatch in exclude patterns"))?;
