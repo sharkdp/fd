@@ -1,7 +1,17 @@
-# v8.7.1
+# Upcoming release
 
-- Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or 
+## Features
+
+- Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or
   `--no-ignore-vcs` to override, see #1387 and #1396 (@skoriop)
+
+## Bugfixes
+
+## Changes
+
+## Other
+
+# v8.7.1
 
 ## Bugfixes
 
