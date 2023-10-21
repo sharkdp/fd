@@ -291,7 +291,7 @@ checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
 name = "fd-find"
 version = "8.7.1"
 dependencies = [
- "aho-corasick 1.0.1",
+ "aho-corasick",
  "anyhow",
  "argmax",
  "chrono",
