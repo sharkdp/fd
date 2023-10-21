@@ -840,7 +840,8 @@ impl clap::Args for Exec {
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
                        '{/.}': basename without file extension\n  \
-                       '{{}':  literal '{' (for escaping)\n\n\
+                       '{{':   literal '{' (for escaping)\n  \
+                       '}}':   literal '}' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
                      Examples:\n\n  \
                        - Find all test_*.py files and open them in your favorite editor:\n\n      \
