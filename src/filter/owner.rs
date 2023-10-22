@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use nix::unistd::{Group, User};
 use std::fs;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -35,16 +36,22 @@ impl OwnerFilter {
         }
 
         let uid = Check::parse(fst, |s| {
-            s.parse()
-                .ok()
-                .or_else(|| users::get_user_by_name(s).map(|user| user.uid()))
-                .ok_or_else(|| anyhow!("'{}' is not a recognized user name", s))
+            if let Ok(uid) = s.parse() {
+                Ok(uid)
+            } else {
+                User::from_name(s)?
+                    .map(|user| user.uid.as_raw())
+                    .ok_or_else(|| anyhow!("'{}' is not a recognized user name", s))
+            }
         })?;
         let gid = Check::parse(snd, |s| {
-            s.parse()
-                .ok()
-                .or_else(|| users::get_group_by_name(s).map(|group| group.gid()))
-                .ok_or_else(|| anyhow!("'{}' is not a recognized group name", s))
+            if let Ok(gid) = s.parse() {
+                Ok(gid)
+            } else {
+                Group::from_name(s)?
+                    .map(|group| group.gid.as_raw())
+                    .ok_or_else(|| anyhow!("'{}' is not a recognized group name", s))
+            }
         })?;
 
         Ok(OwnerFilter { uid, gid })
