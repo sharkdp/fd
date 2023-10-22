@@ -32,6 +32,8 @@ pub struct Opts {
     /// Include hidden directories and files in the search results (default:
     /// hidden files and directories are skipped). Files and directories are
     /// considered to be hidden if their name starts with a `.` sign (dot).
+    /// Any files or directories that are ignored due to the rules described by
+    /// --no-ignore are still ignored unless otherwise specified.
     /// The flag can be overridden with --no-hidden.
     #[arg(
         long,
@@ -46,7 +48,8 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
+    /// ignored by '.gitignore', '.ignore', '.fdignore', the global ignore file,
+    /// or the rule to exclude .git/.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
@@ -61,7 +64,8 @@ pub struct Opts {
     ignore: (),
 
     ///Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore' files. The flag can be overridden with --ignore-vcs.
+    /// ignored by '.gitignore' files or the rule to exclude .git/.
+    /// The flag can be overridden with --ignore-vcs.
     #[arg(
         long,
         hide_short_help = true,

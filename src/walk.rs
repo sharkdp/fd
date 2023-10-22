@@ -69,7 +69,7 @@ pub fn scan(paths: &[PathBuf], patterns: Arc<Vec<Regex>>, config: Arc<Config>) -
 
     if config.read_vcsignore {
         override_builder
-            .add("!.git")
+            .add("!.git/")
             .expect("Invalid exclude pattern");
     }
 
