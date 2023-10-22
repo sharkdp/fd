@@ -29,11 +29,22 @@ By default
 .B fd
 uses regular expressions for the pattern. However, this can be changed to use simple glob patterns
 with the '\-\-glob' option.
+.P
+By default
+.B fd
+will exclude hidden files and directories, as well as any files that match gitignore rules
+or ignore rules in .ignore or .fdignore files. For convenenience, '.git' is treated as if it
+was always included in gitignore rules. These files can be included with options such as
+'\-\-hidden' and '\-\-no\-ignore'.
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
 Include hidden files and directories in the search results
 (default: hidden files and directories are skipped). The flag can be overridden with '--no-hidden'.
+.IP
+Ignored files and .git/ are still excluded unless \-\-no\-ignore or \-\-no\-ignore\-vcs
+is also used. The .git directory is excluded, because that is usually what is wanted if excluding vcs
+ignored files, and is more consistent with the output of most git commands.
 .TP
 .B \-I, \-\-no\-ignore
 Show search results from files and directories that would otherwise be ignored by
@@ -69,6 +80,7 @@ and the global gitignore configuration
 .RI ( core.excludesFile
 git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
+The pattern ".git/" is automatically added to the list of VCS ignore rules.
 The flag can be overridden with '--ignore-vcs'.
 .TP
 .B \-\-no\-require\-git
