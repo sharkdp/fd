@@ -2559,8 +2559,14 @@ fn test_invalid_cwd() {
 #[test]
 fn test_git_dir() {
     let te = TestEnv::new(
-        &[".git/one"],
-        &[".git/one/foo.a", ".git/.foo", ".git/a.foo"],
+        &[".git/one", "other_dir/.git", "nested/dir/.git"],
+        &[
+            ".git/one/foo.a",
+            ".git/.foo",
+            ".git/a.foo",
+            "other_dir/.git/foo1",
+            "nested/dir/.git/foo2",
+        ],
     );
 
     te.assert_output(&["--hidden", "foo"], "");
@@ -2569,12 +2575,16 @@ fn test_git_dir() {
         &["--hidden", "--no-ignore", "foo"],
         ".git/one/foo.a
          .git/.foo
-         .git/a.foo",
+         .git/a.foo
+         other_dir/.git/foo1
+         nested/dir/.git/foo2",
     );
     te.assert_output(
         &["--hidden", "--no-ignore-vcs", "foo"],
         ".git/one/foo.a
          .git/.foo
-         .git/a.foo",
+         .git/a.foo
+         other_dir/.git/foo1
+         nested/dir/.git/foo2",
     );
 }
