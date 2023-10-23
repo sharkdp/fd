@@ -804,6 +804,7 @@ impl clap::Args for Exec {
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
+                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
                      It is therefore recommended to place the '-x'/'--exec' option last.\n\
                      The following placeholders are substituted before the command is executed:\n  \
@@ -838,6 +839,7 @@ impl clap::Args for Exec {
                 .help("Execute a command with all search results at once")
                 .long_help(
                     "Execute the given command once, with all search results as arguments.\n\
+                     The order of the arguments is non-deterministic, and should not be relied upon.\n\
                      One of the following placeholders is substituted before the command is executed:\n  \
                        '{}':   path (of all search results)\n  \
                        '{/}':  basename\n  \
