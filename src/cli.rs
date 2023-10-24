@@ -49,7 +49,7 @@ pub struct Opts {
 
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', '.fdignore', the global ignore file,
-    /// or the default rule tthat excludes .git/.
+    /// or the default rule that excludes .git/.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
@@ -226,7 +226,7 @@ pub struct Opts {
         alias = "dereference",
         long_help = "By default, fd does not descend into symlinked directories. Using this \
                      flag, symbolic links are also traversed. \
-                     Flag can be overriden with --no-follow."
+                     Flag can be overridden with --no-follow."
     )]
     pub follow: bool,
 

@@ -48,7 +48,7 @@ pub(super) fn tokenize(input: &str) -> ArgumentTemplate {
             0 | 1 => {
                 // we found an escaped {{ or }}, so add
                 // everything up to the first char to the buffer
-                // then skipp the second one.
+                // then skip the second one.
                 buf += &remaining[..m.start() + BRACE_LEN];
                 remaining = &remaining[m.end()..];
             }
