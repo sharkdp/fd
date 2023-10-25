@@ -600,7 +600,7 @@ You can install `fd` via xbps-install:
 xbps-install -S fd
 ```
 
-### On RedHat Enterprise Linux 8 (RHEL8), Almalinux 8, EuroLinux 8 or Rocky Linux 8
+### On RedHat Enterprise Linux 8/9 (RHEL8/9), Almalinux 8/9, EuroLinux 8/9 or Rocky Linux 8/9
 
 You can install [the `fd` package](https://copr.fedorainfracloud.org/coprs/tkbcopr/fd/) from Fedora Copr.
 
@@ -609,7 +609,7 @@ dnf copr enable tkbcopr/fd
 dnf install fd
 ```
 
-A different version using the [slower](https://github.com/sharkdp/fd/pull/481#issuecomment-534494592) malloc [instead of jemalloc](https://bugzilla.redhat.com/show_bug.cgi?id=2216193#c1) is also available from the EPEL8 repo.
+A different version using the [slower](https://github.com/sharkdp/fd/pull/481#issuecomment-534494592) malloc [instead of jemalloc](https://bugzilla.redhat.com/show_bug.cgi?id=2216193#c1) is also available from the EPEL8/9 repo as the package `fd-find`.
 
 ### On macOS
 
