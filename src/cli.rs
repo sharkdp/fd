@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -693,11 +694,9 @@ impl Opts {
         // unlikely fd will be running in such an environment, and even more unlikely someone would
         // be trying to use that many threads on such an environment, so I think panicing is an
         // appropriate way to handle that.
-        std::cmp::max(
-            self.threads
-                .map_or_else(num_cpus::get, |n| n.try_into().expect("too many threads")),
-            1,
-        )
+        self.threads.map_or_else(default_num_threads, |n| {
+            std::cmp::max(n.try_into().expect("too many threads"), 1)
+        })
     }
 
     pub fn max_results(&self) -> Option<usize> {
@@ -717,6 +716,16 @@ impl Opts {
             })
             .transpose()
     }
+}
+
+/// Get the default number of threads to use, if not explicitly specified.
+fn default_num_threads() -> usize {
+    // If we can't get the amount of parallelism for some reason, then
+    // default to a single thread, because that is safe.
+    const FALLBACK_PARALLELISM: NonZeroUsize = NonZeroUsize::MIN;
+    std::thread::available_parallelism()
+        .unwrap_or(FALLBACK_PARALLELISM)
+        .get()
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
