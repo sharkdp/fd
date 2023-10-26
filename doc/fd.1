@@ -223,7 +223,8 @@ Searching for '--type file --type symlink' will show both regular files as well 
 symlinks. Note that the 'executable' and 'empty' filters work differently: '--type
 executable' implies '--type file' by default. And '--type empty' searches for
 empty files and directories, unless either '--type file' or '--type directory' is
-specified in addition.
+specified in addition to search for that type only, or '--type symlink' is
+specified in addition to search for dead symlinks.
 
 Examples:
   - Only search for files:
@@ -241,6 +242,9 @@ Examples:
   - Find empty directories:
       fd --type empty --type directory
       fd -te -td
+  - Find dead symlinks:
+      fd --type empty --type symlink
+      fd -te -tl
 .RE
 .TP
 .BI "\-e, \-\-extension " ext

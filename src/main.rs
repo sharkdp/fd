@@ -287,7 +287,9 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
             }
 
             // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
+            if file_types.empty_only
+                && !(file_types.files || file_types.directories || file_types.symlinks)
+            {
                 file_types.files = true;
                 file_types.directories = true;
             }

@@ -5,7 +5,7 @@ use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::FileTypeExt;
-use std::path::{Path, PathBuf};
+use std::path::{Path, PathBuf, MAIN_SEPARATOR_STR};
 
 use normpath::PathExt;
 
@@ -51,6 +51,17 @@ pub fn is_empty(entry: &dir_entry::DirEntry) -> bool {
             }
         } else if file_type.is_file() {
             entry.metadata().map(|m| m.len() == 0).unwrap_or(false)
+        } else if file_type.is_symlink() {
+            if let Ok(target) = entry.path().read_link() {
+                let full_target = entry
+                    .path()
+                    .parent()
+                    .unwrap_or(Path::new(MAIN_SEPARATOR_STR))
+                    .join(target);
+                !full_target.exists()
+            } else {
+                false
+            }
         } else {
             false
         }

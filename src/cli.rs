@@ -328,7 +328,8 @@ pub struct Opts {
     /// well as symlinks. Note that the 'executable' and 'empty' filters work differently:
     /// '--type executable' implies '--type file' by default. And '--type empty' searches
     /// for empty files and directories, unless either '--type file' or '--type directory'
-    /// is specified in addition.
+    /// is specified in addition to search for that type only, or '--type symlink' is
+    /// specified in addition to search for dead symlinks.
     ///
     /// Examples:
     /// {n}  - Only search for files:
@@ -346,6 +347,9 @@ pub struct Opts {
     /// {n}  - Find empty directories:
     /// {n}      fd --type empty --type directory
     /// {n}      fd -te -td
+    /// {n}  - Find dead symlinks:
+    /// {n}      fd --type empty --type symlink
+    /// {n}      fd -te -tl
     #[arg(
         long = "type",
         short = 't',
