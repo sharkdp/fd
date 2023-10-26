@@ -5,9 +5,13 @@
 - Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or
   `--no-ignore-vcs` to override, see #1387 and #1396 (@skoriop)
 
+
 ## Bugfixes
 
 ## Changes
+
+- The default number of threads is now constrained to be at most 16. This should improve startup time on
+  systems with many CPU cores. (#1203)
 
 ## Other
 
