@@ -103,7 +103,7 @@ fn run() -> Result<ExitCode> {
         .map(|pat| build_regex(pat, &config))
         .collect::<Result<Vec<Regex>>>()?;
 
-    walk::scan(&search_paths, Arc::new(regexps), Arc::new(config))
+    walk::scan(&search_paths, regexps, config)
 }
 
 #[cfg(feature = "completions")]
