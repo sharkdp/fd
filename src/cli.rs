@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -497,8 +498,8 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = clap::value_parser!(u32).range(1..))]
-    pub threads: Option<u32>,
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
     ///
@@ -687,17 +688,8 @@ impl Opts {
         self.min_depth.or(self.exact_depth)
     }
 
-    pub fn threads(&self) -> usize {
-        // This will panic if the number of threads passed in is more than usize::MAX in an environment
-        // where usize is less than 32 bits (for example 16-bit architectures). It's pretty
-        // unlikely fd will be running in such an environment, and even more unlikely someone would
-        // be trying to use that many threads on such an environment, so I think panicing is an
-        // appropriate way to handle that.
-        std::cmp::max(
-            self.threads
-                .map_or_else(num_cpus::get, |n| n.try_into().expect("too many threads")),
-            1,
-        )
+    pub fn threads(&self) -> NonZeroUsize {
+        self.threads.unwrap_or_else(default_num_threads)
     }
 
     pub fn max_results(&self) -> Option<usize> {
@@ -717,6 +709,17 @@ impl Opts {
             })
             .transpose()
     }
+}
+
+/// Get the default number of threads to use, if not explicitly specified.
+fn default_num_threads() -> NonZeroUsize {
+    // If we can't get the amount of parallelism for some reason, then
+    // default to a single thread, because that is safe.
+    // Note that the minimum value for a NonZeroUsize is 1.
+    // Unfortunately, we can't do `NonZeroUsize::new(1).unwrap()`
+    // in a const context.
+    const FALLBACK_PARALLELISM: NonZeroUsize = NonZeroUsize::MIN;
+    std::thread::available_parallelism().unwrap_or(FALLBACK_PARALLELISM)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]

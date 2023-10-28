@@ -252,7 +252,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         max_depth: opts.max_depth(),
         min_depth: opts.min_depth(),
         prune: opts.prune,
-        threads: opts.threads(),
+        threads: opts.threads().get(),
         max_buffer_time: opts.max_buffer_time,
         ls_colors,
         interactive_terminal,
