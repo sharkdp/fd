@@ -719,7 +719,20 @@ fn default_num_threads() -> NonZeroUsize {
     // Unfortunately, we can't do `NonZeroUsize::new(1).unwrap()`
     // in a const context.
     const FALLBACK_PARALLELISM: NonZeroUsize = NonZeroUsize::MIN;
-    std::thread::available_parallelism().unwrap_or(FALLBACK_PARALLELISM)
+    // As the number of threads increases, the startup time suffers from
+    // initializing the threads, and we get diminishing returns from additional
+    // parallelism. So set a maximum number of threads to use by default.
+    //
+    // This value is based on some empirical observations, but the ideal value
+    // probably depends on the exact hardware in use.
+    //
+    // Safety: The literal "20" is known not to be zero.
+    const MAX_DEFAULT_THREADS: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(20) };
+
+    std::cmp::min(
+        std::thread::available_parallelism().unwrap_or(FALLBACK_PARALLELISM),
+        MAX_DEFAULT_THREADS,
+    )
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
