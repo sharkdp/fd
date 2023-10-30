@@ -3,10 +3,9 @@ use std::sync::Mutex;
 use crossbeam_channel::Receiver;
 
 use crate::config::Config;
-use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
-use crate::walk::WorkerResult;
+use crate::walk::{WorkerMsg, WorkerResult};
 
 use super::CommandSet;
 
@@ -14,7 +13,7 @@ use super::CommandSet;
 /// generate a command with the supplied command template. The generated command will then
 /// be executed, and this process will continue until the receiver's sender has closed.
 pub fn job(
-    rx: Receiver<WorkerResult>,
+    rx: Receiver<WorkerMsg>,
     cmd: &CommandSet,
     out_perm: &Mutex<()>,
     config: &Config,
@@ -26,7 +25,8 @@ pub fn job(
     loop {
         // Obtain the next result from the receiver, else if the channel
         // has closed, exit from the loop
-        let dir_entry: DirEntry = match rx.recv() {
+        let result = rx.recv().map(WorkerMsg::take);
+        let dir_entry = match result {
             Ok(WorkerResult::Entry(dir_entry)) => dir_entry,
             Ok(WorkerResult::Error(err)) => {
                 if config.show_filesystem_errors {
@@ -49,18 +49,19 @@ pub fn job(
     merge_exitcodes(results)
 }
 
-pub fn batch(rx: Receiver<WorkerResult>, cmd: &CommandSet, config: &Config) -> ExitCode {
-    let paths = rx
-        .into_iter()
-        .filter_map(|worker_result| match worker_result {
-            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
-            WorkerResult::Error(err) => {
-                if config.show_filesystem_errors {
-                    print_error(err.to_string());
+pub fn batch(rx: Receiver<WorkerMsg>, cmd: &CommandSet, config: &Config) -> ExitCode {
+    let paths =
+        rx.into_iter()
+            .map(WorkerMsg::take)
+            .filter_map(|worker_result| match worker_result {
+                WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
+                WorkerResult::Error(err) => {
+                    if config.show_filesystem_errors {
+                        print_error(err.to_string());
+                    }
+                    None
                 }
-                None
-            }
-        });
+            });
 
     cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
 }

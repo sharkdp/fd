@@ -9,7 +9,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
-use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender};
+use crossbeam_channel::{unbounded, Receiver, RecvTimeoutError, Sender};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{self, WalkBuilder, WalkParallel, WalkState};
@@ -43,6 +43,77 @@ pub enum WorkerResult {
     Error(ignore::Error),
 }
 
+/// Storage for a  WorkerResult.
+type ResultBox = Box<Option<WorkerResult>>;
+
+/// A WorkerResult that recycles itself.
+pub struct WorkerMsg {
+    inner: Option<ResultBox>,
+    tx: Sender<ResultBox>,
+}
+
+impl WorkerMsg {
+    /// Create a new message.
+    fn new(inner: ResultBox, tx: Sender<ResultBox>) -> Self {
+        Self {
+            inner: Some(inner),
+            tx,
+        }
+    }
+
+    /// Extract the result from this message.
+    pub fn take(mut self) -> WorkerResult {
+        self.inner.as_mut().unwrap().take().unwrap()
+    }
+}
+
+impl Drop for WorkerMsg {
+    fn drop(&mut self) {
+        let _ = self.tx.send(self.inner.take().unwrap());
+    }
+}
+
+/// A pool of WorkerResults that can be recycled.
+struct ResultPool {
+    size: usize,
+    tx: Sender<ResultBox>,
+    rx: Receiver<ResultBox>,
+}
+
+/// Capacity was chosen empircally to perform similarly to an unbounded channel
+const RESULT_POOL_CAPACITY: usize = 0x4000;
+
+impl ResultPool {
+    /// Create an empty pool.
+    fn new() -> Self {
+        let (tx, rx) = unbounded();
+
+        Self { size: 0, tx, rx }
+    }
+
+    /// Allocate or recycle a WorkerResult from the pool.
+    fn get(&mut self, result: WorkerResult) -> WorkerMsg {
+        let inner = if self.size < RESULT_POOL_CAPACITY {
+            match self.rx.try_recv() {
+                Ok(mut inner) => {
+                    *inner = Some(result);
+                    inner
+                }
+                Err(_) => {
+                    self.size += 1;
+                    Box::new(Some(result))
+                }
+            }
+        } else {
+            let mut inner = self.rx.recv().unwrap();
+            *inner = Some(result);
+            inner
+        };
+
+        WorkerMsg::new(inner, self.tx.clone())
+    }
+}
+
 /// Maximum size of the output buffer before flushing results to the console
 const MAX_BUFFER_LENGTH: usize = 1000;
 /// Default duration until output buffering switches to streaming.
@@ -56,8 +127,8 @@ struct ReceiverBuffer<'a, W> {
     quit_flag: &'a AtomicBool,
     /// The ^C notifier.
     interrupt_flag: &'a AtomicBool,
-    /// Receiver for worker results.
-    rx: Receiver<WorkerResult>,
+    /// Receiver for worker messages.
+    rx: Receiver<WorkerMsg>,
     /// Standard output.
     stdout: W,
     /// The current buffer mode.
@@ -72,7 +143,7 @@ struct ReceiverBuffer<'a, W> {
 
 impl<'a, W: Write> ReceiverBuffer<'a, W> {
     /// Create a new receiver buffer.
-    fn new(state: &'a WorkerState, rx: Receiver<WorkerResult>, stdout: W) -> Self {
+    fn new(state: &'a WorkerState, rx: Receiver<WorkerMsg>, stdout: W) -> Self {
         let config = &state.config;
         let quit_flag = state.quit_flag.as_ref();
         let interrupt_flag = state.interrupt_flag.as_ref();
@@ -104,7 +175,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Receive the next worker result.
     fn recv(&self) -> Result<WorkerResult, RecvTimeoutError> {
-        match self.mode {
+        let result = match self.mode {
             ReceiverMode::Buffering => {
                 // Wait at most until we should switch to streaming
                 self.rx.recv_deadline(self.deadline)
@@ -113,7 +184,8 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                 // Wait however long it takes for a result
                 Ok(self.rx.recv()?)
             }
-        }
+        };
+        result.map(WorkerMsg::take)
     }
 
     /// Wait for a result or state change.
@@ -319,7 +391,7 @@ impl WorkerState {
 
     /// Run the receiver work, either on this thread or a pool of background
     /// threads (for --exec).
-    fn receive(&self, rx: Receiver<WorkerResult>) -> ExitCode {
+    fn receive(&self, rx: Receiver<WorkerMsg>) -> ExitCode {
         let config = &self.config;
 
         // This will be set to `Some` if the `--exec` argument was supplied.
@@ -355,12 +427,13 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<WorkerResult>) {
+    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<WorkerMsg>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
             let tx = tx.clone();
+            let mut pool = ResultPool::new();
 
             Box::new(move |entry| {
                 if quit_flag.load(Ordering::Relaxed) {
@@ -387,20 +460,22 @@ impl WorkerState {
                             DirEntry::broken_symlink(path)
                         }
                         _ => {
-                            return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
+                            let result = pool.get(WorkerResult::Error(ignore::Error::WithPath {
                                 path,
                                 err: inner_err,
-                            })) {
+                            }));
+                            return match tx.send(result) {
                                 Ok(_) => WalkState::Continue,
                                 Err(_) => WalkState::Quit,
-                            }
+                            };
                         }
                     },
                     Err(err) => {
-                        return match tx.send(WorkerResult::Error(err)) {
+                        let result = pool.get(WorkerResult::Error(err));
+                        return match tx.send(result) {
                             Ok(_) => WalkState::Continue,
                             Err(_) => WalkState::Quit,
-                        }
+                        };
                     }
                 };
 
@@ -509,7 +584,8 @@ impl WorkerState {
                     }
                 }
 
-                let send_result = tx.send(WorkerResult::Entry(entry));
+                let result = pool.get(WorkerResult::Entry(entry));
+                let send_result = tx.send(result);
 
                 if send_result.is_err() {
                     return WalkState::Quit;
@@ -545,8 +621,7 @@ impl WorkerState {
             .unwrap();
         }
 
-        // Channel capacity was chosen empircally to perform similarly to an unbounded channel
-        let (tx, rx) = bounded(0x4000 * config.threads);
+        let (tx, rx) = unbounded();
 
         let exit_code = thread::scope(|scope| {
             // Spawn the receiver thread(s)
