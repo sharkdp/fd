@@ -340,6 +340,7 @@ dependencies = [
  "regex-syntax",
  "tempfile",
  "test-case",
+ "thread_local",
  "version_check",
 ]
 
@@ -797,6 +798,16 @@ dependencies = [
  "quote",
  "syn 2.0.38",
  "test-case-core",
+]
+
+[[package]]
+name = "thread_local"
+version = "1.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3fdd6f064ccff2d6567adcb3873ca630700f00b5ad3f060c25b5dcfd9a4ce152"
+dependencies = [
+ "cfg-if",
+ "once_cell",
 ]
 
 [[package]]

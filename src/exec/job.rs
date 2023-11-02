@@ -13,7 +13,7 @@ use super::CommandSet;
 /// generate a command with the supplied command template. The generated command will then
 /// be executed, and this process will continue until the receiver's sender has closed.
 pub fn job(
-    rx: Receiver<WorkerMsg>,
+    rx: Receiver<WorkerMsg<'_>>,
     cmd: &CommandSet,
     out_perm: &Mutex<()>,
     config: &Config,
@@ -49,7 +49,7 @@ pub fn job(
     merge_exitcodes(results)
 }
 
-pub fn batch(rx: Receiver<WorkerMsg>, cmd: &CommandSet, config: &Config) -> ExitCode {
+pub fn batch(rx: Receiver<WorkerMsg<'_>>, cmd: &CommandSet, config: &Config) -> ExitCode {
     let paths =
         rx.into_iter()
             .map(WorkerMsg::take)
