@@ -8,11 +8,13 @@ use lscolors::{Colorable, LsColors, Style};
 use crate::config::Config;
 use crate::filesystem::strip_current_dir;
 
+#[derive(Debug)]
 enum DirEntryInner {
     Normal(ignore::DirEntry),
     BrokenSymlink(PathBuf),
 }
 
+#[derive(Debug)]
 pub struct DirEntry {
     inner: DirEntryInner,
     metadata: OnceCell<Option<Metadata>>,
