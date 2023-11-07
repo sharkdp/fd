@@ -218,11 +218,13 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     let ansi_colors_support = true;
 
     let interactive_terminal = std::io::stdout().is_terminal();
+
     let colored_output = match opts.color {
         ColorWhen::Always => true,
         ColorWhen::Never => false,
         ColorWhen::Auto => {
-            ansi_colors_support && env::var_os("NO_COLOR").is_none() && interactive_terminal
+            let no_color = env::var_os("NO_COLOR").is_some_and(|x| !x.is_empty());
+            ansi_colors_support && !no_color && interactive_terminal
         }
     };
 

@@ -8,6 +8,8 @@
 
 ## Bugfixes
 
+- Fix `NO_COLOR` support, see #1421 (@acuteenvy)
+
 ## Changes
 
 - The default number of threads is now constrained to be at most 16. This should improve startup time on
