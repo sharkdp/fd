@@ -21,6 +21,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
+use crate::filter::{exif_geo_distance, GeoLocation};
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -500,6 +501,19 @@ impl WorkerState {
                     if !matched {
                         return WalkState::Continue;
                     }
+                }
+
+                let reference = GeoLocation {
+                    latitude: 47.3,
+                    longitude: 11.3,
+                };
+                let max_distance = 500.;
+                if let Some(distance) = exif_geo_distance(entry.path(), &reference) {
+                    if distance > max_distance {
+                        return WalkState::Continue;
+                    }
+                } else {
+                    return WalkState::Continue;
                 }
 
                 if config.is_printing() {

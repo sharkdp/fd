@@ -49,6 +49,7 @@ normpath = "1.1.1"
 crossbeam-channel = "0.5.8"
 clap_complete = {version = "4.4.4", optional = true}
 faccess = "0.2.4"
+kamadak-exif = "0.5.5"
 
 [patch.crates-io]
 ignore = { git = "https://github.com/tavianator/ripgrep", branch = "fd" }
