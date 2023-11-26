@@ -327,7 +327,7 @@ dependencies = [
  "etcetera",
  "faccess",
  "filetime",
- "globset 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "globset",
  "humantime",
  "ignore",
  "jemallocator",
@@ -356,28 +356,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "fnv"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
-
-[[package]]
 name = "globset"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "759c97c1e17c55525b57192c06a267cda0ac5210b222d6b82189a2338fa1c13d"
-dependencies = [
- "aho-corasick",
- "bstr",
- "fnv",
- "log",
- "regex",
-]
-
-[[package]]
-name = "globset"
-version = "0.4.13"
-source = "git+https://github.com/tavianator/ripgrep?branch=fd#43c6a11033ec5a66a73a1082ea71257e527d1de9"
+checksum = "57da3b9b5b85bd66f31093f8c408b90a74431672542466497dcbdfdc02034be1"
 dependencies = [
  "aho-corasick",
  "bstr",
@@ -432,11 +414,12 @@ dependencies = [
 
 [[package]]
 name = "ignore"
-version = "0.4.20"
-source = "git+https://github.com/tavianator/ripgrep?branch=fd#43c6a11033ec5a66a73a1082ea71257e527d1de9"
+version = "0.4.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "747ad1b4ae841a78e8aba0d63adbfbeaea26b517b63705d47856b73015d27060"
 dependencies = [
  "crossbeam-deque",
- "globset 0.4.13 (git+https://github.com/tavianator/ripgrep?branch=fd)",
+ "globset",
  "log",
  "memchr",
  "regex-automata",
