@@ -715,24 +715,14 @@ impl Opts {
 fn default_num_threads() -> NonZeroUsize {
     // If we can't get the amount of parallelism for some reason, then
     // default to a single thread, because that is safe.
-    // Note that the minimum value for a NonZeroUsize is 1.
-    // Unfortunately, we can't do `NonZeroUsize::new(1).unwrap()`
-    // in a const context.
-    const FALLBACK_PARALLELISM: NonZeroUsize = NonZeroUsize::MIN;
-    // As the number of threads increases, the startup time suffers from
-    // initializing the threads, and we get diminishing returns from additional
-    // parallelism. So set a maximum number of threads to use by default.
-    //
-    // This value is based on some empirical observations, but the ideal value
-    // probably depends on the exact hardware in use.
-    //
-    // Safety: The literal "20" is known not to be zero.
-    const MAX_DEFAULT_THREADS: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(20) };
+    let fallback = NonZeroUsize::MIN;
+    // To limit startup overhead on massively parallel machines, don't use more
+    // than 64 threads.
+    let limit = NonZeroUsize::new(64).unwrap();
 
-    std::cmp::min(
-        std::thread::available_parallelism().unwrap_or(FALLBACK_PARALLELISM),
-        MAX_DEFAULT_THREADS,
-    )
+    std::thread::available_parallelism()
+        .unwrap_or(fallback)
+        .min(limit)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
