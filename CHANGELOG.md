@@ -5,15 +5,17 @@
 - Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or
   `--no-ignore-vcs` to override, see #1387 and #1396 (@skoriop)
 
-
 ## Bugfixes
 
 - Fix `NO_COLOR` support, see #1421 (@acuteenvy)
 
 ## Changes
 
-- The default number of threads is now constrained to be at most 16. This should improve startup time on
-  systems with many CPU cores. (#1203)
+- Performance has been significantly improved, both due to optimizations in the underlying `ignore`
+  crate (#1429), and in `fd` itself (#1422).
+
+- The default number of threads is now constrained to be at most 64. This should improve startup time on
+  systems with many CPU cores. (#1203, #1412, #1431)
 
 ## Other
 
