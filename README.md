@@ -143,7 +143,7 @@ target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
 
 To really search *all* files and directories, simply combine the hidden and ignore features to show
-everything (`-HI`).
+everything (`-HI`) or use `-u`/`--unrestricted`.
 
 ### Matching the full path
 By default, *fd* only matches the filename of each file. However, using the `--full-path` or `-p` option,
@@ -406,9 +406,9 @@ for alternative, more complete (or more colorful) variants, see [here](https://g
 
 Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
 from `.gitignore` files. If you want to make sure to find absolutely every possible file, always
-use the options `-H` and `-I` to disable these two features:
+use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and ignored files):
 ``` bash
-> fd -HI …
+> fd -u …
 ```
 
 ### `fd` doesn't seem to interpret my regex pattern correctly
