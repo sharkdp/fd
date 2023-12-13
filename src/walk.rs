@@ -214,7 +214,6 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                                 }
                                 ReceiverMode::Streaming => {
                                     self.print(&dir_entry)?;
-                                    self.flush()?;
                                 }
                             }
 
@@ -231,6 +230,11 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             }
                         }
                     }
+                }
+
+                // If we don't have another batch ready, flush before waiting
+                if self.mode == ReceiverMode::Streaming && self.rx.is_empty() {
+                    self.flush()?;
                 }
             }
             Err(RecvTimeoutError::Timeout) => {
@@ -285,7 +289,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Flush stdout if necessary.
     fn flush(&mut self) -> Result<(), ExitCode> {
-        if self.config.interactive_terminal && self.stdout.flush().is_err() {
+        if self.stdout.flush().is_err() {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
