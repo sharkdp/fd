@@ -209,7 +209,7 @@ jobs:
 
         DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}
         DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }}-musl
-        case ${{ matrix.job.target }} in *-musl) DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-musl ; DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }} ;; esac;
+        case ${{ matrix.job.target }} in *-musl*) DPKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-musl ; DPKG_CONFLICTS=${{ needs.crate_metadata.outputs.name }} ;; esac;
         DPKG_VERSION=${{ needs.crate_metadata.outputs.version }}
 
         unset DPKG_ARCH
