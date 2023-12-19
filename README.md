@@ -373,6 +373,15 @@ also used in [ripgrep](https://github.com/BurntSushi/ripgrep) (check it out!).
 
 ## Troubleshooting
 
+### `fd` does not find my file!
+
+Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
+from `.gitignore` files. If you want to make sure to find absolutely every possible file, always
+use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and ignored files):
+``` bash
+> fd -u …
+```
+
 ### Colorized output
 
 `fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
@@ -385,15 +394,6 @@ for alternative, more complete (or more colorful) variants, see [here](https://g
 [here](https://github.com/trapd00r/LS_COLORS).
 
 `fd` also honors the [`NO_COLOR`](https://no-color.org/) environment variable.
-
-### `fd` does not find my file!
-
-Remember that `fd` ignores hidden directories and files by default. It also ignores patterns
-from `.gitignore` files. If you want to make sure to find absolutely every possible file, always
-use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and ignored files):
-``` bash
-> fd -u …
-```
 
 ### `fd` doesn't seem to interpret my regex pattern correctly
 
