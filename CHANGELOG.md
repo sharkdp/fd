@@ -1,7 +1,21 @@
-# Upcoming release
+# v9.0.0
+
+## Performance
+
+- Performance has been *significantly improved*, both due to optimizations in the underlying `ignore`
+  crate (#1429), and in `fd` itself (#1422, #1408, #13620) - @tavianator.
+  [Benchmarks results](https://gist.github.com/tavianator/32edbe052f33ef60570cf5456b59de81) show gains
+  of 6-8x for full traversals of smaller directories (100k files) and up to 13x for larger directories (1M files).
+
+- The default number of threads is now constrained to be at most 64. This should improve startup time on
+  systems with many CPU cores. (#1203, #1410, #1412, #1431) - @tmccombs and @tavianator
+
+- New flushing behavior when writing output to stdout, providing better performance for TTY and non-TTY
+  use cases, see #1452 and #1313 (@tavianator).
 
 ## Features
 
+- Support character and block device file types, see #1213 and #1336 (@cgzones)
 - Breaking: `.git/` is now ignored by default when using `--hidden` / `-H`, use `--no-ignore` / `-I` or
   `--no-ignore-vcs` to override, see #1387 and #1396 (@skoriop)
 
@@ -9,15 +23,15 @@
 
 - Fix `NO_COLOR` support, see #1421 (@acuteenvy)
 
-## Changes
-
-- Performance has been significantly improved, both due to optimizations in the underlying `ignore`
-  crate (#1429), and in `fd` itself (#1422).
-
-- The default number of threads is now constrained to be at most 64. This should improve startup time on
-  systems with many CPU cores. (#1203, #1412, #1431)
-
 ## Other
+
+- Fixed documentation typos, see #1409 (@marcospb19)
+
+## Thanks
+
+Special thanks to @tavianator for his incredible work on performance in the `ignore` crate and `fd` itself.
+
+
 
 # v8.7.1
 
