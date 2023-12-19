@@ -19,7 +19,7 @@
 ## Performance
 
 - Performance has been *significantly improved*, both due to optimizations in the underlying `ignore`
-  crate (#1429), and in `fd` itself (#1422, #1408, #13620) - @tavianator.
+  crate (#1429), and in `fd` itself (#1422, #1408, #1362) - @tavianator.
   [Benchmarks results](https://gist.github.com/tavianator/32edbe052f33ef60570cf5456b59de81) show gains
   of 6-8x for full traversals of smaller directories (100k files) and up to 13x for larger directories (1M files).
 
