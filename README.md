@@ -314,8 +314,8 @@ Options:
   -d, --max-depth <depth>          Set maximum search depth (default: none)
   -E, --exclude <pattern>          Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d), symlink (l),
-                                   executable (x), empty (e), socket (s), pipe (p),
-                                   block-device (b), char-device (c)
+                                   executable (x), empty (e), socket (s), pipe (p), char-device
+                                   (c), block-device (b)
   -e, --extension <ext>            Filter by file extension
   -S, --size <size>                Limit results based on the size of files
       --changed-within <date|dur>  Filter by file modification time (newer than)
@@ -543,7 +543,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_8.7.1_amd64.deb # adapt version number and architecture
+sudo dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
 ```
 
 ### On Debian
@@ -677,7 +677,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.64.0* or later is required.
+Note that rust version *1.70.0* or later is required.
 
 `make` is also needed for the build.
 

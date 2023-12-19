@@ -9,7 +9,7 @@ necessary changes for the upcoming release.
 - [ ] Update version in `Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
       Make sure to `git add` the `Cargo.lock` changes as well.
 - [ ] Find the current min. supported Rust version by running
-      `grep '^\s*MIN_SUPPORTED_RUST_VERSION' .github/workflows/CICD.yml`.
+      `grep rust-version Cargo.toml`.
 - [ ] Update the `fd` version and the min. supported Rust version in `README.md`.
 - [ ] Update `CHANGELOG.md`. Change the heading of the *"Upcoming release"* section
       to the version of this release.
