@@ -5,6 +5,8 @@
 
 ## Bugfixes
 
+- Respect NO_COLOR environment variable with `--list-details` option. (#1455)
+
 
 ## Changes
 
