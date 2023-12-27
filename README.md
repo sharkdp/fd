@@ -351,7 +351,7 @@ Benchmark 2: find ~ -iname '*[0-9].jpg'
 ```
 
 Now let's try the same for `fd`. Note that `fd` performs a regular expression
-search by defautl. The options `-u`/`--unrestricted` option is needed here for
+search by default. The options `-u`/`--unrestricted` option is needed here for
 a fair comparison. Otherwise `fd` does not have to traverse hidden folders and
 ignored paths (see below):
 ```
