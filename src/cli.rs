@@ -314,7 +314,7 @@ pub struct Opts {
 
     /// Filter the search by type:
     /// {n}  'f' or 'file':         regular files
-    /// {n}  'd' or 'directory':    directories
+    /// {n}  'd' or 'dir' or 'directory':    directories
     /// {n}  'l' or 'symlink':      symbolic links
     /// {n}  's' or 'socket':       socket
     /// {n}  'p' or 'pipe':         named pipe (FIFO)
