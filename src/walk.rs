@@ -4,12 +4,12 @@ use std::io::{self, Write};
 use std::mem;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
-use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, Sender};
+use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, SendError, Sender};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{self, WalkBuilder, WalkParallel, WalkState};
@@ -36,11 +36,89 @@ enum ReceiverMode {
 
 /// The Worker threads can result in a valid entry having PathBuf or an error.
 #[allow(clippy::large_enum_variant)]
+#[derive(Debug)]
 pub enum WorkerResult {
     // Errors should be rare, so it's probably better to allow large_enum_variant than
     // to box the Entry variant
     Entry(DirEntry),
     Error(ignore::Error),
+}
+
+/// A batch of WorkerResults to send over a channel.
+#[derive(Clone)]
+struct Batch {
+    items: Arc<Mutex<Option<Vec<WorkerResult>>>>,
+}
+
+impl Batch {
+    fn new() -> Self {
+        Self {
+            items: Arc::new(Mutex::new(Some(vec![]))),
+        }
+    }
+
+    fn lock(&self) -> MutexGuard<'_, Option<Vec<WorkerResult>>> {
+        self.items.lock().unwrap()
+    }
+}
+
+impl IntoIterator for Batch {
+    type Item = WorkerResult;
+    type IntoIter = std::vec::IntoIter<WorkerResult>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.lock().take().unwrap().into_iter()
+    }
+}
+
+/// Wrapper that sends batches of items at once over a channel.
+struct BatchSender {
+    batch: Batch,
+    tx: Sender<Batch>,
+    limit: usize,
+}
+
+impl BatchSender {
+    fn new(tx: Sender<Batch>, limit: usize) -> Self {
+        Self {
+            batch: Batch::new(),
+            tx,
+            limit,
+        }
+    }
+
+    /// Check if we need to flush a batch.
+    fn needs_flush(&self, batch: Option<&Vec<WorkerResult>>) -> bool {
+        match batch {
+            // Limit the batch size to provide some backpressure
+            Some(vec) => vec.len() >= self.limit,
+            // Batch was already taken by the receiver, so make a new one
+            None => true,
+        }
+    }
+
+    /// Add an item to a batch.
+    fn send(&mut self, item: WorkerResult) -> Result<(), SendError<()>> {
+        let mut batch = self.batch.lock();
+
+        if self.needs_flush(batch.as_ref()) {
+            drop(batch);
+            self.batch = Batch::new();
+            batch = self.batch.lock();
+        }
+
+        let items = batch.as_mut().unwrap();
+        items.push(item);
+
+        if items.len() == 1 {
+            // New batch, send it over the channel
+            self.tx
+                .send(self.batch.clone())
+                .map_err(|_| SendError(()))?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Maximum size of the output buffer before flushing results to the console
@@ -57,7 +135,7 @@ struct ReceiverBuffer<'a, W> {
     /// The ^C notifier.
     interrupt_flag: &'a AtomicBool,
     /// Receiver for worker results.
-    rx: Receiver<WorkerResult>,
+    rx: Receiver<Batch>,
     /// Standard output.
     stdout: W,
     /// The current buffer mode.
@@ -72,7 +150,7 @@ struct ReceiverBuffer<'a, W> {
 
 impl<'a, W: Write> ReceiverBuffer<'a, W> {
     /// Create a new receiver buffer.
-    fn new(state: &'a WorkerState, rx: Receiver<WorkerResult>, stdout: W) -> Self {
+    fn new(state: &'a WorkerState, rx: Receiver<Batch>, stdout: W) -> Self {
         let config = &state.config;
         let quit_flag = state.quit_flag.as_ref();
         let interrupt_flag = state.interrupt_flag.as_ref();
@@ -103,7 +181,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
     }
 
     /// Receive the next worker result.
-    fn recv(&self) -> Result<WorkerResult, RecvTimeoutError> {
+    fn recv(&self) -> Result<Batch, RecvTimeoutError> {
         match self.mode {
             ReceiverMode::Buffering => {
                 // Wait at most until we should switch to streaming
@@ -119,34 +197,44 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
     /// Wait for a result or state change.
     fn poll(&mut self) -> Result<(), ExitCode> {
         match self.recv() {
-            Ok(WorkerResult::Entry(dir_entry)) => {
-                if self.config.quiet {
-                    return Err(ExitCode::HasResults(true));
-                }
+            Ok(batch) => {
+                for result in batch {
+                    match result {
+                        WorkerResult::Entry(dir_entry) => {
+                            if self.config.quiet {
+                                return Err(ExitCode::HasResults(true));
+                            }
 
-                match self.mode {
-                    ReceiverMode::Buffering => {
-                        self.buffer.push(dir_entry);
-                        if self.buffer.len() > MAX_BUFFER_LENGTH {
-                            self.stream()?;
+                            match self.mode {
+                                ReceiverMode::Buffering => {
+                                    self.buffer.push(dir_entry);
+                                    if self.buffer.len() > MAX_BUFFER_LENGTH {
+                                        self.stream()?;
+                                    }
+                                }
+                                ReceiverMode::Streaming => {
+                                    self.print(&dir_entry)?;
+                                }
+                            }
+
+                            self.num_results += 1;
+                            if let Some(max_results) = self.config.max_results {
+                                if self.num_results >= max_results {
+                                    return self.stop();
+                                }
+                            }
+                        }
+                        WorkerResult::Error(err) => {
+                            if self.config.show_filesystem_errors {
+                                print_error(err.to_string());
+                            }
                         }
                     }
-                    ReceiverMode::Streaming => {
-                        self.print(&dir_entry)?;
-                        self.flush()?;
-                    }
                 }
 
-                self.num_results += 1;
-                if let Some(max_results) = self.config.max_results {
-                    if self.num_results >= max_results {
-                        return self.stop();
-                    }
-                }
-            }
-            Ok(WorkerResult::Error(err)) => {
-                if self.config.show_filesystem_errors {
-                    print_error(err.to_string());
+                // If we don't have another batch ready, flush before waiting
+                if self.mode == ReceiverMode::Streaming && self.rx.is_empty() {
+                    self.flush()?;
                 }
             }
             Err(RecvTimeoutError::Timeout) => {
@@ -201,7 +289,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Flush stdout if necessary.
     fn flush(&mut self) -> Result<(), ExitCode> {
-        if self.config.interactive_terminal && self.stdout.flush().is_err() {
+        if self.stdout.flush().is_err() {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
@@ -319,13 +407,13 @@ impl WorkerState {
 
     /// Run the receiver work, either on this thread or a pool of background
     /// threads (for --exec).
-    fn receive(&self, rx: Receiver<WorkerResult>) -> ExitCode {
+    fn receive(&self, rx: Receiver<Batch>) -> ExitCode {
         let config = &self.config;
 
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx, cmd, &config)
+                exec::batch(rx.into_iter().flatten(), cmd, &config)
             } else {
                 let out_perm = Mutex::new(());
 
@@ -337,7 +425,8 @@ impl WorkerState {
                         let rx = rx.clone();
 
                         // Spawn a job thread that will listen for and execute inputs.
-                        let handle = scope.spawn(|| exec::job(rx, cmd, &out_perm, &config));
+                        let handle = scope
+                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, &config));
 
                         // Push the handle of the spawned thread into the vector for later joining.
                         handles.push(handle);
@@ -355,12 +444,20 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<WorkerResult>) {
+    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
-            let tx = tx.clone();
+
+            let mut limit = 0x100;
+            if let Some(cmd) = &config.command {
+                if !cmd.in_batch_mode() && config.threads > 1 {
+                    // Evenly distribute work between multiple receivers
+                    limit = 1;
+                }
+            }
+            let mut tx = BatchSender::new(tx.clone(), limit);
 
             Box::new(move |entry| {
                 if quit_flag.load(Ordering::Relaxed) {
@@ -545,8 +642,7 @@ impl WorkerState {
             .unwrap();
         }
 
-        // Channel capacity was chosen empircally to perform similarly to an unbounded channel
-        let (tx, rx) = bounded(0x4000 * config.threads);
+        let (tx, rx) = bounded(2 * config.threads);
 
         let exit_code = thread::scope(|scope| {
             // Spawn the receiver thread(s)

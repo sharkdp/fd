@@ -325,18 +325,22 @@ fn extract_command(opts: &mut Opts, colored_output: bool) -> Result<Option<Comma
             if !opts.list_details {
                 return None;
             }
-            let color_arg = format!("--color={}", opts.color.as_str());
 
-            let res = determine_ls_command(&color_arg, colored_output)
+            let res = determine_ls_command(colored_output)
                 .map(|cmd| CommandSet::new_batch([cmd]).unwrap());
             Some(res)
         })
         .transpose()
 }
 
-fn determine_ls_command(color_arg: &str, colored_output: bool) -> Result<Vec<&str>> {
+fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
     #[allow(unused)]
     let gnu_ls = |command_name| {
+        let color_arg = if colored_output {
+            "--color=always"
+        } else {
+            "--color=never"
+        };
         // Note: we use short options here (instead of --long-options) to support more
         // platforms (like BusyBox).
         vec![
