@@ -739,7 +739,7 @@ fn default_num_threads() -> NonZeroUsize {
 pub enum FileType {
     #[value(alias = "f")]
     File,
-    #[value(alias = "d")]
+    #[value(alias = "d", alias = "dir")]
     Directory,
     #[value(alias = "l")]
     Symlink,
