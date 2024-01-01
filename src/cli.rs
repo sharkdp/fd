@@ -352,7 +352,7 @@ pub struct Opts {
         value_name = "filetype",
         hide_possible_values = true,
         value_enum,
-        help = "Filter by type: file (f), directory (d), symlink (l), \
+        help = "Filter by type: file (f), directory (d/dir), symlink (l), \
                 executable (x), empty (e), socket (s), pipe (p), \
                 char-device (c), block-device (b)",
         long_help
