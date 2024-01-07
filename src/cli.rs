@@ -314,7 +314,7 @@ pub struct Opts {
 
     /// Filter the search by type:
     /// {n}  'f' or 'file':         regular files
-    /// {n}  'd' or 'directory':    directories
+    /// {n}  'd' or 'dir' or 'directory':    directories
     /// {n}  'l' or 'symlink':      symbolic links
     /// {n}  's' or 'socket':       socket
     /// {n}  'p' or 'pipe':         named pipe (FIFO)
@@ -352,7 +352,7 @@ pub struct Opts {
         value_name = "filetype",
         hide_possible_values = true,
         value_enum,
-        help = "Filter by type: file (f), directory (d), symlink (l), \
+        help = "Filter by type: file (f), directory (d/dir), symlink (l), \
                 executable (x), empty (e), socket (s), pipe (p), \
                 char-device (c), block-device (b)",
         long_help
@@ -729,7 +729,7 @@ fn default_num_threads() -> NonZeroUsize {
 pub enum FileType {
     #[value(alias = "f")]
     File,
-    #[value(alias = "d")]
+    #[value(alias = "d", alias = "dir")]
     Directory,
     #[value(alias = "l")]
     Symlink,

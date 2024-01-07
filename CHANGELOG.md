@@ -2,6 +2,7 @@
 
 ## Features
 
+- Add `dir` as an alias to `directory` when using `-t` \ `--type`, see #1460 and #1464 (@Ato2207).
 
 ## Bugfixes
 
