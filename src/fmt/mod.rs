@@ -209,3 +209,73 @@ fn token_from_pattern_id(id: u32) -> Token {
         _ => unreachable!(),
     }
 }
+
+#[cfg(test)]
+mod fmt_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn parse_no_placeholders() {
+        let templ = FormatTemplate::parse("This string has no placeholders");
+        assert_eq!(
+            templ,
+            FormatTemplate::Text("This string has no placeholders".into())
+        );
+    }
+
+    #[test]
+    fn parse_only_brace_escapes() {
+        let templ = FormatTemplate::parse("This string only has escapes like {{ and }}");
+        assert_eq!(
+            templ,
+            FormatTemplate::Text("This string only has escapes like { and }".into())
+        );
+    }
+
+    #[test]
+    fn all_placeholders() {
+        use Token::*;
+
+        let templ = FormatTemplate::parse(
+            "{{path={} \
+            basename={/} \
+            parent={//} \
+            noExt={.} \
+            basenameNoExt={/.} \
+            }}",
+        );
+        assert_eq!(
+            templ,
+            FormatTemplate::Tokens(vec![
+                Text("{path=".into()),
+                Placeholder,
+                Text(" basename=".into()),
+                Basename,
+                Text(" parent=".into()),
+                Parent,
+                Text(" noExt=".into()),
+                NoExt,
+                Text(" basenameNoExt=".into()),
+                BasenameNoExt,
+                Text(" }".into()),
+            ])
+        );
+
+        let mut path = PathBuf::new();
+        path.push("a");
+        path.push("folder");
+        path.push("file.txt");
+
+        let expanded = templ.generate(&path, Some("/")).into_string().unwrap();
+
+        assert_eq!(
+            expanded,
+            "{path=a/folder/file.txt \
+            basename=file.txt \
+            parent=a/folder \
+            noExt=a/folder/file \
+            basenameNoExt=file }"
+        );
+    }
+}
