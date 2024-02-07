@@ -10,10 +10,22 @@ It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.o
 While it does not aim to support all of `find`'s powerful functionality, it provides sensible
 (opinionated) defaults for a majority of use cases.
 
-Quick links:
-* [How to use](#how-to-use)
-* [Installation](#installation)
-* [Troubleshooting](#troubleshooting)
+[Installation](#installation) • [How to use](#how-to-use) • [Troubleshooting](#troubleshooting)
+
+## Sponsors
+
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:<br>
+<a href="https://terminaltrove.com/?utm_campaign=github&utm_medium=referral&utm_content=fd&utm_source=fdgh">
+  <img src="doc/sponsors/terminal_trove_green.svg" width="200" alt="Terminal Trove">
+  <br>
+  <strong>The $HOME of all things in the terminal.</strong>
+</a>
+<br>
+<a href="https://terminaltrove.com/newsletter?utm_campaign=github&utm_medium=referral&utm_content=fd&utm_source=fdgh">
+  <sub>Find your next CLI / TUI tool and more at Terminal Trove,</sub>
+  <br>
+  <sup>Get updates on new tools on our newsletter.</sup>
+</a>
 
 ## Features
 
