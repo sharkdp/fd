@@ -14,7 +14,8 @@ While it does not aim to support all of `find`'s powerful functionality, it prov
 
 ## Sponsors
 
-A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:<br>
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:
+
 <a href="https://terminaltrove.com/?utm_campaign=github&utm_medium=referral&utm_content=fd&utm_source=fdgh">
   <img src="doc/sponsors/terminal_trove_green.svg" width="200" alt="Terminal Trove">
   <br>
