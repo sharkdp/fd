@@ -549,7 +549,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 
 Starting with Fedora 28, you can install `fd` from the official package sources:
 ``` bash
-dnf install fd-find
+sudo dnf install fd-find
 ```
 
 ### On Alpine Linux
@@ -557,34 +557,50 @@ dnf install fd-find
 You can install [the fd package](https://pkgs.alpinelinux.org/packages?name=fd)
 from the official sources, provided you have the appropriate repository enabled:
 ```
-apk add fd
+sudo apk add fd
 ```
 
 ### On Arch Linux
 
 You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
 ```
-pacman -S fd
+sudo pacman -S fd
 ```
+You can also install fd [from the AUR](https://aur.archlinux.org/packages/fd-git).
+
 ### On Gentoo Linux
 
 You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) from the official repo:
 ```
-emerge -av fd
+sudo emerge -av fd
 ```
 
 ### On openSUSE Linux
 
 You can install [the fd package](https://software.opensuse.org/package/fd) from the official repo:
 ```
-zypper in fd
+sudo zypper in fd
 ```
 
 ### On Void Linux
 
 You can install `fd` via xbps-install:
 ```
-xbps-install -S fd
+sudo xbps-install -S fd
+```
+
+### On ALT Linux
+
+You can install [the fd package](https://packages.altlinux.org/en/sisyphus/srpms/fd/) from the official repo:
+```
+sudo apt-get install fd
+```
+
+### On Solus
+
+You can install [the fd package](https://github.com/getsolus/packages/tree/main/packages/f/fd) from the official repo:
+```
+sudo eopkg install fd
 ```
 
 ### On RedHat Enterprise Linux 8/9 (RHEL8/9), Almalinux 8/9, EuroLinux 8/9 or Rocky Linux 8/9
@@ -592,8 +608,8 @@ xbps-install -S fd
 You can install [the `fd` package](https://copr.fedorainfracloud.org/coprs/tkbcopr/fd/) from Fedora Copr.
 
 ```bash
-dnf copr enable tkbcopr/fd
-dnf install fd
+sudo dnf copr enable tkbcopr/fd
+sudo dnf install fd
 ```
 
 A different version using the [slower](https://github.com/sharkdp/fd/pull/481#issuecomment-534494592) malloc [instead of jemalloc](https://bugzilla.redhat.com/show_bug.cgi?id=2216193#c1) is also available from the EPEL8/9 repo as the package `fd-find`.
@@ -633,26 +649,26 @@ winget install sharkdp.fd
 
 You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) from the official repo:
 ```
-guix install fd
+sudo guix install fd
 ```
 
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
-nix-env -i fd
+sudo nix-env -i fd
 ```
 
 ### On FreeBSD
 
 You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
 ```
-pkg install fd-find
+sudo pkg install fd-find
 ```
 
 ### From npm
 
-On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
+On Linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
 
 ```
 npm install -g fd-find
@@ -667,6 +683,8 @@ cargo install fd-find
 Note that rust version *1.70.0* or later is required.
 
 `make` is also needed for the build.
+
+Make sure to replace **sudo** with **doas** in commands depending on what you use.
 
 ### From binaries
 
