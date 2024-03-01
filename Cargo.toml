@@ -45,7 +45,7 @@ humantime = "2.1"
 globset = "0.4"
 anyhow = "1.0"
 etcetera = "0.8"
-normpath = "1.1.1"
+normpath = "1.2.0"
 crossbeam-channel = "0.5.11"
 clap_complete = {version = "4.4.9", optional = true}
 faccess = "0.2.4"
