@@ -78,7 +78,7 @@ jemallocator = {version = "0.5.4", optional = true}
 
 [dev-dependencies]
 diff = "0.1"
-tempfile = "3.9"
+tempfile = "3.10"
 filetime = "0.2"
 test-case = "3.3"
 
