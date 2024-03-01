@@ -55,7 +55,7 @@ version = "4.4.13"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.chrono]
-version = "0.4.31"
+version = "0.4.34"
 default-features = false
 features = ["std", "clock"]
 
