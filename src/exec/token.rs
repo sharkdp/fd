@@ -41,7 +41,7 @@ pub(super) fn tokenize(input: &str) -> ArgumentTemplate {
     let mut remaining = input;
     let mut buf = String::new();
     let placeholders = PLACEHOLDERS.get_or_init(|| {
-        AhoCorasick::new(&["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
+        AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
     });
     while let Some(m) = placeholders.find(remaining) {
         match m.pattern().as_u32() {
