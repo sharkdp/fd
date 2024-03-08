@@ -250,7 +250,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Output a path.
     fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
-        output::print_entry(&mut self.stdout, entry, &self.config);
+        output::print_entry(&mut self.stdout, entry, self.config);
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
             // Ignore any errors on flush, because we're about to exit anyway
@@ -413,7 +413,7 @@ impl WorkerState {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx.into_iter().flatten(), cmd, &config)
+                exec::batch(rx.into_iter().flatten(), cmd, config)
             } else {
                 let out_perm = Mutex::new(());
 
@@ -426,7 +426,7 @@ impl WorkerState {
 
                         // Spawn a job thread that will listen for and execute inputs.
                         let handle = scope
-                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, &config));
+                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config));
 
                         // Push the handle of the spawned thread into the vector for later joining.
                         handles.push(handle);

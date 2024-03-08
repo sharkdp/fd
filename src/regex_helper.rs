@@ -16,7 +16,7 @@ fn hir_has_uppercase_char(hir: &Hir) -> bool {
     use regex_syntax::hir::*;
 
     match hir.kind() {
-        HirKind::Literal(Literal(bytes)) => match std::str::from_utf8(&bytes) {
+        HirKind::Literal(Literal(bytes)) => match std::str::from_utf8(bytes) {
             Ok(s) => s.chars().any(|c| c.is_uppercase()),
             Err(_) => bytes.iter().any(|b| char::from(*b).is_uppercase()),
         },
