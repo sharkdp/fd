@@ -12,7 +12,7 @@ use anyhow::{anyhow, Result};
 use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, SendError, Sender};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
-use ignore::{self, WalkBuilder, WalkParallel, WalkState};
+use ignore::{WalkBuilder, WalkParallel, WalkState};
 use regex::bytes::Regex;
 
 use crate::config::Config;
