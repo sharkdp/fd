@@ -642,7 +642,7 @@ impl Opts {
         } else if !self.search_path.is_empty() {
             &self.search_path
         } else {
-            let current_directory = Path::new(".");
+            let current_directory = Path::new("./");
             ensure_current_directory_exists(current_directory)?;
             return Ok(vec![self.normalize_path(current_directory)]);
         };
