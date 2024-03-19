@@ -34,10 +34,10 @@ pub fn dirname(path: &Path) -> OsString {
 #[cfg(test)]
 mod path_tests {
     use super::*;
-    use std::path::MAIN_SEPARATOR;
+    use std::path::MAIN_SEPARATOR_STR;
 
     fn correct(input: &str) -> String {
-        input.replace('/', &MAIN_SEPARATOR.to_string())
+        input.replace('/', MAIN_SEPARATOR_STR)
     }
 
     macro_rules! func_tests {
