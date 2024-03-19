@@ -162,15 +162,36 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     }
 }
 
+fn apply_anchors(re: String, anchors: Option<cli::Anchor>) -> String {
+    use cli::Anchor;
+    match anchors {
+        None => re,
+        Some(Anchor::InputStart) => "^".to_owned() + &re,
+        Some(Anchor::InputEnd) => re + "$",
+        Some(Anchor::Input) => "^".to_owned() + &re + "$",
+        // https://docs.rs/regex/latest/regex/#empty-matches
+        Some(Anchor::Word) => r"\<".to_owned() + &re + r"\>",
+    }
+}
+
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
-    Ok(if opts.glob && !pattern.is_empty() {
-        let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
-        glob.regex().to_owned()
-    } else if opts.fixed_strings {
-        // Treat pattern as literal string if '--fixed-strings' is used
-        regex::escape(pattern)
+    Ok(if opts.glob {
+        if !pattern.is_empty() {
+            let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
+            glob.regex().to_owned()
+        } else {
+            "".to_owned()
+        }
     } else {
-        String::from(pattern)
+        apply_anchors(
+            if opts.fixed_strings {
+                // Treat pattern as literal string if '--fixed-strings' is used
+                regex::escape(pattern)
+            } else {
+                String::from(pattern)
+            },
+            opts.anchor(),
+        )
     })
 }
 
