@@ -122,6 +122,9 @@ pub struct Config {
 
     /// Whether or not to strip the './' prefix for search results
     pub strip_cwd_prefix: bool,
+
+    /// Whether to use quoting on the output file names
+    pub use_quoting: bool,
 }
 
 impl Config {

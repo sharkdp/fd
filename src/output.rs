@@ -54,6 +54,43 @@ fn print_trailing_slash<W: Write>(
     Ok(())
 }
 
+// Trying to copy: https://www.gnu.org/software/coreutils/quotes.html
+fn path_needs_quoting(path: &str) -> i8 {
+    // If it contains any special chars we return single quote
+    if path.contains(" ") || path.contains("$") || path.contains("\"") {
+        return 1;
+    // If it ONLY contains a ' we return double quote
+    } else if path.contains("'") {
+        return 2;
+    }
+
+    return 0;
+}
+
+// Quote a path with coreutils style quoting to make copy/paste
+// more friendly for shells
+fn quote_path(path_str: &str) -> String {
+    let quote_type         = path_needs_quoting(path_str);
+    let mut tmp_str:String = path_str.into();
+
+    // Quote with single quotes
+    if quote_type == 1 {
+        // Escape single quotes in path
+        tmp_str = str::replace(&tmp_str, "'", "'\\''");
+
+        format!("'{}'", tmp_str)
+    // Quote with double quotes
+    } else if quote_type == 2 {
+        // Escape double quotes in path
+        tmp_str = str::replace(&tmp_str, "\"", "\\\"");
+
+        format!("\"{}\"", tmp_str)
+    // No quoting required
+    } else {
+        path_str.to_string()
+    }
+}
+
 // TODO: this function is performance critical and can probably be optimized
 fn print_entry_colorized<W: Write>(
     stdout: &mut W,
@@ -62,9 +99,22 @@ fn print_entry_colorized<W: Write>(
     ls_colors: &LsColors,
 ) -> io::Result<()> {
     // Split the path between the parent and the last component
-    let mut offset = 0;
-    let path = entry.stripped_path(config);
-    let path_str = path.to_string_lossy();
+    let mut offset        = 0;
+    let path              = entry.stripped_path(config);
+    let mut path_str      = path.to_string_lossy();
+    let mut needs_quoting = false;
+
+    // Wrap the path in quotes
+    if config.use_quoting {
+        let tmp_str = quote_path(&path_str);
+
+        // If the quoted string is new, then we flag that to tweak the offset
+        // so the colors line up
+        if tmp_str != path_str {
+            path_str      = tmp_str.into();
+            needs_quoting = true;
+        }
+    }
 
     if let Some(parent) = path.parent() {
         offset = parent.to_string_lossy().len();
@@ -78,6 +128,11 @@ fn print_entry_colorized<W: Write>(
     }
 
     if offset > 0 {
+
+        if needs_quoting {
+            offset += 2;
+        }
+
         let mut parent_str = Cow::from(&path_str[..offset]);
         if let Some(ref separator) = config.path_separator {
             *parent_str.to_mut() = replace_path_separator(&parent_str, separator);
