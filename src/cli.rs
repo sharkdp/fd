@@ -14,6 +14,7 @@ use normpath::PathExt;
 use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
+use crate::i18::translate;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
@@ -22,10 +23,12 @@ use crate::filter::SizeFilter;
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem",
-    after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
+    about = translate("A_program_to_find_entries_in_your_filesystem"),
+    after_long_help = translate("Bugs_can_be_reported_on_GitHub"),
     max_term_width = 98,
     args_override_self = true,
+    disable_help_flag = true,
+    disable_version_flag = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "quiet", "max_one_result"])),
 )]
@@ -39,7 +42,7 @@ pub struct Opts {
     #[arg(
         long,
         short = 'H',
-        help = "Search hidden files and directories",
+        help = translate("Search_hidden_files_and_directories"),
         long_help
     )]
     pub hidden: bool,
@@ -633,6 +636,23 @@ pub struct Opts {
     #[cfg(feature = "completions")]
     #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
+
+    #[arg(
+        long,
+        short = 'h',
+        help = translate("Print_helps"),
+        action = ArgAction::Help,
+        global = true
+    )]
+    pub help: Option<String>,
+
+    #[arg(
+        long,
+        short = 'v',
+        help = translate("Print_version"),
+        action = ArgAction::Version,
+    )]
+    pub version: Option<String>,
 }
 
 impl Opts {

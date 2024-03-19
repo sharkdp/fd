@@ -10,6 +10,7 @@ mod filter;
 mod output;
 mod regex_helper;
 mod walk;
+mod i18;
 
 use std::env;
 use std::io::IsTerminal;

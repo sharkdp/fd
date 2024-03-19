@@ -49,6 +49,10 @@ normpath = "1.1.1"
 crossbeam-channel = "0.5.11"
 clap_complete = {version = "4.4.9", optional = true}
 faccess = "0.2.4"
+fluent-resmgr = "0.0.6"
+fluent-bundle = "0.15.2"
+unic-langid = "0.9.0"
+sys-locale = "0.3.0"
 
 [dependencies.clap]
 version = "4.4.13"
