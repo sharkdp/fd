@@ -6,7 +6,7 @@ use unic_langid::LanguageIdentifier;
 pub fn translate(message: &str) -> String {
     let locale = get_locale().unwrap_or_else(|| String::from("en-US"));
     let langid: LanguageIdentifier = locale.parse().expect("wrong language");
-    let locales = vec![langid.into()];
+    let locales = vec![langid];
     let resources = vec!["message.ftl".into()];
 
     let mgr_cell = OnceCell::new();
@@ -21,6 +21,6 @@ pub fn translate(message: &str) -> String {
     let pattern = value.value().expect("Message has no value.");
 
     let mut errors = vec![];
-    let msg = bundle.format_pattern(&pattern, None, &mut errors);
+    let msg = bundle.format_pattern(pattern, None, &mut errors);
     msg.to_string()
 }
