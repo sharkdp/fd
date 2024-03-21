@@ -14,20 +14,19 @@ use normpath::PathExt;
 use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
-use crate::i18::translate;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
+use crate::i18::translate;
 
 #[derive(Parser)]
 #[command(
     name = "fd",
     version,
-    about = translate("A_program_to_find_entries_in_your_filesystem"),
-    after_long_help = translate("Bugs_can_be_reported_on_GitHub"),
+    about = translate("summary"),
+    after_long_help = translate("bugs_reported"),
     max_term_width = 98,
     args_override_self = true,
-    disable_help_flag = true,
     disable_version_flag = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "quiet", "max_one_result"])),
@@ -42,7 +41,7 @@ pub struct Opts {
     #[arg(
         long,
         short = 'H',
-        help = translate("Search_hidden_files_and_directories"),
+        help = translate("hidden"),
         long_help
     )]
     pub hidden: bool,
@@ -639,20 +638,11 @@ pub struct Opts {
 
     #[arg(
         long,
-        short = 'h',
-        help = translate("Print_helps"),
-        action = ArgAction::Help,
-        global = true
-    )]
-    pub help: Option<String>,
-
-    #[arg(
-        long,
         short = 'v',
-        help = translate("Print_version"),
+        help = translate("version"),
         action = ArgAction::Version,
     )]
-    pub version: Option<String>,
+    pub version: Option<bool>,
 }
 
 impl Opts {
