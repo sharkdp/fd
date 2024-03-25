@@ -17,15 +17,17 @@ use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
+use crate::i18::translate;
 
 #[derive(Parser)]
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem",
-    after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
+    about = translate("summary"),
+    after_long_help = translate("bugs_reported"),
     max_term_width = 98,
     args_override_self = true,
+    disable_version_flag = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "quiet", "max_one_result"])),
 )]
@@ -39,7 +41,7 @@ pub struct Opts {
     #[arg(
         long,
         short = 'H',
-        help = "Search hidden files and directories",
+        help = translate("hidden"),
         long_help
     )]
     pub hidden: bool,
@@ -633,6 +635,14 @@ pub struct Opts {
     #[cfg(feature = "completions")]
     #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
+
+    #[arg(
+        long,
+        short = 'v',
+        help = translate("version"),
+        action = ArgAction::Version,
+    )]
+    pub version: Option<bool>,
 }
 
 impl Opts {

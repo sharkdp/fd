@@ -7,6 +7,7 @@ mod exit_codes;
 mod filesystem;
 mod filetypes;
 mod filter;
+mod i18;
 mod output;
 mod regex_helper;
 mod walk;
