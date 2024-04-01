@@ -34,7 +34,7 @@ path = "src/main.rs"
 version_check = "0.9"
 
 [dependencies]
-aho-corasick = "1.0"
+aho-corasick = "1.1"
 nu-ansi-term = "0.50"
 argmax = "0.3.1"
 ignore = "0.4.22"
