@@ -44,6 +44,16 @@ jobs:
     - uses: actions/checkout@v4
     - run: cargo fmt -- --check
 
+  lint_check:
+    name: Ensure 'cargo clippy' has no warnings
+    runs-on: ubuntu-latest
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: actions/checkout@v4
+    - run: cargo clippy --all-targets --all-features -- -Dwarnings
+
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
