@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Local, NaiveDate, NaiveDateTime};
 
 use std::time::SystemTime;
 
@@ -33,10 +33,7 @@ impl TimeFilter {
                     })
                     .or_else(|| {
                         let timestamp_secs = s.strip_prefix('@')?.parse().ok()?;
-                        NaiveDateTime::from_timestamp_opt(timestamp_secs, 0)?
-                            .and_local_timezone(Utc)
-                            .latest()
-                            .map(Into::into)
+                        DateTime::from_timestamp(timestamp_secs, 0).map(Into::into)
                     })
                     .map(|dt| dt.into())
             })
