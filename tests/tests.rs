@@ -2573,7 +2573,14 @@ fn test_git_dir() {
         ],
     );
 
-    te.assert_output(&["--hidden", "foo"], "");
+    te.assert_output(
+        &["--hidden", "foo"],
+        ".git/one/foo.a
+        .git/.foo
+        .git/a.foo
+        other_dir/.git/foo1
+        nested/dir/.git/foo2",
+    );
     te.assert_output(&["--no-ignore", "foo"], "");
     te.assert_output(
         &["--hidden", "--no-ignore", "foo"],

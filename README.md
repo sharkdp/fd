@@ -282,6 +282,9 @@ If you want `fd` to ignore these patterns globally, you can put them in `fd`'s g
 This is usually located in `~/.config/fd/ignore` in macOS or Linux, and `%APPDATA%\fd\ignore` in
 Windows.
 
+You may wish to include `.git/` in your `fd/ignore` file so that `.git` directories, and their contents
+are not included in output if you use the `--hidden` option.
+
 ### Deleting files
 
 You can use `fd` to remove all files and directories that are matched by your search pattern.
