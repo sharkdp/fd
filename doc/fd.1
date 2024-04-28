@@ -156,9 +156,20 @@ can be used as an alias.
 Enable the display of filesystem errors for situations such as insufficient
 permissions or dead symlinks.
 .TP
-.B \-\-strip-cwd-prefix
-By default, relative paths are prefixed with './' when the output goes to a non interactive terminal
-(TTY). Use this flag to disable this behaviour.
+.B \-\-strip-cwd-prefix [when]
+By default, relative paths are prefixed with './' when -x/--exec,
+-X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
+path starting with '-' being treated as a command line option. Use
+this flag to change this behavior. If this flag is used without a value,
+it is equivalent to passing "always". Possible values are:
+.RS
+.IP auto
+Use the default behavior.
+.IP never
+Never strip the ./ at the beginning of paths
+.IP always
+Always strip the ./ at the beginning of paths
+.RE
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
 By default, fd will traverse the file system tree as far as other options dictate. With this flag, fd ensures that it does not descend into a different file system than the one it started in. Comparable to the -mount or -xdev filters of find(1).

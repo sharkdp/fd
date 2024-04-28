@@ -311,8 +311,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         path_separator,
         actual_path_separator,
         max_results: opts.max_results(),
-        strip_cwd_prefix: (opts.no_search_paths()
-            && (opts.strip_cwd_prefix || !(opts.null_separator || has_command))),
+        strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
     })
 }
 

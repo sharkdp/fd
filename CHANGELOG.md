@@ -2,6 +2,7 @@
 
 ## Features
 
+- Allow passing an optional argument to `--strip-cwd-prefix` of "always", "never", or "auto". to force whether the cwd prefix is stripped or not.
 
 ## Bugfixes
 

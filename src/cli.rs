@@ -617,9 +617,10 @@ pub struct Opts {
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
-    /// this flag to disable this behaviour.
-    #[arg(long, conflicts_with_all(&["path", "search_path"]), hide_short_help = true, long_help)]
-    pub strip_cwd_prefix: bool,
+    /// this flag to change this behavior. If this flag is used without a value,
+    /// it is equivalent to passing "always".
+    #[arg(long, conflicts_with_all(&["path", "search_path"]), value_name = "when", hide_short_help = true, require_equals = true, long_help)]
+    strip_cwd_prefix: Option<Option<StripCwdWhen>>,
 
     /// By default, fd will traverse the file system tree as far as other options
     /// dictate. With this flag, fd ensures that it does not descend into a
@@ -700,6 +701,16 @@ impl Opts {
             .or_else(|| self.max_one_result.then_some(1))
     }
 
+    pub fn strip_cwd_prefix<P: FnOnce() -> bool>(&self, auto_pred: P) -> bool {
+        use self::StripCwdWhen::*;
+        self.no_search_paths()
+            && match self.strip_cwd_prefix.map_or(Auto, |o| o.unwrap_or(Always)) {
+                Auto => auto_pred(),
+                Always => true,
+                Never => false,
+            }
+    }
+
     #[cfg(feature = "completions")]
     pub fn gen_completions(&self) -> anyhow::Result<Option<Shell>> {
         self.gen_completions
@@ -757,6 +768,16 @@ pub enum ColorWhen {
     /// always use colorized output
     Always,
     /// do not use colorized output
+    Never,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum StripCwdWhen {
+    /// Use the default behavior
+    Auto,
+    /// Always strip the ./ at the beginning of paths
+    Always,
+    /// Never strip the ./
     Never,
 }
 
