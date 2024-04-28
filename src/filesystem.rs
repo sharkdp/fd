@@ -128,7 +128,7 @@ pub fn strip_current_dir(path: &Path) -> &Path {
 pub fn default_path_separator() -> Option<String> {
     if cfg!(windows) {
         let msystem = env::var("MSYSTEM").ok()?;
-        if !msystem.as_str().is_empty() {
+        if !msystem.is_empty() {
             return Some("/".to_owned());
         }
     }
