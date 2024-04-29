@@ -129,7 +129,7 @@ fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
         .lines()
         .map(|line| {
             let line = if trim_start { line.trim_start() } else { line };
-            let line = line.replace('/', &std::path::MAIN_SEPARATOR.to_string());
+            let line = line.replace('/', std::path::MAIN_SEPARATOR_STR);
             if normalize_line {
                 let mut words: Vec<_> = line.split_whitespace().collect();
                 words.sort_unstable();

@@ -128,13 +128,11 @@ pub fn strip_current_dir(path: &Path) -> &Path {
 pub fn default_path_separator() -> Option<String> {
     if cfg!(windows) {
         let msystem = env::var("MSYSTEM").ok()?;
-        match msystem.as_str() {
-            "MINGW64" | "MINGW32" | "MSYS" => Some("/".to_owned()),
-            _ => None,
+        if !msystem.is_empty() {
+            return Some("/".to_owned());
         }
-    } else {
-        None
     }
+    None
 }
 
 #[cfg(test)]

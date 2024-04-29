@@ -1311,7 +1311,8 @@ fn test_type_executable() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     fs::OpenOptions::new()
-        .create(true)
+        .create_new(true)
+        .truncate(true)
         .write(true)
         .mode(0o777)
         .open(te.test_root().join("executable-file.sh"))
@@ -1319,6 +1320,7 @@ fn test_type_executable() {
 
     fs::OpenOptions::new()
         .create(true)
+        .truncate(true)
         .write(true)
         .mode(0o645)
         .open(te.test_root().join("not-user-executable-file.sh"))
@@ -2571,7 +2573,14 @@ fn test_git_dir() {
         ],
     );
 
-    te.assert_output(&["--hidden", "foo"], "");
+    te.assert_output(
+        &["--hidden", "foo"],
+        ".git/one/foo.a
+        .git/.foo
+        .git/a.foo
+        other_dir/.git/foo1
+        nested/dir/.git/foo2",
+    );
     te.assert_output(&["--no-ignore", "foo"], "");
     te.assert_output(
         &["--hidden", "--no-ignore", "foo"],

@@ -3,6 +3,11 @@
 ## Features
 
 - Add `dir` as an alias to `directory` when using `-t` \ `--type`, see #1460 and #1464 (@Ato2207).
+- Add support for @%s date format in time filters similar to GNU date (seconds since Unix epoch for --older/--newer), see #1493 (@nabellows)
+- Breaking: No longer automatically ignore `.git` when using `--hidden` with vcs ignore enabled. This reverts the change in v9.0.0. While this feature
+  was often useful, it also broke some existing workflows, and there wasn't a good way to opt out of it. And there isn't really a good way for us to add
+  a way to opt out of it. And you can easily get similar behavior by adding `.git/` to your global fdignore file.
+    See #1457.
 
 ## Bugfixes
 

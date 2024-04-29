@@ -44,6 +44,16 @@ jobs:
     - uses: actions/checkout@v4
     - run: cargo fmt -- --check
 
+  lint_check:
+    name: Ensure 'cargo clippy' has no warnings
+    runs-on: ubuntu-latest
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: actions/checkout@v4
+    - run: cargo clippy --all-targets --all-features -- -Dwarnings
+
   min_version:
     name: Minimum supported rust version
     runs-on: ubuntu-20.04
@@ -331,7 +341,7 @@ jobs:
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
     - name: Publish archives and packages
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |

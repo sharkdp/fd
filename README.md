@@ -10,10 +10,23 @@ It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.o
 While it does not aim to support all of `find`'s powerful functionality, it provides sensible
 (opinionated) defaults for a majority of use cases.
 
-Quick links:
-* [How to use](#how-to-use)
-* [Installation](#installation)
-* [Troubleshooting](#troubleshooting)
+[Installation](#installation) • [How to use](#how-to-use) • [Troubleshooting](#troubleshooting)
+
+## Sponsors
+
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsors</a>:
+
+<a href="https://terminaltrove.com/?utm_campaign=github&utm_medium=referral&utm_content=fd&utm_source=fdgh">
+  <img src="doc/sponsors/terminal_trove_green.svg" width="200" alt="Terminal Trove">
+  <br>
+  <strong>The $HOME of all things in the terminal.</strong>
+</a>
+<br>
+<a href="https://terminaltrove.com/newsletter?utm_campaign=github&utm_medium=referral&utm_content=fd&utm_source=fdgh">
+  <sub>Find your next CLI / TUI tool and more at Terminal Trove,</sub>
+  <br>
+  <sup>Get updates on new tools on our newsletter.</sup>
+</a>
 
 ## Features
 
@@ -268,6 +281,9 @@ To make exclude-patterns like these permanent, you can create a `.fdignore` file
 If you want `fd` to ignore these patterns globally, you can put them in `fd`'s global ignore file.
 This is usually located in `~/.config/fd/ignore` in macOS or Linux, and `%APPDATA%\fd\ignore` in
 Windows.
+
+You may wish to include `.git/` in your `fd/ignore` file so that `.git` directories, and their contents
+are not included in output if you use the `--hidden` option.
 
 ### Deleting files
 
@@ -680,7 +696,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.70.0* or later is required.
+Note that rust version *1.77.2* or later is required.
 
 `make` is also needed for the build.
 

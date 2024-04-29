@@ -18,7 +18,7 @@ readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
 version = "9.0.0"
 edition= "2021"
-rust-version = "1.70.0"
+rust-version = "1.77.2"
 
 [badges.appveyor]
 repository = "sharkdp/fd"
@@ -34,11 +34,11 @@ path = "src/main.rs"
 version_check = "0.9"
 
 [dependencies]
-aho-corasick = "1.0"
-nu-ansi-term = "0.49"
+aho-corasick = "1.1"
+nu-ansi-term = "0.50"
 argmax = "0.3.1"
-ignore = "0.4.21"
-regex = "1.9.6"
+ignore = "0.4.22"
+regex = "1.10.3"
 regex-syntax = "0.8"
 ctrlc = "3.2"
 humantime = "2.1"
@@ -46,8 +46,8 @@ globset = "0.4"
 anyhow = "1.0"
 etcetera = "0.8"
 normpath = "1.1.1"
-crossbeam-channel = "0.5.10"
-clap_complete = {version = "4.4.6", optional = true}
+crossbeam-channel = "0.5.12"
+clap_complete = {version = "4.4.9", optional = true}
 faccess = "0.2.4"
 
 [dependencies.clap]
@@ -55,12 +55,12 @@ version = "4.4.13"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.chrono]
-version = "0.4.31"
+version = "0.4.34"
 default-features = false
 features = ["std", "clock"]
 
 [dependencies.lscolors]
-version = "0.16"
+version = "0.17"
 default-features = false
 features = ["nu-ansi-term"]
 
@@ -78,7 +78,7 @@ jemallocator = {version = "0.5.4", optional = true}
 
 [dev-dependencies]
 diff = "0.1"
-tempfile = "3.9"
+tempfile = "3.10"
 filetime = "0.2"
 test-case = "3.3"
 

@@ -49,8 +49,7 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', the global ignore file,
-    /// or the default rule that excludes .git/.
+    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file,
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
@@ -64,7 +63,7 @@ pub struct Opts {
     #[arg(long, overrides_with = "no_ignore", hide = true, action = ArgAction::SetTrue)]
     ignore: (),
 
-    ///Show search results from '.git/' folders and files and directories that
+    ///Show search results from files and directories that
     ///would otherwise be ignored by '.gitignore' files.
     ///The flag can be overridden with --ignore-vcs.
     #[arg(

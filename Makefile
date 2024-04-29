@@ -6,7 +6,7 @@ datadir=$(prefix)/share
 exe_name=fd
 
 $(EXE): Cargo.toml src/**/*.rs
-	cargo build --profile $(PROFILE)
+	cargo build --profile $(PROFILE) --locked
 
 .PHONY: completions
 completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/fd.ps1 autocomplete/_fd
