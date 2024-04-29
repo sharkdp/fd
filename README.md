@@ -536,7 +536,7 @@ newlines). In the same way, the `-0` option of `xargs` tells it to read the inpu
 If you run Ubuntu 19.04 (Disco Dingo) or newer, you can install the
 [officially maintained package](https://packages.ubuntu.com/fd-find):
 ```
-sudo apt install fd-find
+apt install fd-find
 ```
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
 It is recommended that after installation, you add a link to `fd` by executing command
@@ -546,7 +546,7 @@ Make sure that `$HOME/.local/bin` is in your `$PATH`.
 If you use an older version of Ubuntu, you can download the latest `.deb` package from the
 [release page](https://github.com/sharkdp/fd/releases) and install it via:
 ``` bash
-sudo dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
+dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
 ```
 
 ### On Debian
@@ -554,7 +554,7 @@ sudo dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
 If you run Debian Buster or newer, you can install the
 [officially maintained Debian package](https://tracker.debian.org/pkg/rust-fd-find):
 ```
-sudo apt-get install fd-find
+apt-get install fd-find
 ```
 Note that the binary is called `fdfind` as the binary name `fd` is already used by another package.
 It is recommended that after installation, you add a link to `fd` by executing command
@@ -582,6 +582,8 @@ You can install [the fd package](https://www.archlinux.org/packages/community/x8
 ```
 pacman -S fd
 ```
+You can also install fd [from the AUR](https://aur.archlinux.org/packages/fd-git).
+
 ### On Gentoo Linux
 
 You can use [the fd ebuild](https://packages.gentoo.org/packages/sys-apps/fd) from the official repo:
@@ -601,6 +603,20 @@ zypper in fd
 You can install `fd` via xbps-install:
 ```
 xbps-install -S fd
+```
+
+### On ALT Linux
+
+You can install [the fd package](https://packages.altlinux.org/en/sisyphus/srpms/fd/) from the official repo:
+```
+apt-get install fd
+```
+
+### On Solus
+
+You can install [the fd package](https://github.com/getsolus/packages/tree/main/packages/f/fd) from the official repo:
+```
+eopkg install fd
 ```
 
 ### On RedHat Enterprise Linux 8/9 (RHEL8/9), Almalinux 8/9, EuroLinux 8/9 or Rocky Linux 8/9
@@ -623,7 +639,7 @@ brew install fd
 
 … or with MacPorts:
 ```
-sudo port install fd
+port install fd
 ```
 
 ### On Windows
@@ -668,7 +684,7 @@ pkg install fd-find
 
 ### From npm
 
-On linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
+On Linux and macOS, you can install the [fd-find](https://npm.im/fd-find) package:
 
 ```
 npm install -g fd-find
