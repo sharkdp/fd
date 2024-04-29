@@ -334,10 +334,6 @@ impl WorkerState {
                 .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
         }
 
-        if config.read_vcsignore {
-            builder.add("!.git/").expect("Invalid exclude pattern");
-        }
-
         builder
             .build()
             .map_err(|_| anyhow!("Mismatch in exclude patterns"))

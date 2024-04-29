@@ -33,16 +33,14 @@ with the '\-\-glob' option.
 By default
 .B fd
 will exclude hidden files and directories, as well as any files that match gitignore rules
-or ignore rules in .ignore or .fdignore files. For convenenience, '.git' is treated as if it
-was always included in gitignore rules. These files can be included with options such as
-'\-\-hidden' and '\-\-no\-ignore'.
+or ignore rules in .ignore or .fdignore files.
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
 Include hidden files and directories in the search results
 (default: hidden files and directories are skipped). The flag can be overridden with '--no-hidden'.
 .IP
-Ignored files and .git/ are still excluded unless \-\-no\-ignore or \-\-no\-ignore\-vcs
+Ignored files are still excluded unless \-\-no\-ignore or \-\-no\-ignore\-vcs
 is also used.
 .TP
 .B \-I, \-\-no\-ignore
@@ -79,7 +77,6 @@ and the global gitignore configuration
 .RI ( core.excludesFile
 git setting, which defaults to
 .IR $HOME/.config/git/ignore ).
-The pattern ".git/" is automatically added to the list of VCS ignore rules.
 The flag can be overridden with '--ignore-vcs'.
 .TP
 .B \-\-no\-require\-git
@@ -494,6 +491,17 @@ is set, use
 .IR $XDG_CONFIG_HOME/fd/ignore .
 Otherwise, use
 .IR $HOME/.config/fd/ignore .
+.SH FILES
+.TP
+.B .fdignore
+This file works similarly to a .gitignore file anywhere in the searched tree and specifies patterns
+that should be excluded from the search. However, this file is specific to fd, and will be used even
+if the --no-ignore-vcs option is used.
+.TP
+.B $XDG_CONFIG_HOME/fd/ignore
+Global ignore file. Unless ignore mode is turned off (such as with --no-ignore)
+ignore entries in this file will be ignored, as if it was an .fdignore file in the
+current directory.
 .SH EXAMPLES
 .TP
 .RI "Find files and directories that match the pattern '" needle "':"
@@ -507,6 +515,16 @@ $ fd -e py
 .TP
 .RI "Open all search results with vim:"
 $ fd pattern -X vim
+.SH Tips and Tricks
+.IP \[bu]
+If you add ".git/" to your global ignore file ($XDG_CONFIG_HOME/fd/ignore), then
+".git" folders will be ignored by default, even when the --hidden option is used.
+.IP \[bu]
+You can use a shell alias or a wrapper script in order to pass desired flags to fd
+by default. For example if you do not like the default behavior of respecting gitignore,
+you can use
+`alias fd="/usr/bin/fd --no-ignore-vcs"`
+in your .bashrc to create an alias for fd that doesn't ignore git files by default.
 .SH BUGS
 Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues
 .SH SEE ALSO
