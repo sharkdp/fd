@@ -2590,3 +2590,16 @@ fn test_git_dir() {
          nested/dir/.git/foo2",
     );
 }
+
+#[test]
+fn test_gitignore_parent() {
+    let te = TestEnv::new(&["sub"], &[".abc", "sub/.abc"]);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b".abc\n")
+        .unwrap();
+
+    te.assert_output_subdirectory("sub", &["--hidden"], "");
+    te.assert_output_subdirectory("sub", &["--hidden", "--search-path", "."], "");
+}
