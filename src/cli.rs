@@ -665,6 +665,9 @@ impl Opts {
     fn normalize_path(&self, path: &Path) -> PathBuf {
         if self.absolute_path {
             filesystem::absolute_path(path.normalize().unwrap().as_path()).unwrap()
+        } else if path == Path::new(".") {
+            // Change "." to "./" as a workaround for https://github.com/BurntSushi/ripgrep/pull/2711
+            PathBuf::from("./")
         } else {
             path.to_path_buf()
         }
