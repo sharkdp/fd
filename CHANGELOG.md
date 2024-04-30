@@ -7,7 +7,7 @@
 ## Bugfixes
 
 - Respect NO_COLOR environment variable with `--list-details` option. (#1455)
-- Fix bug that would cause hidden files to be includeddespite gitignore rules
+- Fix bug that would cause hidden files to be included despite gitignore rules
   if search path is "." (#1461, BurntSushi/ripgrep#2711).
 
 
