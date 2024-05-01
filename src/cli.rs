@@ -776,6 +776,11 @@ impl clap::FromArgMatches for Exec {
                     .get_occurrences::<String>("exec_batch")
                     .map(CommandSet::new_batch)
             })
+            .or_else(|| {
+                matches
+                    .get_occurrences::<String>("filter")
+                    .map(CommandSet::new_filter)
+            })
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
         Ok(Exec { command })
@@ -834,6 +839,37 @@ impl clap::Args for Exec {
                 .value_name("cmd")
                 .conflicts_with_all(["exec", "list_details"])
                 .help("Execute a command with all search results at once")
+                .long_help(
+                    "Execute the given command once, with all search results as arguments.\n\
+                     The order of the arguments is non-deterministic, and should not be relied upon.\n\
+                     One of the following placeholders is substituted before the command is executed:\n  \
+                       '{}':   path (of all search results)\n  \
+                       '{/}':  basename\n  \
+                       '{//}': parent directory\n  \
+                       '{.}':  path without file extension\n  \
+                       '{/.}': basename without file extension\n  \
+                       '{{':   literal '{' (for escaping)\n  \
+                       '}}':   literal '}' (for escaping)\n\n\
+                     If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                     Examples:\n\n  \
+                       - Find all test_*.py files and open them in your favorite editor:\n\n      \
+                           fd -g 'test_*.py' -X vim\n\n  \
+                       - Find all *.rs files and count the lines with \"wc -l ...\":\n\n      \
+                           fd -e rs -X wc -l\
+                     "
+                ),
+        )
+        .arg(
+            Arg::new("filter")
+                .action(ArgAction::Append)
+                .long("filter")
+                .short('f')
+                .num_args(1..)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                // .conflicts_with_all(["exec", "list_details"])
+                .help("Execute a command to determine whether each result should be filtered")
                 .long_help(
                     "Execute the given command once, with all search results as arguments.\n\
                      The order of the arguments is non-deterministic, and should not be relied upon.\n\
