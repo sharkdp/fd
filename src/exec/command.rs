@@ -93,6 +93,14 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
+    cmds: I,
+    out_perm: &Mutex<()>,
+    enable_output_buffering: bool,
+) -> ExitCode {
+    ExitCode::Success
+}
+
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {

@@ -46,6 +46,42 @@ pub fn job(
     ret
 }
 
+pub fn filter_job(
+    results: impl IntoIterator<Item = WorkerResult>,
+    cmd: &CommandSet,
+    out_perm: &Mutex<()>,
+    config: &Config,
+) -> ExitCode {
+    // Output should be buffered when only running a single thread
+    let buffer_output: bool = config.threads > 1;
+
+    let mut ret = ExitCode::Success;
+    for result in results {
+        // Obtain the next result from the receiver, else if the channel
+        // has closed, exit from the loop
+        let dir_entry = match result {
+            WorkerResult::Entry(dir_entry) => dir_entry,
+            WorkerResult::Error(err) => {
+                if config.show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                continue;
+            }
+        };
+
+        // Generate a command, execute it and store its exit code.
+        let code = cmd.execute_filter(
+            dir_entry.stripped_path(config),
+            config.path_separator.as_deref(),
+            out_perm,
+            buffer_output,
+        );
+        ret = merge_exitcodes([ret, code]);
+    }
+    // Returns error in case of any error.
+    ret
+}
+
 pub fn batch(
     results: impl IntoIterator<Item = WorkerResult>,
     cmd: &CommandSet,

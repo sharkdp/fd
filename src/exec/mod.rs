@@ -16,9 +16,9 @@ use argmax::Command;
 
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 
-use self::command::{execute_commands, handle_cmd_error};
+use self::command::{execute_commands, execute_commands_filtering, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
-pub use self::job::{batch, job};
+pub use self::job::{batch, job, filter_job};
 use self::token::{tokenize, Token};
 
 /// Execution mode of the command
@@ -28,6 +28,8 @@ pub enum ExecutionMode {
     OneByOne,
     /// Command is run for a batch of results at once
     Batch,
+    /// Command is executed for each search result to determine if it should be filtered
+    FilterResults,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,6 +78,25 @@ impl CommandSet {
         })
     }
 
+    pub fn new_filter<I, T, S>(input: I) -> Result<CommandSet>
+    where
+        I: IntoIterator<Item = T>,
+        T: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        Ok(CommandSet {
+            mode: ExecutionMode::FilterResults,
+            commands: input
+                .into_iter()
+                .map(CommandTemplate::new)
+                .collect::<Result<_>>()?,
+        })
+    }
+
+    pub fn get_mode(&self) -> ExecutionMode {
+        self.mode
+    }
+
     pub fn in_batch_mode(&self) -> bool {
         self.mode == ExecutionMode::Batch
     }
@@ -92,6 +113,20 @@ impl CommandSet {
             .iter()
             .map(|c| c.generate(input, path_separator));
         execute_commands(commands, out_perm, buffer_output)
+    }
+
+    pub fn execute_filter(
+        &self,
+        input: &Path,
+        path_separator: Option<&str>,
+        out_perm: &Mutex<()>,
+        buffer_output: bool,
+    ) -> ExitCode {
+        let commands = self
+            .commands
+            .iter()
+            .map(|c| c.generate(input, path_separator));
+        execute_commands_filtering(commands, out_perm, buffer_output)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
