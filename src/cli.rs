@@ -802,7 +802,7 @@ impl clap::Args for Exec {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                .conflicts_with("list_details")
+                .conflicts_with_all(["list_details", "exec_batch"])
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
@@ -856,7 +856,7 @@ impl clap::Args for Exec {
                            fd -g 'test_*.py' -X vim\n\n  \
                        - Find all *.rs files and count the lines with \"wc -l ...\":\n\n      \
                            fd -e rs -X wc -l\
-                     "
+                    "
                 ),
         )
         .arg(
@@ -868,13 +868,15 @@ impl clap::Args for Exec {
                 .allow_hyphen_values(true)
                 .value_terminator(";")
                 .value_name("cmd")
-                // .conflicts_with_all(["exec", "list_details"])
+                .conflicts_with_all(["exec", "exec_batch", "list_details"])
                 .help("Execute a command to determine whether each result should be filtered")
                 .long_help(
-                    "Execute the given command once, with all search results as arguments.\n\
-                     The order of the arguments is non-deterministic, and should not be relied upon.\n\
-                     One of the following placeholders is substituted before the command is executed:\n  \
-                       '{}':   path (of all search results)\n  \
+                    "Execute a command in parallel for each search result, filtering out results where the exit code is non-zero. \
+                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
+                     All positional arguments following --filter are considered to be arguments to the command - not to fd. \
+                     It is therefore recommended to place the '-f'/'--filter' option last.\n\
+                     The following placeholders are substituted before the command is executed:\n  \
+                       '{}':   path (of the current search result)\n  \
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
@@ -882,12 +884,7 @@ impl clap::Args for Exec {
                        '{{':   literal '{' (for escaping)\n  \
                        '}}':   literal '}' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
-                     Examples:\n\n  \
-                       - Find all test_*.py files and open them in your favorite editor:\n\n      \
-                           fd -g 'test_*.py' -X vim\n\n  \
-                       - Find all *.rs files and count the lines with \"wc -l ...\":\n\n      \
-                           fd -e rs -X wc -l\
-                     "
+                    "
                 ),
         )
     }
@@ -910,3 +907,4 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
         ))
     }
 }
+
