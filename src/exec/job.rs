@@ -15,6 +15,7 @@ pub fn job(
     cmd: &CommandSet,
     out_perm: &Mutex<()>,
     config: &Config,
+    filter: bool,
 ) -> ExitCode {
     // Output should be buffered when only running a single thread
     let buffer_output: bool = config.threads > 1;
@@ -34,12 +35,21 @@ pub fn job(
         };
 
         // Generate a command, execute it and store its exit code.
-        let code = cmd.execute(
-            dir_entry.stripped_path(config),
-            config.path_separator.as_deref(),
-            out_perm,
-            buffer_output,
-        );
+        let code = if filter {
+            cmd.execute_filter(
+                dir_entry.stripped_path(config),
+                config.path_separator.as_deref(),
+                out_perm,
+            )
+        } else { 
+            cmd.execute(
+                dir_entry.stripped_path(config),
+                config.path_separator.as_deref(),
+                out_perm,
+                buffer_output,
+            )
+        };
+
         ret = merge_exitcodes([ret, code]);
     }
     // Returns error in case of any error.

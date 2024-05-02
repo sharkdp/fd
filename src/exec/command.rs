@@ -11,6 +11,8 @@ struct Outputs {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
+
+/// Used to print the results of commands that run on results in a thread-safe way
 struct OutputBuffer<'a> {
     output_permission: &'a Mutex<()>,
     outputs: Vec<Outputs>,
@@ -93,6 +95,45 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+/// Executes a command and pushes the path to the buffer if it succeeded with a 
+/// non-zero exit code.
+pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
+    path: &std::path::Path,
+    cmds: I,
+    out_perm: &Mutex<()>,
+) -> ExitCode {
+    let mut output_buffer = OutputBuffer::new(out_perm);
+    let path = format!("{}\n", path.to_str().unwrap());
+    let path: Vec<u8> = path.into();
+
+    for result in cmds {
+        let mut cmd = match result {
+            Ok(cmd) => cmd,
+            Err(e) => return handle_cmd_error(None, e),
+        };
+
+        let output = cmd.output();
+
+        match output {
+            Ok(output) => {
+                if output.status.code() != Some(0) {
+                    return ExitCode::GeneralError;
+                } else {
+                    output_buffer.push(path.clone(), vec![]);
+                }
+            },
+            Err(why) => {
+                return handle_cmd_error(Some(&cmd), why);
+            },
+        }
+    }
+
+    output_buffer.write();
+    ExitCode::Success
+}
+
+/// Displays user-friendly error message based on the kind of error that occurred while
+/// running a command
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
