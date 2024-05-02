@@ -18,7 +18,7 @@ use crate::exit_codes::{merge_exitcodes, ExitCode};
 
 use self::command::{execute_commands, execute_commands_filtering, handle_cmd_error};
 use self::input::{basename, dirname, remove_extension};
-pub use self::job::{batch, job, filter_job};
+pub use self::job::{batch, job};
 use self::token::{tokenize, Token};
 
 /// Execution mode of the command

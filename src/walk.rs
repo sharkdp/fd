@@ -414,6 +414,7 @@ impl WorkerState {
                 },
                 exec::ExecutionMode::OneByOne | exec::ExecutionMode::FilterResults => {
                     let out_perm = Mutex::new(());
+                    let filter = cmd.get_mode() == exec::ExecutionMode::FilterResults;
 
                     thread::scope(|scope| {
                         // Each spawned job will store its thread handle in here.
@@ -423,13 +424,8 @@ impl WorkerState {
                             let rx = rx.clone();
 
                             // Spawn a job thread that will listen for and execute inputs.
-                            let handle = if let exec::ExecutionMode::OneByOne = cmd.get_mode() {
-                                scope
-                                    .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config))
-                            } else {
-                                scope
-                                    .spawn(|| exec::filter_job(rx.into_iter().flatten(), cmd, &out_perm, config))
-                            };
+                            let handle = scope
+                                .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config, filter));
 
                             // Push the handle of the spawned thread into the vector for later joining.
                             handles.push(handle);

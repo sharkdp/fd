@@ -11,6 +11,8 @@ struct Outputs {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
+
+/// Used to print the results of commands that run on results in a thread-safe way
 struct OutputBuffer<'a> {
     output_permission: &'a Mutex<()>,
     outputs: Vec<Outputs>,
@@ -93,6 +95,8 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+/// Executes a command and pushes the path to the buffer if it succeeded with a 
+/// non-zero exit code.
 pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
     path: &std::path::Path,
     cmds: I,
@@ -128,6 +132,8 @@ pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+/// Displays user-friendly error message based on the kind of error that occurred while
+/// running a command
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
