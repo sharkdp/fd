@@ -40,6 +40,7 @@ pub fn job(
                 dir_entry.stripped_path(config),
                 config.path_separator.as_deref(),
                 out_perm,
+                buffer_output,
             )
         } else { 
             cmd.execute(
