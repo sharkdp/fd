@@ -907,4 +907,3 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
         ))
     }
 }
-

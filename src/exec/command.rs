@@ -70,7 +70,7 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
             cmd.output()
         } else {
             // If running on only one thread, don't buffer output; instead just
-            // write directly to stdout. Allows for viewing and interacting with 
+            // write directly to stdout. Allows for viewing and interacting with
             // intermediate command output
             cmd.spawn().and_then(|c| c.wait_with_output())
         };
@@ -96,7 +96,7 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
-/// Executes a command and pushes the path to the buffer if it succeeded with a 
+/// Executes a command and pushes the path to the buffer if it succeeded with a
 /// non-zero exit code.
 pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
     path: &std::path::Path,
@@ -137,10 +137,10 @@ pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
                 } else {
                     return ExitCode::GeneralError;
                 }
-            },
+            }
             Err(why) => {
                 return handle_cmd_error(Some(&cmd), why);
-            },
+            }
         }
     }
     output_buffer.write();
