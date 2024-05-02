@@ -35,21 +35,13 @@ pub fn job(
         };
 
         // Generate a command, execute it and store its exit code.
-        let code = if filter {
-            cmd.execute_filter(
-                dir_entry.stripped_path(config),
-                config.path_separator.as_deref(),
-                out_perm,
-                buffer_output,
-            )
-        } else { 
-            cmd.execute(
-                dir_entry.stripped_path(config),
-                config.path_separator.as_deref(),
-                out_perm,
-                buffer_output,
-            )
-        };
+        let code = cmd.execute(
+            dir_entry.stripped_path(config),
+            config.path_separator.as_deref(),
+            out_perm,
+            buffer_output,
+            filter,
+        );
 
         ret = merge_exitcodes([ret, code]);
     }
