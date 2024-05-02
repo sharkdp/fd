@@ -52,9 +52,6 @@ pub fn filter_job(
     out_perm: &Mutex<()>,
     config: &Config,
 ) -> ExitCode {
-    // Output should be buffered when only running a single thread
-    let buffer_output: bool = config.threads > 1;
-
     let mut ret = ExitCode::Success;
     for result in results {
         // Obtain the next result from the receiver, else if the channel
@@ -74,7 +71,6 @@ pub fn filter_job(
             dir_entry.stripped_path(config),
             config.path_separator.as_deref(),
             out_perm,
-            buffer_output,
         );
         ret = merge_exitcodes([ret, code]);
     }

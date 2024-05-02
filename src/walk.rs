@@ -411,7 +411,7 @@ impl WorkerState {
             match cmd.get_mode() {
                 exec::ExecutionMode::Batch => {
                     exec::batch(rx.into_iter().flatten(), cmd, config)
-                }
+                },
                 exec::ExecutionMode::OneByOne | exec::ExecutionMode::FilterResults => {
                     let out_perm = Mutex::new(());
 

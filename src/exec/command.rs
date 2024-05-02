@@ -94,10 +94,37 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
 }
 
 pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
+    path: &std::path::Path,
     cmds: I,
     out_perm: &Mutex<()>,
-    enable_output_buffering: bool,
 ) -> ExitCode {
+    let mut output_buffer = OutputBuffer::new(out_perm);
+    let path = format!("{}\n", path.to_str().unwrap());
+    let path: Vec<u8> = path.into();
+
+    for result in cmds {
+        let mut cmd = match result {
+            Ok(cmd) => cmd,
+            Err(e) => return handle_cmd_error(None, e),
+        };
+
+        let output = cmd.output();
+
+        match output {
+            Ok(output) => {
+                if output.status.code() != Some(0) {
+                    return ExitCode::GeneralError;
+                } else {
+                    output_buffer.push(path.clone(), vec![]);
+                }
+            },
+            Err(why) => {
+                return handle_cmd_error(Some(&cmd), why);
+            },
+        }
+    }
+
+    output_buffer.write();
     ExitCode::Success
 }
 

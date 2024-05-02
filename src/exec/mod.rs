@@ -120,13 +120,12 @@ impl CommandSet {
         input: &Path,
         path_separator: Option<&str>,
         out_perm: &Mutex<()>,
-        buffer_output: bool,
     ) -> ExitCode {
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands_filtering(commands, out_perm, buffer_output)
+        execute_commands_filtering(input, commands, out_perm)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
