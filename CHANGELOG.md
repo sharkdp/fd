@@ -1,4 +1,4 @@
-# Upcoming release
+# v10.0.0
 
 ## Features
 
@@ -14,14 +14,13 @@
 - Respect NO_COLOR environment variable with `--list-details` option. (#1455)
 - Fix bug that would cause hidden files to be included despite gitignore rules
   if search path is "." (#1461, BurntSushi/ripgrep#2711).
+- aarch64 builds now use 64k page sizes with jemalloc. This fixes issues on some systems, such as ARM Macs that
+  have a larger system page size than the system that the binary was built on. (#1547)
+- Address [CVE-2024-24576](https://blog.rust-lang.org/2024/04/09/cve-2024-24576.html), by increasing minimum rust version.
 
 
 ## Changes
-
-
-## Other
-
-
+- Minimum supported rust version is now 1.77.2
 
 
 # v9.0.0
