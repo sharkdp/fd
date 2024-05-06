@@ -134,11 +134,7 @@ jobs:
 
     - name: Build
       shell: bash
-      run: |
-        case ${{ matrix.job.target }} in
-          aarch64-*) export JEMALLOC_SYS_WITH_LG_PAGE=16 ;;
-        esac;
-        $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+      run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
 
     - name: Set binary name & path
       id: bin
