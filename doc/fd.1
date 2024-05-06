@@ -163,12 +163,12 @@ path starting with '-' being treated as a command line option. Use
 this flag to change this behavior. If this flag is used without a value,
 it is equivalent to passing "always". Possible values are:
 .RS
-.IP auto
-Use the default behavior.
 .IP never
 Never strip the ./ at the beginning of paths
 .IP always
 Always strip the ./ at the beginning of paths
+.IP auto
+Only strip if used with --exec, --exec-batch, or --print0. That is, it resets to the default behavior.
 .RE
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
