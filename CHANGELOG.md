@@ -1,3 +1,16 @@
+# Upcoming release
+
+## Features
+
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
 # v10.0.0
 
 ## Features
