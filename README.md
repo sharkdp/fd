@@ -340,6 +340,7 @@ Options:
       --changed-within <date|dur>  Filter by file modification time (newer than)
       --changed-before <date|dur>  Filter by file modification time (older than)
   -o, --owner <user:group>         Filter by owning user and/or group
+      --format <fmt>               Print results according to template
   -x, --exec <cmd>...              Execute a command for each search result
   -X, --exec-batch <cmd>...        Execute a command with all search results at once
   -c, --color <when>               When to use colors [default: auto] [possible values: auto,
