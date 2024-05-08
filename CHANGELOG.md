@@ -21,6 +21,7 @@
   was often useful, it also broke some existing workflows, and there wasn't a good way to opt out of it. And there isn't really a good way for us to add
   a way to opt out of it. And you can easily get similar behavior by adding `.git/` to your global fdignore file.
     See #1457.
+- Add `-f` \ `--filter <command>` argument that allows you to filter results based on the output of a command, as requested in #400.
 
 ## Bugfixes
 

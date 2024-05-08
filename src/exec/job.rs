@@ -15,6 +15,7 @@ pub fn job(
     cmd: &CommandSet,
     out_perm: &Mutex<()>,
     config: &Config,
+    filter: bool,
 ) -> ExitCode {
     // Output should be buffered when only running a single thread
     let buffer_output: bool = config.threads > 1;
@@ -39,7 +40,9 @@ pub fn job(
             config.path_separator.as_deref(),
             out_perm,
             buffer_output,
+            filter,
         );
+
         ret = merge_exitcodes([ret, code]);
     }
     // Returns error in case of any error.

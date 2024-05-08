@@ -11,6 +11,8 @@ struct Outputs {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
+
+/// Used to print the results of commands that run on results in a thread-safe way
 struct OutputBuffer<'a> {
     output_permission: &'a Mutex<()>,
     outputs: Vec<Outputs>,
@@ -67,8 +69,9 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
         let output = if enable_output_buffering {
             cmd.output()
         } else {
-            // If running on only one thread, don't buffer output
-            // Allows for viewing and interacting with intermediate command output
+            // If running on only one thread, don't buffer output; instead just
+            // write directly to stdout. Allows for viewing and interacting with
+            // intermediate command output
             cmd.spawn().and_then(|c| c.wait_with_output())
         };
 
@@ -78,7 +81,7 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
                 if enable_output_buffering {
                     output_buffer.push(output.stdout, output.stderr);
                 }
-                if output.status.code() != Some(0) {
+                if !output.status.success() {
                     output_buffer.write();
                     return ExitCode::GeneralError;
                 }
@@ -93,6 +96,59 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+/// Executes a command and pushes the path to the buffer if it succeeded with a
+/// non-zero exit code.
+pub fn execute_commands_filtering<I: Iterator<Item = io::Result<Command>>>(
+    path: &std::path::Path,
+    cmds: I,
+    out_perm: &Mutex<()>,
+    enable_output_buffering: bool,
+) -> ExitCode {
+    let mut output_buffer = OutputBuffer::new(out_perm);
+
+    // Convert path to bufferable path string
+    let path_str = match path.to_str() {
+        Some(path) => format!("{}\n", path),
+        None => {
+            // Probably had non UTF-8 chars in the path somehow
+            return ExitCode::GeneralError;
+        }
+    };
+    let path_u8 = path_str.as_bytes().to_vec();
+
+    for result in cmds {
+        let mut cmd = match result {
+            Ok(cmd) => cmd,
+            Err(e) => return handle_cmd_error(None, e),
+        };
+
+        // Spawn the supplied command.
+        let output = cmd.output();
+
+        match output {
+            Ok(output) => {
+                if output.status.success() {
+                    if enable_output_buffering {
+                        // Push nothing to stderr because, well, there's nothing to push.
+                        output_buffer.push(path_u8.clone(), vec![]);
+                    } else {
+                        print!("{}", path_str);
+                    }
+                } else {
+                    return ExitCode::GeneralError;
+                }
+            }
+            Err(why) => {
+                return handle_cmd_error(Some(&cmd), why);
+            }
+        }
+    }
+    output_buffer.write();
+    ExitCode::Success
+}
+
+/// Displays user-friendly error message based on the kind of error that occurred while
+/// running a command
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {

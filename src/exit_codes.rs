@@ -43,6 +43,7 @@ impl ExitCode {
     }
 }
 
+/// If any of the exit codes was an error, this returns a GeneralError
 pub fn merge_exitcodes(results: impl IntoIterator<Item = ExitCode>) -> ExitCode {
     if results.into_iter().any(ExitCode::is_error) {
         return ExitCode::GeneralError;

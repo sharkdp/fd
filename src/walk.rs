@@ -408,28 +408,31 @@ impl WorkerState {
 
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
-            if cmd.in_batch_mode() {
-                exec::batch(rx.into_iter().flatten(), cmd, config)
-            } else {
-                let out_perm = Mutex::new(());
+            match cmd.get_mode() {
+                exec::ExecutionMode::Batch => exec::batch(rx.into_iter().flatten(), cmd, config),
+                exec::ExecutionMode::OneByOne | exec::ExecutionMode::FilterResults => {
+                    let out_perm = Mutex::new(());
+                    let filter = cmd.get_mode() == exec::ExecutionMode::FilterResults;
 
-                thread::scope(|scope| {
-                    // Each spawned job will store its thread handle in here.
-                    let threads = config.threads;
-                    let mut handles = Vec::with_capacity(threads);
-                    for _ in 0..threads {
-                        let rx = rx.clone();
+                    thread::scope(|scope| {
+                        // Each spawned job will store its thread handle in here.
+                        let threads = config.threads;
+                        let mut handles = Vec::with_capacity(threads);
+                        for _ in 0..threads {
+                            let rx = rx.clone();
 
-                        // Spawn a job thread that will listen for and execute inputs.
-                        let handle = scope
-                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config));
+                            // Spawn a job thread that will listen for and execute inputs.
+                            let handle = scope.spawn(|| {
+                                exec::job(rx.into_iter().flatten(), cmd, &out_perm, config, filter)
+                            });
 
-                        // Push the handle of the spawned thread into the vector for later joining.
-                        handles.push(handle);
-                    }
-                    let exit_codes = handles.into_iter().map(|handle| handle.join().unwrap());
-                    merge_exitcodes(exit_codes)
-                })
+                            // Push the handle of the spawned thread into the vector for later joining.
+                            handles.push(handle);
+                        }
+                        let exit_codes = handles.into_iter().map(|handle| handle.join().unwrap());
+                        merge_exitcodes(exit_codes)
+                    })
+                }
             }
         } else {
             let stdout = io::stdout().lock();
