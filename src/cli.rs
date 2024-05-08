@@ -452,6 +452,20 @@ pub struct Opts {
         )]
     pub owner: Option<OwnerFilter>,
 
+    /// Instead of printing the file normally, print the format string with the following placeholders replaced:
+    ///   '{}': path (of the current search result)
+    ///   '{/}': basename
+    ///   '{//}': parent directory
+    ///   '{.}': path without file extension
+    ///   '{/.}': basename without file extension
+    #[arg(
+        long,
+        value_name = "fmt",
+        help = "Print results according to template",
+        conflicts_with = "list_details"
+    )]
+    pub format: Option<String>,
+
     #[command(flatten)]
     pub exec: Exec,
 

@@ -1624,6 +1624,66 @@ fn test_excludes() {
     );
 }
 
+#[test]
+fn format() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--format", "path={}", "--path-separator=/"],
+        "path=a.foo
+        path=e1 e2
+        path=one
+        path=one/b.foo
+        path=one/two
+        path=one/two/C.Foo2
+        path=one/two/c.foo
+        path=one/two/three
+        path=one/two/three/d.foo
+        path=one/two/three/directory_foo
+        path=symlink",
+    );
+
+    te.assert_output(
+        &["foo", "--format", "noExt={.}", "--path-separator=/"],
+        "noExt=a
+        noExt=one/b
+        noExt=one/two/C
+        noExt=one/two/c
+        noExt=one/two/three/d
+        noExt=one/two/three/directory_foo",
+    );
+
+    te.assert_output(
+        &["foo", "--format", "basename={/}", "--path-separator=/"],
+        "basename=a.foo
+        basename=b.foo
+        basename=C.Foo2
+        basename=c.foo
+        basename=d.foo
+        basename=directory_foo",
+    );
+
+    te.assert_output(
+        &["foo", "--format", "name={/.}", "--path-separator=/"],
+        "name=a
+        name=b
+        name=C
+        name=c
+        name=d
+        name=directory_foo",
+    );
+
+    te.assert_output(
+        &["foo", "--format", "parent={//}", "--path-separator=/"],
+        "parent=.
+        parent=one
+        parent=one/two
+        parent=one/two
+        parent=one/two/three
+        parent=one/two/three",
+    );
+}
+
 /// Shell script execution (--exec)
 #[test]
 fn test_exec() {

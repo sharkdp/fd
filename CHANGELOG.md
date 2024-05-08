@@ -3,6 +3,7 @@
 ## Features
 
 - Allow passing an optional argument to `--strip-cwd-prefix` of "always", "never", or "auto". to force whether the cwd prefix is stripped or not.
+- Add a `--format` option which allows using a format template for direct ouput similar to the template used for `--exec`. (#1043)
 
 ## Bugfixes
 
