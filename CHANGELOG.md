@@ -1,4 +1,4 @@
-# Upcoming release
+# 10.1.0
 
 ## Features
 
@@ -6,12 +6,12 @@
 - Add a `--format` option which allows using a format template for direct ouput similar to the template used for `--exec`. (#1043)
 
 ## Bugfixes
-
-
-## Changes
+- Fix aarch64 page size again. This time it should actually work. (#1085, #1549) (@tavianator)
 
 
 ## Other
+
+- aarch64-apple-darwin target added to builds on the release page. Note that this is a tier 2 rust target.
 
 # v10.0.0
 
