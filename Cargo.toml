@@ -86,6 +86,7 @@ test-case = "3.3"
 lto = true
 strip = true
 codegen-units = 1
+panic = "abort"
 
 [features]
 use-jemalloc = ["jemallocator"]
