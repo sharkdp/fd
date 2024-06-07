@@ -90,6 +90,7 @@ debug = true
 lto = true
 strip = true
 codegen-units = 1
+panic = "abort"
 
 [features]
 use-jemalloc = ["tikv-jemallocator"]
