@@ -8,6 +8,7 @@ use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 use crate::fmt::FormatTemplate;
+use crate::hyperlink::PathUrl;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -83,8 +84,16 @@ fn print_entry_colorized<W: Write>(
 ) -> io::Result<()> {
     // Split the path between the parent and the last component
     let mut offset = 0;
+    let mut has_hyperlink = false;
     let path = entry.stripped_path(config);
     let path_str = path.to_string_lossy();
+
+    if config.hyperlink {
+        if let Some(url) = PathUrl::new(entry.path()) {
+            write!(stdout, "\x1B]8;;{}\x1B\\", url)?;
+            has_hyperlink = true;
+        }
+    }
 
     if let Some(parent) = path.parent() {
         offset = parent.to_string_lossy().len();
@@ -122,6 +131,10 @@ fn print_entry_colorized<W: Write>(
         config,
         ls_colors.style_for_indicator(Indicator::Directory),
     )?;
+
+    if has_hyperlink {
+        write!(stdout, "\x1B]8;;\x1B\\")?;
+    }
 
     if config.null_separator {
         write!(stdout, "\0")?;

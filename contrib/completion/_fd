@@ -139,6 +139,8 @@ _fd() {
       always\:"always use colorized output"
     ))'
 
+    '--hyperlink[add hyperlinks to output paths]'
+
     + '(threads)'
     {-j+,--threads=}'[set the number of threads for searching and executing]:number of threads'
 

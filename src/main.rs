@@ -8,6 +8,7 @@ mod filesystem;
 mod filetypes;
 mod filter;
 mod fmt;
+mod hyperlink;
 mod output;
 mod regex_helper;
 mod walk;
@@ -258,6 +259,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         threads: opts.threads().get(),
         max_buffer_time: opts.max_buffer_time,
         ls_colors,
+        hyperlink: opts.hyperlink,
         interactive_terminal,
         file_types: opts.filetype.as_ref().map(|values| {
             use crate::cli::FileType::*;

@@ -276,6 +276,12 @@ Do not colorize output.
 Always colorize output.
 .RE
 .TP
+.B "\-\-hyperlink
+Specify that the output should use terminal escape codes to indicate a hyperlink to a
+file url pointing to the path.
+Such hyperlinks will only actually be included if color output would be used, since
+that is likely correlated with the output being used on a terminal.
+.TP
 .BI "\-j, \-\-threads " num
 Set number of threads to use for searching & executing (default: number of available CPU cores).
 .TP

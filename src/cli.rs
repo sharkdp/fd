@@ -509,6 +509,13 @@ pub struct Opts {
     )]
     pub color: ColorWhen,
 
+    /// Add a terminal hyperlink to a file:// url for each path in the output.
+    ///
+    /// This doesn't do anything for options that don't use the defualt output such as
+    /// --exec and --format.
+    #[arg(long, alias = "hyper", help = "Add hyperlinks to output paths")]
+    pub hyperlink: bool,
+
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]

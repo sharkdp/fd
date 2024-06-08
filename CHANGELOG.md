@@ -1,3 +1,18 @@
+# Upcoming release
+
+## Features
+
+- Add --hyperlink option to add OSC 8 hyperlinks to output
+
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
 # 10.1.0
 
 ## Features
