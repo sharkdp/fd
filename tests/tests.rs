@@ -2688,5 +2688,5 @@ fn test_hyperlink() {
         get_absolute_root_path(&te),
     );
 
-    te.assert_output(&["--color=always", "--hyperlink", "a.foo"], &expected);
+    te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
 }

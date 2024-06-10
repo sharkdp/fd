@@ -277,10 +277,22 @@ Always colorize output.
 .RE
 .TP
 .B "\-\-hyperlink
-Specify that the output should use terminal escape codes to indicate a hyperlink to a
+Specify whether the output should use terminal escape codes to indicate a hyperlink to a
 file url pointing to the path.
-Such hyperlinks will only actually be included if color output would be used, since
-that is likely correlated with the output being used on a terminal.
+
+The value can be auto, always, or never.
+
+Currently, the default is "never", and if the option is used without an argument "auto" is
+used. In the future this may be changed to "auto" and "always".
+.RS
+.IP auto
+Only output hyperlinks if color is also enabled, as a proxy for whether terminal escape
+codes are acceptable.
+.IP never
+Never output hyperlink escapes.
+.IP always
+Always output hyperlink escapes, regardless of color settings.
+.RE
 .TP
 .BI "\-j, \-\-threads " num
 Set number of threads to use for searching & executing (default: number of available CPU cores).
