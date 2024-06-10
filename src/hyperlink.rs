@@ -65,16 +65,23 @@ const fn host() -> &'static str {
 mod test {
     use super::*;
 
+    // This allows us to test the encoding without having to worry about the host, or absolute path
+    struct Encoded(&'static str);
+
+    impl fmt::Display for Encoded {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            for byte in self.0.bytes() {
+                encode(f, byte)?;
+            }
+            Ok(())
+        }
+    }
+
     #[test]
     fn test_unicode_encoding() {
-        let path: PathBuf = "/$*\x1bßé/∫😃".into();
-        let url = PathUrl::new(&path).unwrap();
         assert_eq!(
-            url.to_string(),
-            format!(
-                "file://{}/%24%2A%1B%C3%9F%C3%A9/%E2%88%AB%F0%9F%98%83",
-                host()
-            ),
+            Encoded("$*\x1bßé/∫😃").to_string(),
+            "%24%2A%1B%C3%9F%C3%A9/%E2%88%AB%F0%9F%98%83",
         );
     }
 }
