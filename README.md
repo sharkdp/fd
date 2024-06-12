@@ -660,6 +660,13 @@ You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 nix-env -i fd
 ```
 
+### Via Flox
+
+You can use [Flox](https://flox.dev) to install `fd` into a Flox environment:
+```
+flox install fd
+```
+
 ### On FreeBSD
 
 You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
