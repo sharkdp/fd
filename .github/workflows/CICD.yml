@@ -80,19 +80,19 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-20.04, use-cross: true }
-          - { target: aarch64-unknown-linux-musl  , os: ubuntu-20.04, use-cross: true }
-          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-20.04, use-cross: true }
-          - { target: arm-unknown-linux-musleabihf, os: ubuntu-20.04, use-cross: true }
-          - { target: i686-pc-windows-msvc        , os: windows-2019                  }
-          - { target: i686-unknown-linux-gnu      , os: ubuntu-20.04, use-cross: true }
-          - { target: i686-unknown-linux-musl     , os: ubuntu-20.04, use-cross: true }
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04, use-cross: true }
+          - { target: aarch64-unknown-linux-musl  , os: ubuntu-22.04, use-cross: true }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-22.04, use-cross: true }
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-22.04, use-cross: true }
+          - { target: i686-pc-windows-msvc        , os: windows-2022                  }
+          - { target: i686-unknown-linux-gnu      , os: ubuntu-22.04, use-cross: true }
+          - { target: i686-unknown-linux-musl     , os: ubuntu-22.04, use-cross: true }
           - { target: x86_64-apple-darwin         , os: macos-12                      }
           - { target: aarch64-apple-darwin        , os: macos-14                      }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2019                  }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2019                  }
-          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-20.04, use-cross: true }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-20.04, use-cross: true }
+          - { target: x86_64-pc-windows-gnu       , os: windows-2022                  }
+          - { target: x86_64-pc-windows-msvc      , os: windows-2022                  }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-22.04, use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-22.04, use-cross: true }
     env:
       BUILD_CMD: cargo
     steps:
@@ -111,6 +111,9 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.job.target }}
+        # On windows, for now build with 1.77.2, so that it works on windows 7.
+        # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
+        toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.77.2' || 'stable' }}"
 
     - name: Install cross
       if: matrix.job.use-cross
