@@ -47,7 +47,7 @@ use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_wi
     feature = "use-jemalloc"
 ))]
 #[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
 // vivid --color-mode 8-bit generate molokai
 const DEFAULT_LS_COLORS: &str = "
