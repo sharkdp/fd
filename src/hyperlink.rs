@@ -39,7 +39,7 @@ fn encode(f: &mut Formatter, byte: u8) -> fmt::Result {
         #[cfg(windows)]
         b'\\' => f.write_char('/'),
         _ => {
-            write!(f, "%{:X}", byte)
+            write!(f, "%{:02X}", byte)
         }
     }
 }
@@ -80,8 +80,8 @@ mod test {
     #[test]
     fn test_unicode_encoding() {
         assert_eq!(
-            Encoded("$*\x1bßé/∫😃").to_string(),
-            "%24%2A%1B%C3%9F%C3%A9/%E2%88%AB%F0%9F%98%83",
+            Encoded("$*\x1bßé/∫😃\x07").to_string(),
+            "%24%2A%1B%C3%9F%C3%A9/%E2%88%AB%F0%9F%98%83%07",
         );
     }
 }
