@@ -316,6 +316,9 @@ impl TestEnv {
         } else {
             cmd.arg("--no-global-ignore-file");
         }
+        // Make sure LS_COLORS is unset to ensure consistent
+        // color output
+        cmd.env("LS_COLORS", "");
         cmd.args(args);
 
         // Run *fd*.
