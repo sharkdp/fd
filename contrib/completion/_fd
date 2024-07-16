@@ -139,6 +139,8 @@ _fd() {
       always\:"always use colorized output"
     ))'
 
+    '--hyperlink=-[add hyperlinks to output paths]::when:(auto never always)'
+
     + '(threads)'
     {-j+,--threads=}'[set the number of threads for searching and executing]:number of threads'
 
@@ -162,7 +164,7 @@ _fd() {
     $no'(*)*--search-path=[set search path (instead of positional <path> arguments)]:directory:_files -/'
 
     + strip-cwd-prefix
-    $no'(strip-cwd-prefix exec-cmds)--strip-cwd-prefix=[When to strip ./]:when:(always never auto)'
+    $no'(strip-cwd-prefix exec-cmds)--strip-cwd-prefix=-[When to strip ./]::when:(always never auto)'
 
     + and
     '--and=[additional required search path]:pattern'

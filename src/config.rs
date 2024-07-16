@@ -126,6 +126,9 @@ pub struct Config {
 
     /// Whether or not to strip the './' prefix for search results
     pub strip_cwd_prefix: bool,
+
+    /// Whether or not to use hyperlinks on paths
+    pub hyperlink: bool,
 }
 
 impl Config {
