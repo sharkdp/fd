@@ -57,6 +57,12 @@ install -Dm644 "LICENSE-APACHE" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/LICE
 install -Dm644 "CHANGELOG.md" "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
 gzip -n --best "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
 
+# Create symlinks so fdfind can be used as well:
+ln -s "/usr/bin/fd" "${DPKG_DIR}/usr/bin/fdfind"
+ln -s  './fd.bash' "${DPKG_DIR}/usr/share/bash-completion/completions/fdfind"
+ln -s  './fd.fish' "${DPKG_DIR}/usr/share/fish/vendor_completions.d/fdfind.fish"
+ln -s  './_fd' "${DPKG_DIR}/usr/share/zsh/vendor-completions/_fdfind"
+
 cat > "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/copyright" <<EOF
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: fd
@@ -109,7 +115,7 @@ Maintainer: ${MAINTAINER}
 Homepage: ${REPO}
 Architecture: ${DPKG_ARCH}
 Provides: fd
-Conflicts: ${DPKG_CONFLICTS}
+Conflicts: ${DPKG_CONFLICTS} fdfind
 Description: simple, fast and user-friendly alternative to find
   fd is a program to find entries in your filesystem.
   It is a simple, fast and user-friendly alternative to find.
