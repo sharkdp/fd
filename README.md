@@ -534,6 +534,8 @@ If you use an older version of Ubuntu, you can download the latest `.deb` packag
 dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
 ```
 
+Note that the .deb packages on the release page for this project still name the executable `fd`.
+
 ### On Debian
 
 If you run Debian Buster or newer, you can install the
@@ -545,6 +547,8 @@ Note that the binary is called `fdfind` as the binary name `fd` is already used 
 It is recommended that after installation, you add a link to `fd` by executing command
 `ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
 Make sure that `$HOME/.local/bin` is in your `$PATH`.
+
+Note that the .deb packages on the release page for this project still name the executable `fd`.
 
 ### On Fedora
 
