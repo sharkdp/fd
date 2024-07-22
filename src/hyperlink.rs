@@ -1,12 +1,8 @@
 use crate::filesystem::absolute_path;
 use std::fmt::{self, Formatter, Write};
 use std::path::{Path, PathBuf};
-use std::sync::OnceLock;
 
 pub(crate) struct PathUrl(PathBuf);
-
-#[cfg(unix)]
-static HOSTNAME: OnceLock<String> = OnceLock::new();
 
 impl PathUrl {
     pub(crate) fn new(path: &Path) -> Option<PathUrl> {
@@ -46,6 +42,10 @@ fn encode(f: &mut Formatter, byte: u8) -> fmt::Result {
 
 #[cfg(unix)]
 fn host() -> &'static str {
+    use std::sync::OnceLock;
+
+    static HOSTNAME: OnceLock<String> = OnceLock::new();
+
     HOSTNAME
         .get_or_init(|| {
             nix::unistd::gethostname()
