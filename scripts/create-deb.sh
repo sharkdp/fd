@@ -13,11 +13,11 @@ fi
 case "$TARGET" in
   *-musl*)
     DPKG_BASENAME=fd-musl
-    DPKG_CONFLICTS=fd
+    DPKG_CONFLICTS="fd, fd-find"
     ;;
   *)
     DPKG_BASENAME=fd
-    DPKG_CONFLICTS=fd-musl
+    DPKG_CONFLICTS="fd-musl, fd-find"
     ;;
 esac
 
@@ -115,7 +115,7 @@ Maintainer: ${MAINTAINER}
 Homepage: ${REPO}
 Architecture: ${DPKG_ARCH}
 Provides: fd
-Conflicts: ${DPKG_CONFLICTS} fdfind
+Conflicts: ${DPKG_CONFLICTS}
 Description: simple, fast and user-friendly alternative to find
   fd is a program to find entries in your filesystem.
   It is a simple, fast and user-friendly alternative to find.
