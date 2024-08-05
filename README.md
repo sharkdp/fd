@@ -60,7 +60,7 @@ X11/xinit/xinitrc
 X11/xinit/xserverrc
 ```
 
-The regular expression syntax used by `fd` is [documented here](https://docs.rs/regex/1.0.0/regex/#syntax).
+The regular expression syntax used by `fd` is [documented here](https://docs.rs/regex/latest/regex/#syntax).
 
 ### Specifying the root directory
 
