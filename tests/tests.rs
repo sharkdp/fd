@@ -616,7 +616,6 @@ fn test_glob_searches() {
 }
 
 /// Glob-based searches (--glob) in combination with full path searches (--full-path)
-#[cfg(not(windows))] // TODO: make this work on Windows
 #[test]
 fn test_full_path_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
