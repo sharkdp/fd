@@ -12,9 +12,6 @@ use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
 pub struct Config {
-    /// Whether the search is case-sensitive or case-insensitive.
-    pub case_sensitive: bool,
-
     /// Whether to search within the full file path or just the base name (filename or directory
     /// name).
     pub search_full_path: bool,

@@ -1,6 +1,4 @@
-use std::borrow::Cow;
 use std::env;
-use std::ffi::OsStr;
 use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
@@ -97,22 +95,6 @@ pub fn is_pipe(ft: fs::FileType) -> bool {
 #[cfg(windows)]
 pub fn is_pipe(_: fs::FileType) -> bool {
     false
-}
-
-#[cfg(any(unix, target_os = "redox"))]
-pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
-    use std::os::unix::ffi::OsStrExt;
-    Cow::Borrowed(input.as_bytes())
-}
-
-#[cfg(windows)]
-pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
-    let string = input.to_string_lossy();
-
-    match string {
-        Cow::Owned(string) => Cow::Owned(string.into_bytes()),
-        Cow::Borrowed(string) => Cow::Borrowed(string.as_bytes()),
-    }
 }
 
 /// Remove the `./` prefix from a path.
