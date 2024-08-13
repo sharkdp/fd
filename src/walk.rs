@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -13,7 +12,6 @@ use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, SendError, Sender};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
-use regex::bytes::Regex;
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
@@ -22,6 +20,7 @@ use crate::exec;
 use crate::exit_codes::{merge_exitcodes, ExitCode};
 use crate::filesystem;
 use crate::output;
+use crate::patterns::Patterns;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 #[derive(PartialEq)]
@@ -305,7 +304,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 /// State shared by the sender and receiver threads.
 struct WorkerState {
     /// The search patterns.
-    patterns: Vec<Regex>,
+    patterns: Patterns,
     /// The command line configuration.
     config: Config,
     /// Flag for cleanly shutting down the parallel walk
@@ -315,7 +314,7 @@ struct WorkerState {
 }
 
 impl WorkerState {
-    fn new(patterns: Vec<Regex>, config: Config) -> Self {
+    fn new(patterns: Patterns, config: Config) -> Self {
         let quit_flag = Arc::new(AtomicBool::new(false));
         let interrupt_flag = Arc::new(AtomicBool::new(false));
 
@@ -511,13 +510,13 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str: Cow<OsStr> = if config.search_full_path {
+                let search_str: Cow<Path> = if config.search_full_path {
                     let path_abs_buf = filesystem::path_absolute_form(entry_path)
                         .expect("Retrieving absolute path succeeds");
-                    Cow::Owned(path_abs_buf.as_os_str().to_os_string())
+                    Cow::Owned(path_abs_buf)
                 } else {
                     match entry_path.file_name() {
-                        Some(filename) => Cow::Borrowed(filename),
+                        Some(filename) => Cow::Borrowed(filename.as_ref()),
                         None => unreachable!(
                             "Encountered file system entry without a file name. This should only \
                              happen for paths like 'foo/bar/..' or '/' which are not supposed to \
@@ -526,17 +525,14 @@ impl WorkerState {
                     }
                 };
 
-                if !patterns
-                    .iter()
-                    .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
-                {
+                if !patterns.matches_path(&search_str) {
                     return WalkState::Continue;
                 }
 
                 // Filter out unwanted extensions.
                 if let Some(ref exts_regex) = config.extensions {
                     if let Some(path_str) = entry_path.file_name() {
-                        if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
+                        if !exts_regex.is_match(path_str.as_encoded_bytes()) {
                             return WalkState::Continue;
                         }
                     } else {
@@ -668,6 +664,6 @@ impl WorkerState {
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
+pub fn scan(paths: &[PathBuf], patterns: Patterns, config: Config) -> Result<ExitCode> {
     WorkerState::new(patterns, config).scan(paths)
 }

@@ -48,7 +48,9 @@ etcetera = "0.8"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.13"
 clap_complete = {version = "4.5.8", optional = true}
+memchr = "2.7.4"
 faccess = "0.2.4"
+pcre2 = {version = "0.2.9", optional = true}
 
 [dependencies.clap]
 version = "4.5.13"
@@ -91,4 +93,5 @@ codegen-units = 1
 use-jemalloc = ["jemallocator"]
 completions = ["clap_complete"]
 base = ["use-jemalloc"]
+pcre = ["dep:pcre2"]
 default = ["use-jemalloc", "completions"]

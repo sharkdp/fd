@@ -166,6 +166,18 @@ pub struct Opts {
     )]
     pub regex: bool,
 
+    /// Use the PCRE regex engine
+    ///
+    /// This allows you to use features like backreferences and lookarounds.
+    #[cfg(feature = "pcre")]
+    #[arg(
+        long,
+        overrides_with_all(["glob", "regex"]),
+        conflicts_with("fixed_strings"),
+        long_help
+    )]
+    pub pcre: bool,
+
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
     /// exact filename, consider using '--glob'.
@@ -605,13 +617,11 @@ pub struct Opts {
     /// is considered a match. If your pattern starts with a dash (-), make sure to
     /// pass '--' first, or it will be considered as a flag (fd -- '-foo').
     #[arg(
-        default_value = "",
-        hide_default_value = true,
         value_name = "pattern",
         help = "the search pattern (a regular expression, unless '--glob' is used; optional)",
         long_help
     )]
-    pub pattern: String,
+    pub pattern: Option<String>,
 
     /// Set the path separator to use when printing file paths. The default is
     /// the OS-specific separator ('/' on Unix, '\' on Windows).
