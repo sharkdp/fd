@@ -17,6 +17,8 @@ pub enum PatternType {
     Fixed,
     Glob,
     Exact,
+    #[cfg(feature = "pcre")]
+    Pcre,
 }
 
 impl Matcher for RegexSet {
@@ -26,6 +28,14 @@ impl Matcher for RegexSet {
         // Return true if the number of regexes that matched
         // equals the total number of regexes.
         matches.iter().count() == self.len()
+    }
+}
+
+#[cfg(feature = "pcre")]
+impl Matcher for Vec<pcre2::bytes::Regex> {
+    fn matches_path(&self, path: &OsStr) -> bool {
+        let path = path.as_encoded_bytes();
+        self.iter().all(|pat| pat.is_match(path).unwrap())
     }
 }
 
@@ -78,6 +88,8 @@ pub fn build_patterns(
     }
     match pattern_type {
         PatternType::Glob => build_glob_matcher(patterns, ignore_case),
+        #[cfg(feature = "pcre")]
+        PatternType::Pcre => Ok(Box::new(build_pcre_matcher(patterns, ignore_case)?)),
         PatternType::Fixed if !ignore_case => Ok(Box::new(FixedStrings(patterns))),
         PatternType::Exact if !ignore_case => Ok(Box::new(ExactStrings(patterns))),
         typ => {
@@ -119,6 +131,38 @@ fn build_glob(pattern: &str, ignore_case: bool) -> Result<Glob> {
         .build()?)
 }
 
+// Should we enable the unicde/utf8 features for regex and pcre?
+
+#[cfg(feature = "pcre")]
+fn build_pcre_matcher(
+    patterns: Vec<String>,
+    ignore_case: bool,
+) -> Result<Vec<pcre2::bytes::Regex>> {
+    use pcre2::bytes::RegexBuilder;
+    patterns
+        .iter()
+        .map(|pat| {
+            RegexBuilder::new()
+                .dotall(true)
+                .caseless(ignore_case)
+                .build(pat)
+                .map_err(|e| {
+                    anyhow!(
+                        "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
+                 or literal strings with '--exact' options (instead of a regular expression). \
+                 Alternatively, you can also use the '--glob' option to match on a glob pattern.",
+                        e
+                    )
+                })
+        })
+        .collect()
+}
+
+#[cfg(feature = "pcre")]
+const PCRE_ALT_MSG: &str = " Use --pcre to enable perl-compatible regex features.";
+#[cfg(not(feature = "pcre"))]
+const PCRE_ALT_MSG: &str = "";
+
 fn build_regex_matcher(patterns: Vec<String>, ignore_case: bool) -> Result<RegexSet> {
     RegexSetBuilder::new(patterns)
         .case_insensitive(ignore_case)
@@ -128,8 +172,9 @@ fn build_regex_matcher(patterns: Vec<String>, ignore_case: bool) -> Result<Regex
             anyhow!(
                 "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
                  or literal strings with '--exact' options (instead of a regular expression). \
-                 Alternatively, you can also use the '--glob' option to match on a glob pattern.",
+                 Alternatively, you can also use the '--glob' option to match on a glob pattern.{}",
                 e,
+                PCRE_ALT_MSG
             )
         })
 }

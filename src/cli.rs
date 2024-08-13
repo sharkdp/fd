@@ -170,6 +170,18 @@ pub struct Opts {
     )]
     pub regex: bool,
 
+    /// Use the PCRE regex engine
+    ///
+    /// This allows you to use features like backreferences and lookarounds.
+    #[cfg(feature = "pcre")]
+    #[arg(
+        long,
+        overrides_with_all(["glob", "regex"]),
+        conflicts_with("fixed_strings"),
+        long_help
+    )]
+    pub pcre: bool,
+
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
     /// exact filename, consider using '--glob' or '--exact' instead.

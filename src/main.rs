@@ -220,6 +220,10 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
 }
 
 fn determine_pattern_type(opts: &Opts) -> PatternType {
+    #[cfg(feature = "pcre")]
+    if opts.pcre {
+        return PatternType::Pcre;
+    }
     if opts.glob {
         PatternType::Glob
     } else if opts.exact {
@@ -511,6 +515,10 @@ fn patterns_match_strings_with_leading_dots(
     let mut iter = patterns.iter();
     match pattern_type {
         PatternType::Regex => iter.any(|pat| pattern_matches_strings_with_leading_dot(pat)),
+        // For PCRE just do a basic check if the pattern starts with "\." for a literal
+        // . since we can't parse it to an AST.
+        #[cfg(feature = "pcre")]
+        PatternType::Pcre => iter.any(|pat| pat.starts_with("^\\.")),
         // fixed strings aren't anchored so always false
         PatternType::Fixed => false,
         // globs and exact just check if it starts with a .
