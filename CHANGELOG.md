@@ -1,4 +1,4 @@
-# Upcoming release
+# 10.2.0
 
 ## Features
 
@@ -9,6 +9,9 @@
 
 
 ## Changes
+
+- Build windows releases with rust 1.77 so windows 7 is still supported
+- Deb packages now include symlink for fdfind to be more consistent with official packages
 
 
 ## Other
