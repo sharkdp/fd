@@ -60,7 +60,7 @@ default-features = false
 features = ["std", "clock"]
 
 [dependencies.lscolors]
-version = "0.18"
+version = "0.19"
 default-features = false
 features = ["nu-ansi-term"]
 
