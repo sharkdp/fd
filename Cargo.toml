@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
-version = "10.1.0"
+version = "10.2.0"
 edition= "2021"
 rust-version = "1.77.2"
 
@@ -60,7 +60,7 @@ default-features = false
 features = ["std", "clock"]
 
 [dependencies.lscolors]
-version = "0.18"
+version = "0.19"
 default-features = false
 features = ["nu-ansi-term"]
 

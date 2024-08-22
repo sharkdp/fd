@@ -329,6 +329,8 @@ Options:
   -X, --exec-batch <cmd>...        Execute a command with all search results at once
   -c, --color <when>               When to use colors [default: auto] [possible values: auto,
                                    always, never]
+      --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible
+                                   values: auto, always, never]
   -h, --help                       Print help (see more with '--help')
   -V, --version                    Print version
 ```
