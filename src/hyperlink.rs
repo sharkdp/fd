@@ -55,7 +55,7 @@ fn host() -> &'static str {
                         .and_then(|h| h.into_string().ok())
                         .unwrap_or_default()
                 },
-                |distro| format!("wsl.localhost/{distro}"),
+                |distro| format!("wsl$/{distro}"),
             )
         })
         .as_ref()
