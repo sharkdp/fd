@@ -42,27 +42,21 @@ fn encode(f: &mut Formatter, byte: u8) -> fmt::Result {
 
 #[cfg(unix)]
 fn host() -> &'static str {
-    use std::{process::Command, sync::OnceLock};
+    use std::{env, sync::OnceLock};
 
     static HOSTNAME: OnceLock<String> = OnceLock::new();
 
     HOSTNAME
         .get_or_init(|| {
-            let output = Command::new("wslpath").args(["-w", "/"]).output();
-
-            if let Ok(output) = output {
-                if output.status.success() {
-                    return String::from_utf8_lossy(&output.stdout)
-                        .trim()
-                        .trim_end_matches('\\')
-                        .to_string();
-                }
-            }
-
-            nix::unistd::gethostname()
-                .ok()
-                .and_then(|h| h.into_string().ok())
-                .unwrap_or_default()
+            env::var("WSL_DISTRO_NAME").map_or_else(
+                |_| {
+                    nix::unistd::gethostname()
+                        .ok()
+                        .and_then(|h| h.into_string().ok())
+                        .unwrap_or_default()
+                },
+                |distro| format!("wsl.localhost/{distro}"),
+            )
         })
         .as_ref()
 }
