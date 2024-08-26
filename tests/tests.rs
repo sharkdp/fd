@@ -4,7 +4,6 @@ mod testenv;
 use nix::unistd::{Gid, Group, Uid, User};
 use std::io::Write;
 use std::path::Path;
-use std::process::Command;
 use std::time::{Duration, SystemTime};
 use std::{env, fs};
 use test_case::test_case;
