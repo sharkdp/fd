@@ -2,11 +2,11 @@ mod testenv;
 
 #[cfg(unix)]
 use nix::unistd::{Gid, Group, Uid, User};
-use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::process::Command;
 use std::time::{Duration, SystemTime};
+use std::{env, fs};
 use test_case::test_case;
 
 use normpath::PathExt;
@@ -2678,25 +2678,19 @@ fn test_gitignore_parent() {
 fn test_hyperlink() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    let mut hostname = String::new();
+    #[cfg(not(unix))]
+    let hostname = String::new();
 
     #[cfg(unix)]
-    {
-        let output = Command::new("wslpath").args(["-w", "/"]).output();
-
-        if let Ok(output) = output {
-            if output.status.success() {
-                hostname = String::from_utf8_lossy(&output.stdout)
-                    .trim()
-                    .trim_end_matches('\\')
-                    .to_string();
-            }
-        }
-
-        if hostname.is_empty() {
-            hostname = nix::unistd::gethostname().unwrap().into_string().unwrap();
-        }
-    }
+    let hostname = env::var("WSL_DISTRO_NAME").map_or_else(
+        |_| {
+            nix::unistd::gethostname()
+                .ok()
+                .and_then(|h| h.into_string().ok())
+                .unwrap_or_default()
+        },
+        |distro| format!("wsl$/{distro}"),
+    );
 
     let expected = format!(
         "\x1b]8;;file://{}{}/a.foo\x1b\\a.foo\x1b]8;;\x1b\\",
