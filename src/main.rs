@@ -313,7 +313,23 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
             .map(crate::fmt::FormatTemplate::parse),
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
-        exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
+        exclude_patterns: opts
+            .exclude
+            .iter()
+            .map(|p| {
+                let path = Path::new(p);
+                let relative_path = if path.is_absolute() {
+                    let cwd = env::current_dir().unwrap_or("".into());
+                    path.strip_prefix(cwd)
+                        .unwrap()
+                        .to_string_lossy()
+                        .to_string()
+                } else {
+                    p.to_string()
+                };
+                String::from("!") + &relative_path
+            })
+            .collect(),
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
