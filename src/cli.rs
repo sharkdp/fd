@@ -275,6 +275,7 @@ pub struct Opts {
         long,
         value_name = "depth",
         hide_short_help = true,
+        alias("mindepth"),
         help = "Only show search results starting at the given depth.",
         long_help
     )]

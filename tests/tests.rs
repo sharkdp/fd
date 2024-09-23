@@ -2527,6 +2527,7 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=0"]);
 
     te.assert_failure(&["--min-depth=a"]);
+    te.assert_failure(&["--mindepth=a"]);
     te.assert_failure(&["--max-depth=a"]);
     te.assert_failure(&["--maxdepth=a"]);
     te.assert_failure(&["--exact-depth=a"]);
