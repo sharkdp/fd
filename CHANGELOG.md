@@ -1,3 +1,19 @@
+# Upcoming release
+
+## Features
+
+- Add a hidden `--mindepth` alias for `--min-depth`. (#1617)
+
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
+
 # 10.2.0
 
 ## Features
