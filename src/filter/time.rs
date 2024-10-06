@@ -148,21 +148,15 @@ mod tests {
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
         assert!(TimeFilter::before(&ref_time, &ref_timestamp.to_string()).is_none());
-        assert!(
-            TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
-        assert!(
-            !TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
-                .unwrap()
-                .applies_to(&t1s_later)
-        );
-        assert!(
-            !TimeFilter::after(&ref_time, &format!("@{ref_timestamp}"))
-                .unwrap()
-                .applies_to(&t1m_ago)
-        );
+        assert!(TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
+            .unwrap()
+            .applies_to(&t1m_ago));
+        assert!(!TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
+            .unwrap()
+            .applies_to(&t1s_later));
+        assert!(!TimeFilter::after(&ref_time, &format!("@{ref_timestamp}"))
+            .unwrap()
+            .applies_to(&t1m_ago));
         assert!(TimeFilter::after(&ref_time, &format!("@{ref_timestamp}"))
             .unwrap()
             .applies_to(&t1s_later));

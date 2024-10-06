@@ -376,9 +376,7 @@ impl WorkerState {
                     match result {
                         Some(ignore::Error::Partial(_)) => (),
                         Some(err) => {
-                            print_error(format!(
-                                "Malformed pattern in global ignore file. {err}."
-                            ));
+                            print_error(format!("Malformed pattern in global ignore file. {err}."));
                         }
                         None => (),
                     }

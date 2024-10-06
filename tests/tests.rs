@@ -595,10 +595,7 @@ fn test_full_path() {
     let prefix = escape(&root.to_string_lossy());
 
     te.assert_output(
-        &[
-            "--full-path",
-            &format!("^{prefix}.*three.*foo$"),
-        ],
+        &["--full-path", &format!("^{prefix}.*three.*foo$")],
         "one/two/three/d.foo
         one/two/three/directory_foo/",
     );
