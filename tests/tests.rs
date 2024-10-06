@@ -595,10 +595,7 @@ fn test_full_path() {
     let prefix = escape(&root.to_string_lossy());
 
     te.assert_output(
-        &[
-            "--full-path",
-            &format!("^{prefix}.*three.*foo$", prefix = prefix),
-        ],
+        &["--full-path", &format!("^{prefix}.*three.*foo$")],
         "one/two/three/d.foo
         one/two/three/directory_foo/",
     );
@@ -1518,7 +1515,7 @@ fn test_symlink_as_absolute_root() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
-        &["", &format!("{abs_path}/symlink", abs_path = abs_path)],
+        &["", &format!("{abs_path}/symlink")],
         &format!(
             "{abs_path}/symlink/c.foo
             {abs_path}/symlink/C.Foo2
@@ -1543,7 +1540,7 @@ fn test_symlink_and_full_path() {
         &[
             "--absolute-path",
             "--full-path",
-            &format!("^{prefix}.*three", prefix = prefix),
+            &format!("^{prefix}.*three"),
         ],
         &format!(
             "{abs_path}/{expected_path}/three/
@@ -1563,8 +1560,8 @@ fn test_symlink_and_full_path_abs_path() {
     te.assert_output(
         &[
             "--full-path",
-            &format!("^{prefix}.*symlink.*three", prefix = prefix),
-            &format!("{abs_path}/symlink", abs_path = abs_path),
+            &format!("^{prefix}.*symlink.*three"),
+            &format!("{abs_path}/symlink"),
         ],
         &format!(
             "{abs_path}/symlink/three/
@@ -2337,7 +2334,7 @@ fn test_owner_current_user() {
 fn test_owner_current_group() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     let gid = Gid::current();
-    te.assert_output(&["--owner", &format!(":{}", gid), "a.foo"], "a.foo");
+    te.assert_output(&["--owner", &format!(":{gid}"), "a.foo"], "a.foo");
     if let Ok(Some(group)) = Group::from_gid(gid) {
         te.assert_output(&["--owner", &format!(":{}", group.name), "a.foo"], "a.foo");
     }
@@ -2616,7 +2613,7 @@ fn test_invalid_cwd() {
         .unwrap();
 
     if !output.status.success() {
-        panic!("{:?}", output);
+        panic!("{output:?}");
     }
 }
 
