@@ -149,21 +149,21 @@ mod tests {
         // Timestamp only supported via '@' prefix
         assert!(TimeFilter::before(&ref_time, &ref_timestamp.to_string()).is_none());
         assert!(
-            TimeFilter::before(&ref_time, &format!("@{}", ref_timestamp))
+            TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
                 .unwrap()
                 .applies_to(&t1m_ago)
         );
         assert!(
-            !TimeFilter::before(&ref_time, &format!("@{}", ref_timestamp))
+            !TimeFilter::before(&ref_time, &format!("@{ref_timestamp}"))
                 .unwrap()
                 .applies_to(&t1s_later)
         );
         assert!(
-            !TimeFilter::after(&ref_time, &format!("@{}", ref_timestamp))
+            !TimeFilter::after(&ref_time, &format!("@{ref_timestamp}"))
                 .unwrap()
                 .applies_to(&t1m_ago)
         );
-        assert!(TimeFilter::after(&ref_time, &format!("@{}", ref_timestamp))
+        assert!(TimeFilter::after(&ref_time, &format!("@{ref_timestamp}"))
             .unwrap()
             .applies_to(&t1s_later));
     }

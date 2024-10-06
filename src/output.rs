@@ -17,7 +17,7 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
     let mut has_hyperlink = false;
     if config.hyperlink {
         if let Some(url) = PathUrl::new(entry.path()) {
-            write!(stdout, "\x1B]8;;{}\x1B\\", url)?;
+            write!(stdout, "\x1B]8;;{url}\x1B\\")?;
             has_hyperlink = true;
         }
     }
@@ -143,7 +143,7 @@ fn print_entry_uncolorized_base<W: Write>(
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    write!(stdout, "{}", path_string)?;
+    write!(stdout, "{path_string}")?;
     print_trailing_slash(stdout, entry, config, None)
 }
 

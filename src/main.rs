@@ -63,7 +63,7 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            eprintln!("[fd error]: {:#}", err);
+            eprintln!("[fd error]: {err:#}");
             ExitCode::GeneralError.exit();
         }
     }

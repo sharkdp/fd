@@ -5,7 +5,7 @@ fn main() {
         Some(true) => {}
         // rustc version too small or can't figure it out
         _ => {
-            eprintln!("'fd' requires rustc >= {}", min_version);
+            eprintln!("'fd' requires rustc >= {min_version}");
             std::process::exit(1);
         }
     }

@@ -35,7 +35,7 @@ fn encode(f: &mut Formatter, byte: u8) -> fmt::Result {
         #[cfg(windows)]
         b'\\' => f.write_char('/'),
         _ => {
-            write!(f, "%{:02X}", byte)
+            write!(f, "%{byte:02X}")
         }
     }
 }

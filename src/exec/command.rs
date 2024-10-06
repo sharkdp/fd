@@ -103,7 +103,7 @@ pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
             ExitCode::GeneralError
         }
         (_, err) => {
-            print_error(format!("Problem while executing command: {}", err));
+            print_error(format!("Problem while executing command: {err}"));
             ExitCode::GeneralError
         }
     }
