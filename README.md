@@ -673,6 +673,15 @@ You can use [Flox](https://flox.dev) to install `fd` into a Flox environment:
 flox install fd
 ```
 
+### Via x-cmd
+
+You can use the [x-cmd](https://www.x-cmd.com) to install `fd`:
+```
+x env use fd
+# of
+x fd
+```
+
 ### On FreeBSD
 
 You can install [the fd-find package](https://www.freshports.org/sysutils/fd) from the official repo:
