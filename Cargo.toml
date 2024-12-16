@@ -5,7 +5,7 @@ categories = ["command-line-utilities"]
 description = "fd is a simple, fast and user-friendly alternative to find."
 exclude = ["/benchmarks/*"]
 homepage = "https://github.com/sharkdp/fd"
-documentation = "https://docs.rs/crate/fd-find"
+documentation = "https://docs.rs/fd-find"
 keywords = [
     "search",
     "find",
