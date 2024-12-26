@@ -78,6 +78,22 @@ pub struct Opts {
     #[arg(long, overrides_with = "no_ignore_vcs", hide = true, action = ArgAction::SetTrue)]
     ignore_vcs: (),
 
+    ///Show search results from files and directories that
+    ///would otherwise be ignored by '.git/info/exclude'.
+    ///Git ignore files are still respected unless --no-ignore-vsc is given.
+    ///The flag can be overridden with --ignore-vcs.
+    #[arg(
+        long,
+        hide_short_help = true,
+        help = "Do not respect .git/info/exclude",
+        long_help
+    )]
+    pub no_ignore_vcs_exclude: bool,
+
+    /// Overrides --no-ignore-vcs-exclude
+    #[arg(long, overrides_with = "no_ignore_vcs_exclude", hide = true, action = ArgAction::SetTrue)]
+    ignore_vcs_exclude: (),
+
     /// Do not require a git repository to respect gitignores.
     /// By default, fd will only respect global gitignore rules, .gitignore rules,
     /// and local exclude rules if fd detects that you are searching inside a
