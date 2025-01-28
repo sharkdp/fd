@@ -477,7 +477,7 @@ impl WorkerState {
                                 && path
                                     .symlink_metadata()
                                     .ok()
-                                    .map_or(false, |m| m.file_type().is_symlink()) =>
+                                    .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
                             DirEntry::broken_symlink(path)
                         }
