@@ -388,6 +388,11 @@ use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and igno
 > fd -u …
 ```
 
+Also remember that by default, `fd` only searches based on the filename and
+doesn't compare the pattern to the full path. If you want to search based on the
+full path (similar to the `-path` option of `find`) you need to use the `--full-path`
+(or `-p`) option.
+
 ### Colorized output
 
 `fd` can colorize files by extension, just like `ls`. In order for this to work, the environment
