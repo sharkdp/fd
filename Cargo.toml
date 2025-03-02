@@ -51,7 +51,7 @@ clap_complete = {version = "4.5.44", optional = true}
 faccess = "0.2.4"
 
 [dependencies.clap]
-version = "4.5.27"
+version = "4.5.31"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.chrono]
