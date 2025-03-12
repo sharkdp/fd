@@ -1,6 +1,7 @@
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime};
+use jiff::Span;
 
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 /// Filter based on time ranges.
 #[derive(Debug, PartialEq, Eq)]
@@ -11,7 +12,8 @@ pub enum TimeFilter {
 
 impl TimeFilter {
     fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
-        humantime::parse_duration(s)
+        s.parse::<Span>()
+            .and_then(Duration::try_from)
             .map(|duration| *ref_time - duration)
             .ok()
             .or_else(|| {

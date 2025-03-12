@@ -41,7 +41,6 @@ ignore = "0.4.23"
 regex = "1.11.1"
 regex-syntax = "0.8"
 ctrlc = "3.2"
-humantime = "2.1"
 globset = "0.4"
 anyhow = "1.0"
 etcetera = "0.9"
@@ -49,6 +48,7 @@ normpath = "1.1.1"
 crossbeam-channel = "0.5.14"
 clap_complete = {version = "4.5.44", optional = true}
 faccess = "0.2.4"
+jiff = { version = "0.2.4", default-features = false, features = ["std"] }
 
 [dependencies.clap]
 version = "4.5.31"
