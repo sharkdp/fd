@@ -1,5 +1,4 @@
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime};
-use jiff::{Span, Zoned};
+use jiff::{civil::DateTime, tz::TimeZone, Span, Timestamp, Zoned};
 
 use std::time::SystemTime;
 
@@ -14,33 +13,28 @@ impl TimeFilter {
     fn from_str(ref_time: &SystemTime, s: &str) -> Option<SystemTime> {
         s.parse::<Span>()
             .and_then(|duration| {
-                Zoned::try_from(*ref_time).and_then(|zoned| zoned.checked_sub(duration))
+                Zoned::try_from(*ref_time).and_then(|zdt| zdt.checked_sub(duration))
             })
-            .map(SystemTime::from)
             .ok()
             .or_else(|| {
-                DateTime::parse_from_rfc3339(s)
-                    .map(|dt| dt.into())
+                let local_tz = TimeZone::system();
+                s.parse::<Timestamp>()
+                    .map(|ts| ts.to_zoned(TimeZone::UTC))
                     .ok()
                     .or_else(|| {
-                        NaiveDate::parse_from_str(s, "%F")
-                            .ok()?
-                            .and_hms_opt(0, 0, 0)?
-                            .and_local_timezone(Local)
-                            .latest()
-                    })
-                    .or_else(|| {
-                        NaiveDateTime::parse_from_str(s, "%F %T")
-                            .ok()?
-                            .and_local_timezone(Local)
-                            .latest()
+                        s.parse::<DateTime>()
+                            .map(|dt| local_tz.to_ambiguous_zoned(dt))
+                            .and_then(|zdt| zdt.later())
+                            .ok()
                     })
                     .or_else(|| {
                         let timestamp_secs = s.strip_prefix('@')?.parse().ok()?;
-                        DateTime::from_timestamp(timestamp_secs, 0).map(Into::into)
+                        Timestamp::from_second(timestamp_secs)
+                            .map(|ts| ts.to_zoned(TimeZone::UTC))
+                            .ok()
                     })
-                    .map(|dt| dt.into())
             })
+            .map(SystemTime::from)
     }
 
     pub fn before(ref_time: &SystemTime, s: &str) -> Option<TimeFilter> {
@@ -66,10 +60,10 @@ mod tests {
 
     #[test]
     fn is_time_filter_applicable() {
-        let ref_time = NaiveDateTime::parse_from_str("2010-10-10 10:10:10", "%F %T")
-            .unwrap()
-            .and_local_timezone(Local)
-            .latest()
+        let local_tz = TimeZone::system();
+        let ref_time = local_tz
+            .to_ambiguous_zoned("2010-10-10 10:10:10".parse::<DateTime>().unwrap())
+            .later()
             .unwrap()
             .into();
 
@@ -125,7 +119,8 @@ mod tests {
             .unwrap()
             .applies_to(&t1m_ago));
 
-        let ref_time = DateTime::parse_from_rfc3339("2010-10-10T10:10:10+00:00")
+        let ref_time = "2010-10-10T10:10:10+00:00"
+            .parse::<Timestamp>()
             .unwrap()
             .into();
         let t1m_ago = ref_time - Duration::from_secs(60);
@@ -145,7 +140,8 @@ mod tests {
             .applies_to(&t1m_ago));
 
         let ref_timestamp = 1707723412u64; // Mon Feb 12 07:36:52 UTC 2024
-        let ref_time = DateTime::parse_from_rfc3339("2024-02-12T07:36:52+00:00")
+        let ref_time = "2024-02-12T07:36:52+00:00"
+            .parse::<Timestamp>()
             .unwrap()
             .into();
         let t1m_ago = ref_time - Duration::from_secs(60);

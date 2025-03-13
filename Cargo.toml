@@ -48,16 +48,11 @@ normpath = "1.1.1"
 crossbeam-channel = "0.5.14"
 clap_complete = {version = "4.5.44", optional = true}
 faccess = "0.2.4"
-jiff = { version = "0.2.4", default-features = false, features = ["std"] }
+jiff = "0.2.4"
 
 [dependencies.clap]
 version = "4.5.31"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
-
-[dependencies.chrono]
-version = "0.4.39"
-default-features = false
-features = ["std", "clock"]
 
 [dependencies.lscolors]
 version = "0.20"
