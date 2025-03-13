@@ -10,6 +10,7 @@
 
 ## Changes
 
+- Replace `humantime` crate and `chrono` crate with `jiff` crate, see #1690 (@sorairolake)
 
 ## Other
 

@@ -8,6 +8,7 @@ use std::path::Path;
 use std::time::{Duration, SystemTime};
 use test_case::test_case;
 
+use jiff::Timestamp;
 use normpath::PathExt;
 use regex::escape;
 
@@ -2288,7 +2289,10 @@ fn test_modified_relative() {
 
 #[cfg(test)]
 fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
-    let st = humantime::parse_rfc3339(iso_date).expect("invalid date");
+    let st = iso_date
+        .parse::<Timestamp>()
+        .map(SystemTime::from)
+        .expect("invalid date");
     let ft = filetime::FileTime::from_system_time(st);
     filetime::set_file_times(path, ft, ft).expect("time modification failde");
 }
