@@ -1,6 +1,6 @@
 use jiff::{civil::DateTime, tz::TimeZone, Span, Timestamp, Zoned};
 
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Filter based on time ranges.
 #[derive(Debug, PartialEq, Eq)]
@@ -22,33 +22,28 @@ thread_local! {
 /// This allows us to set a specific time when running tests
 #[cfg(test)]
 fn now() -> Zoned {
-    TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(|| Zoned::now()))
+    TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(Zoned::now))
 }
 
 impl TimeFilter {
     fn from_str(s: &str) -> Option<SystemTime> {
-        s.parse::<Span>()
-            .and_then(|duration| now().checked_sub(duration))
-            .ok()
-            .or_else(|| {
-                let local_tz = TimeZone::system();
-                s.parse::<Timestamp>()
-                    .map(|ts| ts.to_zoned(TimeZone::UTC))
-                    .ok()
-                    .or_else(|| {
-                        s.parse::<DateTime>()
-                            .map(|dt| local_tz.to_ambiguous_zoned(dt))
-                            .and_then(|zdt| zdt.later())
-                            .ok()
-                    })
-                    .or_else(|| {
-                        let timestamp_secs = s.strip_prefix('@')?.parse().ok()?;
-                        Timestamp::from_second(timestamp_secs)
-                            .map(|ts| ts.to_zoned(TimeZone::UTC))
-                            .ok()
-                    })
-            })
-            .map(SystemTime::from)
+        if let Ok(span) = s.parse::<Span>() {
+            let datetime = now().checked_sub(span).ok()?;
+            Some(datetime.into())
+        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
+            Some(timestamp.into())
+        } else if let Ok(datetime) = s.parse::<DateTime>() {
+            Some(
+                TimeZone::system()
+                    .to_ambiguous_zoned(datetime)
+                    .later()
+                    .ok()?
+                    .into(),
+            )
+        } else {
+            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
+            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+        }
     }
 
     pub fn before(s: &str) -> Option<TimeFilter> {
