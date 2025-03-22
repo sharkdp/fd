@@ -10,7 +10,11 @@
 
 ## Changes
 
-- Replace `humantime` crate and `chrono` crate with `jiff` crate, see #1690 (@sorairolake)
+- Replace `humantime` crate and `chrono` crate with `jiff` crate, see #1690 (@sorairolake). This has some small changes to the
+  way dates given to options such `--changed-within` and `--changed-before` including:
+  - 'M' no longer means "month", as that could be confusing with minutes. Use "mo", "mos", "month" or "months" instead.
+  - month and year now account for variability in the calander rather than being a hard-coded number of seconds. That is probably
+    what you would expect, but it is a slight change in behavior.
 
 ## Other
 

@@ -17,7 +17,6 @@ use std::env;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
-use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{CommandFactory, Parser};
@@ -429,10 +428,9 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 }
 
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
-    let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(ref t) = opts.changed_within {
-        if let Some(f) = TimeFilter::after(&now, t) {
+        if let Some(f) = TimeFilter::after(t) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(
@@ -442,7 +440,7 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
         }
     }
     if let Some(ref t) = opts.changed_before {
-        if let Some(f) = TimeFilter::before(&now, t) {
+        if let Some(f) = TimeFilter::before(t) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(
