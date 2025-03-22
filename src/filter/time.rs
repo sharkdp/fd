@@ -67,20 +67,41 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
-    fn set_test_time(time: Zoned) -> SystemTime {
-        TESTTIME.with_borrow_mut(|t| *t = Some(time.clone()));
-        time.into()
+    struct TestTime(SystemTime);
+
+    impl TestTime {
+        fn new(time: Zoned) -> Self {
+            TESTTIME.with_borrow_mut(|t| *t = Some(time.clone()));
+            TestTime(time.into())
+        }
+
+        fn set(&mut self, time: Zoned) {
+            TESTTIME.with_borrow_mut(|t| *t = Some(time.clone()));
+            self.0 = time.into();
+        }
+
+        fn timestamp(&self) -> SystemTime {
+            self.0
+        }
+    }
+
+    impl Drop for TestTime {
+        fn drop(&mut self) {
+            // Stop using manually set times
+            TESTTIME.with_borrow_mut(|t| *t = None);
+        }
     }
 
     #[test]
     fn is_time_filter_applicable() {
         let local_tz = TimeZone::system();
-        let ref_time = set_test_time(
+        let mut test_time = TestTime::new(
             local_tz
                 .to_ambiguous_zoned("2010-10-10 10:10:10".parse::<DateTime>().unwrap())
                 .later()
                 .unwrap(),
         );
+        let mut ref_time = test_time.timestamp();
 
         assert!(TimeFilter::after("1min").unwrap().applies_to(&ref_time));
         assert!(!TimeFilter::before("1min").unwrap().applies_to(&ref_time));
@@ -112,12 +133,13 @@ mod tests {
         assert!(TimeFilter::after(same_day).unwrap().applies_to(&ref_time));
         assert!(TimeFilter::after(same_day).unwrap().applies_to(&t1m_ago));
 
-        let ref_time = set_test_time(
+        test_time.set(
             "2010-10-10T10:10:10+00:00"
                 .parse::<Timestamp>()
                 .unwrap()
                 .to_zoned(local_tz.clone()),
         );
+        ref_time = test_time.timestamp();
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t10s_before = "2010-10-10T10:10:00+00:00";
         assert!(!TimeFilter::before(t10s_before)
@@ -133,12 +155,13 @@ mod tests {
         assert!(!TimeFilter::after(t10s_before).unwrap().applies_to(&t1m_ago));
 
         let ref_timestamp = 1707723412u64; // Mon Feb 12 07:36:52 UTC 2024
-        let ref_time = set_test_time(
+        test_time.set(
             "2024-02-12T07:36:52+00:00"
                 .parse::<Timestamp>()
                 .unwrap()
                 .to_zoned(local_tz),
         );
+        ref_time = test_time.timestamp();
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
@@ -155,8 +178,5 @@ mod tests {
         assert!(TimeFilter::after(&format!("@{ref_timestamp}"))
             .unwrap()
             .applies_to(&t1s_later));
-
-        // Stop using manually set times
-        TESTTIME.with_borrow_mut(|t| *t = None);
     }
 }
