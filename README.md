@@ -574,7 +574,7 @@ apk add fd
 
 ### On Arch Linux
 
-You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
+You can install [the fd package](https://www.archlinux.org/packages/extra/x86_64/fd/) from the official repos:
 ```
 pacman -S fd
 ```
