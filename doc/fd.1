@@ -255,6 +255,14 @@ as a normal search pattern.
 Exclude files/directories that match the given glob pattern.
 This overrides any other ignore logic.
 Multiple exclude patterns can be specified.
+This uses the same syntax as ignore files (i.e. gitignore) and behaves as if
+.I pattern
+was a line in the global ignore file.
+
+Note that for purposes of ignore rules, the current directory
+is treated as the root, so patterns that begin with / will be anchored
+against the current directory, not treated as absolute paths.
+
 Examples:
   \-\-exclude '*.pyc'
   \-\-exclude node_modules
