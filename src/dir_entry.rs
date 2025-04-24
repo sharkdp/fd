@@ -137,7 +137,7 @@ impl Colorable for DirEntry {
                 // but we want it for all component types, so we open code it.
                 // Copied from LsColors::style_for_path_with_metadata().
                 path.components()
-                    .last()
+                    .next_back()
                     .map(|c| c.as_os_str())
                     .unwrap_or_else(|| path.as_os_str())
             }
