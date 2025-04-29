@@ -46,7 +46,7 @@ globset = "0.4"
 anyhow = "1.0"
 etcetera = "0.10"
 normpath = "1.1.1"
-crossbeam-channel = "0.5.14"
+crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.5.47", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.5"
