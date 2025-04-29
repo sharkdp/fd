@@ -44,7 +44,7 @@ regex-syntax = "0.8"
 ctrlc = "3.2"
 globset = "0.4"
 anyhow = "1.0"
-etcetera = "0.9"
+etcetera = "0.10"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.14"
 clap_complete = {version = "4.5.47", optional = true}
