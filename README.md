@@ -335,7 +335,7 @@ Options:
   -V, --version                    Print version
 ```
 
-Not that options can be given after the pattern and/or path as well.
+Note that options can be given after the pattern and/or path as well.
 
 ## Benchmark
 
