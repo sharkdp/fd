@@ -18,8 +18,8 @@ fd \- find entries in the filesystem
 .IR num ]
 .RB [ \-x
 .IR cmd ]
-.RI [ pattern ]
-.RI [ path... ]
+.RI [ pattern
+.RI [ path... ]]
 .SH DESCRIPTION
 .B fd
 is a simple, fast and user-friendly alternative to
@@ -34,6 +34,12 @@ By default
 .B fd
 will exclude hidden files and directories, as well as any files that match gitignore rules
 or ignore rules in .ignore or .fdignore files.
+.P
+If you wish to search all files in a specific directory, you can use '' or . as the search pattern,
+to match all files. Or you can use the '\-\-search\-path' option to specify the path(s) instead of
+the positional parameter.
+.P
+Options may be given anywhere on the command line.
 .SH OPTIONS
 .TP
 .B \-H, \-\-hidden
