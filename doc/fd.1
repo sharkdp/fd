@@ -478,6 +478,10 @@ file in a batch and passed as separate arguments.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
 
+Like \-\-exec, subsequent arguments are assumed to be part of
+.I command
+until either the end of command arguments or a ';' argument. See above.
+
 Like \-\-exec, this can be used multiple times, in which case each command will be run in
 the order given.
 
