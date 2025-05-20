@@ -103,6 +103,10 @@ pub struct Config {
     /// A list of custom ignore files.
     pub ignore_files: Vec<PathBuf>,
 
+    /// The name of the custom ignore file to look for in each directory.
+    /// If set, .ignore and .fdignore are not used.
+    pub custom_ignore_file_name: Option<String>,
+
     /// The given constraints on the size of returned files
     pub size_constraints: Vec<SizeFilter>,
 

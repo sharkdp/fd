@@ -314,6 +314,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
         ignore_files: std::mem::take(&mut opts.ignore_file),
+        custom_ignore_file_name: opts.ignore_file_name.take(),
         size_constraints: size_limits,
         time_constraints,
         #[cfg(unix)]
