@@ -75,6 +75,7 @@ pub struct Config {
     pub ls_colors: Option<LsColors>,
 
     /// Whether or not we are writing to an interactive terminal
+    #[cfg_attr(not(unix), allow(unused))]
     pub interactive_terminal: bool,
 
     /// The type of file to search for. If set to `None`, all file types are displayed. If
@@ -126,6 +127,9 @@ pub struct Config {
 
     /// Whether or not to strip the './' prefix for search results
     pub strip_cwd_prefix: bool,
+
+    /// Whether or not to use hyperlinks on paths
+    pub hyperlink: bool,
 }
 
 impl Config {

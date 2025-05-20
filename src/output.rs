@@ -5,33 +5,39 @@ use lscolors::{Indicator, LsColors, Style};
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::error::print_error;
-use crate::exit_codes::ExitCode;
 use crate::fmt::FormatTemplate;
+use crate::hyperlink::PathUrl;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
 }
 
 // TODO: this function is performance critical and can probably be optimized
-pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) {
-    // TODO: use format if supplied
-    let r = if let Some(ref format) = config.format {
-        print_entry_format(stdout, entry, config, format)
+pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) -> io::Result<()> {
+    let mut has_hyperlink = false;
+    if config.hyperlink {
+        if let Some(url) = PathUrl::new(entry.path()) {
+            write!(stdout, "\x1B]8;;{url}\x1B\\")?;
+            has_hyperlink = true;
+        }
+    }
+
+    if let Some(ref format) = config.format {
+        print_entry_format(stdout, entry, config, format)?;
     } else if let Some(ref ls_colors) = config.ls_colors {
-        print_entry_colorized(stdout, entry, config, ls_colors)
+        print_entry_colorized(stdout, entry, config, ls_colors)?;
     } else {
-        print_entry_uncolorized(stdout, entry, config)
+        print_entry_uncolorized(stdout, entry, config)?;
     };
 
-    if let Err(e) = r {
-        if e.kind() == ::std::io::ErrorKind::BrokenPipe {
-            // Exit gracefully in case of a broken pipe (e.g. 'fd ... | head -n 3').
-            ExitCode::Success.exit();
-        } else {
-            print_error(format!("Could not write to output: {}", e));
-            ExitCode::GeneralError.exit();
-        }
+    if has_hyperlink {
+        write!(stdout, "\x1B]8;;\x1B\\")?;
+    }
+
+    if config.null_separator {
+        write!(stdout, "\0")
+    } else {
+        writeln!(stdout)
     }
 }
 
@@ -45,7 +51,7 @@ fn print_trailing_slash<W: Write>(
     config: &Config,
     style: Option<&Style>,
 ) -> io::Result<()> {
-    if entry.file_type().map_or(false, |ft| ft.is_dir()) {
+    if entry.file_type().is_some_and(|ft| ft.is_dir()) {
         write!(
             stdout,
             "{}",
@@ -65,13 +71,12 @@ fn print_entry_format<W: Write>(
     config: &Config,
     format: &FormatTemplate,
 ) -> io::Result<()> {
-    let separator = if config.null_separator { "\0" } else { "\n" };
     let output = format.generate(
         entry.stripped_path(config),
         config.path_separator.as_deref(),
     );
     // TODO: support writing raw bytes on unix?
-    write!(stdout, "{}{}", output.to_string_lossy(), separator)
+    write!(stdout, "{}", output.to_string_lossy())
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -123,12 +128,6 @@ fn print_entry_colorized<W: Write>(
         ls_colors.style_for_indicator(Indicator::Directory),
     )?;
 
-    if config.null_separator {
-        write!(stdout, "\0")?;
-    } else {
-        writeln!(stdout)?;
-    }
-
     Ok(())
 }
 
@@ -138,16 +137,14 @@ fn print_entry_uncolorized_base<W: Write>(
     entry: &DirEntry,
     config: &Config,
 ) -> io::Result<()> {
-    let separator = if config.null_separator { "\0" } else { "\n" };
     let path = entry.stripped_path(config);
 
     let mut path_string = path.to_string_lossy();
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    write!(stdout, "{}", path_string)?;
-    print_trailing_slash(stdout, entry, config, None)?;
-    write!(stdout, "{}", separator)
+    write!(stdout, "{path_string}")?;
+    print_trailing_slash(stdout, entry, config, None)
 }
 
 #[cfg(not(unix))]
@@ -172,9 +169,7 @@ fn print_entry_uncolorized<W: Write>(
         print_entry_uncolorized_base(stdout, entry, config)
     } else {
         // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
-        let separator = if config.null_separator { b"\0" } else { b"\n" };
         stdout.write_all(entry.stripped_path(config).as_os_str().as_bytes())?;
-        print_trailing_slash(stdout, entry, config, None)?;
-        stdout.write_all(separator)
+        print_trailing_slash(stdout, entry, config, None)
     }
 }

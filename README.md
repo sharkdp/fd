@@ -60,7 +60,7 @@ X11/xinit/xinitrc
 X11/xinit/xserverrc
 ```
 
-The regular expression syntax used by `fd` is [documented here](https://docs.rs/regex/1.0.0/regex/#syntax).
+The regular expression syntax used by `fd` is [documented here](https://docs.rs/regex/latest/regex/#syntax).
 
 ### Specifying the root directory
 
@@ -298,7 +298,7 @@ This is the output of `fd -h`. To see the full set of command-line options, use 
 also includes a much more detailed help text.
 
 ```
-Usage: fd [OPTIONS] [pattern] [path]...
+Usage: fd [OPTIONS] [pattern [path...]]
 
 Arguments:
   [pattern]  the search pattern (a regular expression, unless '--glob' is used; optional)
@@ -329,9 +329,13 @@ Options:
   -X, --exec-batch <cmd>...        Execute a command with all search results at once
   -c, --color <when>               When to use colors [default: auto] [possible values: auto,
                                    always, never]
+      --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible
+                                   values: auto, always, never]
   -h, --help                       Print help (see more with '--help')
   -V, --version                    Print version
 ```
+
+Note that options can be given after the pattern and/or path as well.
 
 ## Benchmark
 
@@ -385,6 +389,11 @@ use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and igno
 ``` bash
 > fd -u …
 ```
+
+Also remember that by default, `fd` only searches based on the filename and
+doesn't compare the pattern to the full path. If you want to search based on the
+full path (similar to the `-path` option of `find`) you need to use the `--full-path`
+(or `-p`) option.
 
 ### Colorized output
 
@@ -534,6 +543,8 @@ If you use an older version of Ubuntu, you can download the latest `.deb` packag
 dpkg -i fd_9.0.0_amd64.deb # adapt version number and architecture
 ```
 
+Note that the .deb packages on the release page for this project still name the executable `fd`.
+
 ### On Debian
 
 If you run Debian Buster or newer, you can install the
@@ -545,6 +556,8 @@ Note that the binary is called `fdfind` as the binary name `fd` is already used 
 It is recommended that after installation, you add a link to `fd` by executing command
 `ln -s $(which fdfind) ~/.local/bin/fd`, in order to use `fd` in the same way as in this documentation.
 Make sure that `$HOME/.local/bin` is in your `$PATH`.
+
+Note that the .deb packages on the release page for this project still name the executable `fd`.
 
 ### On Fedora
 
@@ -563,7 +576,7 @@ apk add fd
 
 ### On Arch Linux
 
-You can install [the fd package](https://www.archlinux.org/packages/community/x86_64/fd/) from the official repos:
+You can install [the fd package](https://www.archlinux.org/packages/extra/x86_64/fd/) from the official repos:
 ```
 pacman -S fd
 ```
@@ -658,6 +671,13 @@ guix install fd
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
 ```
 nix-env -i fd
+```
+
+### Via Flox
+
+You can use [Flox](https://flox.dev) to install `fd` into a Flox environment:
+```
+flox install fd
 ```
 
 ### On FreeBSD

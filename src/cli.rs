@@ -275,6 +275,7 @@ pub struct Opts {
         long,
         value_name = "depth",
         hide_short_help = true,
+        alias("mindepth"),
         help = "Only show search results starting at the given depth.",
         long_help
     )]
@@ -508,6 +509,24 @@ pub struct Opts {
         long_help,
     )]
     pub color: ColorWhen,
+
+    /// Add a terminal hyperlink to a file:// url for each path in the output.
+    ///
+    /// Auto mode  is used if no argument is given to this option.
+    ///
+    /// This doesn't do anything for --exec and --exec-batch.
+    #[arg(
+        long,
+        alias = "hyper",
+        value_name = "when",
+        require_equals = true,
+        value_enum,
+        default_value_t = HyperlinkWhen::Never,
+        default_missing_value = "auto",
+        num_args = 0..=1,
+        help = "Add hyperlinks to output paths"
+    )]
+    pub hyperlink: HyperlinkWhen,
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
@@ -792,6 +811,16 @@ pub enum StripCwdWhen {
     /// Always strip the ./ at the beginning of paths
     Always,
     /// Never strip the ./
+    Never,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum HyperlinkWhen {
+    /// Use hyperlinks only if color is enabled
+    Auto,
+    /// Always use hyperlinks when printing file paths
+    Always,
+    /// Never use hyperlinks
     Never,
 }
 

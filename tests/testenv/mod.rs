@@ -104,9 +104,9 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
     let diff_text = diff::lines(expected, actual)
         .into_iter()
         .map(|diff| match diff {
-            diff::Result::Left(l) => format!("-{}", l),
-            diff::Result::Both(l, _) => format!(" {}", l),
-            diff::Result::Right(r) => format!("+{}", r),
+            diff::Result::Left(l) => format!("-{l}"),
+            diff::Result::Both(l, _) => format!(" {l}"),
+            diff::Result::Right(r) => format!("+{r}"),
         })
         .collect::<Vec<_>>()
         .join("\n");
@@ -290,7 +290,7 @@ impl TestEnv {
     pub fn assert_failure_with_error(&self, args: &[&str], expected: &str) {
         let status = self.assert_error_subdirectory(".", args, Some(expected));
         if status.success() {
-            panic!("error '{}' did not occur.", expected);
+            panic!("error '{expected}' did not occur.");
         }
     }
 
@@ -316,6 +316,9 @@ impl TestEnv {
         } else {
             cmd.arg("--no-global-ignore-file");
         }
+        // Make sure LS_COLORS is unset to ensure consistent
+        // color output
+        cmd.env("LS_COLORS", "");
         cmd.args(args);
 
         // Run *fd*.

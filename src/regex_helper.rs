@@ -67,7 +67,7 @@ fn hir_matches_strings_with_leading_dot(hir: &Hir) -> bool {
 
             if let Some(hir) = hirs.next() {
                 match hir.kind() {
-                    HirKind::Literal(Literal(bytes)) => bytes.starts_with(&[b'.']),
+                    HirKind::Literal(Literal(bytes)) => bytes.starts_with(b"."),
                     _ => false,
                 }
             } else {

@@ -8,6 +8,7 @@ mod filesystem;
 mod filetypes;
 mod filter;
 mod fmt;
+mod hyperlink;
 mod output;
 mod regex_helper;
 mod walk;
@@ -16,7 +17,6 @@ use std::env;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
-use std::time;
 
 use anyhow::{anyhow, bail, Context, Result};
 use clap::{CommandFactory, Parser};
@@ -24,7 +24,7 @@ use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
 
-use crate::cli::{ColorWhen, Opts};
+use crate::cli::{ColorWhen, HyperlinkWhen, Opts};
 use crate::config::Config;
 use crate::exec::CommandSet;
 use crate::exit_codes::ExitCode;
@@ -62,7 +62,7 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            eprintln!("[fd error]: {:#}", err);
+            eprintln!("[fd error]: {err:#}");
             ExitCode::GeneralError.exit();
         }
     }
@@ -234,6 +234,11 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     } else {
         None
     };
+    let hyperlink = match opts.hyperlink {
+        HyperlinkWhen::Always => true,
+        HyperlinkWhen::Never => false,
+        HyperlinkWhen::Auto => colored_output,
+    };
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
 
@@ -258,6 +263,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         threads: opts.threads().get(),
         max_buffer_time: opts.max_buffer_time,
         ls_colors,
+        hyperlink,
         interactive_terminal,
         file_types: opts.filetype.as_ref().map(|values| {
             use crate::cli::FileType::*;
@@ -422,10 +428,9 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 }
 
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
-    let now = time::SystemTime::now();
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(ref t) = opts.changed_within {
-        if let Some(f) = TimeFilter::after(&now, t) {
+        if let Some(f) = TimeFilter::after(t) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(
@@ -435,7 +440,7 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
         }
     }
     if let Some(ref t) = opts.changed_before {
-        if let Some(f) = TimeFilter::before(&now, t) {
+        if let Some(f) = TimeFilter::before(t) {
             time_constraints.push(f);
         } else {
             return Err(anyhow!(

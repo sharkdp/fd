@@ -1,3 +1,42 @@
+# Upcoming release
+
+## Features
+
+- Add a hidden `--mindepth` alias for `--min-depth`. (#1617)
+
+
+## Bugfixes
+
+
+## Changes
+
+- Replace `humantime` crate and `chrono` crate with `jiff` crate, see #1690 (@sorairolake). This has some small changes to the
+  way dates given to options such `--changed-within` and `--changed-before` including:
+  - 'M' no longer means "month", as that could be confusing with minutes. Use "mo", "mos", "month" or "months" instead.
+  - month and year now account for variability in the calander rather than being a hard-coded number of seconds. That is probably
+    what you would expect, but it is a slight change in behavior.
+
+## Other
+
+
+# 10.2.0
+
+## Features
+
+- Add --hyperlink option to add OSC 8 hyperlinks to output
+
+
+## Bugfixes
+
+
+## Changes
+
+- Build windows releases with rust 1.77 so windows 7 is still supported
+- Deb packages now include symlink for fdfind to be more consistent with official packages
+
+
+## Other
+
 # 10.1.0
 
 ## Features
