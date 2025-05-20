@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::ffi::OsStr;
-use std::io::{self, Write};
+use std::fs;
+use std::io::{self, BufRead, Write};
 use std::mem;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -350,46 +351,81 @@ impl WorkerState {
         let overrides = self.build_overrides(paths)?;
 
         let mut builder = WalkBuilder::new(first_path);
+
+        // Settings that are always applied or controlled by other specific flags
         builder
             .hidden(config.ignore_hidden)
-            .ignore(config.read_fdignore)
-            .parents(config.read_parent_ignore && (config.read_fdignore || config.read_vcsignore))
-            .git_ignore(config.read_vcsignore)
-            .git_global(config.read_vcsignore)
-            .git_exclude(config.read_vcsignore)
-            .require_git(config.require_git_to_read_vcsignore)
-            .overrides(overrides)
+            .overrides(overrides) // Apply command-line exclude patterns (--exclude)
             .follow_links(config.follow_links)
-            // No need to check for supported platforms, option is unavailable on unsupported ones
             .same_file_system(config.one_file_system)
             .max_depth(config.max_depth);
 
-        if config.read_fdignore {
-            builder.add_custom_ignore_filename(".fdignore");
-        }
+        if let Some(custom_ignore_name) = &config.custom_ignore_file_name {
+            // A custom ignore file name is specified: disable other file-based ignores
+            builder.ignore(false);         // Do not look for default ".ignore" files
+            builder.git_ignore(false);     // Do not use .gitignore
+            builder.git_global(false);     // Do not use global git ignore
+            builder.git_exclude(false);    // Do not use .git/info/exclude
+            // .require_git(false) might also be set here, but if git_ignore is false, it may not be needed.
+            builder.parents(config.read_parent_ignore); // Governs if custom_ignore_name is sought in parent dirs
+            builder.add_custom_ignore_filename(custom_ignore_name);
+        } else {
+            // Default ignore file behavior
+            builder.ignore(config.read_fdignore); // Look for ".ignore" if read_fdignore is true
+            builder.parents(config.read_parent_ignore && (config.read_fdignore || config.read_vcsignore));
+            builder.git_ignore(config.read_vcsignore);
+            builder.git_global(config.read_vcsignore);
+            builder.git_exclude(config.read_vcsignore);
+            builder.require_git(config.require_git_to_read_vcsignore);
 
-        if config.read_global_ignore {
-            if let Ok(basedirs) = etcetera::choose_base_strategy() {
-                let global_ignore_file = basedirs.config_dir().join("fd").join("ignore");
-                if global_ignore_file.is_file() {
-                    let result = builder.add_ignore(global_ignore_file);
-                    match result {
-                        Some(ignore::Error::Partial(_)) => (),
-                        Some(err) => {
-                            print_error(format!("Malformed pattern in global ignore file. {err}."));
+            if config.read_fdignore {
+                builder.add_custom_ignore_filename(".fdignore");
+            }
+
+            if config.read_global_ignore {
+                if let Ok(basedirs) = etcetera::choose_base_strategy() {
+                    let global_ignore_file = basedirs.config_dir().join("fd").join("ignore");
+                    if global_ignore_file.is_file() {
+                        let result = builder.add_ignore(&global_ignore_file); // Pass by reference
+                        match result {
+                            Some(ignore::Error::Partial(partial_err)) => {
+                                print_error(format!(
+                                    "Partially malformed pattern in global ignore file {}: {:?}.",
+                                    global_ignore_file.display(),
+                                    partial_err
+                                ));
+                            }
+                            Some(err) => {
+                                print_error(format!(
+                                    "Malformed pattern in global ignore file {}: {:?}.",
+                                    global_ignore_file.display(),
+                                    err
+                                ));
+                            }
+                            None => (),
                         }
-                        None => (),
                     }
                 }
             }
         }
 
-        for ignore_file in &config.ignore_files {
-            let result = builder.add_ignore(ignore_file);
+        // Add ignore files specified with --ignore-file (these are explicit paths from CLI)
+        for ignore_file_path in &config.ignore_files {
+            let result = builder.add_ignore(ignore_file_path); // Pass by reference
             match result {
-                Some(ignore::Error::Partial(_)) => (),
+                Some(ignore::Error::Partial(partial_err)) => {
+                     print_error(format!(
+                        "Partially malformed pattern in custom ignore file {}: {:?}.",
+                        ignore_file_path.display(),
+                        partial_err
+                    ));
+                }
                 Some(err) => {
-                    print_error(format!("Malformed pattern in custom ignore file. {err}."));
+                    print_error(format!(
+                        "Malformed pattern in custom ignore file {}: {}.",
+                        ignore_file_path.display(),
+                        err
+                    ));
                 }
                 None => (),
             }
@@ -457,12 +493,68 @@ impl WorkerState {
             }
             let mut tx = BatchSender::new(tx.clone(), limit);
 
-            Box::new(move |entry| {
+            Box::new(move |entry_result| {
                 if quit_flag.load(Ordering::Relaxed) {
                     return WalkState::Quit;
                 }
 
-                let entry = match entry {
+                // Handle empty custom ignore file: if a custom ignore file name is specified,
+                // and a file with that name exists in the current entry's directory (if entry is dir)
+                // or parent directory (if entry is file), and that file is empty (modulo comments/whitespace),
+                // then skip this entry and do not recurse if it's a directory.
+                if let Some(custom_ignore_name) = &config.custom_ignore_file_name {
+                    if let Ok(ref live_entry) = entry_result { // Process only if entry is not an error
+                        let path_of_entry = live_entry.path();
+                        let mut dir_to_check_for_ignore_file = PathBuf::new();
+
+                        if live_entry.file_type().map_or(false, |ft| ft.is_dir()) {
+                            dir_to_check_for_ignore_file.push(path_of_entry);
+                        } else if let Some(parent) = path_of_entry.parent() {
+                            dir_to_check_for_ignore_file.push(parent);
+                        } else {
+                            // Should not happen for entries from WalkParallel, but handle defensively
+                            dir_to_check_for_ignore_file.push(".");
+                        }
+
+                        let custom_ignore_file_on_disk = dir_to_check_for_ignore_file.join(custom_ignore_name);
+
+                        if custom_ignore_file_on_disk.is_file() {
+                            // TODO: Consider caching the empty-check result per directory path
+                            // to avoid repeated file I/O and parsing for entries in the same directory.
+                            // For now, re-evaluate each time for simplicity.
+                            let mut is_truly_empty = true;
+                            match fs::File::open(&custom_ignore_file_on_disk) {
+                                Ok(file) => {
+                                    let reader = io::BufReader::new(file);
+                                    for line_res in reader.lines() {
+                                        if let Ok(line) = line_res {
+                                            let trimmed = line.trim();
+                                            if !trimmed.is_empty() && !trimmed.starts_with('#') {
+                                                is_truly_empty = false;
+                                                break;
+                                            }
+                                        } else { // Error reading a line
+                                            is_truly_empty = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                Err(_e) => { // File could not be opened (e.g., permissions, or disappeared)
+                                    is_truly_empty = false;
+                                    // Optionally log error: print_error(format!("Could not open custom ignore file {}: {}", custom_ignore_file_on_disk.display(), _e));
+                                }
+                            }
+
+                            if is_truly_empty {
+                                // If the custom ignore file in this entry's effective directory is empty,
+                                // skip this entry. If this entry is a directory, WalkState::Skip also prevents recursion.
+                                return WalkState::Skip;
+                            }
+                        }
+                    }
+                }
+
+                let entry = match entry_result {
                     Ok(ref e) if e.depth() == 0 => {
                         // Skip the root directory entry.
                         return WalkState::Continue;
