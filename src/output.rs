@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::env;
 use std::io::{self, Write};
 
 use lscolors::{Indicator, LsColors, Style};
@@ -8,8 +9,21 @@ use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
 
-fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
-    path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
+fn replace_home_dir(path_str: &str) -> Cow<str> {
+    if let Ok(home_dir) = env::var("HOME") {
+        if path_str == home_dir {
+            return Cow::Borrowed("~");
+        }
+        if path_str.starts_with(&home_dir)
+            && path_str.len() > home_dir.len()
+            && &path_str[home_dir.len()..home_dir.len() + 1] == std::path::MAIN_SEPARATOR_STR
+        {
+            let suffix = &path_str[home_dir.len()..];
+            let replaced = format!("~{suffix}");
+            return Cow::Owned(replaced);
+        }
+    }
+    Cow::Borrowed(path_str)
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -86,11 +100,29 @@ fn print_entry_colorized<W: Write>(
     config: &Config,
     ls_colors: &LsColors,
 ) -> io::Result<()> {
-    // Split the path between the parent and the last component
-    let mut offset = 0;
     let path = entry.stripped_path(config);
     let path_str = path.to_string_lossy();
 
+    if let Ok(home_dir) = env::var("HOME") {
+        if path == std::path::Path::new(&home_dir) {
+            let dir_style = ls_colors
+                .style_for_indicator(Indicator::Directory)
+                .map(Style::to_nu_ansi_term_style)
+                .unwrap_or_default();
+
+            write!(stdout, "{}", dir_style.paint("~"))?;
+
+            print_trailing_slash(
+                stdout,
+                entry,
+                config,
+                ls_colors.style_for_indicator(Indicator::Directory),
+            )?;
+            return Ok(());
+        }
+    }
+
+    let mut offset = 0;
     if let Some(parent) = path.parent() {
         offset = parent.to_string_lossy().len();
         for c in path_str[offset..].chars() {
@@ -103,23 +135,23 @@ fn print_entry_colorized<W: Write>(
     }
 
     if offset > 0 {
-        let mut parent_str = Cow::from(&path_str[..offset]);
+        let parent_part = &path_str[..offset];
+        let mut parent_display = replace_home_dir(parent_part);
         if let Some(ref separator) = config.path_separator {
-            *parent_str.to_mut() = replace_path_separator(&parent_str, separator);
+            *parent_display.to_mut() = parent_display.replace(std::path::MAIN_SEPARATOR, separator);
         }
-
-        let style = ls_colors
+        let dir_style = ls_colors
             .style_for_indicator(Indicator::Directory)
             .map(Style::to_nu_ansi_term_style)
             .unwrap_or_default();
-        write!(stdout, "{}", style.paint(parent_str))?;
+        write!(stdout, "{}", dir_style.paint(&*parent_display))?;
     }
 
-    let style = entry
+    let file_style = entry
         .style(ls_colors)
         .map(Style::to_nu_ansi_term_style)
         .unwrap_or_default();
-    write!(stdout, "{}", style.paint(&path_str[offset..]))?;
+    write!(stdout, "{}", file_style.paint(&path_str[offset..]))?;
 
     print_trailing_slash(
         stdout,
@@ -127,7 +159,6 @@ fn print_entry_colorized<W: Write>(
         config,
         ls_colors.style_for_indicator(Indicator::Directory),
     )?;
-
     Ok(())
 }
 
@@ -138,10 +169,11 @@ fn print_entry_uncolorized_base<W: Write>(
     config: &Config,
 ) -> io::Result<()> {
     let path = entry.stripped_path(config);
-
-    let mut path_string = path.to_string_lossy();
+    let path_lossy = path.to_string_lossy();
+    let replaced = replace_home_dir(&path_lossy);
+    let mut path_string = replaced;
     if let Some(ref separator) = config.path_separator {
-        *path_string.to_mut() = replace_path_separator(&path_string, separator);
+        *path_string.to_mut() = path_string.replace(std::path::MAIN_SEPARATOR, separator);
     }
     write!(stdout, "{path_string}")?;
     print_trailing_slash(stdout, entry, config, None)
