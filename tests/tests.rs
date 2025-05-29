@@ -3,7 +3,8 @@ mod testenv;
 #[cfg(unix)]
 use nix::unistd::{Gid, Group, Uid, User};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::{Duration, SystemTime};
 use std::{env, fs};
 use test_case::test_case;
@@ -2695,16 +2696,13 @@ fn test_hyperlink() {
 
 #[test]
 fn replaces_home_dir_with_tilde_in_output() {
-    use std::env;
-    use std::fs;
-    use std::path::Path;
-    use std::process::Command;
-
-    let home = env::var("HOME").expect("HOME not set");
-    let test_dir = Path::new(&home).join("fd_test_temp");
+    let home_dir = env::var("HOME").expect("HOME not set");
+    let test_dir = PathBuf::from(&home_dir).join("fd_test_temp");
     let file_path = test_dir.join("file.txt");
-    let _ = fs::create_dir_all(&test_dir);
-    fs::write(&file_path, "test").unwrap();
+
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).expect("failed to create test dir");
+    fs::write(&file_path, "test").expect("failed to write test file");
 
     let output = Command::new(env!("CARGO_BIN_EXE_fd"))
         .args([".", test_dir.to_str().unwrap(), "-a", "--color=always"])
