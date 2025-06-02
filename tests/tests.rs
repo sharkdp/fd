@@ -2,10 +2,11 @@ mod testenv;
 
 #[cfg(unix)]
 use nix::unistd::{Gid, Group, Uid, User};
-use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::time::{Duration, SystemTime};
+use std::{env, fs};
 use test_case::test_case;
 
 use jiff::Timestamp;
@@ -2691,4 +2692,27 @@ fn test_hyperlink() {
     );
 
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
+}
+
+#[test]
+fn replaces_home_dir_with_tilde_in_output() {
+    let home_dir = env::var("HOME").expect("HOME not set");
+    let test_dir = PathBuf::from(&home_dir).join("fd_test_temp");
+    let file_path = test_dir.join("file.txt");
+
+    let _ = fs::remove_dir_all(&test_dir);
+    fs::create_dir_all(&test_dir).expect("failed to create test dir");
+    fs::write(&file_path, "test").expect("failed to write test file");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_fd"))
+        .args([".", test_dir.to_str().unwrap(), "-a", "--color=always"])
+        .output()
+        .expect("fd failed");
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(
+        stdout.contains("~"),
+        "Expected '~' in output, got:\n{stdout}"
+    );
 }
