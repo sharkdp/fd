@@ -617,7 +617,7 @@ You can install [the fd package](https://github.com/getsolus/packages/tree/main/
 eopkg install fd
 ```
 
-### On RedHat Enterprise Linux 8/9 (RHEL8/9), Almalinux 8/9, EuroLinux 8/9 or Rocky Linux 8/9
+### On RedHat Enterprise Linux (RHEL) 8/9/10, Almalinux 8/9/10, EuroLinux 8/9 or Rocky Linux 8/9/10
 
 You can install [the `fd` package](https://copr.fedorainfracloud.org/coprs/tkbcopr/fd/) from Fedora Copr.
 
