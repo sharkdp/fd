@@ -33,13 +33,13 @@ pub struct CommandSet {
 }
 
 impl CommandSet {
-    pub fn new<I, T, S>(input: I) -> Result<CommandSet>
+    pub fn new<I, T, S>(input: I) -> Result<Self>
     where
         I: IntoIterator<Item = T>,
         T: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        Ok(CommandSet {
+        Ok(Self {
             mode: ExecutionMode::OneByOne,
             commands: input
                 .into_iter()
@@ -48,13 +48,13 @@ impl CommandSet {
         })
     }
 
-    pub fn new_batch<I, T, S>(input: I) -> Result<CommandSet>
+    pub fn new_batch<I, T, S>(input: I) -> Result<Self>
     where
         I: IntoIterator<Item = T>,
         T: IntoIterator<Item = S>,
         S: AsRef<str>,
     {
-        Ok(CommandSet {
+        Ok(Self {
             mode: ExecutionMode::Batch,
             commands: input
                 .into_iter()
@@ -220,7 +220,7 @@ struct CommandTemplate {
 }
 
 impl CommandTemplate {
-    fn new<I, S>(input: I) -> Result<CommandTemplate>
+    fn new<I, S>(input: I) -> Result<Self>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -250,7 +250,7 @@ impl CommandTemplate {
             args.push(FormatTemplate::Tokens(vec![Token::Placeholder]));
         }
 
-        Ok(CommandTemplate { args })
+        Ok(Self { args })
     }
 
     fn number_of_tokens(&self) -> usize {
