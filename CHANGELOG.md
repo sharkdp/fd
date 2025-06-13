@@ -3,6 +3,8 @@
 ## Features
 
 - Add a hidden `--mindepth` alias for `--min-depth`. (#1617)
+- Add `--ignore-file-name` option to specify a custom name for ignore files, providing more
+  flexible ignore rule management. See #1713 
 
 
 ## Bugfixes
