@@ -1765,12 +1765,10 @@ fn test_exec() {
     }
 }
 
+// TODO test for windows
+#[cfg(not(windows))]
 #[test]
 fn test_exec_multi() {
-    // TODO test for windows
-    if cfg!(windows) {
-        return;
-    }
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
