@@ -1813,9 +1813,11 @@ fn test_exec_multi() {
         e1 e2",
     );
 
+    // We use printf here because we need to suppress a newline and
+    // echo -n is not POSIX-compliant.
     te.assert_output(
         &[
-            "foo", "--exec", "echo", "-n", "{/}: ", ";", "--exec", "echo", "{//}",
+            "foo", "--exec", "printf", "%s", "{/}: ", ";", "--exec", "printf", "%s\\n", "{//}",
         ],
         "a.foo: .
         b.foo: ./one
