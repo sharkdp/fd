@@ -2601,7 +2601,7 @@ fn test_strip_cwd_prefix() {
 /// When fd is ran from a non-existent working directory, but an existent
 /// directory is passed in the arguments, it should still run fine
 #[test]
-#[cfg(not(windows))]
+#[cfg(all(not(windows), not(target_os = "illumos")))]
 fn test_invalid_cwd() {
     let te = TestEnv::new(&[], &[]);
 
