@@ -37,7 +37,7 @@ version_check = "0.9"
 [dependencies]
 aho-corasick = "1.1"
 nu-ansi-term = "0.50"
-argmax = "0.3.1"
+argmax = "0.4.0"
 ignore = "0.4.23"
 regex = "1.11.1"
 regex-syntax = "0.8"
