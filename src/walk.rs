@@ -377,17 +377,19 @@ impl WorkerState {
                     PathBuf::from(s)
                 })
                 .collect();
-            builder.filter_entry(move |entry| match entry.path().canonicalize() {
-                Ok(abs_path) => {
-                    for excluded in &exclude_abs_paths {
-                        if abs_path.starts_with(excluded) {
-                            return false;
+            builder.filter_entry(
+                move |entry| match filesystem::path_absolute_form(entry.path()) {
+                    Ok(abs_path) => {
+                        for excluded in &exclude_abs_paths {
+                            if abs_path.starts_with(excluded) {
+                                return false;
+                            }
                         }
+                        true
                     }
-                    true
-                }
-                Err(_) => true,
-            });
+                    Err(_) => true,
+                },
+            );
         }
 
         if config.read_fdignore {
