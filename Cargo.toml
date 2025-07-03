@@ -37,22 +37,22 @@ version_check = "0.9"
 [dependencies]
 aho-corasick = "1.1"
 nu-ansi-term = "0.50"
-argmax = "0.3.1"
+argmax = "0.4.0"
 ignore = "0.4.23"
 regex = "1.11.1"
 regex-syntax = "0.8"
-ctrlc = "3.2"
+ctrlc = "3.4"
 globset = "0.4"
 anyhow = "1.0"
 etcetera = "0.10"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.15"
-clap_complete = {version = "4.5.52", optional = true}
+clap_complete = {version = "4.5.54", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.14"
 
 [dependencies.clap]
-version = "4.5.39"
+version = "4.5.40"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.lscolors]
