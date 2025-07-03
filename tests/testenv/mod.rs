@@ -195,7 +195,7 @@ impl TestEnv {
         match fs::canonicalize(&joined) {
             Ok(canonical) => canonical.to_string_lossy().into_owned(),
             Err(_) => joined.to_string_lossy().into_owned(), // fallback
-        }    
+        }
     }
 
     /// Create a broken symlink at the given path in the temp_dir.
