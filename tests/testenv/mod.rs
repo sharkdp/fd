@@ -185,6 +185,19 @@ impl TestEnv {
         }
     }
 
+    /// Returns the canonical path for files or folders in the temporary directory.
+    /// Normally, `TestEnv` creates a temporary directory under `/var` for tests. However, this
+    /// doesn't work well with `--exclude-absolute-path`, as it filters entries using their
+    /// absolute paths, and the canonical path of `/var` is actually `/private/var` on macOS.
+    pub fn get_canonical_path_in_temp_dir(&self, path: &str) -> String {
+        let joined = self.temp_dir.path().join(path);
+
+        match fs::canonicalize(&joined) {
+            Ok(canonical) => canonical.to_string_lossy().into_owned(),
+            Err(_) => joined.to_string_lossy().into_owned(), // fallback
+        }    
+    }
+
     /// Create a broken symlink at the given path in the temp_dir.
     pub fn create_broken_symlink<P: AsRef<Path>>(
         &mut self,
