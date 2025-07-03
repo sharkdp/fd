@@ -1629,7 +1629,10 @@ fn test_exclude_absolute_paths() {
     let te = TestEnv::new(dirs, DEFAULT_FILES);
 
     te.assert_output(
-        &["--exclude-absolute-path", &te.get_canonical_path_in_temp_dir("one/two")],
+        &[
+            "--exclude-absolute-path",
+            &te.get_canonical_path_in_temp_dir("one/two"),
+        ],
         "a.foo
         e1 e2
         one/
