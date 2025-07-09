@@ -1,5 +1,3 @@
-mod testenv;
-
 use crate::testenv::{TestEnv, DEFAULT_DIRS, EXTRA_FILES};
 
 /// AND test

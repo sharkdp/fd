@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use normpath::PathExt;
 use std::env;
 use std::fs;

@@ -1,5 +1,3 @@
-mod testenv;
-
 #[cfg(unix)]
 use nix::unistd::{Gid, Group, Uid, User};
 

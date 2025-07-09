@@ -1,5 +1,3 @@
-mod testenv;
-
 use crate::testenv::{TestEnv, DEFAULT_DIRS, DEFAULT_FILES};
 
 /// Glob-based searches (--glob)

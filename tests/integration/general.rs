@@ -1,5 +1,3 @@
-mod testenv;
-
 #[cfg(unix)]
 use nix::unistd::Uid;
 use std::fs;

@@ -1,5 +1,3 @@
-mod testenv;
-
 use crate::testenv::{get_test_env_with_abs_path, TestEnv, DEFAULT_DIRS, DEFAULT_FILES};
 
 /// Shell script execution (--exec)

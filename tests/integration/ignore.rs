@@ -1,5 +1,3 @@
-mod testenv;
-
 use std::fs;
 use std::io::Write;
 use test_case::test_case;
