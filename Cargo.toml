@@ -50,6 +50,9 @@ crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.5.54", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.14"
+# For now, pin the `home` crate to less than 0.5.11, to ensure it works on older versions of rust
+# TODO: when we upgrade past rust 1.85, remove this dependency
+home = "=0.5.9"
 
 [dependencies.clap]
 version = "4.5.40"
@@ -61,7 +64,7 @@ default-features = false
 features = ["nu-ansi-term"]
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.29.0", default-features = false, features = ["signal", "user", "hostname"] }
+nix = { version = "0.30.1", default-features = false, features = ["signal", "user", "hostname"] }
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
