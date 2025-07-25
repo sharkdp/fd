@@ -27,12 +27,12 @@ pub enum Token {
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
-            Token::Placeholder => f.write_str("{}")?,
-            Token::Basename => f.write_str("{/}")?,
-            Token::Parent => f.write_str("{//}")?,
-            Token::NoExt => f.write_str("{.}")?,
-            Token::BasenameNoExt => f.write_str("{/.}")?,
-            Token::Text(ref string) => f.write_str(string)?,
+            Self::Placeholder => f.write_str("{}")?,
+            Self::Basename => f.write_str("{/}")?,
+            Self::Parent => f.write_str("{//}")?,
+            Self::NoExt => f.write_str("{.}")?,
+            Self::BasenameNoExt => f.write_str("{/.}")?,
+            Self::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
     }
@@ -52,7 +52,7 @@ static PLACEHOLDERS: OnceLock<AhoCorasick> = OnceLock::new();
 
 impl FormatTemplate {
     pub fn has_tokens(&self) -> bool {
-        matches!(self, FormatTemplate::Tokens(_))
+        matches!(self, Self::Tokens(_))
     }
 
     pub fn parse(fmt: &str) -> Self {
@@ -96,14 +96,14 @@ impl FormatTemplate {
         }
         if tokens.is_empty() {
             // No placeholders were found, so just return the text
-            return FormatTemplate::Text(buf);
+            return Self::Text(buf);
         }
         // Add final text segment
         if !buf.is_empty() {
             tokens.push(Token::Text(buf));
         }
         debug_assert!(!tokens.is_empty());
-        FormatTemplate::Tokens(tokens)
+        Self::Tokens(tokens)
     }
 
     /// Generate a result string from this template. If path_separator is Some, then it will replace
