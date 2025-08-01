@@ -47,7 +47,7 @@ anyhow = "1.0"
 etcetera = "0.10"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.15"
-clap_complete = {version = "4.5.54", optional = true}
+clap_complete = {version = "4.5.55", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.14"
 # For now, pin the `home` crate to less than 0.5.11, to ensure it works on older versions of rust
