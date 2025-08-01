@@ -52,7 +52,7 @@ faccess = "0.2.4"
 jiff = "0.2.14"
 # For now, pin the `home` crate to less than 0.5.11, to ensure it works on older versions of rust
 # TODO: when we upgrade past rust 1.85, remove this dependency
-home = "=0.5.9"
+home = "=0.5.11"
 
 [dependencies.clap]
 version = "4.5.42"
