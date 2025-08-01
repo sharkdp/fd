@@ -55,7 +55,7 @@ jiff = "0.2.14"
 home = "=0.5.9"
 
 [dependencies.clap]
-version = "4.5.40"
+version = "4.5.42"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.lscolors]
