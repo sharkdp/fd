@@ -18,7 +18,7 @@ jobs:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - name: Extract crate information
       id: crate_metadata
       run: |
@@ -41,7 +41,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - run: cargo fmt -- --check
 
   lint_check:
@@ -51,7 +51,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
 
   min_version:
@@ -60,7 +60,7 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
       uses: dtolnay/rust-toolchain@master
@@ -98,7 +98,7 @@ jobs:
       BUILD_CMD: cargo
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Install prerequisites
       shell: bash
