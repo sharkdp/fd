@@ -709,6 +709,12 @@ Note that rust version *1.77.2* or later is required.
 
 The [release page](https://github.com/sharkdp/fd/releases) includes precompiled binaries for Linux, macOS and Windows. Statically-linked binaries are also available: look for archives with `musl` in the file name.
 
+On Linux and macOS installation from binaries can be automated with [gah](https://github.com/marverix/gah):
+
+```
+gah install fd
+```
+
 ## Development
 ```bash
 git clone https://github.com/sharkdp/fd
