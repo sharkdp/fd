@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 pub(crate) struct PathUrl(PathBuf);
 
 impl PathUrl {
-    pub(crate) fn new(path: &Path) -> Option<PathUrl> {
-        Some(PathUrl(absolute_path(path).ok()?))
+    pub(crate) fn new(path: &Path) -> Option<Self> {
+        Some(Self(absolute_path(path).ok()?))
     }
 }
 
