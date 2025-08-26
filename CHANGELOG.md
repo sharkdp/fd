@@ -1,4 +1,4 @@
-# Upcoming release
+ 10.3.0
 
 ## Features
 
@@ -15,8 +15,17 @@
   - 'M' no longer means "month", as that could be confusing with minutes. Use "mo", "mos", "month" or "months" instead.
   - month and year now account for variability in the calander rather than being a hard-coded number of seconds. That is probably
     what you would expect, but it is a slight change in behavior.
+- aarch64 Windows was added to CI and release artifacts
+- Many dependencies were updated
+- Better support building on Illumos (there is no automated testing, but some known issues were fixed)
 
 ## Other
+
+This will be the last release that has been tested on x86_64 Mac OS, since GitHub is
+dropping support for runners with that hardware.
+
+It may also be the last release to use a version of Rust with tier-1 support for
+x86_64/intel Macs and Windows 7.
 
 
 # 10.2.0
