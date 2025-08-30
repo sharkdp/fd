@@ -1,3 +1,4 @@
+use normpath::PathExt;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
@@ -9,6 +10,40 @@ use std::path::{Path, PathBuf};
 use std::process;
 
 use tempfile::TempDir;
+
+pub static DEFAULT_DIRS: &[&str] = &["one/two/three", "one/two/three/directory_foo"];
+
+pub static DEFAULT_FILES: &[&str] = &[
+    "a.foo",
+    "one/b.foo",
+    "one/two/c.foo",
+    "one/two/C.Foo2",
+    "one/two/three/d.foo",
+    "fdignored.foo",
+    "gitignored.foo",
+    ".hidden.foo",
+    "e1 e2",
+];
+
+pub static EXTRA_FILES: &[&str] = &[
+    "a.foo",
+    "one/b.foo",
+    "one/two/c.foo",
+    "one/two/C.Foo2",
+    "one/two/three/baz-quux",
+    "one/two/three/Baz-Quux2",
+    "one/two/three/d.foo",
+    "fdignored.foo",
+    "gitignored.foo",
+    ".hidden.foo",
+    "A-B.jpg",
+    "A-C.png",
+    "B-A.png",
+    "B-C.png",
+    "C-A.jpg",
+    "C-B.png",
+    "e1 e2",
+];
 
 /// Environment for the integration tests.
 pub struct TestEnv {
@@ -152,6 +187,38 @@ fn trim_lines(s: &str) -> String {
             str.push('\n');
             str
         })
+}
+
+pub fn get_test_env_with_abs_path(
+    dirs: &[&'static str],
+    files: &[&'static str],
+) -> (TestEnv, String) {
+    let env = TestEnv::new(dirs, files);
+    let root_path = get_absolute_root_path(&env);
+    (env, root_path)
+}
+
+pub fn create_file_with_size<P: AsRef<Path>>(path: P, size_in_bytes: usize) {
+    let content = "#".repeat(size_in_bytes);
+    let mut f = fs::File::create::<P>(path).unwrap();
+    f.write_all(content.as_bytes()).unwrap();
+}
+
+#[allow(clippy::let_and_return)]
+pub fn get_absolute_root_path(env: &TestEnv) -> String {
+    let path = env
+        .test_root()
+        .normalize()
+        .expect("absolute path")
+        .as_path()
+        .to_str()
+        .expect("string")
+        .to_string();
+
+    #[cfg(windows)]
+    let path = path.trim_start_matches(r"\\?\").to_string();
+
+    path
 }
 
 impl TestEnv {
