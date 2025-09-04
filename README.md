@@ -27,6 +27,19 @@ While it does not aim to support all of `find`'s powerful functionality, it prov
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 
+## Sponsors
+
+A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsor</a>:<br>
+
+<a href="https://tuple.app/fd">
+  <img src="doc/sponsors/tuple-logo.png" width="200" alt="Tuple">
+  <br>
+  <strong>Tuple, the premier screen sharing app for developers</strong>
+  <br>
+  <sub>Available for MacOS &amp; Windows</sub>
+</a>
+
+
 ## Demo
 
 ![Demo](doc/screencast.svg)
