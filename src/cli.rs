@@ -498,6 +498,19 @@ pub struct Opts {
     )]
     pub ignore_file: Vec<PathBuf>,
 
+    /// Use a custom file name for ignore files. When this is set, fd will not
+    /// look for '.ignore' or '.fdignore' files, but for a file with the given
+    /// name in each directory. If the custom ignore file is empty, all entries
+    /// in its directory are ignored.
+    #[arg(
+        long,
+        value_name = "name",
+        hide_short_help = true,
+        help = "Use a custom name for ignore files instead of .ignore/.fdignore",
+        long_help
+    )]
+    pub ignore_file_name: Option<String>,
+
     /// Declare when to use color for the pattern match output
     #[arg(
         long,
