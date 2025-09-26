@@ -745,7 +745,7 @@ your shell, you may need to source the file as well:
 - bash: you will need to source the fd.bash file in your ~/.bashrc file. Or put it in a directory of files that are all sourced.
 - zsh: move the "_fd" file to somewhere on your fpath
 - fish: Put fd.fish in ~/.config/fish/completions
-- powershell: Source the fd.ps1 file from one of the files in  the [profile scripts locations](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+- powershell: Source the _fd.ps1 file from one of the files in  the [profile scripts locations](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
 
 ## Maintainers
 
