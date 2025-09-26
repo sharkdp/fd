@@ -9,7 +9,7 @@ $(EXE): Cargo.toml src/**/*.rs
 	cargo build --profile $(PROFILE) --locked
 
 .PHONY: completions
-completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/fd.ps1 autocomplete/_fd
+completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/_fd.ps1 autocomplete/_fd
 
 comp_dir=@mkdir -p autocomplete
 
@@ -21,7 +21,7 @@ autocomplete/fd.fish: $(EXE)
 	$(comp_dir)
 	$(EXE) --gen-completions fish > $@
 
-autocomplete/fd.ps1: $(EXE)
+autocomplete/_fd.ps1: $(EXE)
 	$(comp_dir)
 	$(EXE) --gen-completions powershell > $@
 
