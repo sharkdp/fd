@@ -205,9 +205,9 @@ fn print_entry_yaml_obj<W: Write>(
     // to avoid adding a dependency on serde_yaml (deprecated).
     //
     // A little bit dirty, but safe enough for buffered output.
-    let mut result = format!("- path: \"{}\"\n  type: {}\n", path_string, file_type);
+    let mut result = format!("- path: \"{path_string}\"\n  type: {file_type}\n");
     let metadata = entry.metadata();
-    if !metadata.is_none() {
+    if metadata.is_some() {
         if let Some(meta) = metadata {
             result.push_str(&format!("  size: {}\n", meta.len()));
             #[cfg(unix)]
@@ -234,5 +234,5 @@ fn print_entry_yaml_obj<W: Write>(
             }
         }
     }
-    write!(stdout, "{}", result)
+    write!(stdout, "{result}")
 }
