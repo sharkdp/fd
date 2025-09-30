@@ -647,6 +647,16 @@ pub struct Opts {
     )]
     search_path: Vec<PathBuf>,
 
+    /// Print results as YAML objects so you can use it with tools like yq and nushell.
+    #[arg(
+        long,
+        value_name = "yaml",
+        conflicts_with("format"),
+        conflicts_with("list_details"),
+        help = "Print results as YAML objects so you can use it with tools like yq and nushell."
+    )]
+    pub yaml: bool,
+
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use

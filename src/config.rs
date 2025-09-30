@@ -130,6 +130,9 @@ pub struct Config {
 
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
+
+    /// Whether or not to print the result as a JSON object
+    pub yaml: bool,
 }
 
 impl Config {
