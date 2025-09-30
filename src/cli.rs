@@ -657,6 +657,17 @@ pub struct Opts {
     )]
     pub yaml: bool,
 
+    /// Print results as a JSON array so you can use it with tools like jq and nushell.
+    #[arg(
+        long,
+        value_name = "json",
+        conflicts_with("format"),
+        conflicts_with("list_details"),
+        conflicts_with("yaml"),
+        help = "Print results as a JSON array so you can use it with tools like jq and nushell."
+    )]
+    pub json: bool,
+
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
