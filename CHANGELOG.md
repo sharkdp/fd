@@ -2,6 +2,7 @@
 
 ## Features
 
+- Add `--json` flag for JSONL format output. 
 
 ## Bugfixes
 
