@@ -164,7 +164,7 @@ impl<'a, W: Write> Printer<'a, W> {
     }
 
     #[cfg(not(unix))]
-    fn print_entry_uncolorized(&self, entry: &DirEntry) -> io::Result<()> {
+    fn print_entry_uncolorized(&mut self, entry: &DirEntry) -> io::Result<()> {
         self.print_entry_uncolorized_base(entry)
     }
 
