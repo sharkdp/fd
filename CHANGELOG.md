@@ -2,6 +2,7 @@
 
 ## Features
 
+- Add `--yaml` flag for YAML format output. 
 
 ## Bugfixes
 
