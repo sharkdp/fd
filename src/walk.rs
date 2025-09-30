@@ -173,7 +173,7 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
     /// Process results until finished.
     fn process(&mut self) -> ExitCode {
         if self.config.json {
-            if let Err(e) = write!(self.printer.stdout, "[\n") {
+            if let Err(e) = writeln!(self.printer.stdout, "[") {
                 if e.kind() != ::std::io::ErrorKind::BrokenPipe {
                     print_error(format!("Could not write to output: {e}"));
                     return ExitCode::GeneralError;
@@ -189,14 +189,14 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
             }
         }
         if self.config.json {
-            if let Err(e) = write!(self.printer.stdout, "\n]\n") {
+            if let Err(e) = writeln!(self.printer.stdout, "\n]") {
                 if e.kind() != ::std::io::ErrorKind::BrokenPipe {
                     print_error(format!("Could not write to output: {e}"));
                     return ExitCode::GeneralError;
                 }
             }
         }
-        return ec;
+        ec
     }
 
     /// Receive the next worker result.

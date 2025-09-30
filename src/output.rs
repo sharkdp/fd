@@ -194,19 +194,19 @@ impl<'a, W: Write> Printer<'a, W> {
         );
 
         if let Some(size) = detail.size {
-            result.push_str(&format!("  size: {}\n", size));
+            result.push_str(&format!("  size: {size}\n"));
         }
         if let Some(mode) = detail.mode {
-            result.push_str(&format!("  mode: {:o}\n", mode));
+            result.push_str(&format!("  mode: {mode:o}\n"));
         }
         if let Some(modified) = detail.modified {
-            result.push_str(&format!("  modified: {}\n", modified));
+            result.push_str(&format!("  modified: {modified}\n"));
         }
         if let Some(accessed) = detail.accessed {
-            result.push_str(&format!("  accessed: {}\n", accessed));
+            result.push_str(&format!("  accessed: {accessed}\n"));
         }
         if let Some(created) = detail.created {
-            result.push_str(&format!("  created: {}\n", created));
+            result.push_str(&format!("  created: {created}\n"));
         }
         write!(self.stdout, "{result}")
     }
@@ -220,23 +220,23 @@ impl<'a, W: Write> Printer<'a, W> {
         );
 
         if let Some(size) = detail.size {
-            result.push_str(&format!(",\"size\":{}", size));
+            result.push_str(&format!(",\"size\":{size}"));
         }
         if let Some(mode) = detail.mode {
-            result.push_str(&format!(",\"mode\":{:o}", mode));
+            result.push_str(&format!(",\"mode\":{mode:o}"));
         }
         if let Some(modified) = detail.modified {
-            result.push_str(&format!(",\"modified\":{}", modified));
+            result.push_str(&format!(",\"modified\":{modified}"));
         }
         if let Some(accessed) = detail.accessed {
-            result.push_str(&format!(",\"accessed\":{}", accessed));
+            result.push_str(&format!(",\"accessed\":{accessed}"));
         }
         if let Some(created) = detail.created {
-            result.push_str(&format!(",\"created\":{}", created));
+            result.push_str(&format!(",\"created\":{created}"));
         }
         result.push('}');
         if self.started {
-            write!(self.stdout, ",\n")?;
+            writeln!(self.stdout, ",")?;
         }
         write!(self.stdout, "{result}")
     }
@@ -262,7 +262,7 @@ impl<'a, W: Write> Printer<'a, W> {
         let metadata = entry.metadata();
         let mut detail = FileDetail {
             path: path_string,
-            file_type: file_type,
+            file_type,
             size: None,
             mode: None,
             modified: None,
@@ -284,17 +284,17 @@ impl<'a, W: Write> Printer<'a, W> {
             let modified = meta
                 .modified()?
                 .duration_since(std::time::UNIX_EPOCH)
-                .and_then(|d| Ok(d.as_secs()));
+                .map(|d| d.as_secs());
 
             let accessed = meta
                 .accessed()?
                 .duration_since(std::time::UNIX_EPOCH)
-                .and_then(|d| Ok(d.as_secs()));
+                .map(|d| d.as_secs());
 
             let created = meta
                 .created()?
                 .duration_since(std::time::UNIX_EPOCH)
-                .and_then(|d| Ok(d.as_secs()));
+                .map(|d| d.as_secs());
 
             detail.size = Some(size);
             detail.mode = mode;
@@ -304,12 +304,8 @@ impl<'a, W: Write> Printer<'a, W> {
         }
 
         match format {
-            DetailFormat::Json => {
-                return self.print_entry_json_obj(&detail);
-            }
-            DetailFormat::Yaml => {
-                return self.print_entry_yaml_obj(&detail);
-            }
-        };
+            DetailFormat::Json => self.print_entry_json_obj(&detail),
+            DetailFormat::Yaml => self.print_entry_yaml_obj(&detail),
+        }
     }
 }
