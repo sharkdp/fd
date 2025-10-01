@@ -75,7 +75,7 @@ tikv-jemallocator = {version = "0.6.0", optional = true}
 
 [dev-dependencies]
 diff = "0.1"
-tempfile = "3.21"
+tempfile = "3.23"
 filetime = "0.2"
 test-case = "3.3"
 
