@@ -413,8 +413,6 @@ impl WorkerState {
             if cmd.in_batch_mode() {
                 exec::batch(rx.into_iter().flatten(), cmd, config)
             } else {
-                let out_perm = Mutex::new(());
-
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
                     let threads = config.threads;
@@ -423,8 +421,8 @@ impl WorkerState {
                         let rx = rx.clone();
 
                         // Spawn a job thread that will listen for and execute inputs.
-                        let handle = scope
-                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config));
+                        let handle =
+                            scope.spawn(|| exec::job(rx.into_iter().flatten(), cmd, config));
 
                         // Push the handle of the spawned thread into the vector for later joining.
                         handles.push(handle);
