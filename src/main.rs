@@ -485,7 +485,7 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
                 "{}\n\nNote: You can use the '--fixed-strings' option to search for a \
                  literal string instead of a regular expression. Alternatively, you can \
                  also use the '--glob' option to match on a glob pattern.",
-                e.to_string()
+                e
             )
         })
 }
