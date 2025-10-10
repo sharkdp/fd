@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
+use crate::cli::OutputFormat;
 use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
@@ -131,11 +132,8 @@ pub struct Config {
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
 
-    /// Whether or not to print the result as a JSON array
-    pub json: bool,
-
-    /// Whether or not to print the result as YAML objects
-    pub yaml: bool,
+    /// The output format to use
+    pub output: OutputFormat,
 }
 
 impl Config {

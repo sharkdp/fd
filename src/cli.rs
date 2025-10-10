@@ -647,26 +647,17 @@ pub struct Opts {
     )]
     search_path: Vec<PathBuf>,
 
-    /// Print results as YAML objects so you can use it with tools like yq and nushell.
+    /// Print results in a certain format so you can pipe it to tools.
     #[arg(
         long,
-        value_name = "yaml",
+        value_name = "output",
+        value_enum,
+        default_value_t = OutputFormat::Plain,
         conflicts_with("format"),
         conflicts_with("list_details"),
-        help = "Print results as YAML objects so you can use it with tools like yq and nushell."
+        help = "Print results in a certain format so you can pipe it to tools."
     )]
-    pub yaml: bool,
-
-    /// Print results as a JSON array so you can use it with tools like jq and nushell.
-    #[arg(
-        long,
-        value_name = "json",
-        conflicts_with("format"),
-        conflicts_with("list_details"),
-        conflicts_with("yaml"),
-        help = "Print results as a JSON array so you can use it with tools like jq and nushell."
-    )]
-    pub json: bool,
+    pub output: OutputFormat,
 
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
@@ -843,6 +834,19 @@ pub enum HyperlinkWhen {
     Always,
     /// Never use hyperlinks
     Never,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum OutputFormat {
+    /// Plain text output (default)
+    Plain,
+    /// JSON output
+    Json,
+    /// NDJSON (Newline Delimited JSON) output
+    Ndjson,
+    /// YAML output
+    #[value(alias = "yml")]
+    Yaml,
 }
 
 // there isn't a derive api for getting grouped values yet,

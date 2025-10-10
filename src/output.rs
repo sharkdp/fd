@@ -1,8 +1,11 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 
+use base64::{engine::general_purpose, Engine as _};
+use jiff::Timestamp;
 use lscolors::{Indicator, LsColors, Style};
 
+use crate::cli::OutputFormat;
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
@@ -11,23 +14,51 @@ use crate::hyperlink::PathUrl;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 
-enum DetailFormat {
-    Json,
-    Yaml,
-}
-
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
 }
 
+#[cfg(unix)]
+fn encode_path(path: &std::path::Path) -> PathEncoding {
+    use std::os::unix::ffi::OsStrExt;
+    let bytes = path.as_os_str().as_bytes();
+
+    // Try to convert to UTF-8 first
+    match std::str::from_utf8(bytes) {
+        Ok(utf8_str) => {
+            let escaped: String = utf8_str.escape_default().collect();
+            PathEncoding::Utf8(escaped)
+        }
+        Err(_) => {
+            // Invalid UTF-8, store as raw bytes
+            PathEncoding::Bytes(bytes.to_vec())
+        }
+    }
+}
+
+#[cfg(not(unix))]
+fn encode_path(path: &std::path::Path) -> PathEncoding {
+    // On non-Unix systems, paths are typically UTF-8 or UTF-16
+    let path_str = path.to_string_lossy();
+    // Always escape the path string for safe output
+    // Note: if lossy conversion happened, this might lose information
+    let escaped: String = path_str.escape_default().collect();
+    PathEncoding::Utf8(escaped)
+}
+
+enum PathEncoding {
+    Utf8(String),
+    Bytes(Vec<u8>),
+}
+
 struct FileDetail {
-    path: String,
+    path: PathEncoding,
     file_type: String,
     size: Option<u64>,
     mode: Option<u32>,
-    modified: Option<u64>,
-    accessed: Option<u64>,
-    created: Option<u64>,
+    modified: Option<Timestamp>,
+    accessed: Option<Timestamp>,
+    created: Option<Timestamp>,
 }
 
 pub struct Printer<'a, W> {
@@ -55,16 +86,21 @@ impl<'a, W: Write> Printer<'a, W> {
             }
         }
 
-        if let Some(ref format) = self.config.format {
-            self.print_entry_format(entry, format)?;
-        } else if self.config.yaml {
-            self.print_entry_detail(DetailFormat::Yaml, entry)?;
-        } else if self.config.json {
-            self.print_entry_detail(DetailFormat::Json, entry)?;
-        } else if let Some(ref ls_colors) = self.config.ls_colors {
-            self.print_entry_colorized(entry, ls_colors)?;
-        } else {
-            self.print_entry_uncolorized(entry)?;
+        match (
+            &self.config.format,
+            &self.config.output,
+            &self.config.ls_colors,
+        ) {
+            (Some(template), _, _) => self.print_entry_format(entry, template)?,
+            (None, OutputFormat::Json, _) => self.print_entry_detail(OutputFormat::Json, entry)?,
+            (None, OutputFormat::Yaml, _) => self.print_entry_detail(OutputFormat::Yaml, entry)?,
+            (None, OutputFormat::Ndjson, _) => {
+                self.print_entry_detail(OutputFormat::Ndjson, entry)?
+            }
+            (None, OutputFormat::Plain, Some(ls_colors)) => {
+                self.print_entry_colorized(entry, ls_colors)?
+            }
+            (None, OutputFormat::Plain, None) => self.print_entry_uncolorized(entry)?,
         };
 
         if has_hyperlink {
@@ -74,7 +110,7 @@ impl<'a, W: Write> Printer<'a, W> {
         self.started = true;
         if self.config.null_separator {
             write!(self.stdout, "\0")
-        } else if self.config.json {
+        } else if matches!(self.config.output, OutputFormat::Json) {
             Ok(())
         } else {
             writeln!(self.stdout)
@@ -187,82 +223,90 @@ impl<'a, W: Write> Printer<'a, W> {
         // Manually construct a simple YAML representation
         // to avoid adding a dependency on serde_yaml (deprecated).
         //
-        // A little bit dirty, but safe enough for buffered output.
-        let mut result = format!(
-            "- path: \"{}\"\n  type: {}\n",
-            detail.path, detail.file_type
-        );
+        // Write YAML fragments directly to stdout (should be buffered)
+        write!(self.stdout, "- ")?;
+
+        match &detail.path {
+            PathEncoding::Utf8(path_utf8) => {
+                write!(self.stdout, "path: \"{}\"\n", path_utf8)?;
+            }
+            PathEncoding::Bytes(path_bytes) => {
+                write!(
+                    self.stdout,
+                    "path_base64: \"{}\"\n",
+                    general_purpose::STANDARD.encode(path_bytes)
+                )?;
+            }
+        }
+
+        write!(self.stdout, "  type: {}\n", detail.file_type)?;
 
         if let Some(size) = detail.size {
-            result.push_str(&format!("  size: {size}\n"));
+            write!(self.stdout, "  size: {size}\n")?;
         }
         if let Some(mode) = detail.mode {
-            result.push_str(&format!("  mode: {mode:o}\n"));
+            write!(self.stdout, "  mode: 0o{mode:o}\n")?;
         }
-        if let Some(modified) = detail.modified {
-            result.push_str(&format!("  modified: {modified}\n"));
+        if let Some(modified) = &detail.modified {
+            write!(self.stdout, "  modified: \"{}\"\n", modified)?;
         }
-        if let Some(accessed) = detail.accessed {
-            result.push_str(&format!("  accessed: {accessed}\n"));
+        if let Some(accessed) = &detail.accessed {
+            write!(self.stdout, "  accessed: \"{}\"\n", accessed)?;
         }
-        if let Some(created) = detail.created {
-            result.push_str(&format!("  created: {created}\n"));
+        if let Some(created) = &detail.created {
+            write!(self.stdout, "  created: \"{}\"\n", created)?;
         }
-        write!(self.stdout, "{result}")
+        Ok(())
     }
 
     fn print_entry_json_obj(&mut self, detail: &FileDetail) -> io::Result<()> {
-        // Manually construct a simple JSON representation.
-        // A little bit dirty, but safe enough for buffered output.
-        let mut result = format!(
-            "  {{\"path\":\"{}\",\"type\":\"{}\"",
-            detail.path, detail.file_type
-        );
-
-        if let Some(size) = detail.size {
-            result.push_str(&format!(",\"size\":{size}"));
-        }
-        if let Some(mode) = detail.mode {
-            result.push_str(&format!(",\"mode\":{mode:o}"));
-        }
-        if let Some(modified) = detail.modified {
-            result.push_str(&format!(",\"modified\":{modified}"));
-        }
-        if let Some(accessed) = detail.accessed {
-            result.push_str(&format!(",\"accessed\":{accessed}"));
-        }
-        if let Some(created) = detail.created {
-            result.push_str(&format!(",\"created\":{created}"));
-        }
-        result.push('}');
         if self.started {
             writeln!(self.stdout, ",")?;
         }
-        write!(self.stdout, "{result}")
+
+        write!(self.stdout, "  {{")?;
+
+        match &detail.path {
+            PathEncoding::Utf8(path_utf8) => {
+                write!(self.stdout, "\"path\":\"{}\"", path_utf8)?;
+            }
+            PathEncoding::Bytes(path_bytes) => {
+                write!(
+                    self.stdout,
+                    "\"path_b64\":\"{}\"",
+                    general_purpose::STANDARD.encode(path_bytes)
+                )?;
+            }
+        }
+
+        write!(self.stdout, ",\"type\":\"{}\"", detail.file_type)?;
+
+        if let Some(size) = detail.size {
+            write!(self.stdout, ",\"size\":{size}")?;
+        }
+        if let Some(mode) = detail.mode {
+            write!(self.stdout, ",\"mode\":{mode:o}")?;
+        }
+        if let Some(modified) = &detail.modified {
+            write!(self.stdout, ",\"modified\":\"{}\"", modified)?;
+        }
+        if let Some(accessed) = &detail.accessed {
+            write!(self.stdout, ",\"accessed\":\"{}\"", accessed)?;
+        }
+        if let Some(created) = &detail.created {
+            write!(self.stdout, ",\"created\":\"{}\"", created)?;
+        }
+        write!(self.stdout, "}}")
     }
 
-    fn print_entry_detail(&mut self, format: DetailFormat, entry: &DirEntry) -> io::Result<()> {
+    fn print_entry_detail(&mut self, format: OutputFormat, entry: &DirEntry) -> io::Result<()> {
         let path = entry.stripped_path(self.config);
-        let path_string = path.to_string_lossy().escape_default().to_string();
-        let file_type = entry
-            .file_type()
-            .map(|ft| {
-                if ft.is_dir() {
-                    "directory"
-                } else if ft.is_file() {
-                    "file"
-                } else if ft.is_symlink() {
-                    "symlink"
-                } else {
-                    "other"
-                }
-            })
-            .unwrap_or("unknown")
-            .to_string();
+        let encoded_path = encode_path(path);
         let metadata = entry.metadata();
+
         let mut detail = FileDetail {
-            path: path_string,
-            file_type,
+            path: encoded_path,
+            file_type: "unknown".to_string(),
             size: None,
             mode: None,
             modified: None,
@@ -281,31 +325,45 @@ impl<'a, W: Write> Printer<'a, W> {
                     None
                 }
             };
-            let modified = meta
-                .modified()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs());
+            let ft = match meta.file_type() {
+                ft if ft.is_dir() => "directory",
+                ft if ft.is_file() => "file",
+                ft if ft.is_symlink() => "symlink",
+                _ => "unknown",
+            }
+            .to_string();
 
-            let accessed = meta
-                .accessed()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs());
+            let modified = meta.modified().ok().and_then(|t| {
+                t.duration_since(std::time::UNIX_EPOCH)
+                    .ok()
+                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
+            });
 
-            let created = meta
-                .created()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .map(|d| d.as_secs());
+            let accessed = meta.accessed().ok().and_then(|t| {
+                t.duration_since(std::time::UNIX_EPOCH)
+                    .ok()
+                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
+            });
 
+            let created = meta.created().ok().and_then(|t| {
+                t.duration_since(std::time::UNIX_EPOCH)
+                    .ok()
+                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
+            });
+
+            detail.file_type = ft;
             detail.size = Some(size);
             detail.mode = mode;
-            detail.modified = modified.ok();
-            detail.accessed = accessed.ok();
-            detail.created = created.ok();
+            detail.modified = modified;
+            detail.accessed = accessed;
+            detail.created = created;
         }
 
         match format {
-            DetailFormat::Json => self.print_entry_json_obj(&detail),
-            DetailFormat::Yaml => self.print_entry_yaml_obj(&detail),
+            OutputFormat::Json => self.print_entry_json_obj(&detail),
+            OutputFormat::Yaml => self.print_entry_yaml_obj(&detail),
+            OutputFormat::Ndjson => self.print_entry_json_obj(&detail), // NDJSON uses same format as JSON for individual entries
+            OutputFormat::Plain => unreachable!("Plain format should not call print_entry_detail"),
         }
     }
 }
