@@ -8,6 +8,7 @@ use lscolors::{Indicator, LsColors, Style};
 use crate::cli::OutputFormat;
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
+use crate::exit_codes::ExitCode;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
 
@@ -74,6 +75,34 @@ impl<'a, W: Write> Printer<'a, W> {
             stdout,
             started: false,
         }
+    }
+
+    /// Begin JSON array output if in JSON format.
+    /// Returns an error if writing to output fails.
+    pub fn begin(&mut self) -> Result<(), ExitCode> {
+        if self.config.output == OutputFormat::Json {
+            if let Err(e) = writeln!(self.stdout, "[") {
+                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
+                    crate::error::print_error(format!("Could not write to output: {e}"));
+                    return Err(ExitCode::GeneralError);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// End JSON array output if in JSON format.
+    /// Returns an error if writing to output fails.
+    pub fn end(&mut self) -> Result<(), ExitCode> {
+        if self.config.output == OutputFormat::Json {
+            if let Err(e) = writeln!(self.stdout, "\n]") {
+                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
+                    crate::error::print_error(format!("Could not write to output: {e}"));
+                    return Err(ExitCode::GeneralError);
+                }
+            }
+        }
+        Ok(())
     }
 
     // TODO: this function is performance critical and can probably be optimized

@@ -15,7 +15,6 @@ use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
 use regex::bytes::Regex;
 
-use crate::cli::OutputFormat;
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
@@ -173,13 +172,8 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
 
     /// Process results until finished.
     fn process(&mut self) -> ExitCode {
-        if self.config.output == OutputFormat::Json {
-            if let Err(e) = writeln!(self.printer.stdout, "[") {
-                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
-                    print_error(format!("Could not write to output: {e}"));
-                    return ExitCode::GeneralError;
-                }
-            }
+        if let Err(err) = self.printer.begin() {
+            return err;
         }
         let ec;
         loop {
@@ -189,13 +183,8 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
                 break;
             }
         }
-        if self.config.output == OutputFormat::Json {
-            if let Err(e) = writeln!(self.printer.stdout, "\n]") {
-                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
-                    print_error(format!("Could not write to output: {e}"));
-                    return ExitCode::GeneralError;
-                }
-            }
+        if let Err(err) = self.printer.end() {
+            return err;
         }
         ec
     }
