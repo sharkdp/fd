@@ -137,10 +137,16 @@ impl<'a, W: Write> Printer<'a, W> {
         }
 
         self.started = true;
+
+        if matches!(
+            self.config.output,
+            OutputFormat::Json | OutputFormat::Ndjson
+        ) {
+            return Ok(());
+        }
+
         if self.config.null_separator {
             write!(self.stdout, "\0")
-        } else if matches!(self.config.output, OutputFormat::Json) {
-            Ok(())
         } else {
             writeln!(self.stdout)
         }
@@ -288,12 +294,19 @@ impl<'a, W: Write> Printer<'a, W> {
         Ok(())
     }
 
-    fn print_entry_json_obj(&mut self, detail: &FileDetail) -> io::Result<()> {
+    fn print_entry_json_obj(&mut self, detail: &FileDetail, comma: bool) -> io::Result<()> {
         if self.started {
-            writeln!(self.stdout, ",")?;
+            if comma {
+                writeln!(self.stdout, ",")?;
+            } else {
+                writeln!(self.stdout)?;
+            }
         }
 
-        write!(self.stdout, "  {{")?;
+        if comma {
+            write!(self.stdout, "  ")?;
+        }
+        write!(self.stdout, "{{")?;
 
         match &detail.path {
             PathEncoding::Utf8(path_utf8) => {
@@ -389,9 +402,9 @@ impl<'a, W: Write> Printer<'a, W> {
         }
 
         match format {
-            OutputFormat::Json => self.print_entry_json_obj(&detail),
+            OutputFormat::Json => self.print_entry_json_obj(&detail, true),
+            OutputFormat::Ndjson => self.print_entry_json_obj(&detail, false),
             OutputFormat::Yaml => self.print_entry_yaml_obj(&detail),
-            OutputFormat::Ndjson => self.print_entry_json_obj(&detail), // NDJSON uses same format as JSON for individual entries
             OutputFormat::Plain => unreachable!("Plain format should not call print_entry_detail"),
         }
     }
