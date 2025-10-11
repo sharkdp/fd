@@ -262,34 +262,34 @@ impl<'a, W: Write> Printer<'a, W> {
         write!(self.stdout, "- ")?;
 
         match &detail.path {
-            PathEncoding::Utf8(path_utf8) => {
-                write!(self.stdout, "path: \"{}\"\n", path_utf8)?;
+            PathEncoding::Utf8(path) => {
+                writeln!(self.stdout, "path: \"{}\"", path)?;
             }
-            PathEncoding::Bytes(path_bytes) => {
-                write!(
+            PathEncoding::Bytes(bytes) => {
+                writeln!(
                     self.stdout,
-                    "path_base64: \"{}\"\n",
-                    general_purpose::STANDARD.encode(path_bytes)
+                    "path_base64: \"{}\"",
+                    general_purpose::STANDARD.encode(bytes)
                 )?;
             }
         }
 
-        write!(self.stdout, "  type: {}\n", detail.file_type)?;
+        writeln!(self.stdout, "  type: {}", detail.file_type)?;
 
         if let Some(size) = detail.size {
-            write!(self.stdout, "  size: {size}\n")?;
+            writeln!(self.stdout, "  size: {}", size)?;
         }
         if let Some(mode) = detail.mode {
-            write!(self.stdout, "  mode: 0o{mode:o}\n")?;
+            writeln!(self.stdout, "  mode: 0o{mode:o}")?;
         }
         if let Some(modified) = &detail.modified {
-            write!(self.stdout, "  modified: \"{}\"\n", modified)?;
+            writeln!(self.stdout, "  modified: \"{}\"", modified)?;
         }
         if let Some(accessed) = &detail.accessed {
-            write!(self.stdout, "  accessed: \"{}\"\n", accessed)?;
+            writeln!(self.stdout, "  accessed: \"{}\"", accessed)?;
         }
         if let Some(created) = &detail.created {
-            write!(self.stdout, "  created: \"{}\"\n", created)?;
+            writeln!(self.stdout, "  created: \"{}\"", created)?;
         }
         Ok(())
     }
