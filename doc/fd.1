@@ -503,6 +503,23 @@ Maximum number of arguments to pass to the command given with -X. If the number 
 greater than the given size, the command given with -X is run again with remaining arguments. A
 batch size of zero means there is no limit (default), but note that batching might still happen
 due to OS restrictions on the maximum length of command lines.
+.TP
+.BI "\-\-output "
+Specify what marking language to use for the output. The value can be plain, json, ndjson, or
+yaml.
+
+Currently, the default is "plain", and if the option is used without an argument "plain"
+is used. The available options are:
+.RS
+.IP plain
+Output the results as plain text (default).
+.IP json
+Output the results as a JSON array.
+.IP ndjson
+Output the results as newline-delimited JSON.
+.IP yaml
+Output the results as YAML.
+.RE
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 
