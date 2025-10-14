@@ -594,7 +594,7 @@ pub struct Opts {
     /// relative to this directory.
     #[arg(
         long,
-        short = 'C', 
+        short = 'C',
         value_name = "path",
         hide_short_help = true,
         help = "Change current working directory",
