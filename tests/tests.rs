@@ -2727,7 +2727,11 @@ fn test_output_format_invalid_utf8() {
     )
     .unwrap();
 
-    te.assert_success_and_get_output("test1/", &["--output=json", "", "test1/"]);
+    let re = te.assert_success_and_get_output(".", &["", "--output=json", "test1/"]);
+    let stdout = String::from_utf8_lossy(&re.stdout);
+    let files: Vec<serde_json::Value> = serde_json::from_str(&stdout).unwrap();
+    assert_eq!(files.len(), 1);
+    assert_eq!(files[0]["path_b64"], "dGVzdDEvdGVzdF/+aW52YWxpZC50eHQ=");
 
     te.assert_output(&["invalid", "test1/"], "test1/test_�invalid.txt");
 }
