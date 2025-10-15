@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
 
-use base64::{engine::general_purpose, Engine as _};
+use base64::{prelude::BASE64_STANDARD, Engine as _};
 use jiff::Timestamp;
 use lscolors::{Indicator, LsColors, Style};
 
@@ -269,7 +269,7 @@ impl<'a, W: Write> Printer<'a, W> {
                 writeln!(
                     self.stdout,
                     "path_base64: \"{}\"",
-                    general_purpose::STANDARD.encode(bytes)
+                    BASE64_STANDARD.encode(bytes)
                 )?;
             }
         }
@@ -316,7 +316,7 @@ impl<'a, W: Write> Printer<'a, W> {
                 write!(
                     self.stdout,
                     "\"path_b64\":\"{}\"",
-                    general_purpose::STANDARD.encode(path_bytes)
+                    BASE64_STANDARD.encode(path_bytes)
                 )?;
             }
         }
@@ -346,16 +346,7 @@ impl<'a, W: Write> Printer<'a, W> {
         let encoded_path = encode_path(path);
         let metadata = entry.metadata();
 
-        let mut detail = FileDetail {
-            path: encoded_path,
-            file_type: "unknown".to_string(),
-            size: None,
-            mode: None,
-            modified: None,
-            accessed: None,
-            created: None,
-        };
-        if let Some(meta) = metadata {
+        let detail = if let Some(meta) = metadata {
             let size = meta.len();
             let mode = {
                 #[cfg(unix)]
@@ -393,14 +384,26 @@ impl<'a, W: Write> Printer<'a, W> {
                     .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
             });
 
-            detail.file_type = ft;
-            detail.size = Some(size);
-            detail.mode = mode;
-            detail.modified = modified;
-            detail.accessed = accessed;
-            detail.created = created;
-        }
-
+            FileDetail {
+                path: encoded_path,
+                file_type: ft,
+                size: Some(size),
+                mode,
+                modified,
+                accessed,
+                created,
+            }
+        } else {
+            FileDetail {
+                path: encoded_path,
+                file_type: "unknown".to_string(),
+                size: None,
+                mode: None,
+                modified: None,
+                accessed: None,
+                created: None,
+            }
+        };
         match format {
             OutputFormat::Json => self.print_entry_json_obj(&detail, true),
             OutputFormat::Ndjson => self.print_entry_json_obj(&detail, false),
