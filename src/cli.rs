@@ -842,8 +842,9 @@ pub enum OutputFormat {
     Plain,
     /// JSON output
     Json,
-    /// NDJSON (Newline Delimited JSON) output
-    Ndjson,
+    /// JSONL (JSON Lines, as known as Newline Delimited JSON) output
+    #[value(alias = "ndjson")]
+    Jsonl,
     /// YAML output
     #[value(alias = "yml")]
     Yaml,

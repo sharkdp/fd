@@ -123,8 +123,8 @@ impl<'a, W: Write> Printer<'a, W> {
             (Some(template), _, _) => self.print_entry_format(entry, template)?,
             (None, OutputFormat::Json, _) => self.print_entry_detail(OutputFormat::Json, entry)?,
             (None, OutputFormat::Yaml, _) => self.print_entry_detail(OutputFormat::Yaml, entry)?,
-            (None, OutputFormat::Ndjson, _) => {
-                self.print_entry_detail(OutputFormat::Ndjson, entry)?
+            (None, OutputFormat::Jsonl, _) => {
+                self.print_entry_detail(OutputFormat::Jsonl, entry)?
             }
             (None, OutputFormat::Plain, Some(ls_colors)) => {
                 self.print_entry_colorized(entry, ls_colors)?
@@ -138,10 +138,7 @@ impl<'a, W: Write> Printer<'a, W> {
 
         self.started = true;
 
-        if matches!(
-            self.config.output,
-            OutputFormat::Json | OutputFormat::Ndjson
-        ) {
+        if matches!(self.config.output, OutputFormat::Json) {
             return Ok(());
         }
 
@@ -295,12 +292,8 @@ impl<'a, W: Write> Printer<'a, W> {
     }
 
     fn print_entry_json_obj(&mut self, detail: &FileDetail, comma: bool) -> io::Result<()> {
-        if self.started {
-            if comma {
-                writeln!(self.stdout, ",")?;
-            } else {
-                writeln!(self.stdout)?;
-            }
+        if self.started && comma {
+            writeln!(self.stdout, ",")?;
         }
 
         if comma {
@@ -406,7 +399,7 @@ impl<'a, W: Write> Printer<'a, W> {
         };
         match format {
             OutputFormat::Json => self.print_entry_json_obj(&detail, true),
-            OutputFormat::Ndjson => self.print_entry_json_obj(&detail, false),
+            OutputFormat::Jsonl => self.print_entry_json_obj(&detail, false),
             OutputFormat::Yaml => self.print_entry_yaml_obj(&detail),
             OutputFormat::Plain => unreachable!("Plain format should not call print_entry_detail"),
         }
