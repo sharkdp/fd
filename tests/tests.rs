@@ -1826,6 +1826,21 @@ fn test_exec_multi() {
     );
 }
 
+#[cfg(not(windows))]
+#[test]
+fn test_exec_nulls() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.assert_output(
+        &["foo", "--print0", "--exec", "printf", "p=%s"],
+        "p=./a.fooNULL
+        p=./one/b.fooNULL
+        p=./one/two/C.Foo2NULL
+        p=./one/two/c.fooNULL
+        p=./one/two/three/d.fooNULL
+        p=./one/two/three/directory_fooNULL",
+    );
+}
+
 #[test]
 fn test_exec_batch() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
