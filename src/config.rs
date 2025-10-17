@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
+use crate::cli::OutputFormat;
 use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
@@ -130,6 +131,9 @@ pub struct Config {
 
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
+
+    /// The output format to use
+    pub output: OutputFormat,
 }
 
 impl Config {
