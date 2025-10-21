@@ -15,11 +15,11 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 // TODO: this function is performance critical and can probably be optimized
 pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) -> io::Result<()> {
     let mut has_hyperlink = false;
-    if config.hyperlink {
-        if let Some(url) = PathUrl::new(entry.path()) {
-            write!(stdout, "\x1B]8;;{url}\x1B\\")?;
-            has_hyperlink = true;
-        }
+    if config.hyperlink
+        && let Some(url) = PathUrl::new(entry.path())
+    {
+        write!(stdout, "\x1B]8;;{url}\x1B\\")?;
+        has_hyperlink = true;
     }
 
     if let Some(ref format) = config.format {

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use crate::config::Config;
 use crate::error::print_error;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::walk::WorkerResult;
 
 use super::CommandSet;
