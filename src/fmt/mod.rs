@@ -131,7 +131,7 @@ impl FormatTemplate {
                         Placeholder => {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
                         }
-                        Text(ref string) => s.push(string),
+                        Text(string) => s.push(string),
                     }
                 }
                 s

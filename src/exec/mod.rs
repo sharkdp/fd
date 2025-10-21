@@ -8,10 +8,10 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Mutex;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use argmax::Command;
 
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::fmt::{FormatTemplate, Token};
 
 use self::command::{execute_commands, handle_cmd_error};
