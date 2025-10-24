@@ -470,4 +470,33 @@ mod tests {
         // a single path separator during normalization.
         //check!("//server/share/path", "##server#share#path");
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_windows_paths_with_special_chars() {
+        let arg = FormatTemplate::Tokens(vec![Token::Placeholder]);
+        
+        // Test the bug case: path with parentheses and brackets
+        let result = arg.generate(r"Down\Blank_TO_(cl1nlx3gw002y14pnqw15cpk6).zip", Some("/"));
+        assert_eq!(result, OsString::from("Down/Blank_TO_(cl1nlx3gw002y14pnqw15cpk6).zip"));
+        
+        // Test with relative path prefix
+        let result = arg.generate(r".\Down\Blank_TO_(cl1nlx3gw002y14pnqw15cpk6).zip", Some("/"));
+        assert_eq!(result, OsString::from("./Down/Blank_TO_(cl1nlx3gw002y14pnqw15cpk6).zip"));
+        
+        // Test with various special characters mentioned in the bug report: ( ) [ ] @
+        let test_cases = vec![
+            (r"folder\file(test).txt", "folder/file(test).txt"),
+            (r"folder\file[test].txt", "folder/file[test].txt"),
+            (r"folder\file@test.txt", "folder/file@test.txt"),
+            (r"folder\file(test)[more]@end.txt", "folder/file(test)[more]@end.txt"),
+            (r".\folder\file(test).txt", "./folder/file(test).txt"),
+        ];
+        
+        for (input, expected) in test_cases {
+            let result = arg.generate(input, Some("/"));
+            assert_eq!(result, OsString::from(expected), 
+                "Failed for input: {}", input);
+        }
+    }
 }
