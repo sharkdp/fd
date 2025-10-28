@@ -11,6 +11,8 @@
 
 ## Changes
 
+- Minimum required rust version has been increased to 1.90.0. Notably, this means dropping fully support for intel Mac and Windows 7.
+
 
 ## Other
 

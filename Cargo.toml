@@ -17,8 +17,8 @@ name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
 version = "10.3.0"
-edition= "2021"
-rust-version = "1.77.2"
+edition= "2024"
+rust-version = "1.90.0"
 
 [badges.appveyor]
 repository = "sharkdp/fd"
@@ -34,8 +34,8 @@ path = "src/main.rs"
 aho-corasick = "1.1"
 nu-ansi-term = "0.50"
 argmax = "0.4.0"
-ignore = "0.4.23"
-regex = "1.11.2"
+ignore = "0.4.24"
+regex = "1.12.2"
 regex-syntax = "0.8"
 ctrlc = "3.4"
 globset = "0.4"
@@ -46,9 +46,6 @@ crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.5.58", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.14"
-# For now, pin the `home` crate to less than 0.5.11, to ensure it works on older versions of rust
-# TODO: when we upgrade past rust 1.85, remove this dependency
-home = "=0.5.9"
 
 [dependencies.clap]
 version = "4.5.48"
