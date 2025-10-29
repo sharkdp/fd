@@ -98,18 +98,24 @@ impl<'a, W: Write> Printer<'a, W> {
         match (
             &self.config.format,
             &self.config.output,
+            &self.config.jsonl,
             &self.config.ls_colors,
         ) {
-            (Some(template), _, _) => self.print_entry_format(entry, template)?,
-            (None, OutputFormat::Json, _) => self.print_entry_detail(OutputFormat::Json, entry)?,
-            (None, OutputFormat::Yaml, _) => self.print_entry_detail(OutputFormat::Yaml, entry)?,
-            (None, OutputFormat::Jsonl, _) => {
+            (Some(template), _, _, _) => self.print_entry_format(entry, template)?,
+            (None, _, true, _) => self.print_entry_detail(OutputFormat::Jsonl, entry)?,
+            (None, OutputFormat::Json, false, _) => {
+                self.print_entry_detail(OutputFormat::Json, entry)?
+            }
+            (None, OutputFormat::Yaml, false, _) => {
+                self.print_entry_detail(OutputFormat::Yaml, entry)?
+            }
+            (None, OutputFormat::Jsonl, false, _) => {
                 self.print_entry_detail(OutputFormat::Jsonl, entry)?
             }
-            (None, OutputFormat::Plain, Some(ls_colors)) => {
+            (None, OutputFormat::Plain, false, Some(ls_colors)) => {
                 self.print_entry_colorized(entry, ls_colors)?
             }
-            (None, OutputFormat::Plain, None) => self.print_entry_uncolorized(entry)?,
+            (None, OutputFormat::Plain, false, None) => self.print_entry_uncolorized(entry)?,
         };
 
         if has_hyperlink {

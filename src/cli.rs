@@ -647,6 +647,16 @@ pub struct Opts {
     )]
     search_path: Vec<PathBuf>,
 
+    /// Print results in JSONL format.
+    #[arg(
+        long,
+        value_name = "json",
+        conflicts_with("output"),
+        help = "Print results in JSONL format so you can pipe it to tools.",
+        long_help
+    )]
+    pub json: bool,
+
     /// Print results in a certain format so you can pipe it to tools.
     #[arg(
         long,

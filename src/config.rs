@@ -132,6 +132,9 @@ pub struct Config {
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
 
+    /// Whether to print results in JSONL format
+    pub jsonl: bool,
+
     /// The output format to use
     pub output: OutputFormat,
 }
