@@ -1,5 +1,5 @@
-use regex_syntax::hir::Hir;
 use regex_syntax::ParserBuilder;
+use regex_syntax::hir::Hir;
 
 /// Determine if a regex pattern contains a literal uppercase character.
 pub fn pattern_has_uppercase_char(pattern: &str) -> bool {

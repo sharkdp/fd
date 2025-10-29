@@ -344,6 +344,7 @@ Options:
                                    always, never]
       --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible
                                    values: auto, always, never]
+  -C, --base-directory <path>      Change the search path to <path>
   -h, --help                       Print help (see more with '--help')
   -V, --version                    Print version
 ```

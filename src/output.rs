@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::io::{self, Write};
 use std::path::Path;
 
-use base64::{prelude::BASE64_STANDARD, Engine as _};
+use base64::{Engine as _, prelude::BASE64_STANDARD};
 use jiff::Timestamp;
 use lscolors::{Indicator, LsColors, Style};
 

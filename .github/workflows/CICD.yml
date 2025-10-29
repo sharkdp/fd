@@ -13,6 +13,11 @@ on:
     tags:
       - '*'
 
+permissions:
+  id-token: write
+  contents: write
+  attestations: write
+
 jobs:
   crate_metadata:
     name: Extract crate metadata
@@ -111,9 +116,7 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.job.target }}
-        # On windows, for now build with 1.77.2, so that it works on windows 7.
-        # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
-        toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.77.2' || 'stable' }}"
+        toolchain: "stable"
 
     - name: Install cross
       if: matrix.job.use-cross
@@ -223,12 +226,14 @@ jobs:
         BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
 
     - name: "Artifact upload: tarball"
+      id: upload-tarball
       uses: actions/upload-artifact@master
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
 
     - name: "Artifact upload: Debian package"
+      id: upload-deb
       uses: actions/upload-artifact@master
       if: steps.debian-package.outputs.DPKG_NAME
       with:
@@ -241,6 +246,20 @@ jobs:
       run: |
         unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
+
+    - name: "Attest artifact: tarball"
+      uses: actions/attest-build-provenance@v3
+      if: steps.is-release.outputs.IS_RELEASE
+      with:
+        subject-name: ${{ steps.package.outputs.PKG_NAME }}
+        subject-digest: sha256::${{ steps.upload-tarball.artifact-digest }}
+
+    - name: "Attest artifact: Debian package"
+      uses: actions/attest-build-provenance@v3
+      if: 'steps.is-release.outputs.IS_RELEASE && steps.debian-package.outputs.DPKG_NAME'
+      with:
+        subject-name: ${{ steps.debian-package.outputs.DPKG_NAME }}
+        subject-digest: sha256::${{ steps.upload-deb.outputs.artifact-digest }}
 
     - name: Publish archives and packages
       uses: softprops/action-gh-release@v2

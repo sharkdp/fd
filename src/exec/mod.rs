@@ -6,12 +6,12 @@ use std::io;
 use std::iter;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::Mutex;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use argmax::Command;
 
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exec::command::OutputBuffer;
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::fmt::{FormatTemplate, Token};
 
 use self::command::{execute_commands, handle_cmd_error};
@@ -80,14 +80,14 @@ impl CommandSet {
         &self,
         input: &Path,
         path_separator: Option<&str>,
-        out_perm: &Mutex<()>,
+        null_separator: bool,
         buffer_output: bool,
     ) -> ExitCode {
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands(commands, out_perm, buffer_output)
+        execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
