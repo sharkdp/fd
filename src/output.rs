@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::io::{self, Write};
+use std::path::Path;
 
 use base64::{prelude::BASE64_STANDARD, Engine as _};
 use jiff::Timestamp;
@@ -19,42 +20,21 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
 }
 
-#[cfg(unix)]
-fn encode_path(path: &std::path::Path) -> PathEncoding {
-    use std::os::unix::ffi::OsStrExt;
-    let bytes = path.as_os_str().as_bytes();
-
-    // Try to convert to UTF-8 first
-    match std::str::from_utf8(bytes) {
-        Ok(utf8_str) => {
-            let escaped: String = utf8_str.escape_default().collect();
-            PathEncoding::Utf8(escaped)
-        }
-        Err(_) => {
-            // Invalid UTF-8, store as raw bytes
-            PathEncoding::Bytes(bytes.to_vec())
-        }
+fn encode_path(path: &Path) -> PathEncoding<'_> {
+    match path.to_str() {
+        Some(utf8) => PathEncoding::Utf8(utf8.escape_default()),
+        None => PathEncoding::Bytes(path.as_os_str().as_encoded_bytes()),
     }
 }
 
-#[cfg(not(unix))]
-fn encode_path(path: &std::path::Path) -> PathEncoding {
-    // On non-Unix systems, paths are typically UTF-8 or UTF-16
-    let path_str = path.to_string_lossy();
-    // Always escape the path string for safe output
-    // Note: if lossy conversion happened, this might lose information
-    let escaped: String = path_str.escape_default().collect();
-    PathEncoding::Utf8(escaped)
+enum PathEncoding<'a> {
+    Utf8(std::str::EscapeDefault<'a>),
+    Bytes(&'a [u8]),
 }
 
-enum PathEncoding {
-    Utf8(String),
-    Bytes(Vec<u8>),
-}
-
-struct FileDetail {
-    path: PathEncoding,
-    file_type: String,
+struct FileDetail<'a> {
+    path: PathEncoding<'a>,
+    file_type: &'static str,
     size: Option<u64>,
     mode: Option<u32>,
     modified: Option<Timestamp>,
@@ -356,8 +336,7 @@ impl<'a, W: Write> Printer<'a, W> {
                 ft if ft.is_file() => "file",
                 ft if ft.is_symlink() => "symlink",
                 _ => "unknown",
-            }
-            .to_string();
+            };
 
             let modified = meta.modified().ok().and_then(|t| {
                 t.duration_since(std::time::UNIX_EPOCH)
@@ -389,7 +368,7 @@ impl<'a, W: Write> Printer<'a, W> {
         } else {
             FileDetail {
                 path: encoded_path,
-                file_type: "unknown".to_string(),
+                file_type: "unknown",
                 size: None,
                 mode: None,
                 modified: None,
