@@ -305,6 +305,20 @@ pub struct Opts {
     )]
     pub exclude: Vec<String>,
 
+    /// Exclude directories that match the given absolute paths.
+    /// Multiple absolute paths can be specified.
+    ///
+    /// Examles:
+    /// {n}  --exclude-absolute-path /Volumes/
+    /// {n}  --exclude-absolute-path /Library/Backups/
+    #[arg(
+        long,
+        value_name = "absolute-path",
+        help = "Exclude directories that match the given absolute paths",
+        long_help
+    )]
+    pub exclude_absolute_path: Vec<String>,
+
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
     #[arg(long, hide_short_help = true, conflicts_with_all(&["size", "exact_depth"]),
