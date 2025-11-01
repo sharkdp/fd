@@ -8,6 +8,10 @@
 - `--print0` combined with `--exec` will now print a `\0` between the output of each entry. Note that if there are multiple instances
   of `--exec`, the `\0` will be between each _set_ of commands, _not_ between each individual command run. Fixes #1797.
 
+- Several bugs were fixed by an update to the `ignore` library used for handling ignore rules
+    - #1506
+    - #1667
+    - #1813
 
 ## Changes
 
