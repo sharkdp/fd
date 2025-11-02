@@ -60,13 +60,12 @@ impl<'a, W: Write> Printer<'a, W> {
     /// Begin JSON array output if in JSON format.
     /// Returns an error if writing to output fails.
     pub fn begin(&mut self) -> Result<(), ExitCode> {
-        if self.config.output == OutputFormat::Json {
-            if let Err(e) = writeln!(self.stdout, "[") {
-                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
-                    crate::error::print_error(format!("Could not write to output: {e}"));
-                    return Err(ExitCode::GeneralError);
-                }
-            }
+        if self.config.output == OutputFormat::Json
+            && let Err(e) = writeln!(self.stdout, "[")
+            && e.kind() != ::std::io::ErrorKind::BrokenPipe
+        {
+            crate::error::print_error(format!("Could not write to output: {e}"));
+            return Err(ExitCode::GeneralError);
         }
         Ok(())
     }
@@ -74,13 +73,12 @@ impl<'a, W: Write> Printer<'a, W> {
     /// End JSON array output if in JSON format.
     /// Returns an error if writing to output fails.
     pub fn end(&mut self) -> Result<(), ExitCode> {
-        if self.config.output == OutputFormat::Json {
-            if let Err(e) = writeln!(self.stdout, "\n]") {
-                if e.kind() != ::std::io::ErrorKind::BrokenPipe {
-                    crate::error::print_error(format!("Could not write to output: {e}"));
-                    return Err(ExitCode::GeneralError);
-                }
-            }
+        if self.config.output == OutputFormat::Json
+            && let Err(e) = writeln!(self.stdout, "\n]")
+            && e.kind() != ::std::io::ErrorKind::BrokenPipe
+        {
+            crate::error::print_error(format!("Could not write to output: {e}"));
+            return Err(ExitCode::GeneralError);
         }
         Ok(())
     }
@@ -88,13 +86,12 @@ impl<'a, W: Write> Printer<'a, W> {
     // TODO: this function is performance critical and can probably be optimized
     pub fn print_entry(&mut self, entry: &DirEntry) -> io::Result<()> {
         let mut has_hyperlink = false;
-        if self.config.hyperlink {
-            if let Some(url) = PathUrl::new(entry.path()) {
-                write!(self.stdout, "\x1B]8;;{url}\x1B\\")?;
-                has_hyperlink = true;
-            }
+        if self.config.hyperlink
+            && let Some(url) = PathUrl::new(entry.path())
+        {
+            write!(self.stdout, "\x1B]8;;{url}\x1B\\")?;
+            has_hyperlink = true;
         }
-
         match (
             &self.config.format,
             &self.config.output,
