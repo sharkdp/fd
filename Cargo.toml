@@ -34,16 +34,16 @@ regex-syntax = "0.8"
 ctrlc = "3.4"
 globset = "0.4"
 anyhow = "1.0"
-etcetera = "0.10"
+etcetera = "0.11"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.15"
-clap_complete = { version = "4.5.58", optional = true }
+clap_complete = { version = "4.5.60", optional = true }
 faccess = "0.2.4"
 jiff = "0.2.14"
 base64 = "0.22.1"
 
 [dependencies.clap]
-version = "4.5.48"
+version = "4.5.51"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.lscolors]
