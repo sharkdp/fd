@@ -9,7 +9,6 @@ use lscolors::{Indicator, LsColors, Style};
 use crate::cli::OutputFormat;
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::exit_codes::ExitCode;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
 
@@ -45,42 +44,11 @@ struct FileDetail<'a> {
 pub struct Printer<'a, W> {
     config: &'a Config,
     pub stdout: W,
-    started: bool,
 }
 
 impl<'a, W: Write> Printer<'a, W> {
     pub fn new(config: &'a Config, stdout: W) -> Self {
-        Self {
-            config,
-            stdout,
-            started: false,
-        }
-    }
-
-    /// Begin JSON array output if in JSON format.
-    /// Returns an error if writing to output fails.
-    pub fn begin(&mut self) -> Result<(), ExitCode> {
-        if self.config.output == OutputFormat::Json
-            && let Err(e) = writeln!(self.stdout, "[")
-            && e.kind() != ::std::io::ErrorKind::BrokenPipe
-        {
-            crate::error::print_error(format!("Could not write to output: {e}"));
-            return Err(ExitCode::GeneralError);
-        }
-        Ok(())
-    }
-
-    /// End JSON array output if in JSON format.
-    /// Returns an error if writing to output fails.
-    pub fn end(&mut self) -> Result<(), ExitCode> {
-        if self.config.output == OutputFormat::Json
-            && let Err(e) = writeln!(self.stdout, "\n]")
-            && e.kind() != ::std::io::ErrorKind::BrokenPipe
-        {
-            crate::error::print_error(format!("Could not write to output: {e}"));
-            return Err(ExitCode::GeneralError);
-        }
-        Ok(())
+        Self { config, stdout }
     }
 
     // TODO: this function is performance critical and can probably be optimized
@@ -94,35 +62,17 @@ impl<'a, W: Write> Printer<'a, W> {
         }
         match (
             &self.config.format,
-            &self.config.output,
             &self.config.jsonl,
             &self.config.ls_colors,
         ) {
-            (Some(template), _, _, _) => self.print_entry_format(entry, template)?,
-            (None, _, true, _) => self.print_entry_detail(OutputFormat::Jsonl, entry)?,
-            (None, OutputFormat::Json, false, _) => {
-                self.print_entry_detail(OutputFormat::Json, entry)?
-            }
-            (None, OutputFormat::Yaml, false, _) => {
-                self.print_entry_detail(OutputFormat::Yaml, entry)?
-            }
-            (None, OutputFormat::Jsonl, false, _) => {
-                self.print_entry_detail(OutputFormat::Jsonl, entry)?
-            }
-            (None, OutputFormat::Plain, false, Some(ls_colors)) => {
-                self.print_entry_colorized(entry, ls_colors)?
-            }
-            (None, OutputFormat::Plain, false, None) => self.print_entry_uncolorized(entry)?,
+            (Some(template), _, _) => self.print_entry_format(entry, template)?,
+            (None, true, _) => self.print_entry_detail(OutputFormat::Jsonl, entry)?,
+            (None, false, Some(ls_colors)) => self.print_entry_colorized(entry, ls_colors)?,
+            (None, false, None) => self.print_entry_uncolorized(entry)?,
         };
 
         if has_hyperlink {
             write!(self.stdout, "\x1B]8;;\x1B\\")?;
-        }
-
-        self.started = true;
-
-        if matches!(self.config.output, OutputFormat::Json) {
-            return Ok(());
         }
 
         if self.config.null_separator {
@@ -234,54 +184,7 @@ impl<'a, W: Write> Printer<'a, W> {
         }
     }
 
-    fn print_entry_yaml_obj(&mut self, detail: &FileDetail) -> io::Result<()> {
-        // Manually construct a simple YAML representation
-        // to avoid adding a dependency on serde_yaml (deprecated).
-        //
-        // Write YAML fragments directly to stdout (should be buffered)
-        write!(self.stdout, "- ")?;
-
-        match &detail.path {
-            PathEncoding::Utf8(path) => {
-                writeln!(self.stdout, "path: \"{}\"", path)?;
-            }
-            PathEncoding::Bytes(bytes) => {
-                writeln!(
-                    self.stdout,
-                    "path_base64: \"{}\"",
-                    BASE64_STANDARD.encode(bytes)
-                )?;
-            }
-        }
-
-        writeln!(self.stdout, "  type: {}", detail.file_type)?;
-
-        if let Some(size) = detail.size {
-            writeln!(self.stdout, "  size: {}", size)?;
-        }
-        if let Some(mode) = detail.mode {
-            writeln!(self.stdout, "  mode: 0o{mode:o}")?;
-        }
-        if let Some(modified) = &detail.modified {
-            writeln!(self.stdout, "  modified: \"{}\"", modified)?;
-        }
-        if let Some(accessed) = &detail.accessed {
-            writeln!(self.stdout, "  accessed: \"{}\"", accessed)?;
-        }
-        if let Some(created) = &detail.created {
-            writeln!(self.stdout, "  created: \"{}\"", created)?;
-        }
-        Ok(())
-    }
-
-    fn print_entry_json_obj(&mut self, detail: &FileDetail, comma: bool) -> io::Result<()> {
-        if self.started && comma {
-            writeln!(self.stdout, ",")?;
-        }
-
-        if comma {
-            write!(self.stdout, "  ")?;
-        }
+    fn print_entry_json_obj(&mut self, detail: &FileDetail) -> io::Result<()> {
         write!(self.stdout, "{{")?;
 
         match &detail.path {
@@ -380,9 +283,7 @@ impl<'a, W: Write> Printer<'a, W> {
             }
         };
         match format {
-            OutputFormat::Json => self.print_entry_json_obj(&detail, true),
-            OutputFormat::Jsonl => self.print_entry_json_obj(&detail, false),
-            OutputFormat::Yaml => self.print_entry_yaml_obj(&detail),
+            OutputFormat::Jsonl => self.print_entry_json_obj(&detail),
             OutputFormat::Plain => unreachable!("Plain format should not call print_entry_detail"),
         }
     }

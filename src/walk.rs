@@ -172,21 +172,12 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
 
     /// Process results until finished.
     fn process(&mut self) -> ExitCode {
-        if let Err(err) = self.printer.begin() {
-            return err;
-        }
-        let ec;
         loop {
             if let Err(err) = self.poll() {
                 self.quit_flag.store(true, Ordering::Relaxed);
-                ec = err;
-                break;
+                return err;
             }
         }
-        if let Err(err) = self.printer.end() {
-            return err;
-        }
-        ec
     }
 
     /// Receive the next worker result.
