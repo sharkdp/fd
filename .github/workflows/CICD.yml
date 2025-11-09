@@ -84,7 +84,7 @@ jobs:
       run: cargo test --locked "${MSRV_FEATURES}"
 
   build:
-    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    name: '${{ matrix.job.target }} (${{ matrix.job.os }})'
     runs-on: ${{ matrix.job.os }}
     needs: crate_metadata
     permissions:
@@ -109,7 +109,7 @@ jobs:
           - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
           - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
     env:
-      BUILD_CMD: ${{ matrix.job.use-cross && cross || cargo }}
+      BUILD_CMD: "${{ matrix.job.use-cross && 'cross' || 'cargo' }}"
       target: ${{ matrix.job.target }}
       name: ${{ needs.crate_metadata.outputs.name }}
     steps:
@@ -178,7 +178,7 @@ jobs:
         unset CARGO_TEST_OPTIONS
         case ${target} in
         arm-* | aarch64-*)
-          CARGO_TEST_OPTIONS="--bin ${name}" ;;
+          CARGO_TEST_OPTIONS="--bin=${name}" ;;
         esac
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
