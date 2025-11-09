@@ -167,8 +167,8 @@ pub struct Opts {
     pub regex: bool,
 
     /// Treat the pattern as a literal string instead of a regular expression. Note
-    /// that this also performs substring comparison. If you want to match on an
-    /// exact filename, consider using '--glob'.
+    /// that the pattern would still match on a substring of the input. If you want
+    /// to match on an exact filename, consider adding '--anchor=input' as well.
     #[arg(
         long,
         short = 'F',
@@ -244,6 +244,20 @@ pub struct Opts {
         verbatim_doc_comment
     )]
     pub full_path: bool,
+
+    /// By default, the search pattern for --regex and --fixed-strings can match any part of the input.
+    /// (See the --full-path option for what constitutes input)
+    ///
+    /// This flag allows anchoring the pattern.
+    ///
+    /// Conflicts with the --glob flag: globs always match the entire input
+    #[arg(
+        long,
+        help = "Where to anchor the pattern",
+        conflicts_with("glob"),
+        long_help
+    )]
+    pub anchor: Option<Anchor>,
 
     /// Separate search results by the null character (instead of newlines).
     /// Useful for piping results to 'xargs'.
@@ -717,6 +731,17 @@ impl Opts {
         self.rg_alias_hidden_ignore > 0
     }
 
+    pub fn anchor(&self) -> Option<Anchor> {
+        if self.glob {
+            // globset has no way to use an anchor.
+            // Otherwise we'd guard like this:
+            // && !self.no_anchor && self.anchor.is_none()
+            Some(Anchor::Input)
+        } else {
+            self.anchor
+        }
+    }
+
     pub fn max_depth(&self) -> Option<usize> {
         self.max_depth.or(self.exact_depth)
     }
@@ -770,6 +795,14 @@ fn default_num_threads() -> NonZeroUsize {
     std::thread::available_parallelism()
         .unwrap_or(fallback)
         .min(limit)
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
+pub enum Anchor {
+    InputStart,
+    InputEnd,
+    Input,
+    Word,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
