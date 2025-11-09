@@ -14,9 +14,7 @@ on:
       - '*'
 
 permissions:
-  id-token: write
-  contents: write
-  attestations: write
+  contents: read
 
 jobs:
   crate_metadata:
@@ -24,6 +22,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
     - name: Extract crate information
       id: crate_metadata
       run: |
@@ -47,6 +47,8 @@ jobs:
       with:
         components: rustfmt
     - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
     - run: cargo fmt -- --check
 
   lint_check:
@@ -57,6 +59,8 @@ jobs:
       with:
         components: clippy
     - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
 
   min_version:
@@ -66,6 +70,8 @@ jobs:
     steps:
     - name: Checkout source code
       uses: actions/checkout@v5
+      with:
+        persist-credentials: false
 
     - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
       uses: dtolnay/rust-toolchain@master
@@ -73,14 +79,18 @@ jobs:
         toolchain: ${{ needs.crate_metadata.outputs.msrv }}
         components: clippy
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
+      run: cargo clippy --locked --all-targets "${MSRV_FEATURES}"
     - name: Run tests
-      run: cargo test --locked ${{ env.MSRV_FEATURES }}
+      run: cargo test --locked "${MSRV_FEATURES}"
 
   build:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
     needs: crate_metadata
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -99,15 +109,19 @@ jobs:
           - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
           - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
     env:
-      BUILD_CMD: cargo
+      BUILD_CMD: ${{ matrix.job.use-cross && cross || cargo }}
+      target: ${{ matrix.job.target }}
+      name: ${{ needs.crate_metadata.outputs.name }}
     steps:
     - name: Checkout source code
       uses: actions/checkout@v5
+      with:
+        persist-credentials: false
 
     - name: Install prerequisites
       shell: bash
       run: |
-        case ${{ matrix.job.target }} in
+        case ${target} in
           arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
           aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
         esac
@@ -120,14 +134,9 @@ jobs:
 
     - name: Install cross
       if: matrix.job.use-cross
-      uses: taiki-e/install-action@v2
+      uses: taiki-e/install-action@6f9c7cc51aa54b13cbcbd12f8bbf69d8ba405b4b # v2.62.47
       with:
         tool: cross
-
-    - name: Overwrite build command env variable
-      if: matrix.job.use-cross
-      shell: bash
-      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
 
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
@@ -141,7 +150,7 @@ jobs:
 
     - name: Build
       shell: bash
-      run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+      run: $BUILD_CMD build --locked --release --target="${target}"
 
     - name: Set binary name & path
       id: bin
@@ -149,13 +158,13 @@ jobs:
       run: |
         # Figure out suffix of binary
         EXE_suffix=""
-        case ${{ matrix.job.target }} in
+        case ${target} in
           *-pc-windows-*) EXE_suffix=".exe" ;;
         esac;
 
         # Setup paths
-        BIN_NAME="${{ needs.crate_metadata.outputs.name }}${EXE_suffix}"
-        BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
+        BIN_NAME="${name}${EXE_suffix}"
+        BIN_PATH="target/${target}/release/${BIN_NAME}"
 
         # Let subsequent steps know where to find the binary
         echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
@@ -167,12 +176,17 @@ jobs:
       run: |
         # test only library unit tests and binary for arm-type targets
         unset CARGO_TEST_OPTIONS
-        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--bin ${{ needs.crate_metadata.outputs.name }}" ;; esac;
+        case ${target} in
+        arm-* | aarch64-*)
+          CARGO_TEST_OPTIONS="--bin ${name}" ;;
+        esac
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
     - name: Run tests
       shell: bash
-      run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      env:
+        cargo_test_options: ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      run: $BUILD_CMD test --locked --target="${target}" "${cargo_test_options}"
 
     - name: Generate completions
       id: completions
@@ -182,31 +196,37 @@ jobs:
     - name: Create tarball
       id: package
       shell: bash
+      env:
+        BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
+        version: ${{ needs.crate_metadata.outputs.version }}
       run: |
-        PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
-        PKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ matrix.job.target }}
+        PKG_suffix=".tar.gz"
+        case ${target} in
+        *-pc-windows-*) PKG_suffix=".zip" ;;
+        esac
+        PKG_BASENAME=${name}-v${version}-${target}
         PKG_NAME=${PKG_BASENAME}${PKG_suffix}
         echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
 
-        PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
+        PKG_STAGING="${CICD_INTERMEDIATES_DIR}/package"
         ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
         mkdir -p "${ARCHIVE_DIR}"
 
         # Binary
-        cp "${{ steps.bin.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
+        cp "${BIN_PATH}" "$ARCHIVE_DIR"
 
         # README, LICENSE and CHANGELOG files
         cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
 
         # Man page
-        cp 'doc/${{ needs.crate_metadata.outputs.name }}.1' "$ARCHIVE_DIR"
+        cp "doc/${name}.1" "$ARCHIVE_DIR"
 
         # Autocompletion files
         cp -r autocomplete "${ARCHIVE_DIR}"
 
         # base compressed package
         pushd "${PKG_STAGING}/" >/dev/null
-        case ${{ matrix.job.target }} in
+        case ${target} in
           *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
           *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
         esac;
@@ -262,7 +282,7 @@ jobs:
         subject-digest: sha256::${{ steps.upload-deb.outputs.artifact-digest }}
 
     - name: Publish archives and packages
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
       if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |
@@ -277,7 +297,7 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@v2
+      - uses: vedantmgoyal9/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
         with:
           identifier: sharkdp.fd
           installers-regex: '-pc-windows-msvc\.zip$'
