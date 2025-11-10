@@ -134,10 +134,18 @@ jobs:
 
     - name: Install cross
       if: matrix.job.use-cross
-      uses: taiki-e/install-action@6f9c7cc51aa54b13cbcbd12f8bbf69d8ba405b4b # v2.62.47
-      with:
-        tool: cross
-
+      env:
+        cross_version: "v0.2.5"
+        package_name: "cross-x86_64-unknown-linux-gnu.tar.gz"
+        GH_TOKEN: "${{ github.token }}"
+      run: |
+        dir="$HOME/.local/bin/"
+        mkdir -p "$dir"
+        gh release download --repo cross-rs/cross  \
+          --pattern "${package_name}" -O - "${cross_version}" \
+          | tar -C "$dir" -xz
+        echo "$dir" >> $GITHUB_PATH
+        echo "Installed cross $cross_version" >> $GITHUB_STEP_SUMMARY
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
       run: |
