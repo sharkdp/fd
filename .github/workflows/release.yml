@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+env:
+  VERSION: "${{ github.ref_name }}"
+
+jobs:
+  build:
+    uses: ./.github/workflows/CICD.yml
+    with:
+      release_version: "${{ github.ref_name }}"
+
+  publish:
+    name: Publish Release
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          merge-multiple: true
+          path: artifacts
+      - name: Get CHANGELOG
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+          sparse-checkout: CHANGLEOG.md
+      - name: Generate Release Notes
+        run: |
+          awk '/^# / { if (p) { exit }; p=1; next } p' CHANGELOG.md > notes.md
+      - name: Publish Release
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          gh release create --notes-file notes.md \
+          --verify-tag "${VERSION}" artifacts/*
+
+  winget:
+    name: Publish to Winget
+    runs-on: ubuntu-latest
+    needs: publish
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
+        with:
+          identifier: sharkdp.fd
+          installers-regex: '-pc-windows-msvc\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
+

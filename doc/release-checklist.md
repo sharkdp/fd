@@ -36,11 +36,9 @@ necessary changes for the upcoming release.
       This will trigger the deployment via GitHub Actions.
       REMINDER: If your `origin` is a fork, don't forget to push to e.g. `upstream`
       instead.
-- [ ] Go to https://github.com/sharkdp/fd/releases/new to create the new
-      release. Select the new tag and also use it as the release title. For the
-      release notes, copy the corresponding section from `CHANGELOG.md` and
-      possibly add additional remarks for package maintainers.
-      Publish the release.
+- [ ] Go to https://github.com/sharkdp/fd/releases to create the new
+      release and wait for the new release to finish (creating the tag will automatically
+      create a new release). If necessary, make any adjustments to the release notes.
 - [ ] Check if the binary deployment works (archives and Debian packages should
       appear when the CI run *for the Git tag* has finished).
 - [ ] Publish to crates.io by running `cargo publish` in a *clean* repository.
