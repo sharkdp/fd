@@ -28,7 +28,7 @@ path = "src/main.rs"
 aho-corasick = "1.1"
 nu-ansi-term = "0.50"
 argmax = "0.4.0"
-ignore = "0.4.24"
+ignore = "0.4.25"
 regex = "1.12.2"
 regex-syntax = "0.8"
 ctrlc = "3.5"
@@ -47,7 +47,7 @@ version = "4.5.51"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.lscolors]
-version = "0.20"
+version = "0.21"
 default-features = false
 features = ["nu-ansi-term"]
 
