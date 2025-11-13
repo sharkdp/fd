@@ -512,7 +512,27 @@ batch size of zero means there is no limit (default), but note that batching mig
 due to OS restrictions on the maximum length of command lines.
 .TP
 .BI "\-\-json "
+.RS
 Specify JSONL (as known as NDJSON) format to use for the output. 
+
+Output fields:
+
+  - "path": The file path as a UTF\-8 string.
+
+        Note that when the path contains invalid UTF-8 sequences, it is encoded in base64 and stored in the "path_b64" field instead.
+
+  - "type": The file type (e.g., "file", "directory").
+
+  - "size": The file size in bytes.
+
+  - "mode": The file permissions in octal (e.g., 644).
+
+  - "modified": The last modification time in ISO 8601 format (e.g., 2000-01-01T12:00:00Z).
+
+  - "accessed": The last access time in ISO 8601 format.
+
+  - "created": The creation time in ISO 8601 format.
+.RE
 .TP
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
