@@ -43,12 +43,16 @@ struct FileDetail<'a> {
 
 pub struct Printer<'a, W> {
     config: &'a Config,
-    pub stdout: W,
+    stdout: W,
 }
 
 impl<'a, W: Write> Printer<'a, W> {
     pub fn new(config: &'a Config, stdout: W) -> Self {
         Self { config, stdout }
+    }
+
+    pub fn flush(&mut self) -> io::Result<()> {
+        self.stdout.flush()
     }
 
     // TODO: this function is performance critical and can probably be optimized

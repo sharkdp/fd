@@ -148,7 +148,7 @@ struct ReceiverBuffer<'a, W> {
     printer: output::Printer<'a, W>,
 }
 
-impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
+impl<'a, W: Write + 'a> ReceiverBuffer<'a, W> {
     /// Create a new receiver buffer.
     fn new(state: &'a WorkerState, rx: Receiver<Batch>, stdout: W) -> Self {
         let config = &state.config;
@@ -294,7 +294,7 @@ impl<'a, W: Write + 'static> ReceiverBuffer<'a, W> {
 
     /// Flush stdout if necessary.
     fn flush(&mut self) -> Result<(), ExitCode> {
-        if self.printer.stdout.flush().is_err() {
+        if self.printer.flush().is_err() {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
