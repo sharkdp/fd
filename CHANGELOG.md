@@ -2,7 +2,7 @@
 
 ## Features
 
-- Add `--yaml` flag for YAML format output. 
+- Add `--json` flag for JSONL format output. 
 
 ## Bugfixes
 
