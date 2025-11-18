@@ -74,18 +74,8 @@ fn create_config_directory_with_global_ignore(ignore_file_content: &str) -> io::
 
 /// Find the *fd* executable.
 fn find_fd_exe() -> PathBuf {
-    // Tests exe is in target/debug/deps, the *fd* exe is in target/debug
-    let root = env::current_exe()
-        .expect("tests executable")
-        .parent()
-        .expect("tests executable directory")
-        .parent()
-        .expect("fd executable directory")
-        .to_path_buf();
-
-    let exe_name = if cfg!(windows) { "fd.exe" } else { "fd" };
-
-    root.join(exe_name)
+    // Read the location of the fd executable from the environment
+    PathBuf::from(env::var("CARGO_BIN_EXE_fd").unwrap_or(env!("CARGO_BIN_EXE_fd").to_string()))
 }
 
 /// Format an error message for when *fd* did not exit successfully.
