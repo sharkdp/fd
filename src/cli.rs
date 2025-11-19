@@ -459,6 +459,7 @@ pub struct Opts {
     ///   '{//}': parent directory
     ///   '{.}': path without file extension
     ///   '{/.}': basename without file extension
+    ///   '{inode}': inode number (Unix only)
     #[arg(
         long,
         value_name = "fmt",

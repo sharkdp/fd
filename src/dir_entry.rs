@@ -94,6 +94,13 @@ impl DirEntry {
         }
     }
 
+    pub fn ino(&self) -> Option<u64> {
+        match &self.inner {
+            DirEntryInner::Normal(e) => e.ino(),
+            DirEntryInner::BrokenSymlink(_) => None,
+        }
+    }
+
     pub fn style(&self, ls_colors: &LsColors) -> Option<&Style> {
         self.style
             .get_or_init(|| ls_colors.style_for(self).cloned())
