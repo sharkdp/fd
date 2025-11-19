@@ -13,6 +13,7 @@ enum Check<T> {
     Equal(T),
     NotEq(T),
     Ignore,
+    Orphaned,
 }
 
 impl OwnerFilter {
@@ -69,7 +70,17 @@ impl OwnerFilter {
     pub fn matches(&self, md: &fs::Metadata) -> bool {
         use std::os::unix::fs::MetadataExt;
 
-        self.uid.check(md.uid()) && self.gid.check(md.gid())
+        let uid_match = match self.uid {
+            Check::Orphaned => User::from_uid(md.uid().into()).ok().flatten().is_none(),
+            _ => self.uid.check(md.uid()),
+        };
+
+        let gid_match = match self.gid {
+            Check::Orphaned => Group::from_gid(md.gid().into()).ok().flatten().is_none(),
+            _ => self.gid.check(md.gid()),
+        };
+
+        uid_match && gid_match
     }
 }
 
@@ -79,6 +90,7 @@ impl<T: PartialEq> Check<T> {
             Check::Equal(x) => v == *x,
             Check::NotEq(x) => v != *x,
             Check::Ignore => true,
+            Check::Orphaned => unreachable!("Orphaned check handled in OwnerFilter::matches"),
         }
     }
 
@@ -88,6 +100,7 @@ impl<T: PartialEq> Check<T> {
     {
         let (s, equality) = match s {
             Some("") | None => return Ok(Check::Ignore),
+            Some("orphan") => return Ok(Check::Orphaned),
             Some(s) if s.starts_with('!') => (&s[1..], false),
             Some(s) => (s, true),
         };
@@ -133,6 +146,10 @@ mod owner_parsing {
         uid_negate: "!5"    => Ok(OwnerFilter { uid: NotEq(5), gid: Ignore     }),
         both_negate:"!4:!3" => Ok(OwnerFilter { uid: NotEq(4), gid: NotEq(3)   }),
         uid_not_gid:"6:!8"  => Ok(OwnerFilter { uid: Equal(6), gid: NotEq(8)   }),
+
+        orphan_uid: "orphan"       => Ok(OwnerFilter { uid: Orphaned, gid: Ignore   }),
+        orphan_gid: ":orphan"      => Ok(OwnerFilter { uid: Ignore,   gid: Orphaned }),
+        orphan_both:"orphan:orphan"=> Ok(OwnerFilter { uid: Orphaned, gid: Orphaned }),
 
         more_colons:"3:5:"  => Err(_),
         only_colons:"::"    => Err(_),

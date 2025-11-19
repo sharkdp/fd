@@ -441,11 +441,14 @@ pub struct Opts {
     /// Filter files by their user and/or group.
     /// Format: [(user|uid)][:(group|gid)]. Either side is optional.
     /// Precede either side with a '!' to exclude files instead.
+    /// Use 'orphan' to match files with no valid user/group.
     ///
     /// Examples:
     /// {n}    --owner john
     /// {n}    --owner :students
     /// {n}    --owner '!john:students'
+    /// {n}    --owner orphan
+    /// {n}    --owner :orphan
     #[cfg(unix)]
     #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group",
         help = "Filter by owning user and/or group",
