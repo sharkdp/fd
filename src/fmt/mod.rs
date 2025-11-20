@@ -24,6 +24,7 @@ pub enum Token {
     NoExt,
     BasenameNoExt,
     Inode,
+    FileSize,
     Text(String),
 }
 
@@ -36,6 +37,7 @@ impl Display for Token {
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
             Token::Inode => f.write_str("{inode}")?,
+            Token::FileSize => f.write_str("{filesize}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
@@ -66,7 +68,7 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{inode}"]).unwrap()
+            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{inode}", "{filesize}"]).unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
@@ -168,6 +170,13 @@ impl FormatTemplate {
                                 }
                             }
                         }
+                        FileSize => {
+                            if let Some(entry) = dir_entry {
+                                if let Some(metadata) = entry.metadata() {
+                                    s.push(metadata.len().to_string());
+                                }
+                            }
+                        }
                         Text(string) => s.push(string),
                     }
                 }
@@ -244,6 +253,7 @@ fn token_from_pattern_id(id: u32) -> Token {
         5 => NoExt,
         6 => BasenameNoExt,
         7 => Inode,
+        8 => FileSize,
         _ => unreachable!(),
     }
 }

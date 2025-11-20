@@ -460,6 +460,7 @@ pub struct Opts {
     ///   '{.}': path without file extension
     ///   '{/.}': basename without file extension
     ///   '{inode}': inode number (Unix only)
+    ///   '{filesize}': file size in bytes
     #[arg(
         long,
         value_name = "fmt",
