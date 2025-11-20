@@ -248,23 +248,20 @@ impl<'a, W: Write> Printer<'a, W> {
                 _ => "unknown",
             };
 
-            let modified = meta.modified().ok().and_then(|t| {
-                t.duration_since(std::time::UNIX_EPOCH)
-                    .ok()
-                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
-            });
+            let modified = meta
+                .modified()
+                .ok()
+                .and_then(|t| Timestamp::try_from(t).ok());
 
-            let accessed = meta.accessed().ok().and_then(|t| {
-                t.duration_since(std::time::UNIX_EPOCH)
-                    .ok()
-                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
-            });
+            let accessed = meta
+                .accessed()
+                .ok()
+                .and_then(|t| Timestamp::try_from(t).ok());
 
-            let created = meta.created().ok().and_then(|t| {
-                t.duration_since(std::time::UNIX_EPOCH)
-                    .ok()
-                    .and_then(|d| Timestamp::from_second(d.as_secs() as i64).ok())
-            });
+            let created = meta
+                .created()
+                .ok()
+                .and_then(|t| Timestamp::try_from(t).ok());
 
             FileDetail {
                 path: encoded_path,
