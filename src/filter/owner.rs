@@ -1,6 +1,35 @@
 use anyhow::{Result, anyhow};
 use nix::unistd::{Group, User};
+use std::collections::HashSet;
 use std::fs;
+use std::sync::{LazyLock, Mutex};
+
+static VALID_UIDS: LazyLock<Mutex<HashSet<u32>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+static VALID_GIDS: LazyLock<Mutex<HashSet<u32>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+
+fn is_valid_uid(uid: u32) -> bool {
+    let mut cache = VALID_UIDS.lock().unwrap();
+    if cache.contains(&uid) {
+        return true;
+    }
+    let valid = matches!(User::from_uid(uid.into()), Ok(Some(_)));
+    if valid {
+        cache.insert(uid);
+    }
+    valid
+}
+
+fn is_valid_gid(gid: u32) -> bool {
+    let mut cache = VALID_GIDS.lock().unwrap();
+    if cache.contains(&gid) {
+        return true;
+    }
+    let valid = matches!(Group::from_gid(gid.into()), Ok(Some(_)));
+    if valid {
+        cache.insert(gid);
+    }
+    valid
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct OwnerFilter {
@@ -13,7 +42,7 @@ enum Check<T> {
     Equal(T),
     NotEq(T),
     Ignore,
-    Orphaned,
+    Orphan(fn(T) -> bool),
 }
 
 impl OwnerFilter {
@@ -44,7 +73,7 @@ impl OwnerFilter {
                     .map(|user| user.uid.as_raw())
                     .ok_or_else(|| anyhow!("'{}' is not a recognized user name", s))
             }
-        })?;
+        }, is_valid_uid)?;
         let gid = Check::parse(snd, |s| {
             if let Ok(gid) = s.parse() {
                 Ok(gid)
@@ -53,7 +82,7 @@ impl OwnerFilter {
                     .map(|group| group.gid.as_raw())
                     .ok_or_else(|| anyhow!("'{}' is not a recognized group name", s))
             }
-        })?;
+        }, is_valid_gid)?;
 
         Ok(OwnerFilter { uid, gid })
     }
@@ -70,17 +99,7 @@ impl OwnerFilter {
     pub fn matches(&self, md: &fs::Metadata) -> bool {
         use std::os::unix::fs::MetadataExt;
 
-        let uid_match = match self.uid {
-            Check::Orphaned => User::from_uid(md.uid().into()).ok().flatten().is_none(),
-            _ => self.uid.check(md.uid()),
-        };
-
-        let gid_match = match self.gid {
-            Check::Orphaned => Group::from_gid(md.gid().into()).ok().flatten().is_none(),
-            _ => self.gid.check(md.gid()),
-        };
-
-        uid_match && gid_match
+        self.uid.check(md.uid()) && self.gid.check(md.gid())
     }
 }
 
@@ -90,17 +109,17 @@ impl<T: PartialEq> Check<T> {
             Check::Equal(x) => v == *x,
             Check::NotEq(x) => v != *x,
             Check::Ignore => true,
-            Check::Orphaned => unreachable!("Orphaned check handled in OwnerFilter::matches"),
+            Check::Orphan(validator) => !validator(v),
         }
     }
 
-    fn parse<F>(s: Option<&str>, f: F) -> Result<Self>
+    fn parse<F>(s: Option<&str>, f: F, validator: fn(T) -> bool) -> Result<Self>
     where
         F: Fn(&str) -> Result<T>,
     {
         let (s, equality) = match s {
             Some("") | None => return Ok(Check::Ignore),
-            Some("orphan") => return Ok(Check::Orphaned),
+            Some("-") => return Ok(Check::Orphan(validator)),
             Some(s) if s.starts_with('!') => (&s[1..], false),
             Some(s) => (s, true),
         };
@@ -147,9 +166,9 @@ mod owner_parsing {
         both_negate:"!4:!3" => Ok(OwnerFilter { uid: NotEq(4), gid: NotEq(3)   }),
         uid_not_gid:"6:!8"  => Ok(OwnerFilter { uid: Equal(6), gid: NotEq(8)   }),
 
-        orphan_uid: "orphan"       => Ok(OwnerFilter { uid: Orphaned, gid: Ignore   }),
-        orphan_gid: ":orphan"      => Ok(OwnerFilter { uid: Ignore,   gid: Orphaned }),
-        orphan_both:"orphan:orphan"=> Ok(OwnerFilter { uid: Orphaned, gid: Orphaned }),
+        orphan_uid: "-"       => Ok(OwnerFilter { uid: Orphan(is_valid_uid), gid: Ignore   }),
+        orphan_gid: ":-"      => Ok(OwnerFilter { uid: Ignore,   gid: Orphan(is_valid_gid) }),
+        orphan_both:"-:-"     => Ok(OwnerFilter { uid: Orphan(is_valid_uid), gid: Orphan(is_valid_gid) }),
 
         more_colons:"3:5:"  => Err(_),
         only_colons:"::"    => Err(_),
