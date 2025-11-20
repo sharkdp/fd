@@ -31,12 +31,7 @@ pub fn job(
         };
 
         // Generate a command, execute it and store its exit code.
-        let code = cmd.execute(
-            &dir_entry,
-            config,
-            config.null_separator,
-            buffer_output,
-        );
+        let code = cmd.execute(&dir_entry, config, config.null_separator, buffer_output);
         ret = merge_exitcodes([ret, code]);
     }
     // Returns error in case of any error.

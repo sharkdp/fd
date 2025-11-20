@@ -68,7 +68,18 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{inode}", "{filesize}"]).unwrap()
+            AhoCorasick::new([
+                "{{",
+                "}}",
+                "{}",
+                "{/}",
+                "{//}",
+                "{.}",
+                "{/.}",
+                "{inode}",
+                "{filesize}",
+            ])
+            .unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
@@ -133,7 +144,11 @@ impl FormatTemplate {
     /// Test-only helper to generate from a path without DirEntry.
     /// Metadata-based tokens like {inode} will be ignored.
     #[cfg(test)]
-    pub fn generate_from_path(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
+    pub fn generate_from_path(
+        &self,
+        path: impl AsRef<Path>,
+        path_separator: Option<&str>,
+    ) -> OsString {
         self.generate_impl(path.as_ref(), path_separator, None)
     }
 
@@ -164,17 +179,17 @@ impl FormatTemplate {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
                         }
                         Inode => {
-                            if let Some(entry) = dir_entry {
-                                if let Some(ino) = entry.ino() {
-                                    s.push(ino.to_string());
-                                }
+                            if let Some(entry) = dir_entry
+                                && let Some(ino) = entry.ino()
+                            {
+                                s.push(ino.to_string());
                             }
                         }
                         FileSize => {
-                            if let Some(entry) = dir_entry {
-                                if let Some(metadata) = entry.metadata() {
-                                    s.push(metadata.len().to_string());
-                                }
+                            if let Some(entry) = dir_entry
+                                && let Some(metadata) = entry.metadata()
+                            {
+                                s.push(metadata.len().to_string());
                             }
                         }
                         Text(string) => s.push(string),
@@ -315,7 +330,10 @@ mod fmt_tests {
         path.push("folder");
         path.push("file.txt");
 
-        let expanded = templ.generate_from_path(&path, Some("/")).into_string().unwrap();
+        let expanded = templ
+            .generate_from_path(&path, Some("/"))
+            .into_string()
+            .unwrap();
 
         assert_eq!(
             expanded,
