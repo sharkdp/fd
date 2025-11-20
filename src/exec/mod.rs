@@ -4,7 +4,6 @@ mod job;
 use std::ffi::OsString;
 use std::io;
 use std::iter;
-use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use anyhow::{Result, bail};
@@ -90,9 +89,9 @@ impl CommandSet {
         execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
-    pub fn execute_batch<'a, I>(&self, entries: I, limit: usize, config: &crate::config::Config) -> ExitCode
+    pub fn execute_batch<I>(&self, entries: I, limit: usize, config: &crate::config::Config) -> ExitCode
     where
-        I: Iterator<Item = &'a crate::dir_entry::DirEntry>,
+        I: Iterator<Item = crate::dir_entry::DirEntry>,
     {
         let builders: io::Result<Vec<_>> = self
             .commands
@@ -104,7 +103,7 @@ impl CommandSet {
             Ok(mut builders) => {
                 for entry in entries {
                     for builder in &mut builders {
-                        if let Err(e) = builder.push(entry, config) {
+                        if let Err(e) = builder.push(&entry, config) {
                             return handle_cmd_error(Some(&builder.cmd), e);
                         }
                     }

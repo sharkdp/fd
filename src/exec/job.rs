@@ -48,7 +48,7 @@ pub fn batch(
     cmd: &CommandSet,
     config: &Config,
 ) -> ExitCode {
-    let entries: Vec<_> = results
+    let entries = results
         .into_iter()
         .filter_map(|worker_result| match worker_result {
             WorkerResult::Entry(dir_entry) => Some(dir_entry),
@@ -58,8 +58,7 @@ pub fn batch(
                 }
                 None
             }
-        })
-        .collect();
+        });
 
-    cmd.execute_batch(entries.iter(), config.batch_size, config)
+    cmd.execute_batch(entries, config.batch_size, config)
 }
