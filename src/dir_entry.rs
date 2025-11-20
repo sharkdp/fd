@@ -80,7 +80,16 @@ impl DirEntry {
 
     pub fn ino(&self) -> Option<u64> {
         match &self.inner {
-            DirEntryInner::Normal(e) => e.ino(),
+            DirEntryInner::Normal(e) => {
+                #[cfg(unix)]
+                {
+                    e.ino()
+                }
+                #[cfg(not(unix))]
+                {
+                    None
+                }
+            }
             DirEntryInner::BrokenSymlink(_) => None,
         }
     }
