@@ -648,6 +648,15 @@ pub struct Opts {
     )]
     search_path: Vec<PathBuf>,
 
+    /// Print results in JSONL format.
+    #[arg(
+        long,
+        value_name = "json",
+        help = "Print results in JSONL format so you can pipe it to tools.",
+        long_help
+    )]
+    pub json: bool,
+
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
@@ -823,6 +832,15 @@ pub enum HyperlinkWhen {
     Always,
     /// Never use hyperlinks
     Never,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum OutputFormat {
+    /// Plain text output (default)
+    Plain,
+    /// JSONL (JSON Lines, as known as Newline Delimited JSON) output
+    #[value(alias = "ndjson")]
+    Jsonl,
 }
 
 // there isn't a derive api for getting grouped values yet,

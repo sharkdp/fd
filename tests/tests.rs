@@ -2707,3 +2707,50 @@ fn test_hyperlink() {
 
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
 }
+
+/// Test various output formats
+#[test]
+fn test_output_format() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    let re = te.assert_success_and_get_output(".", &["--json", "."]);
+    let stdout = String::from_utf8_lossy(&re.stdout);
+    let mut count = 0;
+    stdout.split("\n").for_each(|line| {
+        println!("line: {}", line);
+        if line.trim().is_empty() {
+            return;
+        }
+        let file: serde_json::Value = serde_json::from_str(line).unwrap();
+        assert!(file.is_object() && file["path"].is_string());
+        count += 1;
+    });
+
+    assert_eq!(count, DEFAULT_FILES.len() + DEFAULT_DIRS.len());
+}
+
+/// Filenames with invalid UTF-8 sequences
+#[cfg(target_os = "linux")]
+#[test]
+fn test_output_format_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    )
+    .unwrap();
+
+    let re = te.assert_success_and_get_output(".", &["", "--json", "test1/"]);
+    let stdout = String::from_utf8_lossy(&re.stdout);
+    let files: serde_json::Value = serde_json::from_str(&stdout).unwrap();
+    assert!(files.is_object());
+    assert_eq!(files["path_b64"], "dGVzdDEvdGVzdF/+aW52YWxpZC50eHQ=");
+
+    te.assert_output(&["invalid", "test1/"], "test1/test_�invalid.txt");
+}
