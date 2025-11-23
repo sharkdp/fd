@@ -1,7 +1,7 @@
 # Upcoming release
 
 ## Features
-
+- Add colors to `--help`, see #1846 (@starsep)
 
 ## Bugfixes
 
