@@ -242,7 +242,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         HyperlinkWhen::Never => false,
         HyperlinkWhen::Auto => colored_output,
     };
-    let command = extract_command(&mut opts, colored_output)?;
+    let command = extract_command(&mut opts)?;
     let has_command = command.is_some();
 
     Ok(Config {
@@ -326,108 +326,12 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
+        list_details: opts.list_details,
     })
 }
 
-fn extract_command(opts: &mut Opts, colored_output: bool) -> Result<Option<CommandSet>> {
-    opts.exec
-        .command
-        .take()
-        .map(Ok)
-        .or_else(|| {
-            if !opts.list_details {
-                return None;
-            }
-
-            let res = determine_ls_command(colored_output)
-                .map(|cmd| CommandSet::new_batch([cmd]).unwrap());
-            Some(res)
-        })
-        .transpose()
-}
-
-fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
-    #[allow(unused)]
-    let gnu_ls = |command_name| {
-        let color_arg = if colored_output {
-            "--color=always"
-        } else {
-            "--color=never"
-        };
-        // Note: we use short options here (instead of --long-options) to support more
-        // platforms (like BusyBox).
-        vec![
-            command_name,
-            "-l", // long listing format
-            "-h", // human readable file sizes
-            "-d", // list directories themselves, not their contents
-            color_arg,
-        ]
-    };
-    let cmd: Vec<&str> = if cfg!(unix) {
-        if !cfg!(any(
-            target_os = "macos",
-            target_os = "dragonfly",
-            target_os = "freebsd",
-            target_os = "netbsd",
-            target_os = "openbsd"
-        )) {
-            // Assume ls is GNU ls
-            gnu_ls("ls")
-        } else {
-            // MacOS, DragonFlyBSD, FreeBSD
-            use std::process::{Command, Stdio};
-
-            // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
-            let gnu_ls_exists = Command::new("gls")
-                .arg("--version")
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status()
-                .is_ok();
-
-            if gnu_ls_exists {
-                gnu_ls("gls")
-            } else {
-                let mut cmd = vec![
-                    "ls", // BSD version of ls
-                    "-l", // long listing format
-                    "-h", // '--human-readable' is not available, '-h' is
-                    "-d", // '--directory' is not available, but '-d' is
-                ];
-
-                if !cfg!(any(target_os = "netbsd", target_os = "openbsd")) && colored_output {
-                    // -G is not available in NetBSD's and OpenBSD's ls
-                    cmd.push("-G");
-                }
-
-                cmd
-            }
-        }
-    } else if cfg!(windows) {
-        use std::process::{Command, Stdio};
-
-        // Use GNU ls, if available
-        let gnu_ls_exists = Command::new("ls")
-            .arg("--version")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .is_ok();
-
-        if gnu_ls_exists {
-            gnu_ls("ls")
-        } else {
-            return Err(anyhow!(
-                "'fd --list-details' is not supported on Windows unless GNU 'ls' is installed."
-            ));
-        }
-    } else {
-        return Err(anyhow!(
-            "'fd --list-details' is not supported on this platform."
-        ));
-    };
-    Ok(cmd)
+fn extract_command(opts: &mut Opts) -> Result<Option<CommandSet>> {
+    opts.exec.command.take().map(Ok).transpose()
 }
 
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
