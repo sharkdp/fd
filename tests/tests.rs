@@ -2526,6 +2526,18 @@ fn test_list_details() {
 }
 
 #[test]
+fn test_list_details_format() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    create_file_with_size(te.test_root().join("size_test_100"), 100);
+
+    let output = te.assert_success_and_get_output(".", &["--list-details", "size_test_100"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    assert!(stdout.contains("100 B"));
+    assert!(stdout.trim().ends_with("size_test_100"));
+}
+
+#[test]
 fn test_single_and_multithreaded_execution() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
