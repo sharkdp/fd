@@ -1,34 +1,28 @@
 use anyhow::{Result, anyhow};
 use nix::unistd::{Group, User};
-use std::collections::HashSet;
-use std::fs;
-use std::sync::{LazyLock, Mutex};
+use std::{cell::RefCell, collections::HashMap, fs};
 
-static VALID_UIDS: LazyLock<Mutex<HashSet<u32>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
-static VALID_GIDS: LazyLock<Mutex<HashSet<u32>>> = LazyLock::new(|| Mutex::new(HashSet::new()));
+thread_local! {
+    static UID_CACHE: RefCell<HashMap<u32, bool>> = RefCell::new(HashMap::new());
+    static GID_CACHE: RefCell<HashMap<u32, bool>> = RefCell::new(HashMap::new());
+}
 
 fn is_valid_uid(uid: u32) -> bool {
-    let mut cache = VALID_UIDS.lock().unwrap();
-    if cache.contains(&uid) {
-        return true;
-    }
-    let valid = matches!(User::from_uid(uid.into()), Ok(Some(_)));
-    if valid {
-        cache.insert(uid);
-    }
-    valid
+    UID_CACHE.with(|cache| {
+        *cache
+            .borrow_mut()
+            .entry(uid)
+            .or_insert_with(|| matches!(User::from_uid(uid.into()), Ok(Some(_))))
+    })
 }
 
 fn is_valid_gid(gid: u32) -> bool {
-    let mut cache = VALID_GIDS.lock().unwrap();
-    if cache.contains(&gid) {
-        return true;
-    }
-    let valid = matches!(Group::from_gid(gid.into()), Ok(Some(_)));
-    if valid {
-        cache.insert(gid);
-    }
-    valid
+    GID_CACHE.with(|cache| {
+        *cache
+            .borrow_mut()
+            .entry(gid)
+            .or_insert_with(|| matches!(Group::from_gid(gid.into()), Ok(Some(_))))
+    })
 }
 
 #[derive(Clone, Copy, Debug)]
