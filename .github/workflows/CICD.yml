@@ -21,7 +21,7 @@ jobs:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - name: Extract crate information
@@ -46,7 +46,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo fmt -- --check
@@ -58,7 +58,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
@@ -69,7 +69,7 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
@@ -114,7 +114,7 @@ jobs:
       name: ${{ needs.crate_metadata.outputs.name }}
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
