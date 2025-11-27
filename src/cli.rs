@@ -206,10 +206,9 @@ pub struct Opts {
     #[arg(long, overrides_with = "absolute_path", hide = true, action = ArgAction::SetTrue)]
     relative_path: (),
 
-    /// Use a detailed listing format like 'ls -l'. This is basically an alias
-    /// for '--exec-batch ls -l' with some additional 'ls' options. This can be
-    /// used to see more metadata, to show symlink targets and to achieve a
-    /// deterministic sort order.
+    /// Use a detailed listing format like 'ls -l'. This can be used to see
+    /// more metadata, to show symlink targets and to achieve a deterministic
+    /// sort order.
     #[arg(
         long,
         short = 'l',

@@ -46,6 +46,7 @@ crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.5.60", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.14"
+unix_mode = "0.1.4"
 
 [dependencies.clap]
 version = "4.5.51"

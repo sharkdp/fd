@@ -130,6 +130,9 @@ pub struct Config {
 
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
+
+    /// Whether or not to show a long listing format with file metadata
+    pub list_details: bool,
 }
 
 impl Config {
