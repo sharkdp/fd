@@ -560,6 +560,14 @@ impl WorkerState {
                     }
                 }
 
+                // Filter out directories containing a given name.
+                if let Some(ref ignore_contain) = config.ignore_contain
+                    && entry_path.is_dir()
+                    && entry_path.join(ignore_contain).exists()
+                {
+                    return WalkState::Skip;
+                }
+
                 // Filter out unwanted sizes if it is a file and we have been given size constraints.
                 if !config.size_constraints.is_empty() {
                     if entry_path.is_file() {

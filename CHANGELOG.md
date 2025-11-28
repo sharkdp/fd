@@ -1,7 +1,7 @@
 # Upcoming release
 
 ## Features
-
+- Add `--ignore-contain` option to ignore directories containing a named entry (e.g. to ignore [`CACHEDIR.TAG`](https://bford.info/cachedir/)); see #1727 (@fischman).
 
 ## Bugfixes
 
