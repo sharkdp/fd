@@ -2707,3 +2707,21 @@ fn test_hyperlink() {
 
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
 }
+
+#[test]
+fn test_ignore_contain() {
+    let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+        ],
+    );
+    let expected = "include/
+    include/foo
+    symlink
+    top";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}
