@@ -2,10 +2,10 @@ mod testenv;
 
 #[cfg(unix)]
 use nix::unistd::{Gid, Group, Uid, User};
-use std::fs;
 use std::io::Write;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
+use std::{env, fs};
 use test_case::test_case;
 
 use jiff::Timestamp;
@@ -2694,10 +2694,19 @@ fn test_gitignore_parent() {
 fn test_hyperlink() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    #[cfg(unix)]
-    let hostname = nix::unistd::gethostname().unwrap().into_string().unwrap();
     #[cfg(not(unix))]
-    let hostname = "";
+    let hostname = String::new();
+
+    #[cfg(unix)]
+    let hostname = env::var("WSL_DISTRO_NAME").map_or_else(
+        |_| {
+            nix::unistd::gethostname()
+                .ok()
+                .and_then(|h| h.into_string().ok())
+                .unwrap_or_default()
+        },
+        |distro| format!("wsl$/{distro}"),
+    );
 
     let expected = format!(
         "\x1b]8;;file://{}{}/a.foo\x1b\\a.foo\x1b]8;;\x1b\\",
