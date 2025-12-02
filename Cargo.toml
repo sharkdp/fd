@@ -43,7 +43,7 @@ anyhow = "1.0"
 etcetera = "0.11"
 normpath = "1.1.1"
 crossbeam-channel = "0.5.15"
-clap_complete = {version = "4.5.60", optional = true}
+clap_complete = {version = "4.5.61", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.16"
 
