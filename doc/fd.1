@@ -378,12 +378,15 @@ Examples:
 .TP
 .BI "-o, \-\-owner " [user][:group]
 Filter files by their user and/or group. Format: [(user|uid)][:(group|gid)]. Either side
-is optional. Precede either side with a '!' to exclude files instead.
+is optional. Precede either side with a '!' to exclude files instead. Use '\-' to match
+files with no valid user/group (equivalent to find's \-nouser/\-nogroup).
 
 Examples:
   \-\-owner john
   \-\-owner :students
   \-\-owner "!john:students"
+  \-\-owner "\-"
+  \-\-owner ":\-"
 .TP
 .BI "-C, \-\-base\-directory " path
 Change the current working directory of fd to the provided path. This means that search results will
