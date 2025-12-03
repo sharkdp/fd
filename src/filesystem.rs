@@ -4,7 +4,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
-use std::os::unix::fs::FileTypeExt;
+use std::os::unix::fs::{FileTypeExt, MetadataExt};
 use std::path::{Path, PathBuf};
 
 use normpath::PathExt;
@@ -54,6 +54,41 @@ pub fn is_empty(entry: &dir_entry::DirEntry) -> bool {
         } else {
             false
         }
+    } else {
+        false
+    }
+}
+
+pub fn is_leaf_directory(entry: &dir_entry::DirEntry) -> bool {
+    if !entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+        return false;
+    }
+
+    #[cfg(any(unix, target_os = "redox"))]
+    if let Some(metadata) = entry.metadata() {
+        let link_count = metadata.nlink();
+
+        if link_count == 2 {
+            return true;
+        }
+
+        if link_count > 2 {
+            return false;
+        }
+    }
+
+    if let Ok(mut entries) = fs::read_dir(entry.path()) {
+        for child in entries.by_ref() {
+            match child {
+                Ok(dirent) => {
+                    if dirent.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                        return false;
+                    }
+                }
+                Err(_) => return false,
+            }
+        }
+        true
     } else {
         false
     }

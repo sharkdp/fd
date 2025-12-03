@@ -275,6 +275,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
                 match value {
                     File => file_types.files = true,
                     Directory => file_types.directories = true,
+                    Leaf => {
+                        file_types.leaf_directories = true;
+                        file_types.directories = true;
+                    }
                     Symlink => file_types.symlinks = true,
                     Executable => {
                         file_types.executables_only = true;
