@@ -21,7 +21,7 @@ jobs:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - name: Extract crate information
@@ -46,7 +46,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo fmt -- --check
@@ -58,7 +58,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
@@ -69,7 +69,7 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
@@ -114,7 +114,7 @@ jobs:
       name: ${{ needs.crate_metadata.outputs.name }}
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
@@ -290,7 +290,7 @@ jobs:
         subject-digest: sha256::${{ steps.upload-deb.outputs.artifact-digest }}
 
     - name: Publish archives and packages
-      uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+      uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
       if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |
