@@ -2713,7 +2713,9 @@ fn test_hyperlink() {
 fn test_json() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    let re = te.assert_success_and_get_output(".", &["--json", "foo"]);
+    // We use path-separator=/ so that the paths are the same on windows as on
+    // unix
+    let re = te.assert_success_and_get_output(".", &["--json", "--path-separator=/", "foo"]);
     let stdout = String::from_utf8_lossy(&re.stdout);
     let found_files: std::collections::HashSet<_> = stdout
         .split("\n")
