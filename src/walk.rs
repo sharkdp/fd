@@ -21,6 +21,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
+use crate::fmt::OutputFormat;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -597,7 +598,7 @@ impl WorkerState {
                 }
 
                 if config.is_printing()
-                    && let Some(ls_colors) = &config.ls_colors
+                    && let OutputFormat::Color(ls_colors) = &config.format
                 {
                     // Compute colors in parallel
                     entry.style(ls_colors);
@@ -624,7 +625,7 @@ impl WorkerState {
         let config = &self.config;
         let walker = self.build_walker(paths)?;
 
-        if config.ls_colors.is_some() && config.is_printing() {
+        if config.format.uses_color() && config.is_printing() {
             let quit_flag = Arc::clone(&self.quit_flag);
             let interrupt_flag = Arc::clone(&self.interrupt_flag);
 

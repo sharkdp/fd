@@ -2708,31 +2708,50 @@ fn test_hyperlink() {
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
 }
 
-/// Test various output formats
+/// Test json output
 #[test]
-fn test_output_format() {
+fn test_json() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    let re = te.assert_success_and_get_output(".", &["--json", "."]);
+    let re = te.assert_success_and_get_output(".", &["--json", "foo"]);
     let stdout = String::from_utf8_lossy(&re.stdout);
-    let mut count = 0;
-    stdout.split("\n").for_each(|line| {
-        println!("line: {}", line);
-        if line.trim().is_empty() {
-            return;
-        }
-        let file: serde_json::Value = serde_json::from_str(line).unwrap();
-        assert!(file.is_object() && file["path"].is_string());
-        count += 1;
-    });
+    let found_files: std::collections::HashSet<_> = stdout
+        .split("\n")
+        .flat_map(|line| {
+            if line.is_empty() {
+                return None;
+            }
+            let file: serde_json::Value = serde_json::from_str(line).unwrap();
+            assert!(file.is_object(), "Match is not object");
+            assert!(file["path"].is_object(), "Path is not an object");
+            Some(
+                file["path"]["text"]
+                    .as_str()
+                    .expect("path.text is not a string")
+                    .to_owned(),
+            )
+        })
+        .collect();
 
-    assert_eq!(count, DEFAULT_FILES.len() + DEFAULT_DIRS.len());
+    let expected = [
+        "a.foo",
+        "one/b.foo",
+        "one/two/c.foo",
+        "one/two/C.Foo2",
+        "one/two/three/directory_foo",
+        "one/two/three/d.foo",
+    ];
+
+    assert_eq!(found_files.len(), expected.len());
+    for f in expected {
+        assert!(found_files.contains(f), "didn't find {f}");
+    }
 }
 
 /// Filenames with invalid UTF-8 sequences
 #[cfg(target_os = "linux")]
 #[test]
-fn test_output_format_invalid_utf8() {
+fn test_json_invalid_utf8() {
     use std::ffi::OsStr;
     use std::os::unix::ffi::OsStrExt;
 
@@ -2750,7 +2769,7 @@ fn test_output_format_invalid_utf8() {
     let stdout = String::from_utf8_lossy(&re.stdout);
     let files: serde_json::Value = serde_json::from_str(&stdout).unwrap();
     assert!(files.is_object());
-    assert_eq!(files["path_b64"], "dGVzdDEvdGVzdF/+aW52YWxpZC50eHQ=");
+    assert_eq!(files["path"]["bytes"], "dGVzdDEvdGVzdF/+aW52YWxpZC50eHQ=");
 
     te.assert_output(&["invalid", "test1/"], "test1/test_�invalid.txt");
 }
