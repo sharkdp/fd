@@ -513,25 +513,29 @@ due to OS restrictions on the maximum length of command lines.
 .TP
 .BI "\-\-json "
 .RS
-Specify JSONL (as known as NDJSON) format to use for the output. 
+Specify JSONL (as known as NDJSON) format to use for the output.
 
 Output fields:
 
-  - "path": The file path as a UTF\-8 string.
+  - "path": An object containing the path of the file. When the path is valid UTF-8, it this contains a single "text" field
+    containing the path as  a string. Otherwise it contains a single "bytes" field containing the base64 encoded bytes of the
+    path.
 
-        Note that when the path contains invalid UTF-8 sequences, it is encoded in base64 and stored in the "path_b64" field instead.
+        On windows, this may use a lossy UTF-8 encoding, since there isn't an obvious way to encode the pathname.
 
-  - "type": The file type (e.g., "file", "directory").
+        If a custom path separator is given, it is used in the "text" field, but not in the "bytes" field.
 
-  - "size": The file size in bytes.
+  - "type": The file type (e.g., "file", "directory", "symlink").
+
+  - "size_bytes": The file size in bytes.
 
   - "mode": The file permissions in octal (e.g., 644).
 
-  - "modified": The last modification time in ISO 8601 format (e.g., 2000-01-01T12:00:00Z).
+  - "modified": The last modification time in RFC3339 (ISO 8601) format (e.g., 2000-01-01T12:00:00Z).
 
-  - "accessed": The last access time in ISO 8601 format.
+  - "accessed": The last access time in RFC3339 format.
 
-  - "created": The creation time in ISO 8601 format.
+  - "created": The creation time in RFC3339 format.
 .RE
 .TP
 .SH PATTERN SYNTAX

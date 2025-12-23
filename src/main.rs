@@ -32,6 +32,7 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::TimeFilter;
+use crate::fmt::{FormatTemplate, OutputFormat};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
@@ -232,11 +233,18 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         }
     };
 
-    let ls_colors = if colored_output {
-        Some(LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)))
+    let out_format = if opts.json {
+        OutputFormat::Jsonl
+    } else if let Some(ref templ) = opts.format {
+        OutputFormat::Template(FormatTemplate::parse(templ))
+    } else if colored_output {
+        OutputFormat::Color(
+            LsColors::from_env().unwrap_or_else(|| LsColors::from_string(DEFAULT_LS_COLORS)),
+        )
     } else {
-        None
+        OutputFormat::Plain
     };
+
     let hyperlink = match opts.hyperlink {
         HyperlinkWhen::Always => true,
         HyperlinkWhen::Never => false,
@@ -265,7 +273,6 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         prune: opts.prune,
         threads: opts.threads().get(),
         max_buffer_time: opts.max_buffer_time,
-        ls_colors,
         hyperlink,
         interactive_terminal,
         file_types: opts.filetype.as_ref().map(|values| {
@@ -309,10 +316,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
                     .build()
             })
             .transpose()?,
-        format: opts
-            .format
-            .as_deref()
-            .map(crate::fmt::FormatTemplate::parse),
+        format: out_format,
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
@@ -326,7 +330,6 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
-        jsonl: opts.json,
     })
 }
 

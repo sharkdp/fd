@@ -653,6 +653,7 @@ pub struct Opts {
         long,
         value_name = "json",
         help = "Print results in JSONL format so you can pipe it to tools.",
+        conflicts_with_all(&["format", "list_details"]),
         long_help
     )]
     pub json: bool,
@@ -832,15 +833,6 @@ pub enum HyperlinkWhen {
     Always,
     /// Never use hyperlinks
     Never,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
-pub enum OutputFormat {
-    /// Plain text output (default)
-    Plain,
-    /// JSONL (JSON Lines, as known as Newline Delimited JSON) output
-    #[value(alias = "ndjson")]
-    Jsonl,
 }
 
 // there isn't a derive api for getting grouped values yet,
