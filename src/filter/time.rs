@@ -67,6 +67,7 @@ impl TimeFilter {
 impl Filter for TimeFilter {
     type Item = SystemTime;
 
+    #[inline(always)]
     fn matches(&self, item: &Self::Item) -> bool {
         self.applies_to(item)
     }
