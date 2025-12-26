@@ -79,7 +79,7 @@ impl SizeFilter {
 impl Filter for SizeFilter {
     type Item = u64;
 
-    #[inline]
+    #[inline(always)]
     fn matches(&self, item: &Self::Item) -> bool {
         self.is_within(*item)
     }
