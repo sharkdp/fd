@@ -21,6 +21,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
+use crate::filter::Filter;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -568,7 +569,7 @@ impl WorkerState {
                             if config
                                 .size_constraints
                                 .iter()
-                                .any(|sc| !sc.is_within(file_size))
+                                .any(|sc| !sc.matches(&file_size))
                             {
                                 return WalkState::Continue;
                             }
@@ -589,7 +590,7 @@ impl WorkerState {
                         matched = config
                             .time_constraints
                             .iter()
-                            .all(|tf| tf.applies_to(&modified));
+                            .all(|tf| tf.matches(&modified));
                     }
                     if !matched {
                         return WalkState::Continue;

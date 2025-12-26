@@ -2,6 +2,8 @@ use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use super::Filter;
+
 /// Filter based on time ranges.
 #[derive(Debug, PartialEq, Eq)]
 pub enum TimeFilter {
@@ -59,6 +61,14 @@ impl TimeFilter {
             TimeFilter::Before(limit) => t < limit,
             TimeFilter::After(limit) => t > limit,
         }
+    }
+}
+
+impl Filter for TimeFilter {
+    type Item = SystemTime;
+
+    fn matches(&self, item: &Self::Item) -> bool {
+        self.applies_to(item)
     }
 }
 

@@ -9,3 +9,9 @@ mod time;
 
 #[cfg(unix)]
 mod owner;
+
+pub trait Filter {
+    type Item;
+
+    fn matches(&self, item: &Self::Item) -> bool;
+}
