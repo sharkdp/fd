@@ -163,7 +163,13 @@ impl<'a, W: Write> Printer<'a, W> {
         // Is it worth doing json output if all you have is the path and file type?
         let metadata = entry.metadata();
 
-        crate::fmt::json::output_json(&mut self.stdout, path, entry.file_type(), metadata)?;
+        crate::fmt::json::output_json(
+            &mut self.stdout,
+            path,
+            entry.file_type(),
+            metadata,
+            &self.config.path_separator,
+        )?;
         Ok(())
     }
 }

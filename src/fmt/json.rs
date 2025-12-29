@@ -1,11 +1,10 @@
+use std::borrow::Cow;
+use std::fs::{FileType, Metadata};
+use std::io::Write;
 #[cfg(unix)]
 use std::os::unix::{ffi::OsStrExt, fs::MetadataExt};
-use std::{
-    fs::{FileType, Metadata},
-    io::Write,
-    path::Path,
-    time::SystemTime,
-};
+use std::path::{MAIN_SEPARATOR, Path};
+use std::time::SystemTime;
 
 use base64::{Engine as _, prelude::BASE64_STANDARD};
 use jiff::Timestamp;
@@ -15,6 +14,7 @@ pub fn output_json<W: Write>(
     path: &Path,
     filetype: Option<FileType>,
     metadata: Option<&Metadata>,
+    path_separator: &Option<String>,
 ) -> std::io::Result<()> {
     out.write_all(b"{")?;
 
@@ -23,11 +23,16 @@ pub fn output_json<W: Write>(
     #[cfg(unix)]
     match path.to_str() {
         Some(text) => {
+            let final_path: Cow<str> = if let Some(sep) = path_separator {
+                text.replace(MAIN_SEPARATOR, sep).into()
+            } else {
+                text.into()
+            };
             // NB: This assumes that rust's debug output for a string
             // is a valid JSON string. At time of writing this is the case
             // but it is possible, though unlikely, that this could change
             // in the future.
-            write!(out, r#""path":{{"text":{:?}}}"#, text)?;
+            write!(out, r#""path":{{"text":{:?}}}"#, final_path)?;
         }
         None => {
             let encoded_bytes = BASE64_STANDARD.encode(path.as_os_str().as_bytes());
