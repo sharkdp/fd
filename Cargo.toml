@@ -45,7 +45,7 @@ normpath = "1.1.1"
 crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.5.62", optional = true}
 faccess = "0.2.4"
-jiff = "0.2.16"
+jiff = "0.2.17"
 
 [dependencies.clap]
 version = "4.5.53"
