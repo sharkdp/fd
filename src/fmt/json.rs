@@ -6,6 +6,7 @@ use std::os::unix::{ffi::OsStrExt, fs::MetadataExt};
 use std::path::{MAIN_SEPARATOR, Path};
 use std::time::SystemTime;
 
+#[cfg(unix)]
 use base64::{Engine as _, prelude::BASE64_STANDARD};
 use jiff::Timestamp;
 
@@ -39,12 +40,19 @@ pub fn output_json<W: Write>(
             write!(out, r#""path":{{"bytes":"{}"}}"#, encoded_bytes)?;
         }
     };
+
     // On non-unix platforms, if the path isn't valid utf-8,
     // we don't know what kind of encoding was used, and
     // as_encoded_bytes() isn't necessarily stable between rust versions
     // so the best we can really do is a lossy string
     #[cfg(not(unix))]
-    write!(out, r#""path":{{"text":{:?}}}"#, path.to_string_lossy())?;
+    {
+        let mut path = path.to_string_lossy();
+        if let Some(sep) = path_separator {
+            path = path.replace(MAIN_SEPARATOR, sep).into();
+        }
+        write!(out, r#""path":{{"text":{:?}}}"#, path)?;
+    }
 
     // print the type of file
     let ft = match filetype {
