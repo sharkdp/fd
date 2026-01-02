@@ -2746,7 +2746,10 @@ fn test_json() {
 
     assert_eq!(found_files.len(), expected.len());
     for f in expected {
-        assert!(found_files.contains(f), "didn't find {f}");
+        assert!(
+            found_files.contains(f),
+            "didn't find {f} in {found_files:?}"
+        );
     }
 }
 
