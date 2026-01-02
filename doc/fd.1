@@ -510,6 +510,34 @@ Maximum number of arguments to pass to the command given with -X. If the number 
 greater than the given size, the command given with -X is run again with remaining arguments. A
 batch size of zero means there is no limit (default), but note that batching might still happen
 due to OS restrictions on the maximum length of command lines.
+.TP
+.BI "\-\-json "
+.RS
+Specify JSONL (as known as NDJSON) format to use for the output.
+
+Output fields:
+
+  - "path": An object containing the path of the file. When the path is valid UTF-8, it this contains a single "text" field
+    containing the path as  a string. Otherwise it contains a single "bytes" field containing the base64 encoded bytes of the
+    path.
+
+        On windows, this may use a lossy UTF-8 encoding, since there isn't an obvious way to encode the pathname.
+
+        If a custom path separator is given, it is used in the "text" field, but not in the "bytes" field.
+
+  - "type": The file type (e.g., "file", "directory", "symlink").
+
+  - "size_bytes": The file size in bytes.
+
+  - "mode": The file permissions in octal (e.g., 644).
+
+  - "modified": The last modification time in RFC3339 (ISO 8601) format (e.g., 2000-01-01T12:00:00Z).
+
+  - "accessed": The last access time in RFC3339 format.
+
+  - "created": The creation time in RFC3339 format.
+.RE
+.TP
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 

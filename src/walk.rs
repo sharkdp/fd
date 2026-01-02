@@ -21,6 +21,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
+use crate::fmt::OutputFormat;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -136,8 +137,6 @@ struct ReceiverBuffer<'a, W> {
     interrupt_flag: &'a AtomicBool,
     /// Receiver for worker results.
     rx: Receiver<Batch>,
-    /// Standard output.
-    stdout: W,
     /// The current buffer mode.
     mode: ReceiverMode,
     /// The deadline to switch to streaming mode.
@@ -146,9 +145,11 @@ struct ReceiverBuffer<'a, W> {
     buffer: Vec<DirEntry>,
     /// Result count.
     num_results: usize,
+    /// The stdout printer instance.
+    printer: output::Printer<'a, W>,
 }
 
-impl<'a, W: Write> ReceiverBuffer<'a, W> {
+impl<'a, W: Write + 'a> ReceiverBuffer<'a, W> {
     /// Create a new receiver buffer.
     fn new(state: &'a WorkerState, rx: Receiver<Batch>, stdout: W) -> Self {
         let config = &state.config;
@@ -162,20 +163,20 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             quit_flag,
             interrupt_flag,
             rx,
-            stdout,
             mode: ReceiverMode::Buffering,
             deadline,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
+            printer: output::Printer::new(config, stdout),
         }
     }
 
     /// Process results until finished.
     fn process(&mut self) -> ExitCode {
         loop {
-            if let Err(ec) = self.poll() {
+            if let Err(err) = self.poll() {
                 self.quit_flag.store(true, Ordering::Relaxed);
-                return ec;
+                return err;
             }
         }
     }
@@ -250,7 +251,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Output a path.
     fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
-        if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
+        if let Err(e) = self.printer.print_entry(entry)
             && e.kind() != ::std::io::ErrorKind::BrokenPipe
         {
             print_error(format!("Could not write to output: {e}"));
@@ -294,7 +295,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Flush stdout if necessary.
     fn flush(&mut self) -> Result<(), ExitCode> {
-        if self.stdout.flush().is_err() {
+        if self.printer.flush().is_err() {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
@@ -597,7 +598,7 @@ impl WorkerState {
                 }
 
                 if config.is_printing()
-                    && let Some(ls_colors) = &config.ls_colors
+                    && let OutputFormat::Color(ls_colors) = &config.format
                 {
                     // Compute colors in parallel
                     entry.style(ls_colors);
@@ -624,7 +625,7 @@ impl WorkerState {
         let config = &self.config;
         let walker = self.build_walker(paths)?;
 
-        if config.ls_colors.is_some() && config.is_printing() {
+        if config.format.uses_color() && config.is_printing() {
             let quit_flag = Arc::clone(&self.quit_flag);
             let interrupt_flag = Arc::clone(&self.interrupt_flag);
 
