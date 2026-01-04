@@ -680,6 +680,13 @@ You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) fro
 guix install fd
 ```
 
+### On Mise
+
+You can use [mise](https://github.com/jdx/mise) to install `fd` with a command like this:
+```
+mise use -g fd@latest
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
