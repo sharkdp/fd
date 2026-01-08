@@ -29,7 +29,12 @@ autocomplete/_fd: contrib/completion/_fd
 	$(comp_dir)
 	cp $< $@
 
-install: $(EXE) completions
+doc/fd.1: doc/fd.1.scd
+	scdoc < $< > $@
+
+docs: doc/fd.1
+
+install: $(EXE) completions docs
 	install -Dm755 $(EXE) $(DESTDIR)$(bindir)/fd
 	install -Dm644 autocomplete/fd.bash $(DESTDIR)/$(datadir)/bash-completion/completions/$(exe_name)
 	install -Dm644 autocomplete/fd.fish $(DESTDIR)/$(datadir)/fish/vendor_completions.d/$(exe_name).fish
