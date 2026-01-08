@@ -1622,6 +1622,42 @@ fn test_excludes() {
     );
 }
 
+/// Exclude absolute paths (--exclude-absolute-path)
+#[test]
+fn test_exclude_absolute_paths() {
+    let dirs: &[&str] = &["one/two/three", "one/four/dir"];
+    let te = TestEnv::new(dirs, DEFAULT_FILES);
+
+    te.assert_output(
+        &[
+            "--exclude-absolute-path",
+            &te.get_canonical_path_in_temp_dir("one/two"),
+        ],
+        "a.foo
+        e1 e2
+        one/
+        one/b.foo
+        one/four/
+        one/four/dir/
+        symlink",
+    );
+
+    te.assert_output(
+        &[
+            "--exclude-absolute-path",
+            &te.get_canonical_path_in_temp_dir("one/two/"),
+            "--exclude-absolute-path",
+            &te.get_canonical_path_in_temp_dir("one/four/dir"),
+        ],
+        "a.foo
+        e1 e2
+        one/
+        one/b.foo
+        one/four/
+        symlink",
+    );
+}
+
 #[test]
 fn format() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
