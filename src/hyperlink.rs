@@ -42,16 +42,21 @@ fn encode(f: &mut Formatter, byte: u8) -> fmt::Result {
 
 #[cfg(unix)]
 fn host() -> &'static str {
-    use std::sync::OnceLock;
+    use std::{env, sync::OnceLock};
 
     static HOSTNAME: OnceLock<String> = OnceLock::new();
 
     HOSTNAME
         .get_or_init(|| {
-            nix::unistd::gethostname()
-                .ok()
-                .and_then(|h| h.into_string().ok())
-                .unwrap_or_default()
+            env::var("WSL_DISTRO_NAME").map_or_else(
+                |_| {
+                    nix::unistd::gethostname()
+                        .ok()
+                        .and_then(|h| h.into_string().ok())
+                        .unwrap_or_default()
+                },
+                |distro| format!("wsl$/{distro}"),
+            )
         })
         .as_ref()
 }
