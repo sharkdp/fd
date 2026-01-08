@@ -2,6 +2,8 @@
 
 ## Features
 
+- Add support for filtering orphaned files with `--owner "-"` (equivalent to find's `-nouser`/`-nogroup`)
+
 
 ## Bugfixes
 
