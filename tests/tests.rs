@@ -602,6 +602,33 @@ fn test_full_path() {
     );
 }
 
+/// Anchoring (--anchor)
+#[test]
+fn test_anchors() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--anchor=input", "foo"], "");
+    te.assert_output(&["--anchor=input", "b.foo"], "one/b.foo");
+    te.assert_output(&["--anchor=input-start", "foo"], "");
+    te.assert_output(&["--anchor=input-start", "b."], "one/b.foo");
+    te.assert_output(
+        &["--anchor=input-end", "oo"],
+        "a.foo
+         one/b.foo
+         one/two/c.foo
+         one/two/three/d.foo
+         one/two/three/directory_foo/",
+    );
+    te.assert_output(&["--anchor=word", "oo"], "");
+    te.assert_output(
+        &["--anchor=word", "foo"],
+        "a.foo
+         one/b.foo
+         one/two/c.foo
+         one/two/three/d.foo",
+    );
+}
+
 /// Hidden files (--hidden)
 #[test]
 fn test_hidden() {
