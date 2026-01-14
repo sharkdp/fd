@@ -461,11 +461,22 @@ impl WorkerState {
                     return WalkState::Quit;
                 }
 
-                let entry = match entry {
-                    Ok(ref e) if e.depth() == 0 => {
+                if let Ok(e) = &entry {
+                    let entry_path = e.path();
+                    if entry_path.is_dir()
+                        && config
+                            .ignore_contain
+                            .iter()
+                            .any(|ic| entry_path.join(ic).exists())
+                    {
+                        return WalkState::Skip;
+                    }
+                    if e.depth() == 0 {
                         // Skip the root directory entry.
                         return WalkState::Continue;
                     }
+                }
+                let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
                     Err(ignore::Error::WithPath {
                         path,

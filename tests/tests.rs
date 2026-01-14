@@ -2707,3 +2707,54 @@ fn test_hyperlink() {
 
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
 }
+
+#[test]
+fn test_ignore_contain() {
+    let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub", "other"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+            "other/ignoremyparent",
+        ],
+    );
+    let expected = "include/
+    include/foo
+    symlink
+    top";
+    te.assert_output(
+        &[
+            "--ignore-contain=CACHEDIR.TAG",
+            "--ignore-contain=ignoremyparent",
+            ".",
+        ],
+        expected,
+    );
+}
+
+#[test]
+fn test_ignore_contain_precedence_over_depth_check() {
+    let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+        ],
+    );
+    let expected = "include/foo";
+    te.assert_output(
+        &["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."],
+        expected,
+    );
+}
+
+#[test]
+fn test_ignore_contain_precedence_over_root_check() {
+    let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
+    let expected = "";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}

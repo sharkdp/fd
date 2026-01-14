@@ -528,6 +528,10 @@ pub struct Opts {
     )]
     pub hyperlink: HyperlinkWhen,
 
+    /// Ignore directories containing the named entry.
+    #[arg(long, value_name = "name")]
+    pub ignore_contain: Vec<String>,
+
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
