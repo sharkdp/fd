@@ -2711,6 +2711,25 @@ fn test_hyperlink() {
 #[test]
 fn test_ignore_contain() {
     let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub", "other"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+            "other/ignoremyparent",
+        ],
+    );
+    let expected = "include/
+    include/foo
+    symlink
+    top";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "--ignore-contain=ignoremyparent", "."], expected);
+}
+
+#[test]
+fn test_ignore_contain_has_highest_precedence() {
+    let te = TestEnv::new(
         &["include", "exclude", "exclude/sub"],
         &[
             "top",
@@ -2719,9 +2738,6 @@ fn test_ignore_contain() {
             "exclude/sub/nope",
         ],
     );
-    let expected = "include/
-    include/foo
-    symlink
-    top";
-    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+    let expected = "include/foo";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."], expected);
 }

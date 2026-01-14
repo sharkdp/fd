@@ -498,14 +498,21 @@ impl WorkerState {
                     }
                 };
 
+                // Check the depth & name first, since they don't require metadata.
+                let entry_path = entry.path();
+
+                // Filter out directories containing a given name.
+                if entry_path.is_dir()
+                    && config.ignore_contain.iter().any(|ic| entry_path.join(ic).exists())
+                {
+                    return WalkState::Skip;
+                }
+
                 if let Some(min_depth) = config.min_depth
                     && entry.depth().is_none_or(|d| d < min_depth)
                 {
                     return WalkState::Continue;
                 }
-
-                // Check the name first, since it doesn't require metadata
-                let entry_path = entry.path();
 
                 let search_str: Cow<OsStr> = if config.search_full_path {
                     let path_abs_buf = filesystem::path_absolute_form(entry_path)
@@ -558,14 +565,6 @@ impl WorkerState {
                             return WalkState::Continue;
                         }
                     }
-                }
-
-                // Filter out directories containing a given name.
-                if let Some(ref ignore_contain) = config.ignore_contain
-                    && entry_path.is_dir()
-                    && entry_path.join(ignore_contain).exists()
-                {
-                    return WalkState::Skip;
                 }
 
                 // Filter out unwanted sizes if it is a file and we have been given size constraints.
