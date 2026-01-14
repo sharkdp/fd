@@ -2735,7 +2735,7 @@ fn test_ignore_contain() {
 }
 
 #[test]
-fn test_ignore_contain_has_highest_precedence() {
+fn test_ignore_contain_precedence_over_depth_check() {
     let te = TestEnv::new(
         &["include", "exclude", "exclude/sub"],
         &[
@@ -2750,4 +2750,11 @@ fn test_ignore_contain_has_highest_precedence() {
         &["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."],
         expected,
     );
+}
+
+#[test]
+fn test_ignore_contain_precedence_over_root_check() {
+    let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
+    let expected = "";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
 }

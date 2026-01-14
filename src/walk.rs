@@ -461,11 +461,22 @@ impl WorkerState {
                     return WalkState::Quit;
                 }
 
-                let entry = match entry {
-                    Ok(ref e) if e.depth() == 0 => {
+                if let Ok(e) = &entry {
+                    let entry_path = e.path();
+                    if entry_path.is_dir()
+                        && config
+                            .ignore_contain
+                            .iter()
+                            .any(|ic| entry_path.join(ic).exists())
+                    {
+                        return WalkState::Skip;
+                    }
+                    if e.depth() == 0 {
                         // Skip the root directory entry.
                         return WalkState::Continue;
                     }
+                }
+                let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
                     Err(ignore::Error::WithPath {
                         path,
@@ -498,24 +509,14 @@ impl WorkerState {
                     }
                 };
 
-                // Check the depth & name first, since they don't require metadata.
-                let entry_path = entry.path();
-
-                // Filter out directories containing a given name.
-                if entry_path.is_dir()
-                    && config
-                        .ignore_contain
-                        .iter()
-                        .any(|ic| entry_path.join(ic).exists())
-                {
-                    return WalkState::Skip;
-                }
-
                 if let Some(min_depth) = config.min_depth
                     && entry.depth().is_none_or(|d| d < min_depth)
                 {
                     return WalkState::Continue;
                 }
+
+                // Check the name first, since it doesn't require metadata
+                let entry_path = entry.path();
 
                 let search_str: Cow<OsStr> = if config.search_full_path {
                     let path_abs_buf = filesystem::path_absolute_form(entry_path)
