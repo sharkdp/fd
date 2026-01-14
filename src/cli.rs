@@ -529,10 +529,7 @@ pub struct Opts {
     pub hyperlink: HyperlinkWhen,
 
     /// Ignore directories containing the named entry.
-    #[arg(
-        long,
-        value_name = "name"
-    )]
+    #[arg(long, value_name = "name")]
     pub ignore_contain: Vec<String>,
 
     /// Set number of threads to use for searching & executing (default: number

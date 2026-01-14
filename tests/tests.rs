@@ -2724,7 +2724,14 @@ fn test_ignore_contain() {
     include/foo
     symlink
     top";
-    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "--ignore-contain=ignoremyparent", "."], expected);
+    te.assert_output(
+        &[
+            "--ignore-contain=CACHEDIR.TAG",
+            "--ignore-contain=ignoremyparent",
+            ".",
+        ],
+        expected,
+    );
 }
 
 #[test]
@@ -2739,5 +2746,8 @@ fn test_ignore_contain_has_highest_precedence() {
         ],
     );
     let expected = "include/foo";
-    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."], expected);
+    te.assert_output(
+        &["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."],
+        expected,
+    );
 }

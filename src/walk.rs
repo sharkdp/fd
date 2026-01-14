@@ -503,7 +503,10 @@ impl WorkerState {
 
                 // Filter out directories containing a given name.
                 if entry_path.is_dir()
-                    && config.ignore_contain.iter().any(|ic| entry_path.join(ic).exists())
+                    && config
+                        .ignore_contain
+                        .iter()
+                        .any(|ic| entry_path.join(ic).exists())
                 {
                     return WalkState::Skip;
                 }
