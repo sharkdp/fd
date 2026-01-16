@@ -2697,7 +2697,7 @@ fn test_hyperlink() {
     #[cfg(unix)]
     let hostname = nix::unistd::gethostname().unwrap().into_string().unwrap();
     #[cfg(not(unix))]
-    let hostname = "";
+    let hostname = "/";
 
     let expected = format!(
         "\x1b]8;;file://{}{}/a.foo\x1b\\a.foo\x1b]8;;\x1b\\",

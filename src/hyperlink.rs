@@ -58,7 +58,7 @@ fn host() -> &'static str {
 
 #[cfg(not(unix))]
 const fn host() -> &'static str {
-    ""
+    "/"
 }
 
 #[cfg(test)]
