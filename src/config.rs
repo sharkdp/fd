@@ -1,6 +1,5 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
 use crate::exec::CommandSet;
@@ -8,7 +7,7 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::{SizeFilter, TimeFilter};
-use crate::fmt::FormatTemplate;
+use crate::fmt::OutputFormat;
 
 /// Configuration options for *fd*.
 pub struct Config {
@@ -70,10 +69,6 @@ pub struct Config {
     /// `max_buffer_time`.
     pub max_buffer_time: Option<Duration>,
 
-    /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
-    /// how to style different filetypes.
-    pub ls_colors: Option<LsColors>,
-
     /// Whether or not we are writing to an interactive terminal
     #[cfg_attr(not(unix), allow(unused))]
     pub interactive_terminal: bool,
@@ -87,8 +82,10 @@ pub struct Config {
     /// The value (if present) will be a lowercase string without leading dots.
     pub extensions: Option<RegexSet>,
 
-    /// A format string to use to format results, similarly to exec
-    pub format: Option<FormatTemplate>,
+    /// The format to use for the output
+    ///
+    /// determined by multiple options
+    pub format: OutputFormat,
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandSet>>,

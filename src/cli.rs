@@ -648,6 +648,16 @@ pub struct Opts {
     )]
     search_path: Vec<PathBuf>,
 
+    /// Print results in JSONL format.
+    #[arg(
+        long,
+        value_name = "json",
+        help = "Print results in JSONL format so you can pipe it to tools.",
+        conflicts_with_all(&["format", "list_details"]),
+        long_help
+    )]
+    pub json: bool,
+
     /// By default, relative paths are prefixed with './' when -x/--exec,
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
