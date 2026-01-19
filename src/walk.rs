@@ -356,7 +356,7 @@ impl WorkerState {
             .parents(config.read_parent_ignore && (config.read_fdignore || config.read_vcsignore))
             .git_ignore(config.read_vcsignore)
             .git_global(config.read_vcsignore)
-            .git_exclude(config.read_vcsignore)
+            .git_exclude(config.read_vcsexclude)
             .require_git(config.require_git_to_read_vcsignore)
             .overrides(overrides)
             .follow_links(config.follow_links)
