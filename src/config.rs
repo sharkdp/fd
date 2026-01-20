@@ -130,6 +130,9 @@ pub struct Config {
 
     /// Whether or not to use hyperlinks on paths
     pub hyperlink: bool,
+
+    /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
+    pub ignore_contain: Vec<String>,
 }
 
 impl Config {
