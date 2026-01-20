@@ -207,6 +207,8 @@ Filter search by type:
 regular files
 .IP "d, dir, directory"
 directories
+.IP "leaf, leafdir"
+directories without subdirectories
 .IP "l, symlink"
 symbolic links
 .IP "b, block-device"
@@ -247,6 +249,8 @@ Examples:
   - Find empty directories:
       fd --type empty --type directory
       fd -te -td
+  - Find leaf directories (directories without subdirectories):
+      fd --type leaf
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
