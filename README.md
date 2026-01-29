@@ -747,13 +747,34 @@ cargo install --path .
 
 ### Completions
 
-Tab completions for several shells are included in the "autocomplete" directory. To use these completions put the file in an appropriate location for your shell, and depending on
-your shell, you may need to source the file as well:
+#### From Release Archives
 
-- bash: you will need to source the fd.bash file in your ~/.bashrc file. Or put it in a directory of files that are all sourced.
-- zsh: move the "_fd" file to somewhere on your fpath
-- fish: Put fd.fish in ~/.config/fish/completions
-- powershell: Source the _fd.ps1 file from one of the files in  the [profile scripts locations](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+Pre-built completion files are included in the release archives (`.tar.gz`/`.zip`) on the
+[Releases page](https://github.com/sharkdp/fd/releases), in the `autocomplete` directory.
+To use these completions:
+
+- **bash**: Source the `fd.bash` file in your `~/.bashrc`, or place it in a directory that gets sourced automatically.
+- **zsh**: Move `_fd` to a directory in your `fpath` (e.g., `~/.zfunc`).
+- **fish**: Copy `fd.fish` to `~/.config/fish/completions/`.
+- **powershell**: Source `_fd.ps1` from one of your [profile scripts](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+
+#### Generate from fd
+
+You can also generate completions directly using `fd --gen-completions <shell>`:
+
+```bash
+# Bash
+fd --gen-completions bash > ~/.local/share/bash-completion/completions/fd
+
+# Zsh (ensure ~/.zfunc is in your fpath)
+fd --gen-completions zsh > ~/.zfunc/_fd
+
+# Fish
+fd --gen-completions fish > ~/.config/fish/completions/fd.fish
+
+# PowerShell
+fd --gen-completions powershell >> $PROFILE
+```
 
 ## Maintainers
 
