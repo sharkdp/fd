@@ -57,7 +57,7 @@ default-features = false
 features = ["nu-ansi-term"]
 
 [target.'cfg(unix)'.dependencies]
-nix = { version = "0.30.1", default-features = false, features = ["signal", "user", "hostname"] }
+nix = { version = "0.31.1", default-features = false, features = ["signal", "user", "hostname"] }
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
