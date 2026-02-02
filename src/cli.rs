@@ -315,6 +315,7 @@ pub struct Opts {
     /// Filter the search by type:
     /// {n}  'f' or 'file':         regular files
     /// {n}  'd' or 'dir' or 'directory':    directories
+    /// {n}  'leaf' or 'leafdir':   directories without subdirectories
     /// {n}  'l' or 'symlink':      symbolic links
     /// {n}  's' or 'socket':       socket
     /// {n}  'p' or 'pipe':         named pipe (FIFO)
@@ -353,7 +354,7 @@ pub struct Opts {
         hide_possible_values = true,
         value_enum,
         help = "Filter by type: file (f), directory (d/dir), symlink (l), \
-                executable (x), empty (e), socket (s), pipe (p), \
+                leaf (leafdir), executable (x), empty (e), socket (s), pipe (p), \
                 char-device (c), block-device (b)",
         long_help
     )]
@@ -782,6 +783,9 @@ pub enum FileType {
     File,
     #[value(alias = "d", alias = "dir")]
     Directory,
+    /// A directory that has no subdirectories
+    #[value(alias = "leafdir", alias = "leaf-dir", alias = "leaf")]
+    Leaf,
     #[value(alias = "l")]
     Symlink,
     #[value(alias = "b")]
