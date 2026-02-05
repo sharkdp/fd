@@ -147,23 +147,67 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 
 /// Detect if the user accidentally supplied a path instead of a search pattern
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
-    {
-        Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
-             and will not lead to any search results.\n\n\
-             If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
-             fd . '{pattern}'\n\n\
-             Instead, if you want your pattern to match the full file path, use:\n\n  \
-             fd --full-path '{pattern}'",
-            pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
-        ))
+    if !opts.full_path && opts.pattern.contains(std::path::MAIN_SEPARATOR) {
+        // On Windows, backslash is both a path separator and a regex escape character.
+        // We need to distinguish between paths (e.g., "C:\path" or "\nonexistent") and
+        // regex patterns (e.g., "\Ac" where \A is a regex anchor).
+        // A simple heuristic: if the pattern looks like it could be a path (not just
+        // a single-character regex escape), show the error.
+        let looks_like_path = if cfg!(windows) {
+            // On Windows, check if it's a drive path (C:\) or if the backslash is
+            // followed by something that looks like a path component (not a single regex escape)
+            let is_drive_path = opts.pattern.len() >= 3
+                && opts
+                    .pattern
+                    .chars()
+                    .next()
+                    .is_some_and(|c| c.is_ascii_alphabetic())
+                && opts.pattern.chars().nth(1) == Some(':')
+                && opts.pattern.chars().nth(2) == Some(std::path::MAIN_SEPARATOR);
+            is_drive_path
+                || (opts.pattern.matches(std::path::MAIN_SEPARATOR).count() > 0
+                    && !is_likely_regex_escape(&opts.pattern))
+        } else {
+            // On Unix, if it starts with / or contains /, it's likely a path
+            true
+        };
+
+        if looks_like_path {
+            Err(anyhow!(
+                "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+                 and will not lead to any search results.\n\n\
+                 If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
+                 fd . '{pattern}'\n\n\
+                 Instead, if you want your pattern to match the full file path, use:\n\n  \
+                 fd --full-path '{pattern}'",
+                pattern = &opts.pattern,
+                sep = std::path::MAIN_SEPARATOR,
+            ))
+        } else {
+            Ok(())
+        }
     } else {
         Ok(())
     }
+}
+
+/// Check if a pattern is likely a regex escape sequence rather than a path.
+/// This is a heuristic to avoid false positives on Windows where \ is both
+/// a path separator and a regex escape character.
+fn is_likely_regex_escape(pattern: &str) -> bool {
+    if !cfg!(windows) {
+        return false;
+    }
+    // Common regex escape sequences: \A, \z, \b, \d, \s, \w, \1, \2, etc.
+    // If the pattern is very short (like "\Ac") and starts with \ followed by
+    // a letter or digit, it's likely a regex escape.
+    if pattern.len() <= 3
+        && pattern.starts_with('\\')
+        && let Some(ch) = pattern.chars().nth(1)
+    {
+        return ch.is_ascii_alphanumeric();
+    }
+    false
 }
 
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
