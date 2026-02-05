@@ -364,6 +364,34 @@ impl WorkerState {
             .same_file_system(config.one_file_system)
             .max_depth(config.max_depth);
 
+        if !self.config.exclude_absolute_paths.is_empty() {
+            let exclude_abs_paths: Vec<PathBuf> = self
+                .config
+                .exclude_absolute_paths
+                .iter()
+                .map(|s| {
+                    let mut s = s.clone();
+                    if !s.ends_with('/') {
+                        s.push('/');
+                    }
+                    PathBuf::from(s)
+                })
+                .collect();
+            builder.filter_entry(
+                move |entry| match filesystem::path_absolute_form(entry.path()) {
+                    Ok(abs_path) => {
+                        for excluded in &exclude_abs_paths {
+                            if abs_path.starts_with(excluded) {
+                                return false;
+                            }
+                        }
+                        true
+                    }
+                    Err(_) => true,
+                },
+            );
+        }
+
         if config.read_fdignore {
             builder.add_custom_ignore_filename(".fdignore");
         }
