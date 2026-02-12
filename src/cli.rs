@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, ValueHint, error::ErrorKind,
     value_parser,
 };
 #[cfg(feature = "completions")]
@@ -448,6 +448,7 @@ pub struct Opts {
     /// {n}    --owner '!john:students'
     #[cfg(unix)]
     #[arg(long, short = 'o', value_parser = OwnerFilter::from_string, value_name = "user:group",
+        value_hint = ValueHint::Username,
         help = "Filter by owning user and/or group",
         long_help,
         )]
@@ -492,9 +493,10 @@ pub struct Opts {
     #[arg(
         long,
         value_name = "path",
+        value_hint = ValueHint::FilePath,
         hide_short_help = true,
         help = "Add a custom ignore-file in '.gitignore' format",
-        long_help
+        long_help,
     )]
     pub ignore_file: Vec<PathBuf>,
 
@@ -600,9 +602,10 @@ pub struct Opts {
         long,
         short = 'C',
         value_name = "path",
+        value_hint = ValueHint::DirPath,
         hide_short_help = true,
         help = "Change current working directory",
-        long_help
+        long_help,
     )]
     pub base_directory: Option<PathBuf>,
 
@@ -634,6 +637,7 @@ pub struct Opts {
     /// omitted, search the current working directory.
     #[arg(action = ArgAction::Append,
         value_name = "path",
+        value_hint = ValueHint::DirPath,
         help = "the root directories for the filesystem search (optional)",
         long_help,
         )]
@@ -646,9 +650,10 @@ pub struct Opts {
         long,
         conflicts_with("path"),
         value_name = "search-path",
+        value_hint = ValueHint::DirPath,
         hide_short_help = true,
         help = "Provides paths to search as an alternative to the positional <path> argument",
-        long_help
+        long_help,
     )]
     search_path: Vec<PathBuf>,
 
@@ -863,34 +868,34 @@ impl clap::Args for Exec {
             .long("exec")
             .short('x')
             .num_args(1..)
-                .allow_hyphen_values(true)
-                .value_terminator(";")
-                .value_name("cmd")
-                .conflicts_with("list_details")
-                .help("Execute a command for each search result")
-                .long_help(
-                    "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
-                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
-                     All positional arguments following --exec are considered to be arguments to the command - not to fd. \
-                     It is therefore recommended to place the '-x'/'--exec' option last.\n\
-                     The following placeholders are substituted before the command is executed:\n  \
-                       '{}':   path (of the current search result)\n  \
-                       '{/}':  basename\n  \
-                       '{//}': parent directory\n  \
-                       '{.}':  path without file extension\n  \
-                       '{/.}': basename without file extension\n  \
-                       '{{':   literal '{' (for escaping)\n  \
-                       '}}':   literal '}' (for escaping)\n\n\
-                     If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
-                     Examples:\n\n  \
-                       - find all *.zip files and unzip them:\n\n      \
-                           fd -e zip -x unzip\n\n  \
-                       - find *.h and *.cpp files and run \"clang-format -i ..\" for each of them:\n\n      \
-                           fd -e h -e cpp -x clang-format -i\n\n  \
-                       - Convert all *.jpg files to *.png files:\n\n      \
-                           fd -e jpg -x convert {} {.}.png\
-                    ",
-                ),
+            .allow_hyphen_values(true)
+            .value_terminator(";")
+            .value_name("cmd")
+            .conflicts_with("list_details")
+            .help("Execute a command for each search result")
+            .long_help(
+                "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
+                 There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
+                 All positional arguments following --exec are considered to be arguments to the command - not to fd. \
+                 It is therefore recommended to place the '-x'/'--exec' option last.\n\
+                 The following placeholders are substituted before the command is executed:\n  \
+                   '{}':   path (of the current search result)\n  \
+                   '{/}':  basename\n  \
+                   '{//}': parent directory\n  \
+                   '{.}':  path without file extension\n  \
+                   '{/.}': basename without file extension\n  \
+                   '{{':   literal '{' (for escaping)\n  \
+                   '}}':   literal '}' (for escaping)\n\n\
+                 If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                 Examples:\n\n  \
+                   - find all *.zip files and unzip them:\n\n      \
+                       fd -e zip -x unzip\n\n  \
+                   - find *.h and *.cpp files and run \"clang-format -i ..\" for each of them:\n\n      \
+                       fd -e h -e cpp -x clang-format -i\n\n  \
+                   - Convert all *.jpg files to *.png files:\n\n      \
+                       fd -e jpg -x convert {} {.}.png\
+                ",
+            ),
         )
         .arg(
             Arg::new("exec_batch")
