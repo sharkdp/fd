@@ -147,7 +147,10 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 
 /// Detect if the user accidentally supplied a path instead of a search pattern
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path && opts.pattern.contains(std::path::MAIN_SEPARATOR) {
+    if !opts.full_path
+        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
+        && (!cfg!(windows) || Path::new(&opts.pattern).is_dir())
+    {
         let pattern = &opts.pattern;
         let sep = std::path::MAIN_SEPARATOR;
         let mut message = format!(
