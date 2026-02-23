@@ -608,23 +608,17 @@ impl WorkerState {
                 }
 
                 // Apply --filter: only include entries where the command exits 0.
-                if let Some(ref filter_cmd) = config.filter_command {
-                    if !filter_cmd.matches_filter(
-                        entry_path,
-                        config.path_separator.as_deref(),
-                    ) {
-                        return WalkState::Continue;
-                    }
+                if let Some(ref filter_cmd) = config.filter_command
+                    && !filter_cmd.matches_filter(entry_path, config.path_separator.as_deref())
+                {
+                    return WalkState::Continue;
                 }
 
                 // Apply --reject: exclude entries where the command exits 0.
-                if let Some(ref reject_cmd) = config.reject_command {
-                    if reject_cmd.matches_filter(
-                        entry_path,
-                        config.path_separator.as_deref(),
-                    ) {
-                        return WalkState::Continue;
-                    }
+                if let Some(ref reject_cmd) = config.reject_command
+                    && reject_cmd.matches_filter(entry_path, config.path_separator.as_deref())
+                {
+                    return WalkState::Continue;
                 }
 
                 if config.is_printing()

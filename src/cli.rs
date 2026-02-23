@@ -859,7 +859,11 @@ impl clap::FromArgMatches for Exec {
             .map(CommandSet::new)
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
-        Ok(Exec { command, filter_command, reject_command })
+        Ok(Exec {
+            command,
+            filter_command,
+            reject_command,
+        })
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {
