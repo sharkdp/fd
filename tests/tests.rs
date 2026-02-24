@@ -374,6 +374,32 @@ fn test_multi_file_with_missing() {
     );
 }
 
+/// Pattern containing path separator should always produce an error,
+/// not only when the pattern is an existing directory.
+/// Regression test for https://github.com/sharkdp/fd/issues/1873
+#[test]
+fn test_path_separator_in_pattern_non_directory() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // A pattern with '/' that is NOT an existing directory should still error
+    te.assert_failure_with_error(
+        &["foo/bar"],
+        "[fd error]: The search pattern 'foo/bar' contains a path-separation character ('/') and will not lead to any search results.",
+    );
+}
+
+#[test]
+fn test_path_separator_in_pattern_existing_directory() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // A pattern with '/' that IS an existing directory should also error
+    // and include the directory-specific hint
+    te.assert_failure_with_error(
+        &["one/two"],
+        "[fd error]: The search pattern 'one/two' contains a path-separation character ('/') and will not lead to any search results.",
+    );
+}
+
 /// Explicit root path
 #[test]
 fn test_explicit_root_path() {
