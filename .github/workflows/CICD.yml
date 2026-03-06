@@ -276,14 +276,14 @@ jobs:
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
     - name: "Attest artifact: tarball"
-      uses: actions/attest-build-provenance@v3
+      uses: actions/attest-build-provenance@v4
       if: steps.is-release.outputs.IS_RELEASE
       with:
         subject-name: ${{ steps.package.outputs.PKG_NAME }}
         subject-digest: sha256::${{ steps.upload-tarball.artifact-digest }}
 
     - name: "Attest artifact: Debian package"
-      uses: actions/attest-build-provenance@v3
+      uses: actions/attest-build-provenance@v4
       if: 'steps.is-release.outputs.IS_RELEASE && steps.debian-package.outputs.DPKG_NAME'
       with:
         subject-name: ${{ steps.debian-package.outputs.DPKG_NAME }}
