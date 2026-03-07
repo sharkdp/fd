@@ -255,14 +255,14 @@ jobs:
 
     - name: "Artifact upload: tarball"
       id: upload-tarball
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
 
     - name: "Artifact upload: Debian package"
       id: upload-deb
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       if: steps.debian-package.outputs.DPKG_NAME
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
@@ -276,18 +276,18 @@ jobs:
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
     - name: "Attest artifact: tarball"
-      uses: actions/attest-build-provenance@v4
+      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
       if: steps.is-release.outputs.IS_RELEASE
       with:
         subject-name: ${{ steps.package.outputs.PKG_NAME }}
-        subject-digest: sha256::${{ steps.upload-tarball.artifact-digest }}
+        subject-digest: sha256:${{ steps.upload-tarball.outputs.artifact-digest }}
 
     - name: "Attest artifact: Debian package"
-      uses: actions/attest-build-provenance@v4
+      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
       if: 'steps.is-release.outputs.IS_RELEASE && steps.debian-package.outputs.DPKG_NAME'
       with:
         subject-name: ${{ steps.debian-package.outputs.DPKG_NAME }}
-        subject-digest: sha256::${{ steps.upload-deb.outputs.artifact-digest }}
+        subject-digest: sha256:${{ steps.upload-deb.outputs.artifact-digest }}
 
     - name: Publish archives and packages
       uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
