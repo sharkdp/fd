@@ -147,10 +147,15 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 
 /// Detect if the user accidentally supplied a path instead of a search pattern
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
-    {
+    // On Windows, `\` is both a path separator and a regex escape character (e.g. `\d`),
+    // so we only check for forward slashes there to avoid false positives.
+    let pattern_has_separator = if cfg!(windows) {
+        opts.pattern.contains('/')
+    } else {
+        opts.pattern.contains(std::path::MAIN_SEPARATOR)
+    };
+
+    if !opts.full_path && pattern_has_separator {
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
@@ -163,6 +168,56 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
         ))
     } else {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    fn make_opts(args: &[&str]) -> Opts {
+        Opts::parse_from(std::iter::once("fd").chain(args.iter().copied()))
+    }
+
+    #[test]
+    fn test_pattern_with_separator_nonexistent_path_warns() {
+        // Pattern contains separator but path does NOT exist — should now error
+        let opts = make_opts(&["some/nonexistent/path"]);
+        assert!(
+            ensure_search_pattern_is_not_a_path(&opts).is_err(),
+            "expected error for pattern containing path separator"
+        );
+    }
+
+    #[test]
+    fn test_pattern_with_separator_existing_dir_warns() {
+        // Pattern contains separator AND path exists — should still error
+        let opts = make_opts(&["/tmp"]);
+        assert!(
+            ensure_search_pattern_is_not_a_path(&opts).is_err(),
+            "expected error for pattern that is an existing directory"
+        );
+    }
+
+    #[test]
+    fn test_pattern_without_separator_no_warning() {
+        // Ordinary regex pattern with no separator — should be fine
+        let opts = make_opts(&["foo.*bar"]);
+        assert!(
+            ensure_search_pattern_is_not_a_path(&opts).is_ok(),
+            "expected Ok for pattern without path separator"
+        );
+    }
+
+    #[test]
+    fn test_full_path_flag_suppresses_warning() {
+        // When --full-path is set, patterns with separators are intentional
+        let opts = make_opts(&["--full-path", "some/pattern"]);
+        assert!(
+            ensure_search_pattern_is_not_a_path(&opts).is_ok(),
+            "expected Ok when --full-path is set"
+        );
     }
 }
 
