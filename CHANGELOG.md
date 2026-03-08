@@ -1,3 +1,16 @@
+# Upcoming release
+
+## Features
+
+
+## Bugfixes
+
+
+## Changes
+
+
+## Other
+
 # 10.4.1
 
 This is just a re-release of 10.4.0 due to an issue with the 10.4.0 release.
@@ -23,9 +36,6 @@ This is just a re-release of 10.4.0 due to an issue with the 10.4.0 release.
 
 - Minimum required rust version has been increased to 1.90.0. Notably, this means dropping fully support for intel Mac and Windows 7.
 - Statically link the CRT for MSVC builds via Cargo config to avoid runtime DLL dependencies, see #1874 (@FidelSch)
-
-
-## Other
 
 # 10.3.0
 
