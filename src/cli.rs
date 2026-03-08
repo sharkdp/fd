@@ -26,7 +26,7 @@ use crate::filter::SizeFilter;
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     max_term_width = 98,
     args_override_self = true,
-    override_usage = "fd [OPTIONS] [pattern [path]...]",
+    override_usage = format!("{} [OPTIONS] [pattern [path]...]", std::env::args().next().as_deref().unwrap_or("fd")),
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "quiet", "max_one_result"])),
 )]
