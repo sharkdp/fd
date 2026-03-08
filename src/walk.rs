@@ -462,14 +462,20 @@ impl WorkerState {
                 }
 
                 if let Ok(e) = &entry {
-                    let entry_path = e.path();
-                    if entry_path.is_dir()
-                        && config
+                    // If the entry is a directory that contains a
+                    // "ignore contain" file", we want to skip this
+                    // directory.
+                    // Check the filetype first to avoid unnecessary
+                    // syscalls.
+                    if e.file_type().is_some_and(|t| t.is_dir()) {
+                        let entry_path = e.path();
+                        if config
                             .ignore_contain
                             .iter()
                             .any(|ic| entry_path.join(ic).exists())
-                    {
-                        return WalkState::Skip;
+                        {
+                            return WalkState::Skip;
+                        }
                     }
                     if e.depth() == 0 {
                         // Skip the root directory entry.
