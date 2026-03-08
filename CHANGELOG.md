@@ -1,3 +1,7 @@
+# 10.4.1
+
+This is just a re-release of 10.4.0 due to an issue with the 10.4.0 release.
+
 # 10.4.0
 
 ## Features
