@@ -42,6 +42,7 @@ pub enum WorkerResult {
     // to box the Entry variant
     Entry(DirEntry),
     Error(ignore::Error),
+    FatalError(ignore::Error),
 }
 
 /// A batch of WorkerResults to send over a channel.
@@ -228,6 +229,12 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             if self.config.show_filesystem_errors {
                                 print_error(err.to_string());
                             }
+                        }
+                        WorkerResult::FatalError(err) => {
+                            if self.config.show_filesystem_errors {
+                                print_error(err.to_string());
+                            }
+                            return Err(ExitCode::GeneralError);
                         }
                     }
                 }
@@ -524,18 +531,18 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str: Cow<OsStr> = if config.search_full_path {
-                    let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                        .expect("Retrieving absolute path succeeds");
-                    Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-                } else {
-                    match entry_path.file_name() {
-                        Some(filename) => Cow::Borrowed(filename),
-                        None => unreachable!(
-                            "Encountered file system entry without a file name. This should only \
-                             happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                             appear in a file system traversal."
-                        ),
+                let search_str = match search_str_for_entry(entry_path, config.search_full_path) {
+                    Ok(search_str) => search_str,
+                    Err(err) => {
+                        let error = ignore::Error::WithPath {
+                            path: entry_path.to_path_buf(),
+                            err: Box::new(ignore::Error::Io(err)),
+                        };
+
+                        return match tx.send(WorkerResult::FatalError(error)) {
+                            Ok(_) => WalkState::Quit,
+                            Err(_) => WalkState::Quit,
+                        };
                     }
                 };
 
@@ -676,6 +683,25 @@ impl WorkerState {
     }
 }
 
+fn search_str_for_entry<'a>(
+    entry_path: &'a std::path::Path,
+    search_full_path: bool,
+) -> io::Result<Cow<'a, OsStr>> {
+    if search_full_path {
+        let path_abs_buf = filesystem::path_absolute_form(entry_path)?;
+        Ok(Cow::Owned(path_abs_buf.as_os_str().to_os_string()))
+    } else {
+        match entry_path.file_name() {
+            Some(filename) => Ok(Cow::Borrowed(filename)),
+            None => unreachable!(
+                "Encountered file system entry without a file name. This should only \
+                 happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                 appear in a file system traversal."
+            ),
+        }
+    }
+}
+
 /// Recursively scan the given search path for files / pathnames matching the patterns.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -683,4 +709,30 @@ impl WorkerState {
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
     WorkerState::new(patterns, config).scan(paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::search_str_for_entry;
+    use std::env;
+    use std::fs;
+    use std::path::Path;
+
+    #[test]
+    #[cfg(all(not(windows), not(target_os = "illumos")))]
+    fn full_path_search_returns_error_for_invalid_cwd() {
+        let original_dir = env::current_dir().unwrap();
+        let temp_dir = tempfile::tempdir().unwrap();
+        let cwd = temp_dir.path().join("cwd");
+
+        fs::create_dir(&cwd).unwrap();
+        env::set_current_dir(&cwd).unwrap();
+        fs::remove_dir(&cwd).unwrap();
+
+        let result = search_str_for_entry(Path::new("relative/path"), true);
+
+        env::set_current_dir(original_dir).unwrap();
+
+        assert!(result.is_err());
+    }
 }

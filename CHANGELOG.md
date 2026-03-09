@@ -2,6 +2,7 @@
 
 ## Bugfixes
 - Fixed performance regression due to `--ignore-contain`; see #1913 and #1914
+- Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 
 # 10.4.1
 

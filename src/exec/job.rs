@@ -28,6 +28,12 @@ pub fn job(
                 }
                 continue;
             }
+            WorkerResult::FatalError(err) => {
+                if config.show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                return ExitCode::GeneralError;
+            }
         };
 
         // Generate a command, execute it and store its exit code.
@@ -48,17 +54,28 @@ pub fn batch(
     cmd: &CommandSet,
     config: &Config,
 ) -> ExitCode {
-    let paths = results
-        .into_iter()
-        .filter_map(|worker_result| match worker_result {
-            WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
+    let mut paths = Vec::new();
+
+    for worker_result in results {
+        match worker_result {
+            WorkerResult::Entry(dir_entry) => paths.push(dir_entry.into_stripped_path(config)),
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
-                None
             }
-        });
+            WorkerResult::FatalError(err) => {
+                if config.show_filesystem_errors {
+                    print_error(err.to_string());
+                }
+                return ExitCode::GeneralError;
+            }
+        }
+    }
 
-    cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
+    cmd.execute_batch(
+        paths.into_iter(),
+        config.batch_size,
+        config.path_separator.as_deref(),
+    )
 }
