@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
-version = "10.4.1"
+version = "10.4.2"
 edition= "2024"
 rust-version = "1.90.0"
 

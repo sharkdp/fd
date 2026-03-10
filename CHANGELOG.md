@@ -1,15 +1,7 @@
-# Upcoming release
-
-## Features
-
+# 10.4.2
 
 ## Bugfixes
-
-
-## Changes
-
-
-## Other
+- Fixed performance regression due to `--ignore-contain`; see #1913 and #1914
 
 # 10.4.1
 

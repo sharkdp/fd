@@ -295,7 +295,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "fd-find"
-version = "10.4.1"
+version = "10.4.2"
 dependencies = [
  "aho-corasick",
  "anyhow",
