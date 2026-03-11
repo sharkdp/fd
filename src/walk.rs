@@ -669,7 +669,7 @@ fn search_str_for_entry<'a>(
 ) -> Cow<'a, OsStr> {
     if let Some(cwd) = cwd {
         let abs_path = filesystem::make_absolute(entry_path, cwd);
-        Cow::Owned(abs_path.as_os_str().to_os_string())
+        Cow::Owned(abs_path.into_os_string())
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
