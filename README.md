@@ -332,7 +332,7 @@ Options:
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
                                    executable (x), empty (e), socket (s), pipe (p), char-device
                                    (c), block-device (b)
-  -e, --extension <ext>            Filter by file extension
+  -e, --extension <ext>            Filter by extension (applies to all entry types)
   -S, --size <size>                Limit results based on the size of files
       --changed-within <date|dur>  Filter by file modification time (newer than)
       --changed-before <date|dur>  Filter by file modification time (older than)
