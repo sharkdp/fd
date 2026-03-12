@@ -299,7 +299,7 @@ pub struct Opts {
     #[arg(
         long,
         short = 'E',
-        value_name = "pattern",
+        value_name = "glob",
         help = "Exclude entries that match the given glob pattern",
         long_help
     )]
