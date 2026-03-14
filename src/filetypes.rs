@@ -8,6 +8,7 @@ use faccess::PathExt;
 pub struct FileTypes {
     pub files: bool,
     pub directories: bool,
+    pub leaf_directories: bool,
     pub symlinks: bool,
     pub block_devices: bool,
     pub char_devices: bool,
@@ -20,8 +21,11 @@ pub struct FileTypes {
 impl FileTypes {
     pub fn should_ignore(&self, entry: &dir_entry::DirEntry) -> bool {
         if let Some(ref entry_type) = entry.file_type() {
+            let is_dir = entry_type.is_dir();
+
             (!self.files && entry_type.is_file())
-                || (!self.directories && entry_type.is_dir())
+                || (!self.directories && is_dir)
+                || (self.leaf_directories && is_dir && !filesystem::is_leaf_directory(entry))
                 || (!self.symlinks && entry_type.is_symlink())
                 || (!self.block_devices && filesystem::is_block_device(*entry_type))
                 || (!self.char_devices && filesystem::is_char_device(*entry_type))
