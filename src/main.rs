@@ -316,6 +316,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
+        override_ignore_patterns: std::mem::take(&mut opts.override_ignore),
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
