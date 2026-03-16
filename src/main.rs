@@ -245,9 +245,18 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
 
+    let cwd = if opts.full_path {
+        Some(env::current_dir().context(
+            "Could not determine current directory. \
+             This is required for --full-path.",
+        )?)
+    } else {
+        None
+    };
+
     Ok(Config {
         case_sensitive,
-        search_full_path: opts.full_path,
+        cwd,
         ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
         read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),

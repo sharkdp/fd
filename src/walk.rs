@@ -524,20 +524,7 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str: Cow<OsStr> = if config.search_full_path {
-                    let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                        .expect("Retrieving absolute path succeeds");
-                    Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-                } else {
-                    match entry_path.file_name() {
-                        Some(filename) => Cow::Borrowed(filename),
-                        None => unreachable!(
-                            "Encountered file system entry without a file name. This should only \
-                             happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                             appear in a file system traversal."
-                        ),
-                    }
-                };
+                let search_str = search_str_for_entry(entry_path, config.cwd.as_deref());
 
                 if !patterns
                     .iter()
@@ -672,6 +659,25 @@ impl WorkerState {
             Ok(ExitCode::KilledBySigint)
         } else {
             Ok(exit_code)
+        }
+    }
+}
+
+fn search_str_for_entry<'a>(
+    entry_path: &'a std::path::Path,
+    cwd: Option<&std::path::Path>,
+) -> Cow<'a, OsStr> {
+    if let Some(cwd) = cwd {
+        let abs_path = filesystem::make_absolute(entry_path, cwd);
+        Cow::Owned(abs_path.into_os_string())
+    } else {
+        match entry_path.file_name() {
+            Some(filename) => Cow::Borrowed(filename),
+            None => unreachable!(
+                "Encountered file system entry without a file name. This should only \
+                 happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                 appear in a file system traversal."
+            ),
         }
     }
 }

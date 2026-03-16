@@ -1,3 +1,8 @@
+# Unreleased
+
+## Bugfixes
+- Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+
 # 10.4.2
 
 ## Bugfixes
