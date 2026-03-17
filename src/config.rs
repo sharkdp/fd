@@ -17,7 +17,7 @@ pub struct Config {
 
     /// Cached current working directory for absolute path construction.
     /// Populated when `--full-path` is set; `None` means search by filename only.
-    pub cwd: Option<PathBuf>,
+    pub full_path_base: Option<PathBuf>,
 
     /// Whether to ignore hidden files and directories (or not).
     pub ignore_hidden: bool,

@@ -524,7 +524,7 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str = search_str_for_entry(entry_path, config.cwd.as_deref());
+                let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
                 if !patterns
                     .iter()
@@ -665,11 +665,16 @@ impl WorkerState {
 
 fn search_str_for_entry<'a>(
     entry_path: &'a std::path::Path,
-    cwd: Option<&std::path::Path>,
+    full_path_base: Option<&std::path::Path>,
 ) -> Cow<'a, OsStr> {
-    if let Some(cwd) = cwd {
-        let abs_path = filesystem::make_absolute(entry_path, cwd);
-        Cow::Owned(abs_path.into_os_string())
+    if let Some(cwd) = full_path_base {
+        // If full_path_base is some, that means that we need to return
+        // the absolute path
+        if entry_path.is_absolute() {
+            return Cow::Borrowed(entry_path.as_os_str());
+        }
+        let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
+        Cow::Owned(cwd.join(path).into())
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
@@ -689,4 +694,45 @@ fn search_str_for_entry<'a>(
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
     WorkerState::new(patterns, config).scan(paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::search_str_for_entry;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn search_str_for_entry_with_relative_path() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("foo/bar"), full_path_base),
+            PathBuf::from("/home/user/foo/bar")
+        );
+    }
+
+    #[test]
+    fn search_str_for_entry_strips_dot_prefix() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("./foo/bar"), full_path_base),
+            PathBuf::from("/home/user/foo/bar")
+        );
+    }
+
+    #[test]
+    fn search_str_for_entry_with_absolute_path() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("/absolute/path"), full_path_base),
+            PathBuf::from("/absolute/path")
+        );
+    }
+
+    #[test]
+    fn search_str_no_base_dir() {
+        assert_eq!(
+            search_str_for_entry(Path::new("./foo/bar"), None),
+            PathBuf::from("bar")
+        );
+    }
 }
