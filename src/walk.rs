@@ -524,7 +524,7 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str = search_str_for_entry(entry_path, config.cwd.as_deref());
+                let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
                 if !patterns
                     .iter()
