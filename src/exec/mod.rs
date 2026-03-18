@@ -90,6 +90,29 @@ impl CommandSet {
         execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
+    /// Run the command for a given path and return true if it exits with status 0.
+    /// Output is suppressed (redirected to /dev/null).
+    pub fn matches_filter(&self, input: &Path, path_separator: Option<&str>) -> bool {
+        for template in &self.commands {
+            match template.generate(input, path_separator) {
+                Ok(mut cmd) => {
+                    cmd.stdout(Stdio::null());
+                    cmd.stderr(Stdio::null());
+                    match cmd.status() {
+                        Ok(status) => {
+                            if !status.success() {
+                                return false;
+                            }
+                        }
+                        Err(_) => return false,
+                    }
+                }
+                Err(_) => return false,
+            }
+        }
+        true
+    }
+
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
