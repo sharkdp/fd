@@ -68,6 +68,7 @@ pub struct Opts {
     ///The flag can be overridden with --ignore-vcs.
     #[arg(
         long,
+        overrides_with = "ignore_vcs",
         hide_short_help = true,
         help = "Do not respect .gitignore files",
         long_help
