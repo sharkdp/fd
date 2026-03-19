@@ -1572,6 +1572,26 @@ fn test_symlink_and_full_path_abs_path() {
         ),
     );
 }
+
+#[cfg(not(windows))]
+#[test]
+fn test_path_pattern_with_separator_reports_error_for_nonexistent_directory() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_failure_with_error(
+        &["dir1/dir2"],
+        "[fd error]: The search pattern 'dir1/dir2' contains a path-separation character ('/') and will not lead to any search results.
+
+If you want to search for all files inside the 'dir1/dir2' directory, use a match-all pattern:
+
+  fd . 'dir1/dir2'
+
+Instead, if you want your pattern to match the full file path, use:
+
+  fd --full-path 'dir1/dir2'",
+    );
+}
+
 /// Exclude patterns (--exclude)
 #[test]
 fn test_excludes() {
