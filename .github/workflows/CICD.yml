@@ -106,6 +106,7 @@ jobs:
           - { target: x86_64-pc-windows-gnu       , os: windows-2022                  }
           - { target: x86_64-pc-windows-msvc      , os: windows-2022                  }
           - { target: aarch64-pc-windows-msvc     , os: windows-11-arm                }
+          - { target: riscv64gc-unknown-linux-gnu  , os: ubuntu-24.04-riscv             }
           - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
           - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
     env:
