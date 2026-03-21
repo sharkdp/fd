@@ -2578,6 +2578,23 @@ fn test_opposing(flag: &str, opposing_flags: &[&str]) {
     );
 }
 
+/// Print error if search pattern contains a path separator, even if the
+/// pattern is not an existing directory (see #1873)
+#[test]
+#[cfg(unix)]
+fn test_error_if_pattern_contains_path_separator() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Pattern that IS an existing directory should still error
+    te.assert_failure(&["one/two"]);
+
+    // Pattern with path separator that is NOT an existing directory should also error
+    te.assert_failure(&["nonexistent/path"]);
+
+    // --full-path should suppress the error
+    te.assert_output(&["--full-path", "one/two"], "one/two/\none/two/c.foo\none/two/C.Foo2\none/two/three/\none/two/three/d.foo\none/two/three/directory_foo/");
+}
+
 /// Print error if search pattern starts with a dot and --hidden is not set
 /// (Unix only, hidden files on Windows work differently)
 #[test]

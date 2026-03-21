@@ -147,20 +147,29 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 
 /// Detect if the user accidentally supplied a path instead of a search pattern
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
-    {
-        Err(anyhow!(
+    if !opts.full_path && opts.pattern.contains(std::path::MAIN_SEPARATOR) {
+        let pattern = &opts.pattern;
+        let sep = std::path::MAIN_SEPARATOR;
+
+        let mut msg = format!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
-             and will not lead to any search results.\n\n\
-             If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
-             fd . '{pattern}'\n\n\
-             Instead, if you want your pattern to match the full file path, use:\n\n  \
-             fd --full-path '{pattern}'",
-            pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
-        ))
+             and will not lead to any search results."
+        );
+
+        if Path::new(pattern).is_dir() {
+            msg += &format!(
+                "\n\nIf you want to search for all files inside the '{pattern}' directory, \
+                 use a match-all pattern:\n\n  \
+                 fd . '{pattern}'"
+            );
+        }
+
+        msg += &format!(
+            "\n\nIf you want your pattern to match the full file path, use:\n\n  \
+             fd --full-path '{pattern}'"
+        );
+
+        Err(anyhow!(msg))
     } else {
         Ok(())
     }
