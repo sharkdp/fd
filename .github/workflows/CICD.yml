@@ -259,6 +259,7 @@ jobs:
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
+        compression-level: 0 # tarball is already compressed
 
     - name: "Artifact upload: Debian package"
       id: upload-deb
@@ -267,6 +268,7 @@ jobs:
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+        compression-level: 0 # deb files are already compressed
 
     - name: Check for release
       id: is-release
