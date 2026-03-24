@@ -20,17 +20,6 @@ pub fn path_absolute_form(path: &Path) -> io::Result<PathBuf> {
     env::current_dir().map(|path_buf| path_buf.join(path))
 }
 
-/// Construct an absolute path from a potentially relative path and a
-/// pre-resolved working directory. Unlike `path_absolute_form`, this
-/// does not call `env::current_dir()` and cannot fail.
-pub fn make_absolute(path: &Path, cwd: &Path) -> PathBuf {
-    if path.is_absolute() {
-        return path.to_path_buf();
-    }
-    let path = path.strip_prefix(".").unwrap_or(path);
-    cwd.join(path)
-}
-
 pub fn absolute_path(path: &Path) -> io::Result<PathBuf> {
     let path_buf = path_absolute_form(path)?;
 
@@ -162,42 +151,6 @@ mod tests {
         assert_eq!(
             strip_current_dir(Path::new("foo/bar/baz")),
             Path::new("foo/bar/baz")
-        );
-    }
-
-    #[test]
-    fn make_absolute_with_relative_path() {
-        use super::make_absolute;
-        use std::path::PathBuf;
-
-        let cwd = Path::new("/home/user");
-        assert_eq!(
-            make_absolute(Path::new("foo/bar"), cwd),
-            PathBuf::from("/home/user/foo/bar")
-        );
-    }
-
-    #[test]
-    fn make_absolute_strips_dot_prefix() {
-        use super::make_absolute;
-        use std::path::PathBuf;
-
-        let cwd = Path::new("/home/user");
-        assert_eq!(
-            make_absolute(Path::new("./foo/bar"), cwd),
-            PathBuf::from("/home/user/foo/bar")
-        );
-    }
-
-    #[test]
-    fn make_absolute_with_absolute_path() {
-        use super::make_absolute;
-        use std::path::PathBuf;
-
-        let cwd = Path::new("/home/user");
-        assert_eq!(
-            make_absolute(Path::new("/absolute/path"), cwd),
-            PathBuf::from("/absolute/path")
         );
     }
 }
