@@ -259,6 +259,7 @@ jobs:
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
+        compression-level: 0 # tarball is already compressed
 
     - name: "Artifact upload: Debian package"
       id: upload-deb
@@ -267,6 +268,7 @@ jobs:
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+        compression-level: 0 # deb files are already compressed
 
     - name: Check for release
       id: is-release
@@ -275,19 +277,13 @@ jobs:
         unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
-    - name: "Attest artifact: tarball"
+    - name: "Attest artifacts"
       uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
       if: steps.is-release.outputs.IS_RELEASE
       with:
-        subject-name: ${{ steps.package.outputs.PKG_NAME }}
-        subject-digest: sha256:${{ steps.upload-tarball.outputs.artifact-digest }}
-
-    - name: "Attest artifact: Debian package"
-      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
-      if: 'steps.is-release.outputs.IS_RELEASE && steps.debian-package.outputs.DPKG_NAME'
-      with:
-        subject-name: ${{ steps.debian-package.outputs.DPKG_NAME }}
-        subject-digest: sha256:${{ steps.upload-deb.outputs.artifact-digest }}
+        subject-path: |
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
 
     - name: Publish archives and packages
       uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
