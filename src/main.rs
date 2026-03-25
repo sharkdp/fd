@@ -149,7 +149,6 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     if !opts.full_path
         && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
     {
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
