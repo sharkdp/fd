@@ -9,6 +9,7 @@ use std::time::SystemTime;
 #[cfg(unix)]
 use base64::{Engine as _, prelude::BASE64_STANDARD};
 use jiff::Timestamp;
+use json_escape::escape_str;
 
 pub fn output_json<W: Write>(
     out: &mut W,
@@ -33,7 +34,7 @@ pub fn output_json<W: Write>(
             // is a valid JSON string. At time of writing this is the case
             // but it is possible, though unlikely, that this could change
             // in the future.
-            write!(out, r#""path":{{"text":{:?}}}"#, final_path)?;
+            write!(out, r#""path":{{"text":"{}"}}"#, escape_str(&final_path))?;
         }
         None => {
             let encoded_bytes = BASE64_STANDARD.encode(path.as_os_str().as_bytes());
@@ -51,7 +52,7 @@ pub fn output_json<W: Write>(
         if let Some(sep) = path_separator {
             path = path.replace(MAIN_SEPARATOR, sep).into();
         }
-        write!(out, r#""path":{{"text":{:?}}}"#, path)?;
+        write!(out, r#""path":{{"text":"{}"}}"#, escape_str(&path))?;
     }
 
     // print the type of file
