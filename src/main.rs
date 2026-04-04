@@ -385,7 +385,7 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
             // Assume ls is GNU ls
             gnu_ls("ls")
         } else {
-            // MacOS, DragonFlyBSD, FreeBSD
+            // macOS, DragonFlyBSD, FreeBSD
             use std::process::{Command, Stdio};
 
             // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
