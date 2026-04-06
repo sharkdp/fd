@@ -102,6 +102,7 @@ pub struct Opts {
 
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', or '.fdignore' files in parent directories.
+    /// The flag can be overridden with --ignore-parent.
     #[arg(
         long,
         hide_short_help = true,
@@ -109,6 +110,10 @@ pub struct Opts {
         long_help
     )]
     pub no_ignore_parent: bool,
+
+    /// Overrides --no-ignore-parent
+    #[arg(long, overrides_with = "no_ignore_parent", hide = true, action = ArgAction::SetTrue)]
+    ignore_parent: (),
 
     /// Do not respect the global ignore file
     #[arg(long, hide = true)]
