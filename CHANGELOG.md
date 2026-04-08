@@ -1,9 +1,25 @@
-# Upcoming release
-
-## Features
-
+# Unreleased
 
 ## Bugfixes
+- Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+
+# 10.4.2
+
+## Bugfixes
+- Fixed performance regression due to `--ignore-contain`; see #1913 and #1914
+
+# 10.4.1
+
+This is just a re-release of 10.4.0 due to an issue with the 10.4.0 release.
+
+# 10.4.0
+
+## Features
+- Add `--ignore-contain` option to ignore directories containing a named entry (e.g. to ignore [`CACHEDIR.TAG`](https://bford.info/cachedir/)); see #1727 (@fischman).
+
+## Bugfixes
+
+- Fix Windows hyperlink generation for paths with spaces. (#1872)
 
 - `--print0` combined with `--exec` will now print a `\0` between the output of each entry. Note that if there are multiple instances
   of `--exec`, the `\0` will be between each _set_ of commands, _not_ between each individual command run. Fixes #1797.
@@ -16,9 +32,7 @@
 ## Changes
 
 - Minimum required rust version has been increased to 1.90.0. Notably, this means dropping fully support for intel Mac and Windows 7.
-
-
-## Other
+- Statically link the CRT for MSVC builds via Cargo config to avoid runtime DLL dependencies, see #1874 (@FidelSch)
 
 # 10.3.0
 

@@ -21,7 +21,7 @@ jobs:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - name: Extract crate information
@@ -46,7 +46,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo fmt -- --check
@@ -58,7 +58,7 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         persist-credentials: false
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
@@ -69,7 +69,7 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
@@ -99,12 +99,13 @@ jobs:
           - { target: aarch64-unknown-linux-musl  , os: ubuntu-24.04, use-cross: true }
           - { target: arm-unknown-linux-gnueabihf , os: ubuntu-24.04, use-cross: true }
           - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04, use-cross: true }
-          - { target: i686-pc-windows-msvc        , os: windows-2022                  }
+          - { target: i686-pc-windows-msvc        , os: windows-2025                  }
           - { target: i686-unknown-linux-gnu      , os: ubuntu-24.04, use-cross: true }
           - { target: i686-unknown-linux-musl     , os: ubuntu-24.04, use-cross: true }
-          - { target: aarch64-apple-darwin        , os: macos-14                      }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2022                  }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2022                  }
+          - { target: x86_64-apple-darwin         , os: macos-26-intel                }
+          - { target: aarch64-apple-darwin        , os: macos-26                      }
+          - { target: x86_64-pc-windows-gnu       , os: windows-2025                  }
+          - { target: x86_64-pc-windows-msvc      , os: windows-2025                  }
           - { target: aarch64-pc-windows-msvc     , os: windows-11-arm                }
           - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
           - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
@@ -114,7 +115,7 @@ jobs:
       name: ${{ needs.crate_metadata.outputs.name }}
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         persist-credentials: false
 
@@ -255,18 +256,20 @@ jobs:
 
     - name: "Artifact upload: tarball"
       id: upload-tarball
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
+        compression-level: 0 # tarball is already compressed
 
     - name: "Artifact upload: Debian package"
       id: upload-deb
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
       if: steps.debian-package.outputs.DPKG_NAME
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+        compression-level: 0 # deb files are already compressed
 
     - name: Check for release
       id: is-release
@@ -275,22 +278,16 @@ jobs:
         unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
-    - name: "Attest artifact: tarball"
-      uses: actions/attest-build-provenance@v3
+    - name: "Attest artifacts"
+      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
       if: steps.is-release.outputs.IS_RELEASE
       with:
-        subject-name: ${{ steps.package.outputs.PKG_NAME }}
-        subject-digest: sha256::${{ steps.upload-tarball.artifact-digest }}
-
-    - name: "Attest artifact: Debian package"
-      uses: actions/attest-build-provenance@v3
-      if: 'steps.is-release.outputs.IS_RELEASE && steps.debian-package.outputs.DPKG_NAME'
-      with:
-        subject-name: ${{ steps.debian-package.outputs.DPKG_NAME }}
-        subject-digest: sha256::${{ steps.upload-deb.outputs.artifact-digest }}
+        subject-path: |
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
 
     - name: Publish archives and packages
-      uses: softprops/action-gh-release@6da8fa9354ddfdc4aeace5fc48d7f679b5214090 # v2.4.1
+      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
       if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |

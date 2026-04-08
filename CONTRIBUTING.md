@@ -1,6 +1,6 @@
 ## Contributing to *fd*
 
-**Thank you very much for considering to contribute to this project!**
+**Thank you very much for considering contributing to this project!**
 
 We welcome any form of contribution:
 

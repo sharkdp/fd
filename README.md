@@ -27,19 +27,6 @@ While it does not aim to support all of `find`'s powerful functionality, it prov
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 
-## Sponsors
-
-A special *thank you* goes to our biggest <a href="doc/sponsors.md">sponsor</a>:<br>
-
-<a href="https://tuple.app/fd">
-  <img src="doc/sponsors/tuple-logo.png" width="200" alt="Tuple">
-  <br>
-  <strong>Tuple, the premier screen sharing app for developers</strong>
-  <br>
-  <sub>Available for MacOS &amp; Windows</sub>
-</a>
-
-
 ## Demo
 
 ![Demo](doc/screencast.svg)
@@ -189,6 +176,12 @@ fd -e h -e cpp -x clang-format -i
 Note how the `-i` option to `clang-format` can be passed as a separate argument. This is why
 we put the `-x` option last.
 
+Any positional arguments after `-x` belong to the command template, not to `fd` itself. If you
+also want to pass a pattern or search path, put `-x` last:
+``` bash
+fd pattern path -x echo
+```
+
 Find all `test_*.py` files and open them in your favorite editor:
 ``` bash
 fd -g 'test_*.py' -X vim
@@ -227,6 +220,9 @@ fd -tf -x md5sum > file_checksums.txt
 
 The `-x` and `-X` options take a *command template* as a series of arguments (instead of a single string).
 If you want to add additional options to `fd` after the command template, you can terminate it with a `\;`.
+
+For example, `fd -x echo \; pattern path` treats `pattern path` as `fd` arguments instead of
+passing them to `echo`. In practice, it is often clearer to write `fd pattern path -x echo`.
 
 The syntax for generating commands is similar to that of [GNU Parallel](https://www.gnu.org/software/parallel/):
 
@@ -311,7 +307,7 @@ This is the output of `fd -h`. To see the full set of command-line options, use 
 also includes a much more detailed help text.
 
 ```
-Usage: fd [OPTIONS] [pattern [path...]]
+Usage: fd [OPTIONS] [pattern [path]...]
 
 Arguments:
   [pattern]  the search pattern (a regular expression, unless '--glob' is used; optional)
@@ -328,7 +324,7 @@ Options:
   -L, --follow                     Follow symbolic links
   -p, --full-path                  Search full abs. path (default: filename only)
   -d, --max-depth <depth>          Set maximum search depth (default: none)
-  -E, --exclude <pattern>          Exclude entries that match the given glob pattern
+  -E, --exclude <glob>             Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
                                    executable (x), empty (e), socket (s), pipe (p), char-device
                                    (c), block-device (b)
@@ -344,7 +340,7 @@ Options:
                                    always, never]
       --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible
                                    values: auto, always, never]
-  -C, --base-directory <path>      Change the search path to <path>
+      --ignore-contain <name>      Ignore directories containing the named entry
   -h, --help                       Print help (see more with '--help')
   -V, --version                    Print version
 ```
@@ -680,6 +676,13 @@ You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) fro
 guix install fd
 ```
 
+### On Mise
+
+You can use [mise](https://github.com/jdx/mise) to install `fd` with a command like this:
+```
+mise use -g fd@latest
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
@@ -740,13 +743,34 @@ cargo install --path .
 
 ### Completions
 
-Tab completions for several shells are included in the "autocomplete" directory. To use these completions put the file in an appropriate location for your shell, and depending on
-your shell, you may need to source the file as well:
+#### From Release Archives
 
-- bash: you will need to source the fd.bash file in your ~/.bashrc file. Or put it in a directory of files that are all sourced.
-- zsh: move the "_fd" file to somewhere on your fpath
-- fish: Put fd.fish in ~/.config/fish/completions
-- powershell: Source the _fd.ps1 file from one of the files in  the [profile scripts locations](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+Pre-built completion files are included in the release archives (`.tar.gz`/`.zip`) on the
+[Releases page](https://github.com/sharkdp/fd/releases), in the `autocomplete` directory.
+To use these completions:
+
+- **bash**: Source the `fd.bash` file in your `~/.bashrc`, or place it in a directory that gets sourced automatically.
+- **zsh**: Move `_fd` to a directory in your `fpath` (e.g., `~/.zfunc`).
+- **fish**: Copy `fd.fish` to `~/.config/fish/completions/`.
+- **powershell**: Source `_fd.ps1` from one of your [profile scripts](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+
+#### Generate from fd
+
+You can also generate completions directly using `fd --gen-completions <shell>`:
+
+```bash
+# Bash
+fd --gen-completions bash > ~/.local/share/bash-completion/completions/fd
+
+# Zsh (ensure ~/.zfunc is in your fpath)
+fd --gen-completions zsh > ~/.zfunc/_fd
+
+# Fish
+fd --gen-completions fish > ~/.config/fish/completions/fd.fish
+
+# PowerShell
+fd --gen-completions powershell >> $PROFILE
+```
 
 ## Maintainers
 

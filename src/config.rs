@@ -15,9 +15,9 @@ pub struct Config {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
 
-    /// Whether to search within the full file path or just the base name (filename or directory
-    /// name).
-    pub search_full_path: bool,
+    /// Cached current working directory for absolute path construction.
+    /// Populated when `--full-path` is set; `None` means search by filename only.
+    pub full_path_base: Option<PathBuf>,
 
     /// Whether to ignore hidden files and directories (or not).
     pub ignore_hidden: bool,
@@ -133,6 +133,8 @@ pub struct Config {
 
     /// Whether or not to show a long listing format with file metadata
     pub list_details: bool,
+    /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
+    pub ignore_contain: Vec<String>,
 }
 
 impl Config {
