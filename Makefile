@@ -1,9 +1,16 @@
-PROFILE=release
+PROFILE?=release
 EXE=target/$(PROFILE)/fd
 prefix=/usr/local
 bindir=$(prefix)/bin
 datadir=$(prefix)/share
 exe_name=fd
+ifdef VERSION
+	ARCHIVE_NAME = fd-v$(VERSION)
+else
+	ARCHIVE_NAME = fd
+endif
+export ARCHIVE_NAME
+archive_path=package/$(ARCHIVE_NAME).tar.gz
 
 $(EXE): Cargo.toml src/**/*.rs
 	cargo build --profile $(PROFILE) --locked
@@ -28,6 +35,11 @@ autocomplete/_fd.ps1: $(EXE)
 autocomplete/_fd: contrib/completion/_fd
 	$(comp_dir)
 	cp $< $@
+
+archive: $(archive_path)
+
+$(archive_path): completions $(EXE)
+	bash scripts/create-archive.sh
 
 install: $(EXE) completions
 	install -Dm755 $(EXE) $(DESTDIR)$(bindir)/fd

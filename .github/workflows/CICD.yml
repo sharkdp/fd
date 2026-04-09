@@ -205,44 +205,12 @@ jobs:
     - name: Create tarball
       id: package
       shell: bash
+      run: bash scripts/create-archive.sh
       env:
         BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
-        version: ${{ needs.crate_metadata.outputs.version }}
-      run: |
-        PKG_suffix=".tar.gz"
-        case ${target} in
-        *-pc-windows-*) PKG_suffix=".zip" ;;
-        esac
-        PKG_BASENAME=${name}-v${version}-${target}
-        PKG_NAME=${PKG_BASENAME}${PKG_suffix}
-        echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
-
-        PKG_STAGING="${CICD_INTERMEDIATES_DIR}/package"
-        ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
-        mkdir -p "${ARCHIVE_DIR}"
-
-        # Binary
-        cp "${BIN_PATH}" "$ARCHIVE_DIR"
-
-        # README, LICENSE and CHANGELOG files
-        cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
-
-        # Man page
-        cp "doc/${name}.1" "$ARCHIVE_DIR"
-
-        # Autocompletion files
-        cp -r autocomplete "${ARCHIVE_DIR}"
-
-        # base compressed package
-        pushd "${PKG_STAGING}/" >/dev/null
-        case ${target} in
-          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
-          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
-        esac;
-        popd >/dev/null
-
-        # Let subsequent steps know where to find the compressed package
-        echo "PKG_PATH=${PKG_STAGING}/${PKG_NAME}" >> $GITHUB_OUTPUT
+        TARGET: ${{ env.target }}
+        ARCHIVE_NAME: ${{ env.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ env.target }}
+        PKG_STAGING: "${{ env.CICD_INTERMEDIATES_DIR }}/package"
 
     - name: Create Debian package
       id: debian-package
