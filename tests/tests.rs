@@ -1133,6 +1133,26 @@ fn test_min_depth() {
     );
 }
 
+/// Regression: `fd --min-depth 1 -L . testdir` must list a dangling symlink under `testdir/sub/`.
+/// (`DirEntry::broken_symlink` has no depth; `is_none_or` incorrectly skipped it.)
+#[cfg(unix)]
+#[test]
+fn test_min_depth_follow_broken_symlink_nested() {
+    use std::os::unix::fs::symlink;
+
+    // `testenv` always creates `symlink` -> `one/two`; that directory must exist.
+    let dirs = &["one/two", "testdir/sub"];
+    let files: &[&str] = &[];
+    let te = TestEnv::new(dirs, files);
+    symlink("/noexistent", te.test_root().join("testdir/sub/broken")).expect("symlink");
+
+    te.assert_output(
+        &["--min-depth", "1", "-L", ".", "testdir"],
+        "testdir/sub/
+        testdir/sub/broken",
+    );
+}
+
 /// Exact depth (--exact-depth)
 #[test]
 fn test_exact_depth() {

@@ -2,6 +2,7 @@
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+- Do not skip dangling symlinks when using `--min-depth` together with `--follow` (`-L`): broken-symlink entries have no walk depth and were incorrectly filtered. see #1962 (@cuiweixie).
 
 # 10.4.2
 

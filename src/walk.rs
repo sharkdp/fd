@@ -516,7 +516,7 @@ impl WorkerState {
                 };
 
                 if let Some(min_depth) = config.min_depth
-                    && entry.depth().is_none_or(|d| d < min_depth)
+                    && entry.depth().is_some_and(|d| d < min_depth)
                 {
                     return WalkState::Continue;
                 }
