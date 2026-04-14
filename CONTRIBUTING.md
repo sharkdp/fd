@@ -10,6 +10,19 @@ We welcome any form of contribution:
 **Note**: Before you take the time to open a pull request, please open a ticket first. This will
 give us the chance to discuss any potential changes first.
 
+## Pull Request Expectations
+
+1. Your contribution should be high quality, and best effort. In particular, please don't make a Pull Request
+   that was created using generative AI unless you have reviewed it yourself and understand what it does, and be
+   able to meaningfully answer questions and make changes to it as needed.
+2. Your code should successfully compile and pass tests before publishing a Pull Request. It's understandable
+   if tests fail on one or two specific targets, but if the build doesn't pass for any targets, that is a signal
+   that the PR is low effort.
+3. It is your responsibility to ensure that the generated code does not violate any copyrights or patents. This is
+   true of all contributions, but is especially relevant when using an LLM that may be generating output that is
+   very similar or even identical to existing code with an incompatible license.
+4. If an AI coding assistant or other LLM tool was used, you must indicate that an AI tool was used, and to what extent it was used.
+
 ## Add an entry to the changelog
 
 If your contribution changes the behavior of `fd` (as opposed to a typo-fix
