@@ -1,5 +1,8 @@
 # Unreleased
 
+## Features
+- Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
+
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 
