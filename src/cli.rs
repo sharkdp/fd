@@ -110,6 +110,10 @@ pub struct Opts {
     )]
     pub no_ignore_parent: bool,
 
+    /// Overrides --no-ignore-parent
+    #[arg(long, overrides_with = "no_ignore_parent", hide = true, action = ArgAction::SetTrue)]
+    ignore_parent: (),
+
     /// Do not respect the global ignore file
     #[arg(long, hide = true)]
     pub no_global_ignore_file: bool,
