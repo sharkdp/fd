@@ -1256,6 +1256,24 @@ fn test_normalized_absolute_path() {
     );
 }
 
+/// Full path matching should normalize relative search paths as well.
+#[test]
+fn test_full_path_normalizes_relative_search_path() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &[
+            "--full-path",
+            "-t",
+            "f",
+            &format!("{abs_path}/one/b.foo"),
+            "..",
+        ],
+        "../b.foo",
+    );
+}
+
 /// File type filter (--type)
 #[test]
 fn test_type() {

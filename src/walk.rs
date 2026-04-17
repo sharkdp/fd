@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Component, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
+use normpath::PathExt;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -674,7 +675,18 @@ fn search_str_for_entry<'a>(
             return Cow::Borrowed(entry_path.as_os_str());
         }
         let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
-        Cow::Owned(cwd.join(path).into())
+        let absolute_path = cwd.join(path);
+        if path
+            .components()
+            .any(|component| matches!(component, Component::CurDir | Component::ParentDir))
+        {
+            match absolute_path.normalize() {
+                Ok(normalized_path) => Cow::Owned(normalized_path.into()),
+                Err(_) => Cow::Owned(absolute_path.into()),
+            }
+        } else {
+            Cow::Owned(absolute_path.into())
+        }
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
