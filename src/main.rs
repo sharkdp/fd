@@ -147,22 +147,28 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
 
 /// Detect if the user accidentally supplied a path instead of a search pattern.
 ///
-/// A pattern containing a path-separation character will never match because
-/// the regex engine sees the separator literally and fd's search is file-name
-/// based (not full-path based). Fire the helpful error whenever the pattern
-/// contains a separator, regardless of whether it also happens to match an
-/// existing directory on disk. See https://github.com/sharkdp/fd/issues/1873.
+/// A pattern containing '/' will never match because the regex engine sees
+/// the separator literally and fd's search is file-name based (not full-path
+/// based). Fire the helpful error whenever the pattern contains '/',
+/// regardless of whether it also happens to match an existing directory on
+/// disk. See https://github.com/sharkdp/fd/issues/1873.
+///
+/// We intentionally only flag '/' (not the platform MAIN_SEPARATOR): on
+/// Windows '\\' is both a path separator and a regex escape character, so
+/// perfectly valid regex patterns such as "\\Ac" or "\\d+" must not trigger
+/// this error. '/' is always a path separator (including on Windows) and has
+/// no meaning in a regex, so flagging only '/' gives the useful diagnostic
+/// without false positives against Windows-typed regex patterns.
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path && opts.pattern.contains(std::path::MAIN_SEPARATOR) {
+    if !opts.full_path && opts.pattern.contains('/') {
         Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+            "The search pattern '{pattern}' contains a path-separation character ('/') \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
              Instead, if you want your pattern to match the full file path, use:\n\n  \
              fd --full-path '{pattern}'",
             pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
         ))
     } else {
         Ok(())
