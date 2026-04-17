@@ -59,7 +59,19 @@ gzip -n --best "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
 
 # Create symlinks so fdfind can be used as well:
 ln -s "/usr/bin/fd" "${DPKG_DIR}/usr/bin/fdfind"
-ln -s  './fd.bash' "${DPKG_DIR}/usr/share/bash-completion/completions/fdfind"
+# bash completion binds handlers to command names via `complete -F _fd fd`,
+# so a bare symlink to fd.bash does nothing for the `fdfind` alias. Install
+# a separate file that sources fd.bash and registers the handler under the
+# fdfind name as well. See https://github.com/sharkdp/fd/issues/1888.
+cat > "${DPKG_DIR}/usr/share/bash-completion/completions/fdfind" <<'FDFIND_BASH'
+# Reuse the fd bash completion for the `fdfind` alias shipped on Debian/Ubuntu.
+if [ -r /usr/share/bash-completion/completions/fd ]; then
+    . /usr/share/bash-completion/completions/fd
+    complete -F _fd fdfind
+fi
+FDFIND_BASH
+# Fish and zsh look up completion files by command name, so the symlink
+# approach works for them.
 ln -s  './fd.fish' "${DPKG_DIR}/usr/share/fish/vendor_completions.d/fdfind.fish"
 ln -s  './_fd' "${DPKG_DIR}/usr/share/zsh/vendor-completions/_fdfind"
 
