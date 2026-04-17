@@ -145,12 +145,15 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     Ok(())
 }
 
-/// Detect if the user accidentally supplied a path instead of a search pattern
+/// Detect if the user accidentally supplied a path instead of a search pattern.
+///
+/// A pattern containing a path-separation character will never match because
+/// the regex engine sees the separator literally and fd's search is file-name
+/// based (not full-path based). Fire the helpful error whenever the pattern
+/// contains a separator, regardless of whether it also happens to match an
+/// existing directory on disk. See https://github.com/sharkdp/fd/issues/1873.
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
-    {
+    if !opts.full_path && opts.pattern.contains(std::path::MAIN_SEPARATOR) {
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
              and will not lead to any search results.\n\n\
