@@ -5,6 +5,7 @@
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+- Normalize `--full-path` matches for parent search paths so `..` roots do not change the result set, see #1513 (@lawrence3699).
 
 # 10.4.2
 

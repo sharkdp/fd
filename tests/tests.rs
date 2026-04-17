@@ -602,6 +602,34 @@ fn test_full_path() {
     );
 }
 
+#[test]
+fn test_full_path_normalizes_parent_components() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let prefix = escape(&abs_path);
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--full-path", &format!("^{prefix}/one/b\\.foo$"), ".."],
+        "../b.foo",
+    );
+}
+
+#[test]
+fn test_full_path_parent_components_do_not_overmatch() {
+    let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    let prefix = escape(&abs_path);
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &[
+            "--full-path",
+            &format!("^{prefix}/one/.*/.*/b\\.foo$"),
+            "..",
+        ],
+        "",
+    );
+}
+
 /// Hidden files (--hidden)
 #[test]
 fn test_hidden() {

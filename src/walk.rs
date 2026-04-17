@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
+use normpath::PathExt;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -674,7 +675,17 @@ fn search_str_for_entry<'a>(
             return Cow::Borrowed(entry_path.as_os_str());
         }
         let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
-        Cow::Owned(cwd.join(path).into())
+        let joined = cwd.join(path);
+        // Keep --full-path matching stable even when the search root contains
+        // redundant components such as `.` or `..`.
+        match joined.normalize() {
+            Ok(normalized) => {
+                let normalized = filesystem::absolute_path(normalized.as_path())
+                    .unwrap_or_else(|_| normalized.into_path_buf());
+                Cow::Owned(normalized.into_os_string())
+            }
+            Err(_) => Cow::Owned(joined.into_os_string()),
+        }
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
