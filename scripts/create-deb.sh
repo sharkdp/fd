@@ -59,7 +59,7 @@ gzip -n --best "${DPKG_DIR}/usr/share/doc/${DPKG_BASENAME}/changelog"
 
 # Create symlinks so fdfind can be used as well:
 ln -s "/usr/bin/fd" "${DPKG_DIR}/usr/bin/fdfind"
-ln -s  './fd.bash' "${DPKG_DIR}/usr/share/bash-completion/completions/fdfind"
+ln -s  './fd' "${DPKG_DIR}/usr/share/bash-completion/completions/fdfind"
 ln -s  './fd.fish' "${DPKG_DIR}/usr/share/fish/vendor_completions.d/fdfind.fish"
 ln -s  './_fd' "${DPKG_DIR}/usr/share/zsh/vendor-completions/_fdfind"
 

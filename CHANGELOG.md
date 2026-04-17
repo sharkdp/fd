@@ -5,6 +5,7 @@
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+- Fix the `fdfind` bash completion symlink in Debian packages, see #1888 (@lawrence3699).
 
 # 10.4.2
 
