@@ -63,9 +63,6 @@ impl CommandSet {
                     if cmd.number_of_tokens() > 1 {
                         bail!("Only one placeholder allowed for batch commands");
                     }
-                    if cmd.args[0].has_tokens() {
-                        bail!("First argument of exec-batch is expected to be a fixed executable");
-                    }
                     Ok(cmd)
                 })
                 .collect::<Result<Vec<_>>>()?,
@@ -178,7 +175,7 @@ impl CommandBuilder {
             self.finish()?;
         }
 
-        let arg = self.path_arg.generate(path, separator);
+        let arg = self.path_arg.generate_for_exec(path, separator);
         if !self
             .cmd
             .args_would_fit(iter::once(&arg).chain(&self.post_args))
@@ -245,6 +242,12 @@ impl CommandTemplate {
             bail!("No executable provided for --exec or --exec-batch");
         }
 
+        // The first argument is the command to execute and must be a fixed string;
+        // allowing a placeholder here would turn every matched file into an execve target.
+        if args[0].has_tokens() {
+            bail!("First argument of --exec/--exec-batch must be a fixed executable, not a placeholder");
+        }
+
         // If a placeholder token was not supplied, append one at the end of the command.
         if !has_placeholder {
             args.push(FormatTemplate::Tokens(vec![Token::Placeholder]));
@@ -262,9 +265,9 @@ impl CommandTemplate {
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build.
     fn generate(&self, input: &Path, path_separator: Option<&str>) -> io::Result<Command> {
-        let mut cmd = Command::new(self.args[0].generate(input, path_separator));
+        let mut cmd = Command::new(self.args[0].generate_for_exec(input, path_separator));
         for arg in &self.args[1..] {
-            cmd.try_arg(arg.generate(input, path_separator))?;
+            cmd.try_arg(arg.generate_for_exec(input, path_separator))?;
         }
         Ok(cmd)
     }
@@ -374,8 +377,8 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces_and_placeholder() {
-        let template = CommandTemplate::new(vec!["{{{},end}"]).unwrap();
-        assert_eq!(generate_str(&template, "foo"), vec!["{foo,end}"]);
+        let template = CommandTemplate::new(vec!["echo", "{{{},end}"]).unwrap();
+        assert_eq!(generate_str(&template, "foo"), vec!["echo", "{foo,end}"]);
     }
 
     #[test]
@@ -427,6 +430,13 @@ mod tests {
     #[test]
     fn command_set_no_args() {
         assert!(CommandSet::new(vec![vec!["echo"], vec![]]).is_err());
+    }
+
+    #[test]
+    fn placeholder_as_executable_rejected() {
+        assert!(CommandSet::new(vec![vec!["{}"]]).is_err());
+        assert!(CommandSet::new(vec![vec!["{/}", "arg"]]).is_err());
+        assert!(CommandSet::new_batch(vec![vec!["{}"]]).is_err());
     }
 
     #[test]

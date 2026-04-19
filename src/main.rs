@@ -11,6 +11,7 @@ mod fmt;
 mod hyperlink;
 mod output;
 mod regex_helper;
+mod sanitize;
 mod walk;
 
 use std::env;
@@ -65,7 +66,13 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            eprintln!("[fd error]: {err:#}");
+            // Gap fix: anyhow errors bubbled from run() may embed user paths/args.
+            let formatted = format!("{err:#}");
+            if std::io::stderr().is_terminal() {
+                eprintln!("[fd error]: {}", sanitize::sanitize_for_terminal(&formatted));
+            } else {
+                eprintln!("[fd error]: {formatted}");
+            }
             ExitCode::GeneralError.exit();
         }
     }
