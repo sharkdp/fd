@@ -2023,6 +2023,49 @@ fn test_exec_batch_with_limit() {
     );
 }
 
+fn shuffle_files(files: &[&'static str], seed: u64) -> Vec<&'static str> {
+    use rand::SeedableRng as _;
+    use rand::seq::SliceRandom as _;
+    let mut files = files.to_vec();
+    files.shuffle(&mut rand::rngs::StdRng::seed_from_u64(seed));
+
+    files
+}
+
+#[test]
+fn test_sort_by_path() {
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42));
+
+    // --sort=path should produce deterministic alphabetical output
+    te.assert_output(
+        &["--sort=path", "foo"],
+        "a.foo
+        one/b.foo
+        one/two/C.Foo2
+        one/two/c.foo
+        one/two/three/d.foo
+        one/two/three/directory_foo/",
+    );
+}
+
+/// Shell script execution with --sort (--exec)
+#[cfg(not(windows))]
+#[test]
+fn test_sort_by_path_with_exec() {
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42));
+
+    // --exec with --sort should produce output in sorted order
+    te.assert_output(
+        &["foo", "--sort=path", "--exec", "echo", "File: {}"],
+        "File: ./a.foo
+        File: ./one/b.foo
+        File: ./one/two/C.Foo2
+        File: ./one/two/c.foo
+        File: ./one/two/three/d.foo
+        File: ./one/two/three/directory_foo",
+    );
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
