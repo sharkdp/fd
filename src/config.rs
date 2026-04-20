@@ -7,7 +7,7 @@ use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, TimeFilter};
+use crate::filter::{SizeFilter, SortKey, TimeFilter};
 use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
@@ -133,6 +133,9 @@ pub struct Config {
 
     /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
     pub ignore_contain: Vec<String>,
+
+    /// The key to sort results by
+    pub sort_key: Option<SortKey>,
 }
 
 impl Config {
