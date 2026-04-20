@@ -444,22 +444,10 @@ you can use `export -f my_function` to make available to child processes. You wo
 need to call `fd -x bash -c 'my_function "$1"' bash`. For other use cases or shells, use
 a (temporary) shell script.
 
-### Placeholders (`{}`, `{/}`, `{//}`, `{.}`, `{/.}`) in PowerShell
+### Placeholders in `-x`/`-X`
 
-In PowerShell (both Windows PowerShell and PowerShell 7+), curly braces `{}` are reserved
-for script blocks. Passing them unquoted to `fd -x`/`fd -X` will cause PowerShell to
-interpret them before `fd` sees them, breaking the placeholder. Wrap any placeholder in
-single quotes (or escape the braces with backticks):
-
-``` powershell
-# Won't work — PowerShell parses `{/}` as a script block:
-fd -e txt -x echo {/}
-
-# Works — single quotes pass `{/}` through to fd untouched:
-fd -e txt -x echo '{/}'
-```
-
-The same rule applies to `{}`, `{//}`, `{.}`, and `{/.}`.
+Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{//}`,
+`{.}`, `{/.}`) to prevent the shell from interpreting them before `fd` sees them.
 
 ## Integration with other programs
 

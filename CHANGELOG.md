@@ -6,9 +6,6 @@
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 
-## Documentation
-- Document PowerShell placeholder quoting requirement in the troubleshooting section, see #735 (@YoshKoz)
-
 # 10.4.2
 
 ## Bugfixes
