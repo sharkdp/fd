@@ -21,6 +21,7 @@ use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
+use crate::filter::SortKey;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
@@ -411,7 +412,18 @@ impl WorkerState {
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
             if cmd.in_batch_mode() {
-                exec::batch(rx.into_iter().flatten(), cmd, config)
+                let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
+                if let Some(sort_key) = config.sort_key {
+                    sort_worker_results(&mut results, sort_key);
+                }
+                exec::batch(results.into_iter(), cmd, config)
+            } else if let Some(sort_key) = config.sort_key {
+                // With --sort, we must collect all results before dispatching,
+                // and run sequentially so the order is preserved.
+
+                let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
+                sort_worker_results(&mut results, sort_key);
+                return exec::job(results.into_iter(), cmd, config);
             } else {
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
@@ -661,6 +673,35 @@ impl WorkerState {
             Ok(exit_code)
         }
     }
+}
+
+fn sort_worker_results(results: &mut Vec<WorkerResult>, sort_key: SortKey) {
+    results.sort_by(|a, b| {
+        // Errors sort to the end; two errors are considered equal
+        let (WorkerResult::Entry(a), WorkerResult::Entry(b)) = (a, b) else {
+            return match (a, b) {
+                (WorkerResult::Error(_), WorkerResult::Entry(_)) => std::cmp::Ordering::Greater,
+                (WorkerResult::Entry(_), WorkerResult::Error(_)) => std::cmp::Ordering::Less,
+                _ => std::cmp::Ordering::Equal,
+            };
+        };
+
+        match sort_key {
+            SortKey::Path => a.path().cmp(b.path()),
+            SortKey::Size => {
+                let size = |e: &DirEntry| e.metadata().map(|m| m.len()).unwrap_or(0);
+                size(a).cmp(&size(b))
+            }
+            SortKey::Created => {
+                let time = |e: &DirEntry| e.metadata().and_then(|m| m.created().ok());
+                time(a).cmp(&time(b))
+            }
+            SortKey::Modified => {
+                let time = |e: &DirEntry| e.metadata().and_then(|m| m.modified().ok());
+                time(a).cmp(&time(b))
+            }
+        }
+    });
 }
 
 fn search_str_for_entry<'a>(
