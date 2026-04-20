@@ -5,6 +5,7 @@
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+- Report path-separator patterns consistently on Unix even when the pattern is not an existing directory, see #1873 (@cl2t).
 
 # 10.4.2
 
