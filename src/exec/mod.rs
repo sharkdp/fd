@@ -175,7 +175,7 @@ impl CommandBuilder {
             self.finish()?;
         }
 
-        let arg = self.path_arg.generate_for_exec(path, separator);
+        let arg = self.path_arg.generate(path, separator);
         if !self
             .cmd
             .args_would_fit(iter::once(&arg).chain(&self.post_args))
@@ -242,8 +242,6 @@ impl CommandTemplate {
             bail!("No executable provided for --exec or --exec-batch");
         }
 
-        // The first argument is the command to execute and must be a fixed string;
-        // allowing a placeholder here would turn every matched file into an execve target.
         if args[0].has_tokens() {
             bail!("First argument of --exec/--exec-batch must be a fixed executable, not a placeholder");
         }
@@ -265,9 +263,9 @@ impl CommandTemplate {
     /// Using the internal `args` field, and a supplied `input` variable, a `Command` will be
     /// build.
     fn generate(&self, input: &Path, path_separator: Option<&str>) -> io::Result<Command> {
-        let mut cmd = Command::new(self.args[0].generate_for_exec(input, path_separator));
+        let mut cmd = Command::new(self.args[0].generate(input, path_separator));
         for arg in &self.args[1..] {
-            cmd.try_arg(arg.generate_for_exec(input, path_separator))?;
+            cmd.try_arg(arg.generate(input, path_separator))?;
         }
         Ok(cmd)
     }

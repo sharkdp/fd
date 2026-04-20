@@ -24,19 +24,6 @@ pub enum Token {
     Text(String),
 }
 
-impl Token {
-    fn is_path_derived(&self) -> bool {
-        matches!(
-            self,
-            Token::Placeholder
-                | Token::Basename
-                | Token::Parent
-                | Token::NoExt
-                | Token::BasenameNoExt
-        )
-    }
-}
-
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match *self {
@@ -123,26 +110,8 @@ impl FormatTemplate {
     /// the path separator in all placeholder tokens. Fixed text and tokens are not affected by
     /// path separator substitution.
     pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
-        self.generate_impl(path.as_ref(), path_separator, false)
-    }
-
-    /// Like `generate`, but prepends `./` when a path-derived token produces a leading `-`,
-    /// so the target of `--exec` does not see it as an option.
-    pub fn generate_for_exec(
-        &self,
-        path: impl AsRef<Path>,
-        path_separator: Option<&str>,
-    ) -> OsString {
-        self.generate_impl(path.as_ref(), path_separator, true)
-    }
-
-    fn generate_impl(
-        &self,
-        path: &Path,
-        path_separator: Option<&str>,
-        protect_leading_dash: bool,
-    ) -> OsString {
         use Token::*;
+        let path = path.as_ref();
 
         match *self {
             Self::Tokens(ref tokens) => {
@@ -165,16 +134,6 @@ impl FormatTemplate {
                         Text(string) => s.push(string),
                     }
                 }
-
-                if protect_leading_dash
-                    && tokens.first().is_some_and(|t| t.is_path_derived())
-                    && s.as_encoded_bytes().first() == Some(&b'-')
-                {
-                    let mut prefixed = OsString::from("./");
-                    prefixed.push(s);
-                    return prefixed;
-                }
-
                 s
             }
             Self::Text(ref text) => OsString::from(text),
@@ -318,87 +277,5 @@ mod fmt_tests {
             noExt=a/folder/file \
             basenameNoExt=file }"
         );
-    }
-
-    fn tmpl(s: &str) -> FormatTemplate {
-        FormatTemplate::parse(s)
-    }
-
-    #[test]
-    fn exec_basename_with_leading_dash_is_guarded() {
-        let out = tmpl("{/}")
-            .generate_for_exec(Path::new("./some/dir/-rf"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "./-rf");
-    }
-
-    #[test]
-    fn exec_basename_no_ext_with_leading_dash_is_guarded() {
-        let out = tmpl("{/.}")
-            .generate_for_exec(Path::new("./some/dir/-evil.txt"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "./-evil");
-    }
-
-    #[test]
-    fn exec_parent_with_leading_dash_is_guarded() {
-        let out = tmpl("{//}")
-            .generate_for_exec(Path::new("-startdir/inner/file.txt"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "./-startdir/inner");
-    }
-
-    #[test]
-    fn exec_plain_placeholder_already_safe() {
-        let out = tmpl("{}")
-            .generate_for_exec(Path::new("./some/dir/-rf"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "./some/dir/-rf");
-    }
-
-    #[test]
-    fn exec_user_literal_dash_prefix_not_rewritten() {
-        let out = tmpl("-{/}")
-            .generate_for_exec(Path::new("./some/dir/normal.txt"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "-normal.txt");
-    }
-
-    #[test]
-    fn exec_user_literal_dash_before_dash_basename() {
-        let out = tmpl("-{/}")
-            .generate_for_exec(Path::new("./some/dir/-name"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "--name");
-    }
-
-    #[test]
-    fn exec_suffix_after_placeholder_preserves_guard() {
-        let out = tmpl("{/}.bak")
-            .generate_for_exec(Path::new("./some/dir/-foo"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "./-foo.bak");
-    }
-
-    #[test]
-    fn format_mode_does_not_protect_leading_dash() {
-        let out = tmpl("{/}")
-            .generate(Path::new("./some/dir/-rf"), None)
-            .into_string()
-            .unwrap();
-        assert_eq!(out, "-rf");
-    }
-
-    #[test]
-    fn exec_empty_result_not_prefixed() {
-        let out = tmpl("{/}").generate_for_exec(Path::new(""), None);
-        assert!(out.is_empty());
     }
 }

@@ -66,13 +66,7 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            // Gap fix: anyhow errors bubbled from run() may embed user paths/args.
-            let formatted = format!("{err:#}");
-            if std::io::stderr().is_terminal() {
-                eprintln!("[fd error]: {}", sanitize::sanitize_for_terminal(&formatted));
-            } else {
-                eprintln!("[fd error]: {formatted}");
-            }
+            crate::error::print_error(format!("{err:#}"));
             ExitCode::GeneralError.exit();
         }
     }
