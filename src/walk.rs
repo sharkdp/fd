@@ -416,14 +416,14 @@ impl WorkerState {
                 if let Some(sort_key) = config.sort_key {
                     sort_worker_results(&mut results, sort_key);
                 }
-                exec::batch(results.into_iter(), cmd, config)
+                exec::batch(results, cmd, config)
             } else if let Some(sort_key) = config.sort_key {
                 // With --sort, we must collect all results before dispatching,
                 // and run sequentially so the order is preserved.
 
                 let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
                 sort_worker_results(&mut results, sort_key);
-                return exec::job(results.into_iter(), cmd, config);
+                exec::job(results, cmd, config)
             } else {
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
@@ -675,7 +675,7 @@ impl WorkerState {
     }
 }
 
-fn sort_worker_results(results: &mut Vec<WorkerResult>, sort_key: SortKey) {
+fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
     results.sort_by(|a, b| {
         // Errors sort to the end; two errors are considered equal
         let (WorkerResult::Entry(a), WorkerResult::Entry(b)) = (a, b) else {
