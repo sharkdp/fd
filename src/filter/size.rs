@@ -56,7 +56,7 @@ impl SizeFilter {
             _ => return None,
         };
 
-        let size = quantity * multiplier;
+        let size = quantity.checked_mul(multiplier)?;
         match limit_kind {
             "+" => Some(SizeFilter::Min(size)),
             "-" => Some(SizeFilter::Max(size)),
@@ -191,6 +191,8 @@ mod tests {
         ensure_invalid_unit_returns_none_3: "+1Mv",
         ensure_bib_format_returns_none: "+1bib",
         ensure_bb_format_returns_none: "+1bb",
+        ensure_overflow_returns_none_tib: "+17000000Ti",
+        ensure_overflow_returns_none_tb: "+20000000T",
     }
 
     #[test]
