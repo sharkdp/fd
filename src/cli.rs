@@ -16,7 +16,7 @@ use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::SizeFilter;
+use crate::filter::{SizeFilter, SortKey};
 
 #[derive(Parser)]
 #[command(
@@ -548,6 +548,20 @@ pub struct Opts {
     /// results to the console.
     #[arg(long, hide = true, value_parser = parse_millis)]
     pub max_buffer_time: Option<Duration>,
+
+    /// Sort search results by the given key before printing or executing commands.
+    ///
+    /// Note: this buffers all results in memory before outputting.
+    #[arg(
+        long,
+        value_name = "key",
+        value_enum,
+        hide_short_help = true,
+        help = "Sort results by: path, size, created, or modified",
+        long_help,
+        conflicts_with("list_details")
+    )]
+    pub sort: Option<SortKey>,
 
     ///Limit the number of search results to 'count' and quit immediately.
     #[arg(
