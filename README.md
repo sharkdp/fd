@@ -444,6 +444,11 @@ you can use `export -f my_function` to make available to child processes. You wo
 need to call `fd -x bash -c 'my_function "$1"' bash`. For other use cases or shells, use
 a (temporary) shell script.
 
+### Placeholders in `-x`/`-X`
+
+Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{//}`,
+`{.}`, `{/.}`) to prevent the shell from interpreting them before `fd` sees them.
+
 ## Integration with other programs
 
 ### Using fd with `fzf`
