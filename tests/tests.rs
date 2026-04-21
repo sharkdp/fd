@@ -403,7 +403,11 @@ fn test_pattern_with_forward_slash_is_rejected() {
 fn test_pattern_with_forward_slash_allowed_with_full_path() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    te.assert_output(&["--full-path", "one/two/c"], "one/two/c.foo");
+    te.assert_output(
+        &["--full-path", "one/two/c"],
+        "one/two/c.foo
+        one/two/C.Foo2",
+    );
 }
 
 /// Explicit root path
