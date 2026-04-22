@@ -2034,7 +2034,8 @@ fn shuffle_files(files: &[&'static str], seed: u64) -> Vec<&'static str> {
 
 #[test]
 fn test_sort_by_path() {
-    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42));
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42))
+        .allow_random_result_order(false);
 
     // --sort=path should produce deterministic alphabetical output
     te.assert_output(
@@ -2052,7 +2053,8 @@ fn test_sort_by_path() {
 #[cfg(not(windows))]
 #[test]
 fn test_sort_by_path_with_exec() {
-    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42));
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42))
+        .allow_random_result_order(false);
 
     // --exec with --sort should produce output in sorted order
     te.assert_output(

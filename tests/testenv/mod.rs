@@ -18,8 +18,14 @@ pub struct TestEnv {
     /// Path to the *fd* executable.
     fd_exe: PathBuf,
 
-    /// Normalize each line by sorting the whitespace-separated words
+    /// Normalize each line by sorting the whitespace-separated words.
     normalize_line: bool,
+
+    /// When `true`, the order of lines in the result is allowed to be arbitrary
+    /// (i.e., a sort is performed before comparison).
+    ///
+    /// When `false`, the order of lines in the result is checked (e.g., when testing the `--sort` CLI option).
+    allow_random_result_order: bool,
 
     /// Temporary directory for storing test config (global ignore file)
     config_dir: Option<TempDir>,
@@ -112,7 +118,13 @@ fn format_output_error(args: &[&str], expected: &str, actual: &str) -> String {
 }
 
 /// Normalize the output for comparison.
-fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
+///
+/// Args:
+/// - `s`: The output string to normalize.
+/// - `trim_start`: Whether to trim whitespace from the start of each line.
+/// - `normalize_line`: Whether to sort the whitespace-separated words in each line.
+/// - `sort_lines`: Whether to sort the lines alphabetically.
+fn normalize_output(s: &str, trim_start: bool, normalize_line: bool, sort_lines: bool) -> String {
     // Split into lines and normalize separators.
     let mut lines = s
         .replace('\0', "NULL\n")
@@ -129,7 +141,9 @@ fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
         })
         .collect::<Vec<_>>();
 
-    lines.sort();
+    if sort_lines {
+        lines.sort();
+    }
     lines.join("\n")
 }
 
@@ -153,15 +167,34 @@ impl TestEnv {
             temp_dir,
             fd_exe,
             normalize_line: false,
+            allow_random_result_order: true,
             config_dir: None,
         }
     }
 
+    /// Sets whether output lines should be normalized before comparison.
+    ///
+    /// Normalization sorts whitespace-separated elements in each line to ensure consistent comparison.
     pub fn normalize_line(self, normalize: bool) -> TestEnv {
         TestEnv {
             temp_dir: self.temp_dir,
             fd_exe: self.fd_exe,
             normalize_line: normalize,
+            allow_random_result_order: self.allow_random_result_order,
+            config_dir: self.config_dir,
+        }
+    }
+
+    /// Sets whether test results are allowed to appear in any order.
+    ///
+    /// When `true`, assertions will pass regardless of result ordering,
+    /// useful for tests where output order is non-deterministic.
+    pub fn allow_random_result_order(self, allow_random_result_order: bool) -> TestEnv {
+        TestEnv {
+            temp_dir: self.temp_dir,
+            fd_exe: self.fd_exe,
+            normalize_line: self.normalize_line,
+            allow_random_result_order,
             config_dir: self.config_dir,
         }
     }
@@ -241,10 +274,13 @@ impl TestEnv {
             &String::from_utf8_lossy(&output.stdout),
             false,
             self.normalize_line,
+            self.allow_random_result_order,
         )
     }
 
     /// Assert that calling *fd* with the specified arguments produces the expected output.
+    ///
+    /// Does not compare ordering.
     pub fn assert_output(&self, args: &[&str], expected: &str) {
         self.assert_output_subdirectory(".", args, expected)
     }
@@ -259,6 +295,8 @@ impl TestEnv {
 
     /// Assert that calling *fd* in the specified path under the root working directory,
     /// and with the specified arguments produces the expected output.
+    ///
+    /// Performs normalization to
     pub fn assert_output_subdirectory<P: AsRef<Path>>(
         &self,
         path: P,
@@ -266,7 +304,12 @@ impl TestEnv {
         expected: &str,
     ) {
         // Normalize both expected and actual output.
-        let expected = normalize_output(expected, true, self.normalize_line);
+        let expected = normalize_output(
+            expected,
+            true,
+            self.normalize_line,
+            self.allow_random_result_order,
+        );
         let actual = self.assert_success_and_get_normalized_output(path, args);
 
         // Compare actual output to expected output.
