@@ -689,7 +689,9 @@ impl WorkerState {
     }
 }
 
-fn dir_entry_key_fn(sort_key: SortKey) -> Box<dyn Fn(&DirEntry) -> Option<SortKeyValue>> {
+type SortKeyValueFn = Box<dyn Fn(&DirEntry) -> Option<SortKeyValue>>;
+
+fn dir_entry_key_fn(sort_key: SortKey) -> SortKeyValueFn {
     match sort_key {
         SortKey::Path => Box::new(|e| Some(SortKeyValue::Path(e.path().to_path_buf()))),
         SortKey::Size => Box::new(|e| e.metadata().map(|m| SortKeyValue::Size(m.len()))),

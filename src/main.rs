@@ -277,7 +277,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         threads: opts.threads().get(),
         max_buffer_time: match opts.sort {
             // If sorting is enabled, then set max_buffer_time to practically infinity.
-            Some(_) => Some(Duration::from_hours(24 * 365 * 10)), // 10 years - arbitrarily-large.
+            Some(_) => Some(Duration::from_secs(3600 * 24 * 365 * 10)), // 10 years - arbitrarily-large.
             None => opts.max_buffer_time,
         },
         max_buffer_size: match opts.sort {
