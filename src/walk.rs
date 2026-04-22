@@ -122,7 +122,8 @@ impl BatchSender {
 }
 
 /// Maximum size of the output buffer before flushing results to the console
-const MAX_BUFFER_LENGTH: usize = 1000;
+pub const DEFAULT_MAX_BUFFER_LENGTH: usize = 1000;
+
 /// Default duration until output buffering switches to streaming.
 const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 
@@ -165,7 +166,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             stdout,
             mode: ReceiverMode::Buffering,
             deadline,
-            buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
+            buffer: Vec::with_capacity(config.max_buffer_size.min(10_000)),
             num_results: 0,
         }
     }
@@ -208,7 +209,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             match self.mode {
                                 ReceiverMode::Buffering => {
                                     self.buffer.push(dir_entry);
-                                    if self.buffer.len() > MAX_BUFFER_LENGTH {
+                                    if self.buffer.len() > self.config.max_buffer_size {
                                         self.stream()?;
                                     }
                                 }

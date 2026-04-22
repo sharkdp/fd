@@ -34,6 +34,7 @@ use crate::filetypes::FileTypes;
 use crate::filter::OwnerFilter;
 use crate::filter::TimeFilter;
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
+use crate::walk::DEFAULT_MAX_BUFFER_LENGTH;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
@@ -275,9 +276,14 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         prune: opts.prune,
         threads: opts.threads().get(),
         max_buffer_time: match opts.sort {
-            // If sorting is enabled, the set max_buffer_time to practically infinity.
-            Some(_) => Some(Duration::from_secs(u64::MAX / 2)),
+            // If sorting is enabled, then set max_buffer_time to practically infinity.
+            Some(_) => Some(Duration::from_hours(24 * 365 * 10)), // 10 years - arbitrarily-large.
             None => opts.max_buffer_time,
+        },
+        max_buffer_size: match opts.sort {
+            // If sorting is enabled, allow a practically infinite buffer size.
+            Some(_) => usize::MAX,
+            None => DEFAULT_MAX_BUFFER_LENGTH,
         },
         ls_colors,
         hyperlink,

@@ -71,6 +71,9 @@ pub struct Config {
     /// `max_buffer_time`.
     pub max_buffer_time: Option<Duration>,
 
+    /// Maximum size of the output buffer before flushing results to the console.
+    pub max_buffer_size: usize,
+
     /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
     /// how to style different filetypes.
     pub ls_colors: Option<LsColors>,
