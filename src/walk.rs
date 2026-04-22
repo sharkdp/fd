@@ -677,13 +677,13 @@ impl WorkerState {
 fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
     results.sort_by(|a, b| {
         // Errors sort to the end; two errors are considered equal
-        let (WorkerResult::Entry(a), WorkerResult::Entry(b)) = (a, b) else {
-            return match (a, b) {
-                (WorkerResult::Error(_), WorkerResult::Entry(_)) => std::cmp::Ordering::Greater,
-                (WorkerResult::Entry(_), WorkerResult::Error(_)) => std::cmp::Ordering::Less,
-                _ => std::cmp::Ordering::Equal,
-            };
+        let (a, b) = match (a, b) {
+            (WorkerResult::Entry(a), WorkerResult::Entry(b)) => (a, b) 
+            (WorkerResult::Error(_), WorkerResult::Entry(_)) => return std::cmp::Ordering::Greater,
+            (WorkerResult::Entry(_), WorkerResult::Error(_)) => return std::cmp::Ordering::Less,
+            _ => return std::cmp::Ordering::Equal,
         };
+
 
         match sort_key {
             SortKey::Path => a.path().cmp(b.path()),
