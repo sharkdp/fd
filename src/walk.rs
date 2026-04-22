@@ -15,13 +15,12 @@ use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
 use regex::bytes::Regex;
 
-use crate::config::Config;
+use crate::config::{Config, SortKey};
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
-use crate::filter::SortKey;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.

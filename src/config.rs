@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
+use clap::ValueEnum;
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
@@ -7,7 +8,7 @@ use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, SortKey, TimeFilter};
+use crate::filter::{SizeFilter, TimeFilter};
 use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
@@ -143,4 +144,16 @@ impl Config {
     pub fn is_printing(&self) -> bool {
         self.command.is_none()
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum SortKey {
+    /// Sort by path
+    Path,
+    /// Sort by file size
+    Size,
+    /// Sort by creation time
+    Created,
+    /// Sort by modification time
+    Modified,
 }

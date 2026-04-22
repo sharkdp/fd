@@ -11,12 +11,13 @@ use clap::{
 use clap_complete::Shell;
 use normpath::PathExt;
 
+use crate::config::SortKey;
 use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, SortKey};
+use crate::filter::SizeFilter;
 
 #[derive(Parser)]
 #[command(
