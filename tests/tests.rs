@@ -2056,7 +2056,7 @@ fn test_sort_by_path_with_exec() {
     let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42))
         .allow_random_result_order(false);
 
-    // --exec with --sort should produce output in sorted order
+    // --exec with --sort should produce output in sorted order.
     te.assert_output(
         &["foo", "--sort=path", "--exec", "echo", "File: {}"],
         "File: ./a.foo

@@ -407,23 +407,23 @@ impl WorkerState {
     /// threads (for --exec).
     fn receive(&self, rx: Receiver<Batch>) -> ExitCode {
         let config = &self.config;
-
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
-            if cmd.in_batch_mode() {
-                let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
-                if let Some(sort_key) = config.sort_key {
-                    sort_worker_results(&mut results, sort_key);
-                }
-                exec::batch(results, cmd, config)
-            } else if let Some(sort_key) = config.sort_key {
+            if let Some(sort_key) = config.sort_key {
                 // With --sort, we must collect all results before dispatching,
                 // and run sequentially so the order is preserved.
-
                 let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
                 sort_worker_results(&mut results, sort_key);
-                exec::job(results, cmd, config)
+                if cmd.in_batch_mode() {
+                    exec::batch(results, cmd, config)
+                } else {
+                    exec::job(results, cmd, config)
+                }
+            } else if cmd.in_batch_mode() {
+                // Batch mode without sorting.
+                exec::batch(rx.into_iter().flatten(), cmd, config)
             } else {
+                // No sort. Not Batch mode. Dispatch jobs across a thread pool as results stream in.
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
                     let threads = config.threads;
