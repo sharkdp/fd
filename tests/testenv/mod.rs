@@ -68,6 +68,46 @@ fn create_working_directory(
     Ok(temp_dir)
 }
 
+/// Create the working directory and the test files.
+fn create_test_directory_with_sized_files(
+    directories: &[&'static str],
+    files: &[(&'static str, usize)],
+) -> Result<TempDir, io::Error> {
+    let temp_dir = tempfile::Builder::new().prefix("fd-tests").tempdir()?;
+
+    {
+        let root = temp_dir.path();
+
+        // Pretend that this is a Git repository in order for `.gitignore` files to be respected
+        fs::create_dir_all(root.join(".git"))?;
+
+        for directory in directories {
+            fs::create_dir_all(root.join(directory))?;
+        }
+
+        for (file, size) in files {
+            let fp = fs::File::create(root.join(file))?;
+
+            // Create a file with the specified size.
+            fp.set_len(*size as u64)?;
+        }
+
+        #[cfg(unix)]
+        unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
+
+        // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
+        // is by default only granted for administrators.
+        #[cfg(windows)]
+        windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+
+        fs::File::create(root.join(".fdignore"))?.write_all(b"fdignored.foo")?;
+
+        fs::File::create(root.join(".gitignore"))?.write_all(b"gitignored.foo")?;
+    }
+
+    Ok(temp_dir)
+}
+
 fn create_config_directory_with_global_ignore(ignore_file_content: &str) -> io::Result<TempDir> {
     let config_dir = tempfile::Builder::new().prefix("fd-config").tempdir()?;
     let fd_dir = config_dir.path().join("fd");
@@ -159,8 +199,26 @@ fn trim_lines(s: &str) -> String {
 }
 
 impl TestEnv {
+    /// Create a test environment with a temporary folder, empty files, directories, and symlinks.
     pub fn new(directories: &[&'static str], files: &[&'static str]) -> TestEnv {
         let temp_dir = create_working_directory(directories, files).expect("working directory");
+        let fd_exe = find_fd_exe();
+
+        TestEnv {
+            temp_dir,
+            fd_exe,
+            normalize_line: false,
+            allow_random_result_order: true,
+            config_dir: None,
+        }
+    }
+
+    pub fn new_with_sized_files(
+        directories: &[&'static str],
+        files: &[(&'static str, usize)],
+    ) -> TestEnv {
+        let temp_dir =
+            create_test_directory_with_sized_files(directories, files).expect("working directory");
         let fd_exe = find_fd_exe();
 
         TestEnv {
