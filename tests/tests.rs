@@ -2116,6 +2116,21 @@ fn test_sort_by_size_with_exec() {
     );
 }
 
+/// Shell script execution with --sort (--exec-batch)
+#[cfg(not(windows))]
+#[test]
+fn test_sort_by_size_with_exec_batch() {
+    let te = TestEnv::new_with_sized_files(DEFAULT_DIRS, DEFAULT_FILES_WITH_SIZES)
+        .normalize_line(false) // Assert order exactly as input.
+        .allow_random_result_order(false);
+
+    // --exec-batch with --sort should maintain the sorted order in its arguments.
+    te.assert_output(
+        &["foo", "--sort=size", "--exec-batch", "echo"],
+        "./one/two/three/directory_foo ./one/two/c.foo ./one/two/three/d.foo ./a.foo ./one/two/C.Foo2 ./one/b.foo",
+    );
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
