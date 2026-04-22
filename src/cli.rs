@@ -550,9 +550,12 @@ pub struct Opts {
     #[arg(long, hide = true, value_parser = parse_millis, conflicts_with("sort"))]
     pub max_buffer_time: Option<Duration>,
 
-    /// Sort search results by the given key before printing or executing commands.
+    /// Sort search results by the given key before printing or executing commands via `--exec`/`--exec-batch`.
     ///
-    /// Note: this buffers all results in memory before outputting.
+    /// This option results in slower execution as parallel execution is effectively disabled.
+    ///
+    /// Warning: This option significantly increases memory usage.
+    /// All results are buffered in memory before outputting.
     #[arg(
         long,
         value_name = "key",
