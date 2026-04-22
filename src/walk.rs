@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
@@ -675,37 +675,45 @@ impl WorkerState {
 }
 
 fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
-    results.sort_by(|a, b| {
-        // Errors sort to the end; two errors are considered equal.
-        let (a, b) = match (a, b) {
-            (WorkerResult::Entry(a), WorkerResult::Entry(b)) => (a, b),
-            (WorkerResult::Error(_), WorkerResult::Entry(_)) => {
-                return std::cmp::Ordering::Greater;
-            }
-            (WorkerResult::Entry(_), WorkerResult::Error(_)) => {
-                return std::cmp::Ordering::Less;
-            }
-            (WorkerResult::Error(_), WorkerResult::Error(_)) => {
-                return std::cmp::Ordering::Equal;
-            }
-        };
+    // Build the key extractor once, based on sort_key.
+    // Returns None for errors, pushing them to the end naturally via Ord on Option.
+    let key_fn: Box<dyn Fn(&WorkerResult) -> Option<SortKeyValue>> = match sort_key {
+        SortKey::Path => Box::new(|r| match r {
+            WorkerResult::Entry(e) => Some(SortKeyValue::Path(e.path().to_path_buf())),
+            WorkerResult::Error(_) => None,
+        }),
+        SortKey::Size => Box::new(|r| match r {
+            WorkerResult::Entry(e) => Some(SortKeyValue::Size(
+                e.metadata().map(|m| m.len()).unwrap_or(0),
+            )),
+            WorkerResult::Error(_) => None,
+        }),
+        SortKey::Created => Box::new(|r| match r {
+            WorkerResult::Entry(e) => Some(SortKeyValue::Time(
+                e.metadata().and_then(|m| m.created().ok()),
+            )),
+            WorkerResult::Error(_) => None,
+        }),
+        SortKey::Modified => Box::new(|r| match r {
+            WorkerResult::Entry(e) => Some(SortKeyValue::Time(
+                e.metadata().and_then(|m| m.modified().ok()),
+            )),
+            WorkerResult::Error(_) => None,
+        }),
+    };
 
-        match sort_key {
-            SortKey::Path => a.path().cmp(b.path()),
-            SortKey::Size => {
-                let size = |e: &DirEntry| e.metadata().map(|m| m.len()).unwrap_or(0);
-                size(a).cmp(&size(b))
-            }
-            SortKey::Created => {
-                let time = |e: &DirEntry| e.metadata().and_then(|m| m.created().ok());
-                time(a).cmp(&time(b))
-            }
-            SortKey::Modified => {
-                let time = |e: &DirEntry| e.metadata().and_then(|m| m.modified().ok());
-                time(a).cmp(&time(b))
-            }
-        }
-    });
+    // Use sort_by_cached_key to avoid recomputing the key for each comparison.
+    results.sort_by_cached_key(|r| key_fn(r));
+}
+
+/// Comparable key values, one variant per SortKey.
+/// None sorts last via Option<T: Ord>'s natural ordering (None > Some).
+/// Only like enum variants will be compared (e.g., Path < Size will never be compared).
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+enum SortKeyValue {
+    Path(PathBuf),
+    Size(u64),
+    Time(Option<SystemTime>),
 }
 
 fn search_str_for_entry<'a>(
