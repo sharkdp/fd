@@ -547,7 +547,7 @@ pub struct Opts {
     ///
     /// Amount of time in milliseconds to buffer, before streaming the search
     /// results to the console.
-    #[arg(long, hide = true, value_parser = parse_millis)]
+    #[arg(long, hide = true, value_parser = parse_millis, conflicts_with("sort"))]
     pub max_buffer_time: Option<Duration>,
 
     /// Sort search results by the given key before printing or executing commands.
@@ -560,7 +560,7 @@ pub struct Opts {
         hide_short_help = true,
         help = "Sort results by: path, size, created, or modified",
         long_help,
-        conflicts_with("list_details")
+        conflicts_with_all(&["list_details", "max_buffer_time"])
     )]
     pub sort: Option<SortKey>,
 

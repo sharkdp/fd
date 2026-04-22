@@ -17,6 +17,7 @@ use std::env;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{CommandFactory, Parser};
@@ -273,7 +274,11 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         min_depth: opts.min_depth(),
         prune: opts.prune,
         threads: opts.threads().get(),
-        max_buffer_time: opts.max_buffer_time,
+        max_buffer_time: match opts.sort {
+            // If sorting is enabled, the set max_buffer_time to practically infinity.
+            Some(_) => Some(Duration::from_secs(u64::MAX / 2)),
+            None => opts.max_buffer_time,
+        },
         ls_colors,
         hyperlink,
         interactive_terminal,

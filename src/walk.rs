@@ -24,7 +24,7 @@ use crate::filesystem;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum ReceiverMode {
     /// Receiver is still buffering in order to sort the results, if the search finishes fast
     /// enough.
@@ -241,6 +241,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                 self.stream()?;
             }
             Err(RecvTimeoutError::Disconnected) => {
+                // Note: This branch is called when all the results are walked/exhausted.
                 return self.stop();
             }
         }
@@ -280,9 +281,22 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Stop looping.
     fn stop(&mut self) -> Result<(), ExitCode> {
-        if self.mode == ReceiverMode::Buffering {
-            self.buffer.sort();
-            self.stream()?;
+        match (self.mode, self.config.sort_key) {
+            (ReceiverMode::Buffering, None) => {
+                self.buffer.sort();
+                self.stream()?;
+            }
+            (ReceiverMode::Buffering, Some(sort_key)) => {
+                sort_dir_entry_results(&mut self.buffer, sort_key);
+                self.stream()?;
+            }
+            (ReceiverMode::Streaming, None) => {}
+            (ReceiverMode::Streaming, Some(_)) => {
+                // We force Buffering mode in Config construction if --sort is set by setting the timeout to almost infinity.
+                unreachable!(
+                    "--sort cannot work in Streaming mode. Buffering mode is forced in Config construction."
+                );
+            }
         }
 
         if self.config.quiet {
@@ -674,36 +688,30 @@ impl WorkerState {
     }
 }
 
-fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
-    // Build the key extractor once, based on sort_key.
-    // Returns None for errors, pushing them to the end naturally via Ord on Option.
-    let key_fn: Box<dyn Fn(&WorkerResult) -> Option<SortKeyValue>> = match sort_key {
-        SortKey::Path => Box::new(|r| match r {
-            WorkerResult::Entry(e) => Some(SortKeyValue::Path(e.path().to_path_buf())),
-            WorkerResult::Error(_) => None,
-        }),
-        SortKey::Size => Box::new(|r| match r {
-            WorkerResult::Entry(e) => Some(SortKeyValue::Size(
-                e.metadata().map(|m| m.len()).unwrap_or(0),
-            )),
-            WorkerResult::Error(_) => None,
-        }),
-        SortKey::Created => Box::new(|r| match r {
-            WorkerResult::Entry(e) => Some(SortKeyValue::Time(
-                e.metadata().and_then(|m| m.created().ok()),
-            )),
-            WorkerResult::Error(_) => None,
-        }),
-        SortKey::Modified => Box::new(|r| match r {
-            WorkerResult::Entry(e) => Some(SortKeyValue::Time(
-                e.metadata().and_then(|m| m.modified().ok()),
-            )),
-            WorkerResult::Error(_) => None,
-        }),
-    };
+fn dir_entry_key_fn(sort_key: SortKey) -> Box<dyn Fn(&DirEntry) -> Option<SortKeyValue>> {
+    match sort_key {
+        SortKey::Path => Box::new(|e| Some(SortKeyValue::Path(e.path().to_path_buf()))),
+        SortKey::Size => Box::new(|e| e.metadata().map(|m| SortKeyValue::Size(m.len()))),
+        SortKey::Created => {
+            Box::new(|e| e.metadata().map(|m| SortKeyValue::Time(m.created().ok())))
+        }
+        SortKey::Modified => {
+            Box::new(|e| e.metadata().map(|m| SortKeyValue::Time(m.modified().ok())))
+        }
+    }
+}
 
-    // Use sort_by_cached_key to avoid recomputing the key for each comparison.
-    results.sort_by_cached_key(|r| key_fn(r));
+fn sort_dir_entry_results(results: &mut [DirEntry], sort_key: SortKey) {
+    let key_fn = dir_entry_key_fn(sort_key);
+    results.sort_by_cached_key(|e| key_fn(e));
+}
+
+fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
+    let key_fn = dir_entry_key_fn(sort_key);
+    results.sort_by_cached_key(|r| match r {
+        WorkerResult::Entry(e) => key_fn(e),
+        WorkerResult::Error(_) => None,
+    });
 }
 
 /// Comparable key values, one variant per SortKey.
