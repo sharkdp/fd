@@ -173,16 +173,29 @@ pub struct Opts {
 
     /// Treat the pattern as a literal string instead of a regular expression. Note
     /// that this also performs substring comparison. If you want to match on an
-    /// exact filename, consider using '--glob'.
+    /// exact filename, consider using '--glob' or '--exact' instead.
     #[arg(
         long,
         short = 'F',
         alias = "literal",
         hide_short_help = true,
-        help = "Treat pattern as literal string stead of regex",
+        help = "Treat pattern as literal string instead of regex",
         long_help
     )]
     pub fixed_strings: bool,
+
+    /// Perform an exact match. This is equivalent to '--fixed-strings' but requires
+    /// the pattern to match the entire filename (or path if '--full-path' is used),
+    /// rather than a substring. Special regex characters in the pattern are treated
+    /// as literal characters.
+    #[arg(
+        long,
+        conflicts_with("glob"),
+        hide_short_help = true,
+        help = "Match the entire filename exactly (literal, non-substring)",
+        long_help
+    )]
+    pub exact: bool,
 
     /// Add additional required search patterns, all of which must be matched. Multiple
     /// additional patterns can be specified. The patterns are regular

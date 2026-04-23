@@ -170,6 +170,10 @@ fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
+    } else if opts.exact {
+        // Anchor the escaped pattern so the full filename (or path) must match exactly.
+        // Literal. No substring matching.
+        format!("^{}$", regex::escape(pattern))
     } else if opts.fixed_strings {
         // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
