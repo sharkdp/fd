@@ -2135,14 +2135,49 @@ fn test_fixed_strings() {
     // Regex search, parens are treated as group
     te.assert_output(&["download (1)"], "");
 
-    // Literal search, parens are treated as characters
+    // Literal search, parens are treated as characters. Case-insensitive by default.
     te.assert_output(
         &["--fixed-strings", "download (1)"],
         "test2/Download (1).tar.gz",
     );
 
-    // Combine with --case-sensitive
+    // Combine with --case-sensitive (unmatched).
     te.assert_output(&["--fixed-strings", "--case-sensitive", "download (1)"], "");
+
+    // Combine with --case-sensitive (matched).
+    te.assert_output(
+        &["--fixed-strings", "--case-sensitive", "Download (1)"],
+        "test2/Download (1).tar.gz",
+    );
+}
+
+/// Literal search, non-substring (--exact)
+#[test]
+fn test_exact_literal_nonsubstring() {
+    let dirs = &["test1", "test2"];
+    let files = &["test1/a.foo", "test1/a_foo", "test2/Download (1).tar.gz"];
+    let te = TestEnv::new(dirs, files);
+
+    // Literal search, dot is treated as character
+    te.assert_output(&["--exact", "a.foo"], "test1/a.foo");
+
+    // Literal search, parens are treated as characters. Substring should not match.
+    te.assert_output(&["--exact", "download (1)"], "");
+
+    // Literal search, parens are treated as characters. Case-insensitive by default.
+    te.assert_output(
+        &["--exact", "download (1).tar.gz"],
+        "test2/Download (1).tar.gz",
+    );
+
+    // Combine with --case-sensitive, should not match due to case mismatch.
+    te.assert_output(&["--exact", "--case-sensitive", "download (1).tar.gz"], "");
+
+    // Combine with --case-sensitive, exact match should match.
+    te.assert_output(
+        &["--exact", "--case-sensitive", "Download (1).tar.gz"],
+        "test2/Download (1).tar.gz",
+    );
 }
 
 /// Filenames with invalid UTF-8 sequences
