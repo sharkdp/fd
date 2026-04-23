@@ -694,7 +694,7 @@ type SortKeyValueFn = Box<dyn Fn(&DirEntry) -> Option<SortKeyValue>>;
 fn dir_entry_key_fn(sort_key: SortKey) -> SortKeyValueFn {
     match sort_key {
         SortKey::Path => Box::new(|e| Some(SortKeyValue::Path(e.path().to_path_buf()))),
-        SortKey::Size => Box::new(|e| e.metadata().map(|m| SortKeyValue::Size(m.len()))),
+        SortKey::Size => Box::new(|e| filesystem::file_size(e).map(SortKeyValue::Size)),
         SortKey::Created => {
             Box::new(|e| e.metadata().map(|m| SortKeyValue::Time(m.created().ok())))
         }

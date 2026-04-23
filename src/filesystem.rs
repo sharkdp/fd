@@ -59,6 +59,15 @@ pub fn is_empty(entry: &dir_entry::DirEntry) -> bool {
     }
 }
 
+pub fn file_size(entry: &dir_entry::DirEntry) -> Option<u64> {
+    let file_type = entry.file_type()?;
+    if file_type.is_dir() {
+        None
+    } else {
+        entry.metadata().map(|m| m.len())
+    }
+}
+
 #[cfg(any(unix, target_os = "redox"))]
 pub fn is_block_device(ft: fs::FileType) -> bool {
     ft.is_block_device()
