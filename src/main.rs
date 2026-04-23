@@ -145,21 +145,56 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     Ok(())
 }
 
-/// Detect if the user accidentally supplied a path instead of a search pattern
+/// Detect if the user accidentally supplied a path instead of a search pattern.
+///
+/// Without `--full-path`, fd matches patterns against file names, so any pattern
+/// containing a path separator can never match. Two cases are worth a friendly
+/// error rather than silent "no results":
+///
+/// 1. The pattern contains '/'. '/' is always a path separator (including on
+///    Windows) and has no regex meaning, so flagging it is safe and catches the
+///    common Linux/macOS mistake of pasting a full path as the pattern.
+/// 2. On Windows only, the pattern contains the native `\` separator *and*
+///    names an existing directory on disk. We can't treat `\` as a pure
+///    path-separator signal there because it is also the regex escape char,
+///    so valid regex patterns like `\Ac` or `\d+` must still run. Requiring
+///    that the pattern resolves to a real directory avoids those false
+///    positives while preserving the legacy diagnostic for operators who
+///    literally typed a directory path.
+///
+/// See https://github.com/sharkdp/fd/issues/1873.
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
+    if opts.full_path {
+        return Ok(());
+    }
+
+    // Start with the cheap check: '/' is always a path separator, including on
+    // Windows, and has no regex meaning, so flagging it is safe and catches the
+    // Linux/macOS mistake of pasting a full path as the pattern.
+    #[cfg_attr(not(windows), allow(unused_mut))]
+    let mut should_warn = opts.pattern.contains('/');
+
+    // On Windows we additionally accept the native `\` separator, but only when
+    // the pattern actually resolves to an existing directory - `\` is also the
+    // regex escape char there, so valid patterns like `\Ac` or `\d+` must still
+    // run. The is_dir syscall is only needed when `should_warn` is still false,
+    // so short-circuit via `||` to avoid the stat call on the happy path.
+    #[cfg(windows)]
     {
+        should_warn = should_warn
+            || (opts.pattern.contains(std::path::MAIN_SEPARATOR)
+                && Path::new(&opts.pattern).is_dir());
+    }
+
+    if should_warn {
         Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+            "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
              Instead, if you want your pattern to match the full file path, use:\n\n  \
              fd --full-path '{pattern}'",
             pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
         ))
     } else {
         Ok(())
