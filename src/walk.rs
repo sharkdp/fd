@@ -330,12 +330,20 @@ impl WorkerState {
     fn build_overrides(&self, paths: &[PathBuf]) -> Result<Override> {
         let first_path = &paths[0];
         let config = &self.config;
-
         let mut builder = OverrideBuilder::new(first_path);
 
         for pattern in &config.exclude_patterns {
+            // pattern is "!<glob>". If the glob contains "/" the ignore crate
+            // would anchor it to first_path, which is wrong for --exclude.
+            // Always make such patterns unanchored with a "**/" prefix.
+            let glob = &pattern[1..]; // strip leading "!"
+            let normalized = if glob.contains('/') && !glob.starts_with("**/") {
+                format!("!**/{}", glob)
+            } else {
+                pattern.clone()
+            };
             builder
-                .add(pattern)
+                .add(&normalized)
                 .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
         }
 
