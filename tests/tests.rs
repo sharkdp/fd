@@ -28,6 +28,18 @@ static DEFAULT_FILES: &[&str] = &[
     "e1 e2",
 ];
 
+static DEFAULT_FILES_WITH_SIZES: &[(&str, usize)] = &[
+    ("a.foo", 437),
+    ("one/b.foo", 823),
+    ("one/two/c.foo", 91),
+    ("one/two/C.Foo2", 614),
+    ("one/two/three/d.foo", 259),
+    ("fdignored.foo", 748),
+    ("gitignored.foo", 183),
+    (".hidden.foo", 502),
+    ("e1 e2", 376),
+];
+
 #[allow(clippy::let_and_return)]
 fn get_absolute_root_path(env: &TestEnv) -> String {
     let path = env
@@ -2063,6 +2075,102 @@ fn test_exec_batch_with_limit() {
             "./one/two/three/d.foo",
             "./one/two/three/directory_foo"
         ],
+    );
+}
+
+fn shuffle_files(files: &[&'static str], seed: u64) -> Vec<&'static str> {
+    use rand::SeedableRng as _;
+    use rand::seq::SliceRandom as _;
+    let mut files = files.to_vec();
+    files.shuffle(&mut rand::rngs::StdRng::seed_from_u64(seed));
+
+    files
+}
+
+#[test]
+fn test_sort_by_path() {
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42))
+        .allow_random_result_order(false);
+
+    // --sort=path should produce deterministic alphabetical output
+    te.assert_output(
+        &["--sort=path", "foo"],
+        "a.foo
+        one/b.foo
+        one/two/C.Foo2
+        one/two/c.foo
+        one/two/three/d.foo
+        one/two/three/directory_foo/",
+    );
+}
+
+#[test]
+fn test_sort_by_size() {
+    let te = TestEnv::new_with_sized_files(DEFAULT_DIRS, DEFAULT_FILES_WITH_SIZES)
+        .allow_random_result_order(false);
+
+    // --exec with --sort should produce output in sorted order.
+    te.assert_output(
+        &["foo", "--sort=size"],
+        "one/two/three/directory_foo/
+        one/two/c.foo
+        one/two/three/d.foo
+        a.foo
+        one/two/C.Foo2
+        one/b.foo",
+    );
+}
+
+/// Shell script execution with --sort (--exec)
+#[cfg(not(windows))]
+#[test]
+fn test_sort_by_path_with_exec() {
+    let te = TestEnv::new(DEFAULT_DIRS, &shuffle_files(DEFAULT_FILES, 42))
+        .allow_random_result_order(false);
+
+    // --exec with --sort should produce output in sorted order.
+    te.assert_output(
+        &["foo", "--sort=path", "--exec", "echo", "Item: {}"],
+        "Item: ./a.foo
+        Item: ./one/b.foo
+        Item: ./one/two/C.Foo2
+        Item: ./one/two/c.foo
+        Item: ./one/two/three/d.foo
+        Item: ./one/two/three/directory_foo",
+    );
+}
+
+/// Shell script execution with --sort (--exec)
+#[cfg(not(windows))]
+#[test]
+fn test_sort_by_size_with_exec() {
+    let te = TestEnv::new_with_sized_files(DEFAULT_DIRS, DEFAULT_FILES_WITH_SIZES)
+        .allow_random_result_order(false);
+
+    // --exec with --sort should produce output in sorted order.
+    te.assert_output(
+        &["foo", "--sort=size", "--exec", "echo", "Item: {}"],
+        "Item: ./one/two/three/directory_foo
+        Item: ./one/two/c.foo
+        Item: ./one/two/three/d.foo
+        Item: ./a.foo
+        Item: ./one/two/C.Foo2
+        Item: ./one/b.foo",
+    );
+}
+
+/// Shell script execution with --sort (--exec-batch)
+#[cfg(not(windows))]
+#[test]
+fn test_sort_by_size_with_exec_batch() {
+    let te = TestEnv::new_with_sized_files(DEFAULT_DIRS, DEFAULT_FILES_WITH_SIZES)
+        .normalize_line(false) // Assert order exactly as input.
+        .allow_random_result_order(false);
+
+    // --exec-batch with --sort should maintain the sorted order in its arguments.
+    te.assert_output(
+        &["foo", "--sort=size", "--exec-batch", "echo"],
+        "./one/two/three/directory_foo ./one/two/c.foo ./one/two/three/d.foo ./a.foo ./one/two/C.Foo2 ./one/b.foo",
     );
 }
 
