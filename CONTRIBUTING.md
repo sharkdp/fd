@@ -22,6 +22,10 @@ give us the chance to discuss any potential changes first.
    true of all contributions, but is especially relevant when using an LLM that may be generating output that is
    very similar or even identical to existing code with an incompatible license.
 4. If an AI coding assistant or other LLM tool was used, you must indicate that an AI tool was used, and to what extent it was used.
+5. AI should not be used to generate comments when communicating with maintainers. We expect communication with the maintainers,
+   including PR descriptions and comments, to be from humans, not from an AI. Using an AI to assist with grammar, spelling, and
+   proofreading or translating if you are a non-native English speaker is acceptable, as long as the content and voice of the
+   message is your own.
 
 ## Add an entry to the changelog
 
