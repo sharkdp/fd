@@ -373,7 +373,7 @@ pub struct Opts {
         long = "extension",
         short = 'e',
         value_name = "ext",
-        help = "Filter by file extension",
+        help = "Filter by extension (applies to all entry types)",
         long_help
     )]
     pub extensions: Option<Vec<String>>,

@@ -250,9 +250,11 @@ Examples:
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
-Filter search results by file extension
+Filter search results by extension
 .IR ext .
-This option can be used repeatedly to allow for multiple possible file extensions.
+This applies to all entry types, not just files. Use \fB\-\-type\fR to restrict
+the search to specific types.
+This option can be used repeatedly to allow for multiple possible extensions.
 
 If you want to search for files without extension, you can use the regex '^[^.]+$'
 as a normal search pattern.
