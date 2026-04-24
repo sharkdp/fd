@@ -310,6 +310,22 @@ pub struct Opts {
     )]
     pub exclude: Vec<String>,
 
+    /// Force-include entries matching the given glob pattern, even if they
+    /// would otherwise be ignored by '.gitignore' files. This overrides
+    /// VCS ignore rules for specific patterns while keeping them active
+    /// for everything else. Multiple patterns can be specified.
+    ///
+    /// Examples:
+    /// {n}  --override-ignore node_modules
+    /// {n}  --override-ignore '*.log'
+    #[arg(
+        long,
+        value_name = "pattern",
+        help = "Override .gitignore for entries matching the given glob pattern",
+        long_help
+    )]
+    pub override_ignore: Vec<String>,
+
     /// Do not traverse into directories that match the search criteria. If
     /// you want to exclude specific directories, use the '--exclude=…' option.
     #[arg(long, hide_short_help = true, conflicts_with_all(&["size", "exact_depth"]),
