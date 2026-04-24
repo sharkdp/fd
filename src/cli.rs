@@ -838,6 +838,8 @@ pub enum HyperlinkWhen {
 // so we have to use hand-rolled parsing for exec and exec-batch
 pub struct Exec {
     pub command: Option<CommandSet>,
+    pub filter_command: Option<CommandSet>,
+    pub reject_command: Option<CommandSet>,
 }
 
 impl clap::FromArgMatches for Exec {
@@ -852,7 +854,21 @@ impl clap::FromArgMatches for Exec {
             })
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
-        Ok(Exec { command })
+        let filter_command = matches
+            .get_occurrences::<String>("filter")
+            .map(CommandSet::new)
+            .transpose()
+            .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
+        let reject_command = matches
+            .get_occurrences::<String>("reject")
+            .map(CommandSet::new)
+            .transpose()
+            .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
+        Ok(Exec {
+            command,
+            filter_command,
+            reject_command,
+        })
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {
@@ -929,6 +945,47 @@ impl clap::Args for Exec {
                        - Find all *.rs files and count the lines with \"wc -l ...\":\n\n      \
                            fd -e rs -X wc -l\
                      "
+                ),
+        )
+        .arg(
+            Arg::new("filter")
+                .action(ArgAction::Append)
+                .long("filter")
+                .num_args(1..)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                .help("Filter results by running a command; keep entry if command exits 0")
+                .long_help(
+                    "Execute a command for each search result and only include the result \
+                     if the command exits with status 0. All positional arguments following \
+                     --filter are part of the command (terminated by ';').\n\
+                     The same placeholders as --exec are supported: '{}', '{/}', '{//}', '{.}', '{/.}'.\n\n\
+                     Example:\n\n  \
+                       - Find files containing 'TODO':\n\n      \
+                           fd -t f --filter grep -q TODO {}\n\n  \
+                       - Find non-empty directories:\n\n      \
+                           fd -t d --filter test -n \"$(ls -A {})\"\
+                    "
+                ),
+        )
+        .arg(
+            Arg::new("reject")
+                .action(ArgAction::Append)
+                .long("reject")
+                .num_args(1..)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                .help("Filter results by running a command; exclude entry if command exits 0")
+                .long_help(
+                    "Execute a command for each search result and exclude the result \
+                     if the command exits with status 0 (inverse of --filter).\n\
+                     The same placeholders as --exec and --filter are supported.\n\n\
+                     Example:\n\n  \
+                       - Find files that are NOT symlinks:\n\n      \
+                           fd --reject test -L {}\
+                    "
                 ),
         )
     }
