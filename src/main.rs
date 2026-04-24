@@ -277,7 +277,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         HyperlinkWhen::Never => false,
         HyperlinkWhen::Auto => colored_output,
     };
-    let command = extract_command(&mut opts, colored_output)?;
+    let command = extract_command(&mut opts)?;
     let has_command = command.is_some();
 
     let full_path_base = if opts.full_path {
@@ -370,6 +370,12 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
+        list_details: opts.list_details,
+    })
+}
+
+fn extract_command(opts: &mut Opts) -> Result<Option<CommandSet>> {
+    opts.exec.command.take().map(Ok).transpose()
         ignore_contain: opts.ignore_contain,
     })
 }

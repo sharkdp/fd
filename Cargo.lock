@@ -321,6 +321,7 @@ dependencies = [
  "tempfile",
  "test-case",
  "tikv-jemallocator",
+ "unix_mode",
 ]
 
 [[package]]
@@ -874,6 +875,12 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
+
+[[package]]
+name = "unix_mode"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b55eedc365f81a3c32aea49baf23fa965e3cd85bcc28fb8045708c7388d124ef"
 
 [[package]]
 name = "utf8parse"
