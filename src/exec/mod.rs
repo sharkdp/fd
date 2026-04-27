@@ -243,7 +243,9 @@ impl CommandTemplate {
         }
 
         if args[0].has_tokens() {
-            bail!("First argument of --exec/--exec-batch must be a fixed executable, not a placeholder");
+            bail!(
+                "First argument of --exec/--exec-batch must be a fixed executable, not a placeholder"
+            );
         }
 
         // If a placeholder token was not supplied, append one at the end of the command.

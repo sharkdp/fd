@@ -32,8 +32,18 @@ mod tests {
 
     #[test]
     fn preserves_safe_content() {
-        for s in ["hello.txt", "résumé.pdf", "文档.txt", "🦀.rs", "a\tb", "a\u{FFFD}b"] {
-            assert!(matches!(sanitize_for_terminal(s), Cow::Borrowed(_)), "{s:?}");
+        for s in [
+            "hello.txt",
+            "résumé.pdf",
+            "文档.txt",
+            "🦀.rs",
+            "a\tb",
+            "a\u{FFFD}b",
+        ] {
+            assert!(
+                matches!(sanitize_for_terminal(s), Cow::Borrowed(_)),
+                "{s:?}"
+            );
             assert_eq!(sanitize_for_terminal(s), s);
         }
     }
@@ -83,6 +93,9 @@ mod tests {
     fn strips_c1_csi_and_osc_initiators() {
         // U+009B is CSI, U+009D is OSC; dangerous on 8-bit-control terminals.
         assert_eq!(sanitize_for_terminal("\u{9b}31m"), "\\x9B31m");
-        assert_eq!(sanitize_for_terminal("\u{9d}0;pwned\u{9c}"), "\\x9D0;pwned\\x9C");
+        assert_eq!(
+            sanitize_for_terminal("\u{9d}0;pwned\u{9c}"),
+            "\\x9D0;pwned\\x9C"
+        );
     }
 }
