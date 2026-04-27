@@ -63,9 +63,6 @@ impl CommandSet {
                     if cmd.number_of_tokens() > 1 {
                         bail!("Only one placeholder allowed for batch commands");
                     }
-                    if cmd.args[0].has_tokens() {
-                        bail!("First argument of exec-batch is expected to be a fixed executable");
-                    }
                     Ok(cmd)
                 })
                 .collect::<Result<Vec<_>>>()?,
@@ -245,6 +242,12 @@ impl CommandTemplate {
             bail!("No executable provided for --exec or --exec-batch");
         }
 
+        if args[0].has_tokens() {
+            bail!(
+                "First argument of --exec/--exec-batch must be a fixed executable, not a placeholder"
+            );
+        }
+
         // If a placeholder token was not supplied, append one at the end of the command.
         if !has_placeholder {
             args.push(FormatTemplate::Tokens(vec![Token::Placeholder]));
@@ -374,8 +377,8 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces_and_placeholder() {
-        let template = CommandTemplate::new(vec!["{{{},end}"]).unwrap();
-        assert_eq!(generate_str(&template, "foo"), vec!["{foo,end}"]);
+        let template = CommandTemplate::new(vec!["echo", "{{{},end}"]).unwrap();
+        assert_eq!(generate_str(&template, "foo"), vec!["echo", "{foo,end}"]);
     }
 
     #[test]
@@ -427,6 +430,13 @@ mod tests {
     #[test]
     fn command_set_no_args() {
         assert!(CommandSet::new(vec![vec!["echo"], vec![]]).is_err());
+    }
+
+    #[test]
+    fn placeholder_as_executable_rejected() {
+        assert!(CommandSet::new(vec![vec!["{}"]]).is_err());
+        assert!(CommandSet::new(vec![vec!["{/}", "arg"]]).is_err());
+        assert!(CommandSet::new_batch(vec![vec!["{}"]]).is_err());
     }
 
     #[test]
