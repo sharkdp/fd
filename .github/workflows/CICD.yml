@@ -1,0 +1,309 @@
+name: CICD
+
+env:
+  CICD_INTERMEDIATES_DIR: "_cicd-intermediates"
+  MSRV_FEATURES: "--all-features"
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+
+permissions:
+  contents: read
+
+jobs:
+  crate_metadata:
+    name: Extract crate metadata
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+    - name: Extract crate information
+      id: crate_metadata
+      run: |
+        echo "name=fd" | tee -a $GITHUB_OUTPUT
+        cargo metadata --no-deps --format-version 1 | jq -r '"version=" + .packages[0].version' | tee -a $GITHUB_OUTPUT
+        cargo metadata --no-deps --format-version 1 | jq -r '"maintainer=" + .packages[0].authors[0]' | tee -a $GITHUB_OUTPUT
+        cargo metadata --no-deps --format-version 1 | jq -r '"homepage=" + .packages[0].homepage' | tee -a $GITHUB_OUTPUT
+        cargo metadata --no-deps --format-version 1 | jq -r '"msrv=" + .packages[0].rust_version' | tee -a $GITHUB_OUTPUT
+    outputs:
+      name: ${{ steps.crate_metadata.outputs.name }}
+      version: ${{ steps.crate_metadata.outputs.version }}
+      maintainer: ${{ steps.crate_metadata.outputs.maintainer }}
+      homepage: ${{ steps.crate_metadata.outputs.homepage }}
+      msrv: ${{ steps.crate_metadata.outputs.msrv }}
+
+  ensure_cargo_fmt:
+    name: Ensure 'cargo fmt' has been run
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+    - run: cargo fmt -- --check
+
+  lint_check:
+    name: Ensure 'cargo clippy' has no warnings
+    runs-on: ubuntu-latest
+    steps:
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy
+    - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+    - run: cargo clippy --all-targets --all-features -- -Dwarnings
+
+  min_version:
+    name: Minimum supported rust version
+    runs-on: ubuntu-22.04
+    needs: crate_metadata
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+
+    - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ needs.crate_metadata.outputs.msrv }}
+        components: clippy
+    - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
+      run: cargo clippy --locked --all-targets "${MSRV_FEATURES}"
+    - name: Run tests
+      run: cargo test --locked "${MSRV_FEATURES}"
+
+  build:
+    name: '${{ matrix.job.target }} (${{ matrix.job.os }})'
+    runs-on: ${{ matrix.job.os }}
+    needs: crate_metadata
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-24.04, use-cross: true }
+          - { target: aarch64-unknown-linux-musl  , os: ubuntu-24.04, use-cross: true }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-24.04, use-cross: true }
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04, use-cross: true }
+          - { target: i686-pc-windows-msvc        , os: windows-2025                  }
+          - { target: i686-unknown-linux-gnu      , os: ubuntu-24.04, use-cross: true }
+          - { target: i686-unknown-linux-musl     , os: ubuntu-24.04, use-cross: true }
+          - { target: x86_64-apple-darwin         , os: macos-26-intel                }
+          - { target: aarch64-apple-darwin        , os: macos-26                      }
+          - { target: x86_64-pc-windows-gnu       , os: windows-2025                  }
+          - { target: x86_64-pc-windows-msvc      , os: windows-2025                  }
+          - { target: aarch64-pc-windows-msvc     , os: windows-11-arm                }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
+    env:
+      BUILD_CMD: "${{ matrix.job.use-cross && 'cross' || 'cargo' }}"
+      target: ${{ matrix.job.target }}
+      name: ${{ needs.crate_metadata.outputs.name }}
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        case ${target} in
+          arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
+          aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
+        esac
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.job.target }}
+        toolchain: "stable"
+
+    - name: Install cross
+      if: matrix.job.use-cross
+      env:
+        cross_version: "v0.2.5"
+        package_name: "cross-x86_64-unknown-linux-gnu.tar.gz"
+        GH_TOKEN: "${{ github.token }}"
+      run: |
+        dir="$HOME/.local/bin/"
+        mkdir -p "$dir"
+        gh release download --repo cross-rs/cross  \
+          --pattern "${package_name}" -O - "${cross_version}" \
+          | tar -C "$dir" -xz
+        echo "$dir" >> $GITHUB_PATH
+        echo "Installed cross $cross_version" >> $GITHUB_STEP_SUMMARY
+    - name: Show version information (Rust, cargo, GCC)
+      shell: bash
+      run: |
+        gcc --version || true
+        rustup -V
+        rustup toolchain list
+        rustup default
+        cargo -V
+        rustc -V
+
+    - name: Build
+      shell: bash
+      run: $BUILD_CMD build --locked --release --target="${target}"
+
+    - name: Set binary name & path
+      id: bin
+      shell: bash
+      run: |
+        # Figure out suffix of binary
+        EXE_suffix=""
+        case ${target} in
+          *-pc-windows-*) EXE_suffix=".exe" ;;
+        esac;
+
+        # Setup paths
+        BIN_NAME="${name}${EXE_suffix}"
+        BIN_PATH="target/${target}/release/${BIN_NAME}"
+
+        # Let subsequent steps know where to find the binary
+        echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
+        echo "BIN_NAME=${BIN_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Set testing options
+      id: test-options
+      shell: bash
+      run: |
+        # test only library unit tests and binary for arm-type targets
+        unset CARGO_TEST_OPTIONS
+        case ${target} in
+        arm-* | aarch64-*)
+          CARGO_TEST_OPTIONS="--bin=${name}" ;;
+        esac
+        echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
+
+    - name: Run tests
+      shell: bash
+      env:
+        cargo_test_options: ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      run: $BUILD_CMD test --locked --target="${target}" "${cargo_test_options}"
+
+    - name: Generate completions
+      id: completions
+      shell: bash
+      run: make completions
+
+    - name: Create tarball
+      id: package
+      shell: bash
+      env:
+        BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
+        version: ${{ needs.crate_metadata.outputs.version }}
+      run: |
+        PKG_suffix=".tar.gz"
+        case ${target} in
+        *-pc-windows-*) PKG_suffix=".zip" ;;
+        esac
+        PKG_BASENAME=${name}-v${version}-${target}
+        PKG_NAME=${PKG_BASENAME}${PKG_suffix}
+        echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
+
+        PKG_STAGING="${CICD_INTERMEDIATES_DIR}/package"
+        ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
+        mkdir -p "${ARCHIVE_DIR}"
+
+        # Binary
+        cp "${BIN_PATH}" "$ARCHIVE_DIR"
+
+        # README, LICENSE and CHANGELOG files
+        cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
+
+        # Man page
+        cp "doc/${name}.1" "$ARCHIVE_DIR"
+
+        # Autocompletion files
+        cp -r autocomplete "${ARCHIVE_DIR}"
+
+        # base compressed package
+        pushd "${PKG_STAGING}/" >/dev/null
+        case ${target} in
+          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
+          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
+        esac;
+        popd >/dev/null
+
+        # Let subsequent steps know where to find the compressed package
+        echo "PKG_PATH=${PKG_STAGING}/${PKG_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Create Debian package
+      id: debian-package
+      shell: bash
+      if: startsWith(matrix.job.os, 'ubuntu')
+      run: bash scripts/create-deb.sh
+      env:
+        TARGET: ${{ matrix.job.target }}
+        DPKG_VERSION: ${{ needs.crate_metadata.version }}
+        BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
+
+    - name: "Artifact upload: tarball"
+      id: upload-tarball
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      with:
+        name: ${{ steps.package.outputs.PKG_NAME }}
+        path: ${{ steps.package.outputs.PKG_PATH }}
+        compression-level: 0 # tarball is already compressed
+
+    - name: "Artifact upload: Debian package"
+      id: upload-deb
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      if: steps.debian-package.outputs.DPKG_NAME
+      with:
+        name: ${{ steps.debian-package.outputs.DPKG_NAME }}
+        path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+        compression-level: 0 # deb files are already compressed
+
+    - name: Check for release
+      id: is-release
+      shell: bash
+      run: |
+        unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
+        echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
+
+    - name: "Attest artifacts"
+      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4
+      if: steps.is-release.outputs.IS_RELEASE
+      with:
+        subject-path: |
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
+
+    - name: Publish archives and packages
+      uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      if: steps.is-release.outputs.IS_RELEASE
+      with:
+        files: |
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  winget:
+    name: Publish to Winget
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@4ffc7888bffd451b357355dc214d43bb9f23917e # v2
+        with:
+          identifier: sharkdp.fd
+          installers-regex: '-pc-windows-msvc\.zip$'
+          token: ${{ secrets.WINGET_TOKEN }}
