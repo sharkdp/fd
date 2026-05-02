@@ -205,6 +205,10 @@ fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
+    } else if opts.exact {
+        // Anchor the escaped pattern so the full filename (or path) must match exactly.
+        // Literal. No substring matching.
+        format!("^{}$", regex::escape(pattern))
     } else if opts.fixed_strings {
         // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
@@ -527,8 +531,9 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
         .build()
         .map_err(|e| {
             anyhow!(
-                "{}\n\nNote: You can use the '--fixed-strings' option to search for a \
-                 literal string instead of a regular expression. Alternatively, you can \
+                "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
+                 or literal strings with '--exact' options (instead of a regular expression). \
+                 Alternatively, you can \
                  also use the '--glob' option to match on a glob pattern.",
                 e
             )
