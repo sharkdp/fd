@@ -133,8 +133,15 @@ mod tests {
     fn keeps_legitimate_unicode_features() {
         // Variation selectors (U+FE0F, U+E0100..) modify preceding glyphs in CJK/emoji
         // and are legitimate in filenames. Private-use chars are used by icon fonts.
-        for s in ["heart\u{2764}\u{FE0F}.txt", "icon\u{E000}.cfg", "cjk\u{6F22}\u{E0101}.txt"] {
-            assert!(matches!(sanitize_for_terminal(s), Cow::Borrowed(_)), "{s:?}");
+        for s in [
+            "heart\u{2764}\u{FE0F}.txt",
+            "icon\u{E000}.cfg",
+            "cjk\u{6F22}\u{E0101}.txt",
+        ] {
+            assert!(
+                matches!(sanitize_for_terminal(s), Cow::Borrowed(_)),
+                "{s:?}"
+            );
         }
     }
 }
