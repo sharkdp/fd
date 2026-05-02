@@ -3,22 +3,40 @@
 use std::borrow::Cow;
 use std::fmt::Write;
 
+/// True for any char that is neither printable nor permitted whitespace (only HT).
+/// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
 #[inline]
-fn is_dangerous_control(c: char) -> bool {
-    // C0 (except HT), DEL, and C1 controls (U+0080..=U+009F can act as
-    // single-byte CSI/OSC initiators on 8-bit-control terminals).
-    matches!(c, '\x00'..='\x08' | '\x0A'..='\x1F' | '\x7F' | '\u{80}'..='\u{9F}')
+fn needs_escape(c: char) -> bool {
+    if c == '\t' {
+        return false;
+    }
+    c.is_control()
+        || matches!(c,
+            '\u{00AD}'                  // soft hyphen (invisible)
+            | '\u{180E}'                // Mongolian vowel separator
+            | '\u{200B}'..='\u{200F}'   // zero-width + LRM/RLM
+            | '\u{202A}'..='\u{202E}'   // bidi embedding/override
+            | '\u{2060}'..='\u{206F}'   // word joiner, invisibles, deprecated formats
+            | '\u{FEFF}'                // BOM / zero-width no-break space
+            | '\u{FFF9}'..='\u{FFFB}'   // interlinear annotation
+            | '\u{E0000}'..='\u{E007F}' // language tags
+        )
 }
 
-/// Replace control characters with `\xNN` so the original filename remains recoverable.
+/// Replace dangerous chars with `\xNN` / `\u{NNNN}` so the original is recoverable.
 pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
-    if !s.chars().any(is_dangerous_control) {
+    if !s.chars().any(needs_escape) {
         return Cow::Borrowed(s);
     }
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
-        if is_dangerous_control(c) {
-            let _ = write!(out, "\\x{:02X}", c as u32);
+        if needs_escape(c) {
+            let v = c as u32;
+            if v <= 0xFF {
+                let _ = write!(out, "\\x{:02X}", v);
+            } else {
+                let _ = write!(out, "\\u{{{:04X}}}", v);
+            }
         } else {
             out.push(c);
         }
@@ -97,5 +115,26 @@ mod tests {
             sanitize_for_terminal("\u{9d}0;pwned\u{9c}"),
             "\\x9D0;pwned\\x9C"
         );
+    }
+
+    #[test]
+    fn strips_bidi_overrides_and_zero_width() {
+        // Trojan-Source style RLO/LRO that flip rendered order of filename text.
+        assert_eq!(
+            sanitize_for_terminal("safe\u{202E}fil\u{202D}gnp.exe"),
+            "safe\\u{202E}fil\\u{202D}gnp.exe"
+        );
+        // Zero-width space and BOM are also format chars used to disguise filenames.
+        assert_eq!(sanitize_for_terminal("a\u{200B}b"), "a\\u{200B}b");
+        assert_eq!(sanitize_for_terminal("\u{FEFF}name"), "\\u{FEFF}name");
+    }
+
+    #[test]
+    fn keeps_legitimate_unicode_features() {
+        // Variation selectors (U+FE0F, U+E0100..) modify preceding glyphs in CJK/emoji
+        // and are legitimate in filenames. Private-use chars are used by icon fonts.
+        for s in ["heart\u{2764}\u{FE0F}.txt", "icon\u{E000}.cfg", "cjk\u{6F22}\u{E0101}.txt"] {
+            assert!(matches!(sanitize_for_terminal(s), Cow::Borrowed(_)), "{s:?}");
+        }
     }
 }

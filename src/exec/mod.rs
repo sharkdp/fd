@@ -242,6 +242,8 @@ impl CommandTemplate {
             bail!("No executable provided for --exec or --exec-batch");
         }
 
+        // Reject placeholder-as-executable for both --exec and --exec-batch
+        // (was previously checked only for --exec-batch).
         if args[0].has_tokens() {
             bail!(
                 "First argument of --exec/--exec-batch must be a fixed executable, not a placeholder"

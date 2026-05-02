@@ -55,14 +55,14 @@ impl DirEntry {
     }
 
     /// Returns the path as it should be presented to the user.
-    /// When stripping `./` would leave the path starting with `-`, keep the `./` so
-    /// downstream tools don't interpret the filename as an option.
+    /// When stripping `./` would leave the path starting with `-`, keep the original
+    /// (with `./`) so downstream tools don't interpret it as an option.
     pub fn stripped_path(&self, config: &Config) -> Cow<'_, Path> {
         let path = self.path();
         if config.strip_cwd_prefix {
             let stripped = strip_current_dir(path);
             if starts_with_dash(stripped) {
-                Cow::Owned(Path::new(".").join(stripped))
+                Cow::Borrowed(path)
             } else {
                 Cow::Borrowed(stripped)
             }
