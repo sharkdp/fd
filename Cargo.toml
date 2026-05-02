@@ -48,7 +48,7 @@ faccess = "0.2.4"
 jiff = "0.2.24"
 
 [dependencies.clap]
-version = "4.6.0"
+version = "4.6.1"
 features = ["suggestions", "color", "wrap_help", "cargo", "derive"]
 
 [dependencies.lscolors]
