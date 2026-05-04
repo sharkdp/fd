@@ -334,8 +334,27 @@ impl WorkerState {
         let mut builder = OverrideBuilder::new(first_path);
 
         for pattern in &config.exclude_patterns {
+            let adjusted_pattern = if let Some(path_after_bang) = pattern.strip_prefix('!') {
+                let path = PathBuf::from(path_after_bang);
+                if path.is_absolute() {
+                    if let Ok(relative) = path.strip_prefix(first_path) {
+                        let mut relative_str = relative.display().to_string();
+                        if relative_str.ends_with('/') || relative_str.ends_with('\\') {
+                            relative_str.pop();
+                        }
+                        format!("!{}", relative_str)
+                    } else {
+                        pattern.clone()
+                    }
+                } else {
+                    pattern.clone()
+                }
+            } else {
+                pattern.clone()
+            };
+
             builder
-                .add(pattern)
+                .add(&adjusted_pattern)
                 .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
         }
 
