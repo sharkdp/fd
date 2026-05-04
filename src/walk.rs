@@ -495,7 +495,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let broken_path = path.clone();
+                            DirEntry::broken_symlink(broken_path, 1)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
