@@ -543,6 +543,10 @@ impl WorkerState {
                     } else {
                         return WalkState::Continue;
                     }
+                    // Only match extensions for files, not directories
+                    if entry.file_type().is_some_and(|ft| ft.is_dir()) {
+                        return WalkState::Continue;
+                    }
                 }
 
                 // Filter out unwanted file types.
