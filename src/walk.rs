@@ -334,8 +334,27 @@ impl WorkerState {
         let mut builder = OverrideBuilder::new(first_path);
 
         for pattern in &config.exclude_patterns {
+            let adjusted_pattern = if let Some(path_after_bang) = pattern.strip_prefix('!') {
+                let path = PathBuf::from(path_after_bang);
+                if path.is_absolute() {
+                    if let Ok(relative) = path.strip_prefix(first_path) {
+                        let mut relative_str = relative.display().to_string();
+                        if relative_str.ends_with('/') || relative_str.ends_with('\\') {
+                            relative_str.pop();
+                        }
+                        format!("!{}", relative_str)
+                    } else {
+                        pattern.clone()
+                    }
+                } else {
+                    pattern.clone()
+                }
+            } else {
+                pattern.clone()
+            };
+
             builder
-                .add(pattern)
+                .add(&adjusted_pattern)
                 .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
         }
 
@@ -495,7 +514,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let broken_path = path.clone();
+                            DirEntry::broken_symlink(broken_path, 1)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -540,6 +560,10 @@ impl WorkerState {
                             return WalkState::Continue;
                         }
                     } else {
+                        return WalkState::Continue;
+                    }
+                    // Only match extensions for files, not directories
+                    if entry.file_type().is_some_and(|ft| ft.is_dir()) {
                         return WalkState::Continue;
                     }
                 }
