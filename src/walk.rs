@@ -495,7 +495,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let broken_path = path.clone();
+                            DirEntry::broken_symlink(broken_path, 1)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -540,6 +541,10 @@ impl WorkerState {
                             return WalkState::Continue;
                         }
                     } else {
+                        return WalkState::Continue;
+                    }
+                    // Only match extensions for files, not directories
+                    if entry.file_type().is_some_and(|ft| ft.is_dir()) {
                         return WalkState::Continue;
                     }
                 }
