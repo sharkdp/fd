@@ -203,14 +203,12 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
 
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
-        let normalized_pattern = if opts.full_path
-            && !pattern.starts_with('/')
-            && !pattern.starts_with("**/")
-        {
-            format!("**/{pattern}")
-        } else {
-            pattern.to_owned()
-        };
+        let normalized_pattern =
+            if opts.full_path && !pattern.starts_with('/') && !pattern.starts_with("**/") {
+                format!("**/{pattern}")
+            } else {
+                pattern.to_owned()
+            };
         let glob = GlobBuilder::new(&normalized_pattern)
             .literal_separator(true)
             .build()?;

@@ -589,15 +589,9 @@ fn test_full_path_glob_searches() {
         " one/two/three/d.foo",
     );
 
-    te.assert_output(
-        &["--glob", "--full-path", "c.foo"],
-        "one/two/c.foo",
-    );
+    te.assert_output(&["--glob", "--full-path", "c.foo"], "one/two/c.foo");
 
-    te.assert_output(
-        &["--glob", "--full-path", "one/**/c.foo"],
-        "one/two/c.foo",
-    );
+    te.assert_output(&["--glob", "--full-path", "one/**/c.foo"], "one/two/c.foo");
 
     te.assert_output(
         &["--glob", "--full-path", "one/**/*.foo"],
