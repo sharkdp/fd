@@ -1,7 +1,7 @@
 //! TTY-output sanitization to prevent terminal escape injection via filenames.
 
 use std::borrow::Cow;
-use std::fmt::{self, Display, Formatter, Write};
+use std::fmt::Write;
 
 /// True for any char that is neither printable nor permitted whitespace (only HT).
 /// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
@@ -21,28 +21,6 @@ fn needs_escape(c: char) -> bool {
             | '\u{FFF9}'..='\u{FFFB}'   // interlinear annotation
             | '\u{E0000}'..='\u{E007F}' // language tags
         )
-}
-
-/// Streams `s` to a formatter, escaping dangerous chars as `\xNN` / `\u{NNNN}`.
-/// Allocation-free wrapper for use with `write!`, `format!`, etc.
-pub struct Sanitized<'a>(pub &'a str);
-
-impl Display for Sanitized<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for c in self.0.chars() {
-            if needs_escape(c) {
-                let v = c as u32;
-                if v <= 0xFF {
-                    write!(f, "\\x{v:02X}")?;
-                } else {
-                    write!(f, "\\u{{{v:04X}}}")?;
-                }
-            } else {
-                f.write_char(c)?;
-            }
-        }
-        Ok(())
-    }
 }
 
 /// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
@@ -95,8 +73,6 @@ mod tests {
                 "{s:?}"
             );
             assert_eq!(sanitize_for_terminal(s), s);
-            // Display matches Cow output.
-            assert_eq!(Sanitized(s).to_string(), s);
         }
     }
 
@@ -177,15 +153,6 @@ mod tests {
                 "{s:?}"
             );
         }
-    }
-
-    #[test]
-    fn display_streams_without_intermediate_string() {
-        // Sanitized<'_> implements Display directly; produces same bytes as Cow form.
-        let attack = "x\x1byb";
-        let mut out = String::new();
-        write!(out, "{}", Sanitized(attack)).unwrap();
-        assert_eq!(out, "x\\x1Byb");
     }
 
     #[test]

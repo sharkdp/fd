@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
-use crate::sanitize::{Sanitized, maybe_sanitize};
+use crate::sanitize::maybe_sanitize;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -78,11 +78,11 @@ fn print_entry_format<W: Write>(
     );
     // TODO: support writing raw bytes on unix?
     let s = output.to_string_lossy();
-    if config.interactive_terminal {
-        write!(stdout, "{}", Sanitized(&s))
-    } else {
-        write!(stdout, "{s}")
-    }
+    write!(
+        stdout,
+        "{}",
+        maybe_sanitize(&s, config.interactive_terminal)
+    )
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -150,11 +150,8 @@ fn print_entry_uncolorized_base<W: Write>(
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    if config.interactive_terminal {
-        write!(stdout, "{}", Sanitized(&path_string))?;
-    } else {
-        write!(stdout, "{path_string}")?;
-    }
+    let safe = maybe_sanitize(&path_string, config.interactive_terminal);
+    write!(stdout, "{safe}")?;
     print_trailing_slash(stdout, entry, config, None)
 }
 
