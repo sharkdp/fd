@@ -1,12 +1,9 @@
 use std::io::IsTerminal;
 
-use crate::sanitize::sanitize_for_terminal;
+use crate::sanitize::maybe_sanitize;
 
 pub fn print_error(msg: impl Into<String>) {
     let msg = msg.into();
-    if std::io::stderr().is_terminal() {
-        eprintln!("[fd error]: {}", sanitize_for_terminal(&msg));
-    } else {
-        eprintln!("[fd error]: {msg}");
-    }
+    let safe = maybe_sanitize(&msg, std::io::stderr().is_terminal());
+    eprintln!("[fd error]: {safe}");
 }

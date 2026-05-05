@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::cell::OnceCell;
 use std::ffi::OsString;
 use std::fs::{FileType, Metadata};
@@ -57,24 +56,24 @@ impl DirEntry {
     /// Returns the path as it should be presented to the user.
     /// When stripping `./` would leave the path starting with `-`, keep the original
     /// (with `./`) so downstream tools don't interpret it as an option.
-    pub fn stripped_path(&self, config: &Config) -> Cow<'_, Path> {
+    pub fn stripped_path(&self, config: &Config) -> &Path {
         let path = self.path();
         if config.strip_cwd_prefix {
             let stripped = strip_current_dir(path);
             if starts_with_dash(stripped) {
-                Cow::Borrowed(path)
+                path
             } else {
-                Cow::Borrowed(stripped)
+                stripped
             }
         } else {
-            Cow::Borrowed(path)
+            path
         }
     }
 
     /// Returns the path as it should be presented to the user.
     pub fn into_stripped_path(self, config: &Config) -> PathBuf {
         if config.strip_cwd_prefix {
-            self.stripped_path(config).into_owned()
+            self.stripped_path(config).to_path_buf()
         } else {
             self.into_path()
         }

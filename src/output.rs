@@ -7,19 +7,10 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
-use crate::sanitize::sanitize_for_terminal;
+use crate::sanitize::{Sanitized, maybe_sanitize};
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
-}
-
-/// Sanitize a string for terminal output only; raw bytes pass through on pipes.
-fn maybe_sanitize<'a>(s: &'a str, config: &Config) -> Cow<'a, str> {
-    if config.interactive_terminal {
-        sanitize_for_terminal(s)
-    } else {
-        Cow::Borrowed(s)
-    }
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -87,7 +78,11 @@ fn print_entry_format<W: Write>(
     );
     // TODO: support writing raw bytes on unix?
     let s = output.to_string_lossy();
-    write!(stdout, "{}", maybe_sanitize(&s, config))
+    if config.interactive_terminal {
+        write!(stdout, "{}", Sanitized(&s))
+    } else {
+        write!(stdout, "{s}")
+    }
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -122,7 +117,7 @@ fn print_entry_colorized<W: Write>(
             .style_for_indicator(Indicator::Directory)
             .map(Style::to_nu_ansi_term_style)
             .unwrap_or_default();
-        let safe_parent = maybe_sanitize(&parent_str, config);
+        let safe_parent = maybe_sanitize(&parent_str, config.interactive_terminal);
         write!(stdout, "{}", style.paint(safe_parent.as_ref()))?;
     }
 
@@ -130,7 +125,7 @@ fn print_entry_colorized<W: Write>(
         .style(ls_colors)
         .map(Style::to_nu_ansi_term_style)
         .unwrap_or_default();
-    let safe_basename = maybe_sanitize(&path_str[offset..], config);
+    let safe_basename = maybe_sanitize(&path_str[offset..], config.interactive_terminal);
     write!(stdout, "{}", style.paint(safe_basename.as_ref()))?;
 
     print_trailing_slash(
@@ -155,8 +150,11 @@ fn print_entry_uncolorized_base<W: Write>(
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    let safe = maybe_sanitize(&path_string, config);
-    write!(stdout, "{safe}")?;
+    if config.interactive_terminal {
+        write!(stdout, "{}", Sanitized(&path_string))?;
+    } else {
+        write!(stdout, "{path_string}")?;
+    }
     print_trailing_slash(stdout, entry, config, None)
 }
 

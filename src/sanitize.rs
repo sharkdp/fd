@@ -1,7 +1,7 @@
 //! TTY-output sanitization to prevent terminal escape injection via filenames.
 
 use std::borrow::Cow;
-use std::fmt::Write;
+use std::fmt::{self, Display, Formatter, Write};
 
 /// True for any char that is neither printable nor permitted whitespace (only HT).
 /// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
@@ -23,7 +23,30 @@ fn needs_escape(c: char) -> bool {
         )
 }
 
-/// Replace dangerous chars with `\xNN` / `\u{NNNN}` so the original is recoverable.
+/// Streams `s` to a formatter, escaping dangerous chars as `\xNN` / `\u{NNNN}`.
+/// Allocation-free wrapper for use with `write!`, `format!`, etc.
+pub struct Sanitized<'a>(pub &'a str);
+
+impl Display for Sanitized<'_> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for c in self.0.chars() {
+            if needs_escape(c) {
+                let v = c as u32;
+                if v <= 0xFF {
+                    write!(f, "\\x{v:02X}")?;
+                } else {
+                    write!(f, "\\u{{{v:04X}}}")?;
+                }
+            } else {
+                f.write_char(c)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
+/// escaped copy. Use this when an owned `&str`/`String` is required (e.g. ANSI paint).
 pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
     if !s.chars().any(needs_escape) {
         return Cow::Borrowed(s);
@@ -33,15 +56,24 @@ pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
         if needs_escape(c) {
             let v = c as u32;
             if v <= 0xFF {
-                let _ = write!(out, "\\x{:02X}", v);
+                let _ = write!(out, "\\x{v:02X}");
             } else {
-                let _ = write!(out, "\\u{{{:04X}}}", v);
+                let _ = write!(out, "\\u{{{v:04X}}}");
             }
         } else {
             out.push(c);
         }
     }
     Cow::Owned(out)
+}
+
+/// Sanitize for terminal output only; raw bytes pass through on pipes/files.
+pub fn maybe_sanitize<'a>(s: &'a str, is_terminal: bool) -> Cow<'a, str> {
+    if is_terminal {
+        sanitize_for_terminal(s)
+    } else {
+        Cow::Borrowed(s)
+    }
 }
 
 #[cfg(test)]
@@ -63,6 +95,8 @@ mod tests {
                 "{s:?}"
             );
             assert_eq!(sanitize_for_terminal(s), s);
+            // Display matches Cow output.
+            assert_eq!(Sanitized(s).to_string(), s);
         }
     }
 
@@ -143,5 +177,25 @@ mod tests {
                 "{s:?}"
             );
         }
+    }
+
+    #[test]
+    fn display_streams_without_intermediate_string() {
+        // Sanitized<'_> implements Display directly; produces same bytes as Cow form.
+        let attack = "x\x1byb";
+        let mut out = String::new();
+        write!(out, "{}", Sanitized(attack)).unwrap();
+        assert_eq!(out, "x\\x1Byb");
+    }
+
+    #[test]
+    fn maybe_sanitize_passthrough_when_not_terminal() {
+        let attack = "x\x1by";
+        // Pipe context: bytes pass through unchanged (zero-copy).
+        let out = maybe_sanitize(attack, false);
+        assert!(matches!(out, Cow::Borrowed(_)));
+        assert_eq!(out, attack);
+        // TTY context: escapes apply.
+        assert_eq!(maybe_sanitize(attack, true), "x\\x1By");
     }
 }

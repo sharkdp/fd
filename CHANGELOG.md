@@ -1,10 +1,14 @@
 # Unreleased
 
+## Bugfixes
+- Sanitize control characters and bidirectional override characters in filenames
+  when output goes to a terminal, and prefix paths starting with `-` with `./` to
+  prevent argument injection. Also reject placeholders as the executable in
+  `--exec`/`--exec-batch` (was previously checked only for `--exec-batch`).
+- Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
+
 ## Features
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
-
-## Bugfixes
-- Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 
 # 10.4.2
 
