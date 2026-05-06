@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
+use clap::ValueEnum;
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
@@ -70,6 +71,9 @@ pub struct Config {
     /// `max_buffer_time`.
     pub max_buffer_time: Option<Duration>,
 
+    /// Maximum size of the output buffer before flushing results to the console.
+    pub max_buffer_size: usize,
+
     /// `None` if the output should not be colorized. Otherwise, a `LsColors` instance that defines
     /// how to style different filetypes.
     pub ls_colors: Option<LsColors>,
@@ -133,6 +137,9 @@ pub struct Config {
 
     /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
     pub ignore_contain: Vec<String>,
+
+    /// The key to sort results by
+    pub sort_key: Option<SortKey>,
 }
 
 impl Config {
@@ -140,4 +147,16 @@ impl Config {
     pub fn is_printing(&self) -> bool {
         self.command.is_none()
     }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug, ValueEnum)]
+pub enum SortKey {
+    /// Sort by path
+    Path,
+    /// Sort by file size
+    Size,
+    /// Sort by creation time
+    Created,
+    /// Sort by modification time
+    Modified,
 }

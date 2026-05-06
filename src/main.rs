@@ -17,6 +17,7 @@ use std::env;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{CommandFactory, Parser};
@@ -33,6 +34,7 @@ use crate::filetypes::FileTypes;
 use crate::filter::OwnerFilter;
 use crate::filter::TimeFilter;
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
+use crate::walk::DEFAULT_MAX_BUFFER_LENGTH;
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
@@ -308,7 +310,16 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         min_depth: opts.min_depth(),
         prune: opts.prune,
         threads: opts.threads().get(),
-        max_buffer_time: opts.max_buffer_time,
+        max_buffer_time: match opts.sort {
+            // If sorting is enabled, then set max_buffer_time to practically infinity.
+            Some(_) => Some(Duration::from_secs(3600 * 24 * 365 * 10)), // 10 years - arbitrarily-large.
+            None => opts.max_buffer_time,
+        },
+        max_buffer_size: match opts.sort {
+            // If sorting is enabled, allow a practically infinite buffer size.
+            Some(_) => usize::MAX,
+            None => DEFAULT_MAX_BUFFER_LENGTH,
+        },
         ls_colors,
         hyperlink,
         interactive_terminal,
@@ -371,6 +382,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
         ignore_contain: opts.ignore_contain,
+        sort_key: opts.sort,
     })
 }
 
