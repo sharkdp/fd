@@ -637,9 +637,10 @@ pub struct Opts {
 
     /// The directory where the filesystem search is rooted (optional). If
     /// omitted, search the current working directory.
+    /// If supplied, the pattern must come first.
     #[arg(action = ArgAction::Append,
         value_name = "path",
-        help = "the root directories for the filesystem search (optional)",
+        help = "the root directories for the filesystem search (optional, requires pattern first)",
         long_help,
         )]
     path: Vec<PathBuf>,
