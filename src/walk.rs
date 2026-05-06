@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
@@ -344,20 +345,22 @@ impl WorkerState {
             .map_err(|_| anyhow!("Mismatch in exclude patterns"))
     }
 
-    fn build_walker(&self, paths: &[PathBuf]) -> Result<WalkParallel> {
+    fn build_walker(&self, paths: &[PathBuf], respect_vcs_ignore: bool) -> Result<WalkParallel> {
         let first_path = &paths[0];
         let config = &self.config;
         let overrides = self.build_overrides(paths)?;
+
+        let use_vcs_ignore = respect_vcs_ignore && config.read_vcsignore;
 
         let mut builder = WalkBuilder::new(first_path);
         builder
             .hidden(config.ignore_hidden)
             .ignore(config.read_fdignore)
-            .parents(config.read_parent_ignore && (config.read_fdignore || config.read_vcsignore))
-            .git_ignore(config.read_vcsignore)
-            .git_global(config.read_vcsignore)
-            .git_exclude(config.read_vcsignore)
-            .require_git(config.require_git_to_read_vcsignore)
+            .parents(config.read_parent_ignore && (config.read_fdignore || use_vcs_ignore))
+            .git_ignore(use_vcs_ignore)
+            .git_global(use_vcs_ignore)
+            .git_exclude(use_vcs_ignore)
+            .require_git(respect_vcs_ignore && config.require_git_to_read_vcsignore)
             .overrides(overrides)
             .follow_links(config.follow_links)
             // No need to check for supported platforms, option is unavailable on unsupported ones
@@ -403,6 +406,231 @@ impl WorkerState {
         Ok(walker)
     }
 
+    /// Build an Override matcher for checking if entries match --override-ignore patterns.
+    fn build_override_matcher(&self, paths: &[PathBuf]) -> Result<Override> {
+        let first_path = &paths[0];
+        let mut builder = OverrideBuilder::new(first_path);
+        for pattern in &self.config.override_ignore_patterns {
+            builder
+                .add(pattern)
+                .map_err(|e| anyhow!("Malformed override-ignore pattern: {}", e))?;
+            // Also match contents inside directories matching the pattern
+            let dir_contents = format!("{pattern}/**");
+            builder
+                .add(&dir_contents)
+                .map_err(|e| anyhow!("Malformed override-ignore pattern: {}", e))?;
+        }
+        builder
+            .build()
+            .map_err(|_| anyhow!("Mismatch in override-ignore patterns"))
+    }
+
+    /// Spawn sender threads for the override walk (walk 2).
+    /// Only emits entries that match override-ignore patterns and weren't already seen.
+    fn spawn_override_senders(
+        &self,
+        walker: WalkParallel,
+        tx: Sender<Batch>,
+        seen_paths: &Mutex<HashSet<PathBuf>>,
+        override_matcher: &Override,
+    ) {
+        walker.run(|| {
+            let patterns = &self.patterns;
+            let config = &self.config;
+            let quit_flag = self.quit_flag.as_ref();
+
+            let mut limit = 0x100;
+            if let Some(cmd) = &config.command
+                && !cmd.in_batch_mode()
+                && config.threads > 1
+            {
+                limit = 1;
+            }
+            let mut tx = BatchSender::new(tx.clone(), limit);
+
+            Box::new(move |entry| {
+                if quit_flag.load(Ordering::Relaxed) {
+                    return WalkState::Quit;
+                }
+
+                if let Ok(e) = &entry {
+                    let entry_path = e.path();
+                    if entry_path.is_dir()
+                        && config
+                            .ignore_contain
+                            .iter()
+                            .any(|ic| entry_path.join(ic).exists())
+                    {
+                        return WalkState::Skip;
+                    }
+                    if e.depth() == 0 {
+                        return WalkState::Continue;
+                    }
+                }
+
+                let entry = match entry {
+                    Ok(e) => DirEntry::normal(e),
+                    Err(ignore::Error::WithPath {
+                        path,
+                        err: inner_err,
+                    }) => match inner_err.as_ref() {
+                        ignore::Error::Io(io_error)
+                            if io_error.kind() == io::ErrorKind::NotFound
+                                && path
+                                    .symlink_metadata()
+                                    .ok()
+                                    .is_some_and(|m| m.file_type().is_symlink()) =>
+                        {
+                            DirEntry::broken_symlink(path)
+                        }
+                        _ => {
+                            return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
+                                path,
+                                err: inner_err,
+                            })) {
+                                Ok(_) => WalkState::Continue,
+                                Err(_) => WalkState::Quit,
+                            };
+                        }
+                    },
+                    Err(err) => {
+                        return match tx.send(WorkerResult::Error(err)) {
+                            Ok(_) => WalkState::Continue,
+                            Err(_) => WalkState::Quit,
+                        };
+                    }
+                };
+
+                // Check override-ignore pattern match.
+                // Return Continue (not Skip) so directories are still traversed
+                // even when they don't match — files inside them might match.
+                let entry_path = entry.path();
+                let is_dir = entry_path.is_dir();
+                if !override_matcher.matched(entry_path, is_dir).is_whitelist() {
+                    return WalkState::Continue;
+                }
+
+                // Dedup: skip entries already found in walk 1
+                if seen_paths
+                    .lock()
+                    .unwrap()
+                    .contains(&entry_path.to_path_buf())
+                {
+                    return WalkState::Continue;
+                }
+
+                if let Some(min_depth) = config.min_depth
+                    && entry.depth().is_none_or(|d| d < min_depth)
+                {
+                    return WalkState::Continue;
+                }
+
+                let search_str: Cow<OsStr> = if config.search_full_path {
+                    let path_abs_buf = filesystem::path_absolute_form(entry_path)
+                        .expect("Retrieving absolute path succeeds");
+                    Cow::Owned(path_abs_buf.as_os_str().to_os_string())
+                } else {
+                    match entry_path.file_name() {
+                        Some(filename) => Cow::Borrowed(filename),
+                        None => unreachable!(
+                            "Encountered file system entry without a file name. This should only \
+                             happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                             appear in a file system traversal."
+                        ),
+                    }
+                };
+
+                if !patterns
+                    .iter()
+                    .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
+                {
+                    return WalkState::Continue;
+                }
+
+                if let Some(ref exts_regex) = config.extensions {
+                    if let Some(path_str) = entry_path.file_name() {
+                        if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
+                            return WalkState::Continue;
+                        }
+                    } else {
+                        return WalkState::Continue;
+                    }
+                }
+
+                if let Some(ref file_types) = config.file_types
+                    && file_types.should_ignore(&entry)
+                {
+                    return WalkState::Continue;
+                }
+
+                #[cfg(unix)]
+                {
+                    if let Some(ref owner_constraint) = config.owner_constraint {
+                        if let Some(metadata) = entry.metadata() {
+                            if !owner_constraint.matches(metadata) {
+                                return WalkState::Continue;
+                            }
+                        } else {
+                            return WalkState::Continue;
+                        }
+                    }
+                }
+
+                if !config.size_constraints.is_empty() {
+                    if entry_path.is_file() {
+                        if let Some(metadata) = entry.metadata() {
+                            let file_size = metadata.len();
+                            if config
+                                .size_constraints
+                                .iter()
+                                .any(|sc| !sc.is_within(file_size))
+                            {
+                                return WalkState::Continue;
+                            }
+                        } else {
+                            return WalkState::Continue;
+                        }
+                    } else {
+                        return WalkState::Continue;
+                    }
+                }
+
+                if !config.time_constraints.is_empty() {
+                    let mut matched = false;
+                    if let Some(metadata) = entry.metadata()
+                        && let Ok(modified) = metadata.modified()
+                    {
+                        matched = config
+                            .time_constraints
+                            .iter()
+                            .all(|tf| tf.applies_to(&modified));
+                    }
+                    if !matched {
+                        return WalkState::Continue;
+                    }
+                }
+
+                if config.is_printing()
+                    && let Some(ls_colors) = &config.ls_colors
+                {
+                    entry.style(ls_colors);
+                }
+
+                let send_result = tx.send(WorkerResult::Entry(entry));
+
+                if send_result.is_err() {
+                    return WalkState::Quit;
+                }
+
+                if config.prune {
+                    return WalkState::Skip;
+                }
+
+                WalkState::Continue
+            })
+        });
+    }
+
     /// Run the receiver work, either on this thread or a pool of background
     /// threads (for --exec).
     fn receive(&self, rx: Receiver<Batch>) -> ExitCode {
@@ -440,7 +668,12 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(
+        &self,
+        walker: WalkParallel,
+        tx: Sender<Batch>,
+        seen_paths: Option<&Mutex<HashSet<PathBuf>>>,
+    ) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
@@ -607,6 +840,11 @@ impl WorkerState {
                     entry.style(ls_colors);
                 }
 
+                // Track seen paths for dedup with override walk
+                if let Some(seen) = seen_paths {
+                    seen.lock().unwrap().insert(entry.path().to_path_buf());
+                }
+
                 let send_result = tx.send(WorkerResult::Entry(entry));
 
                 if send_result.is_err() {
@@ -626,7 +864,7 @@ impl WorkerState {
     /// Perform the recursive scan.
     fn scan(&self, paths: &[PathBuf]) -> Result<ExitCode> {
         let config = &self.config;
-        let walker = self.build_walker(paths)?;
+        let walker = self.build_walker(paths, true)?;
 
         if config.ls_colors.is_some() && config.is_printing() {
             let quit_flag = Arc::clone(&self.quit_flag);
@@ -643,14 +881,41 @@ impl WorkerState {
             .unwrap();
         }
 
+        let has_overrides = !config.override_ignore_patterns.is_empty();
+        let seen_paths: Option<Mutex<HashSet<PathBuf>>> = if has_overrides {
+            Some(Mutex::new(HashSet::new()))
+        } else {
+            None
+        };
+
         let (tx, rx) = bounded(2 * config.threads);
 
         let exit_code = thread::scope(|scope| {
             // Spawn the receiver thread(s)
             let receiver = scope.spawn(|| self.receive(rx));
 
-            // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            // Walk 1: normal walk (respects all ignore rules)
+            let tx1 = tx.clone();
+            self.spawn_senders(walker, tx1, seen_paths.as_ref());
+
+            // Walk 2: override walk (disables VCS ignores, only emits
+            // entries matching --override-ignore patterns not seen in walk 1)
+            if has_overrides
+                && !self.quit_flag.load(Ordering::Relaxed)
+                && let Ok(override_walker) = self.build_walker(paths, false)
+                && let Ok(override_matcher) = self.build_override_matcher(paths)
+            {
+                let tx2 = tx.clone();
+                self.spawn_override_senders(
+                    override_walker,
+                    tx2,
+                    seen_paths.as_ref().unwrap(),
+                    &override_matcher,
+                );
+            }
+
+            // Drop our copy of tx to signal receiver we're done
+            drop(tx);
 
             receiver.join().unwrap()
         });

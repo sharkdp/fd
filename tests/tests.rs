@@ -2801,3 +2801,134 @@ fn test_ignore_contain_precedence_over_root_check() {
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
 }
+
+/// --override-ignore: basic directory override
+#[test]
+fn test_override_ignore_directory() {
+    let dirs = &["ignored_dir"];
+    let files = &["ignored_dir/target.txt", "normal.txt"];
+    let te = TestEnv::new(dirs, files);
+
+    // Add ignored_dir to .gitignore
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"ignored_dir")
+        .unwrap();
+
+    // Without override: ignored_dir is not searched
+    te.assert_output(&["txt"], "normal.txt");
+
+    // With override: ignored_dir IS searched
+    te.assert_output(
+        &["--override-ignore", "ignored_dir", "txt"],
+        "ignored_dir/target.txt
+        normal.txt",
+    );
+}
+
+/// --override-ignore: multiple patterns
+#[test]
+fn test_override_ignore_multiple_patterns() {
+    let dirs = &["build", "cache"];
+    let files = &["build/out.txt", "cache/data.txt", "src.txt"];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"build\ncache")
+        .unwrap();
+
+    // Without override: both ignored
+    te.assert_output(&["txt"], "src.txt");
+
+    // Override only build
+    te.assert_output(
+        &["--override-ignore", "build", "txt"],
+        "build/out.txt
+        src.txt",
+    );
+
+    // Override both
+    te.assert_output(
+        &[
+            "--override-ignore",
+            "build",
+            "--override-ignore",
+            "cache",
+            "txt",
+        ],
+        "build/out.txt
+        cache/data.txt
+        src.txt",
+    );
+}
+
+/// --override-ignore combined with --exclude
+#[test]
+fn test_override_ignore_with_exclude() {
+    let dirs = &["ignored_dir"];
+    let files = &["ignored_dir/keep.txt", "ignored_dir/skip.log", "normal.txt"];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"ignored_dir")
+        .unwrap();
+
+    // Override gitignore for ignored_dir, but exclude *.log
+    te.assert_output(
+        &[
+            "--override-ignore",
+            "ignored_dir",
+            "--exclude",
+            "*.log",
+            "txt",
+        ],
+        "ignored_dir/keep.txt
+        normal.txt",
+    );
+}
+
+/// --override-ignore with glob patterns
+#[test]
+fn test_override_ignore_glob_pattern() {
+    let dirs = &["logs"];
+    let files = &["logs/app.log", "logs/error.log", "main.txt"];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"logs")
+        .unwrap();
+
+    // Without override: logs directory is gitignored
+    te.assert_output(&["log"], "");
+
+    // Override with directory name: logs directory and contents now visible
+    te.assert_output(
+        &["--override-ignore", "logs", "log"],
+        "logs/
+        logs/app.log
+        logs/error.log",
+    );
+}
+
+/// --override-ignore: gitignore still applies to non-overridden entries
+#[test]
+fn test_override_ignore_preserves_other_ignores() {
+    let dirs = &["node_modules", "dist"];
+    let files = &["node_modules/pkg.js", "dist/bundle.js", "src.js"];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"node_modules\ndist")
+        .unwrap();
+
+    // Override only node_modules — dist should stay ignored
+    te.assert_output(
+        &["--override-ignore", "node_modules", "js"],
+        "node_modules/pkg.js
+        src.js",
+    );
+}
