@@ -98,18 +98,83 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     ExitCode::Success
 }
 
+/// Common shell builtins that typically do not exist as standalone executables.
+/// When fd encounters a "command not found" error for one of these, it hints
+/// that the user may be trying to use a shell builtin.
+const SHELL_BUILTINS: &[&str] = &[
+    ".", "alias", "bg", "bind", "cd", "command", "declare", "dirs", "eval", "exec", "exit",
+    "export", "fg", "hash", "help", "history", "jobs", "let", "local", "logout", "popd", "pushd",
+    "read", "readonly", "return", "set", "shift", "shopt", "source", "suspend", "times", "trap",
+    "type", "typeset", "unalias", "unset", "wait",
+];
+
+fn is_shell_builtin(program: &str) -> bool {
+    SHELL_BUILTINS.iter().any(|&b| b == program)
+}
+
+fn command_not_found_message(program: &str) -> String {
+    if is_shell_builtin(program) {
+        format!(
+            "Command not found: {program}. Note: {program} is a shell builtin, \
+             not a standalone program. To run shell builtins, invoke a shell explicitly, \
+             e.g. fd -x sh -c '{program} ... \"$1\"' sh {{}}",
+        )
+    } else {
+        format!("Command not found: {program}")
+    }
+}
+
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
-            print_error(format!(
-                "Command not found: {}",
-                cmd.get_program().to_string_lossy()
-            ));
+            let program = cmd.get_program().to_string_lossy();
+            print_error(command_not_found_message(&program));
             ExitCode::GeneralError
         }
         (_, err) => {
             print_error(format!("Problem while executing command: {err}"));
             ExitCode::GeneralError
         }
+    }
+}
+
+#[cfg(test)]
+mod builtin_tests {
+    use super::*;
+
+    #[test]
+    fn detects_known_builtins() {
+        assert!(is_shell_builtin("cd"));
+        assert!(is_shell_builtin("export"));
+        assert!(is_shell_builtin("source"));
+        assert!(is_shell_builtin("eval"));
+        assert!(is_shell_builtin("."));
+    }
+
+    #[test]
+    fn rejects_non_builtins() {
+        assert!(!is_shell_builtin("grep"));
+        assert!(!is_shell_builtin("ls"));
+        assert!(!is_shell_builtin(""));
+        assert!(!is_shell_builtin("CD"));
+        // These typically exist as standalone executables
+        assert!(!is_shell_builtin("echo"));
+        assert!(!is_shell_builtin("printf"));
+        assert!(!is_shell_builtin("test"));
+    }
+
+    #[test]
+    fn builtin_message_includes_hint() {
+        let msg = command_not_found_message("cd");
+        assert!(msg.starts_with("Command not found: cd."));
+        assert!(msg.contains("shell builtin"));
+        assert!(msg.contains("sh -c"));
+    }
+
+    #[test]
+    fn non_builtin_message_is_plain() {
+        let msg = command_not_found_message("nonexistent");
+        assert_eq!(msg, "Command not found: nonexistent");
+        assert!(!msg.contains("shell builtin"));
     }
 }
