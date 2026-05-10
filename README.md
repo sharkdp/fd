@@ -659,7 +659,7 @@ port install fd
 
 You can download pre-built binaries from the [release page](https://github.com/sharkdp/fd/releases).
 
-Alternatively, you can install `fd` via [Scoop](http://scoop.sh):
+Alternatively, you can install `fd` via [Scoop](https://scoop.sh):
 ```
 scoop install fd
 ```
