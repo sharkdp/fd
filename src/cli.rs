@@ -190,7 +190,7 @@ pub struct Opts {
     /// as literal characters.
     #[arg(
         long,
-        conflicts_with("glob"),
+        conflicts_with_all(["glob", "fixed_strings"]),
         hide_short_help = true,
         help = "Match the entire filename exactly (literal, non-substring)",
         long_help
