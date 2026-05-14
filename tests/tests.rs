@@ -2155,10 +2155,18 @@ fn test_fixed_strings() {
 #[test]
 fn test_exact_literal_nonsubstring() {
     let dirs = &["test1", "test2"];
-    let files = &["test1/a.foo", "test1/a_foo", "test2/Download (1).tar.gz"];
+    let files = &[
+        "test1/a.foo",
+        "test1/aa.foo",
+        "test1/a.food",
+        "test1/ca.food",
+        "test1/a_foo",
+        "test2/Download (1).tar.gz",
+    ];
     let te = TestEnv::new(dirs, files);
 
-    // Literal search, dot is treated as character
+    // Literal search, dot is treated as character. Should match only the exact name,
+    // not "aa.foo", "a.food", or "ca.food".
     te.assert_output(&["--exact", "a.foo"], "test1/a.foo");
 
     // Literal search, parens are treated as characters. Substring should not match.
