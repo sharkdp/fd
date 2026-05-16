@@ -250,9 +250,11 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Output a path.
     fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
-        if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
-            && e.kind() != ::std::io::ErrorKind::BrokenPipe
-        {
+        if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config) {
+            if e.kind() == io::ErrorKind::BrokenPipe {
+                self.quit_flag.store(true, Ordering::Relaxed);
+                return Err(ExitCode::GeneralError);
+            }
             print_error(format!("Could not write to output: {e}"));
             return Err(ExitCode::GeneralError);
         }

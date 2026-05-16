@@ -2801,3 +2801,37 @@ fn test_ignore_contain_precedence_over_root_check() {
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
 }
+
+/// When a downstream process closes the pipe, fd should stop walking promptly.
+#[test]
+#[cfg(unix)]
+fn test_broken_pipe_stops_glob_search() {
+    use std::process::{Command, Stdio};
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    let te = TestEnv::new(&["bulk"], &[]);
+    let root = te.test_root();
+    for i in 0..2000 {
+        std::fs::File::create(root.join(format!("bulk/file_{i}.txt"))).expect("test file");
+    }
+
+    let mut child = Command::new(te.test_exe())
+        .current_dir(te.test_root())
+        .args(["--no-config", "-g", "*"])
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("spawn fd");
+
+    drop(child.stdout.take());
+
+    let (tx, rx) = mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = child.wait();
+        let _ = tx.send(());
+    });
+
+    rx.recv_timeout(Duration::from_secs(3))
+        .expect("fd should exit soon after stdout is closed");
+}
