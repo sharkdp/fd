@@ -239,12 +239,12 @@ pub struct Opts {
     #[arg(long, overrides_with = "follow", hide = true, action = ArgAction::SetTrue)]
     no_follow: (),
 
-    /// By default, the search pattern is only matched against the last path component (file or directory name). Using this flag, the pattern is matched against the absolute path. Example:
+    /// By default, the search pattern is only matched against the filename (or directory name). Using this flag, the pattern is matched against the full (absolute) path. Example:
     ///   fd --glob -p '**/.git/config'
     #[arg(
         long,
         short = 'p',
-        help = "Search absolute path (default: last path component only)",
+        help = "Search full abs. path (default: filename only)",
         long_help,
         verbatim_doc_comment
     )]
