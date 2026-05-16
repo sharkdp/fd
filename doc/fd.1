@@ -136,10 +136,10 @@ By default, fd does not descend into symlinked directories. Using this flag, sym
 also traversed. The flag can be overridden with '--no-follow'.
 .TP
 .B \-p, \-\-full\-path
-By default, the search pattern is only matched against the filename (or directory name). Using
+By default, the search pattern is only matched against the last path component (file or directory name). Using
 this flag, the
 .I pattern
-is matched against the full path.
+is matched against the absolute path.
 .TP
 .B \-0, \-\-print0
 Separate search results by the null character (instead of newlines). Useful for piping results to
@@ -250,9 +250,11 @@ Examples:
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
-Filter search results by file extension
+Filter search results by extension
 .IR ext .
-This option can be used repeatedly to allow for multiple possible file extensions.
+By default, this applies to all entry types. Use \fB\-\-type\fR to restrict
+the search to specific types.
+This option can be used repeatedly to allow for multiple possible extensions.
 
 If you want to search for files without extension, you can use the regex '^[^.]+$'
 as a normal search pattern.

@@ -239,12 +239,12 @@ pub struct Opts {
     #[arg(long, overrides_with = "follow", hide = true, action = ArgAction::SetTrue)]
     no_follow: (),
 
-    /// By default, the search pattern is only matched against the filename (or directory name). Using this flag, the pattern is matched against the full (absolute) path. Example:
+    /// By default, the search pattern is only matched against the last path component (file or directory name). Using this flag, the pattern is matched against the absolute path. Example:
     ///   fd --glob -p '**/.git/config'
     #[arg(
         long,
         short = 'p',
-        help = "Search full abs. path (default: filename only)",
+        help = "Search absolute path (default: last path component only)",
         long_help,
         verbatim_doc_comment
     )]
@@ -364,8 +364,9 @@ pub struct Opts {
     )]
     pub filetype: Option<Vec<FileType>>,
 
-    /// (Additionally) filter search results by their file extension. Multiple
-    /// allowable file extensions can be specified.
+    /// Filter results by extension. By default, this matches all entry types
+    /// (including directories whose names end with the extension). Use `--type`
+    /// to restrict the search to specific types. Multiple extensions can be specified.
     ///
     /// If you want to search for files without extension,
     /// you can use the regex '^[^.]+$' as a normal search pattern.
@@ -373,7 +374,7 @@ pub struct Opts {
         long = "extension",
         short = 'e',
         value_name = "ext",
-        help = "Filter by file extension",
+        help = "Filter by extension",
         long_help
     )]
     pub extensions: Option<Vec<String>>,
