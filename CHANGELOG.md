@@ -4,6 +4,7 @@
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 
 ## Bugfixes
+- Respect `--min-depth` for broken symlinks when following links, see #1017 (@Sean-Kenneth-Doherty).
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 

@@ -1158,7 +1158,7 @@ fn test_max_depth() {
 /// Minimum depth (--min-depth)
 #[test]
 fn test_min_depth() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
         &["--min-depth", "3"],
@@ -1174,6 +1174,20 @@ fn test_min_depth() {
         "one/two/three/d.foo
         one/two/three/directory_foo/",
     );
+
+    te.create_broken_symlink("one/two/three/broken_link")
+        .expect("Failed to create broken symlink.");
+
+    te.assert_output(
+        &["--follow", "--min-depth", "4", "broken_link"],
+        "one/two/three/broken_link",
+    );
+    te.assert_output(&["--follow", "--min-depth", "5", "broken_link"], "");
+    te.assert_output(
+        &["--follow", "--min-depth", "3", "broken_link", "one"],
+        "one/two/three/broken_link",
+    );
+    te.assert_output(&["--follow", "--min-depth", "4", "broken_link", "one"], "");
 }
 
 /// Exact depth (--exact-depth)

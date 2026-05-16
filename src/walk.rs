@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -440,7 +440,7 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>, paths: &[PathBuf]) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
@@ -495,7 +495,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let depth = depth_for_path(&path, paths);
+                            DirEntry::broken_symlink(path, depth)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -650,7 +651,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            self.spawn_senders(walker, tx, paths);
 
             receiver.join().unwrap()
         });
@@ -685,6 +686,34 @@ fn search_str_for_entry<'a>(
             ),
         }
     }
+}
+
+fn depth_for_path(path: &Path, roots: &[PathBuf]) -> Option<usize> {
+    roots
+        .iter()
+        .filter_map(|root| {
+            relative_depth(path, root).or_else(|| {
+                let absolute_path = filesystem::path_absolute_form(path).ok()?;
+                let absolute_root = filesystem::path_absolute_form(root).ok()?;
+                relative_depth(&absolute_path, &absolute_root)
+            })
+        })
+        .min()
+}
+
+fn relative_depth(path: &Path, root: &Path) -> Option<usize> {
+    if let Ok(relative_path) = path.strip_prefix(root) {
+        return Some(relative_path.components().count());
+    }
+
+    if root == Path::new("./")
+        && !path.is_absolute()
+        && let Ok(relative_path) = path.strip_prefix(".")
+    {
+        return Some(relative_path.components().count());
+    }
+
+    None
 }
 
 /// Recursively scan the given search path for files / pathnames matching the patterns.
