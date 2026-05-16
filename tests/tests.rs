@@ -590,6 +590,21 @@ fn test_full_path_glob_searches() {
     );
 }
 
+#[cfg(not(windows))]
+#[test]
+fn test_warn_when_full_path_glob_missing_leading_anchor() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--glob", "--full-path", "foo.txt"], "");
+
+    let output = te.assert_success_and_get_output(".", &["--glob", "--full-path", "foo.txt"]);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("[fd warning]:") && stderr.contains("**/foo.txt"),
+        "expected full-path glob anchor warning, got: {stderr}"
+    );
+}
+
 #[test]
 fn test_smart_case_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
@@ -1662,6 +1677,35 @@ fn test_excludes() {
         one/two/three/
         one/two/three/directory_foo/
         symlink",
+    );
+}
+
+/// Regression test for #1919
+#[test]
+fn test_exclude_with_multiple_search_paths() {
+    let te = TestEnv::new(
+        &["sp1/abc/def", "sp1/ghi/def", "sp2/abc/def", "sp2/ghi/def"],
+        &[
+            "sp1/abc/def/match.txt",
+            "sp1/ghi/def/excluded.txt",
+            "sp2/abc/def/match.txt",
+            "sp2/ghi/def/excluded.txt",
+        ],
+    );
+
+    te.assert_output(
+        &[
+            "--type",
+            "file",
+            "--search-path",
+            "sp1",
+            "--search-path",
+            "sp2",
+            "--exclude",
+            "ghi/def",
+        ],
+        "sp1/abc/def/match.txt
+        sp2/abc/def/match.txt",
     );
 }
 
