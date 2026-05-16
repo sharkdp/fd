@@ -143,8 +143,8 @@ To really search *all* files and directories, simply combine the hidden and igno
 everything (`-HI`) or use `-u`/`--unrestricted`.
 
 ### Matching the full path
-By default, *fd* only matches the filename of each file. However, using the `--full-path` or `-p` option,
-you can match against the full path.
+By default, *fd* only matches the last path component of each entry. However, using the `--full-path` or `-p` option,
+you can match against the absolute path.
 
 ```bash
 > fd -p -g '**/.git/config'
@@ -322,7 +322,7 @@ Options:
   -a, --absolute-path              Show absolute instead of relative paths
   -l, --list-details               Use a long listing format with file metadata
   -L, --follow                     Follow symbolic links
-  -p, --full-path                  Search full abs. path (default: filename only)
+  -p, --full-path                  Search absolute path (default: last path component only)
   -d, --max-depth <depth>          Set maximum search depth (default: none)
   -E, --exclude <glob>             Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
@@ -400,9 +400,9 @@ use the options `-u`/`--unrestricted` option (or `-HI` to enable hidden and igno
 > fd -u …
 ```
 
-Also remember that by default, `fd` only searches based on the filename and
-doesn't compare the pattern to the full path. If you want to search based on the
-full path (similar to the `-path` option of `find`) you need to use the `--full-path`
+Also remember that by default, `fd` only searches based on the last path component and
+doesn't compare the pattern to the absolute path. If you want to search based on the
+absolute path (similar to the `-path` option of `find`) you need to use the `--full-path`
 (or `-p`) option.
 
 ### Colorized output

@@ -16,7 +16,7 @@ pub struct Config {
     pub case_sensitive: bool,
 
     /// Cached current working directory for absolute path construction.
-    /// Populated when `--full-path` is set; `None` means search by filename only.
+    /// Populated when `--full-path` is set; `None` means search by last path component only.
     pub full_path_base: Option<PathBuf>,
 
     /// Whether to ignore hidden files and directories (or not).
