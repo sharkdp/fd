@@ -109,7 +109,7 @@ const SHELL_BUILTINS: &[&str] = &[
 ];
 
 fn is_shell_builtin(program: &str) -> bool {
-    SHELL_BUILTINS.iter().any(|&b| b == program)
+    SHELL_BUILTINS.contains(&program)
 }
 
 fn command_not_found_message(program: &str) -> String {
