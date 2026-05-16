@@ -26,6 +26,7 @@ use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
 
 use crate::cli::{ColorWhen, HyperlinkWhen, Opts};
 use crate::config::Config;
+use crate::error::print_warning;
 use crate::exec::CommandSet;
 use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
@@ -86,6 +87,7 @@ fn run() -> Result<ExitCode> {
     }
 
     ensure_search_pattern_is_not_a_path(&opts)?;
+    warn_if_full_path_glob_missing_leading_anchor(&opts);
     let pattern = &opts.pattern;
     let exprs = &opts.exprs;
     let empty = Vec::new();
@@ -199,6 +201,24 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     } else {
         Ok(())
     }
+}
+
+/// With `--glob` and `--full-path`, patterns match the entire absolute path (from `/`).
+/// Warn when the pattern does not start with `/` or `*`, which often means no matches (#1650).
+fn warn_if_full_path_glob_missing_leading_anchor(opts: &Opts) {
+    if !opts.glob || !opts.full_path || opts.pattern.is_empty() {
+        return;
+    }
+    let Some(first) = opts.pattern.chars().next() else {
+        return;
+    };
+    if first == '/' || first == '*' {
+        return;
+    }
+    print_warning(
+        "With --glob and --full-path, the pattern matches the whole absolute path and \
+         usually should start with '/' or '**/' (for example: '**/foo.txt').",
+    );
 }
 
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {

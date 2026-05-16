@@ -590,6 +590,21 @@ fn test_full_path_glob_searches() {
     );
 }
 
+#[cfg(not(windows))]
+#[test]
+fn test_warn_when_full_path_glob_missing_leading_anchor() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--glob", "--full-path", "foo.txt"], "");
+
+    let output = te.assert_success_and_get_output(".", &["--glob", "--full-path", "foo.txt"]);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("[fd warning]:") && stderr.contains("**/foo.txt"),
+        "expected full-path glob anchor warning, got: {stderr}"
+    );
+}
+
 #[test]
 fn test_smart_case_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
@@ -1461,6 +1476,24 @@ fn test_extension() {
     let te4 = TestEnv::new(&[], &[".hidden", "test.hidden"]);
 
     te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
+}
+
+/// Help text for `--full-path` should not use ambiguous wording (#1686)
+#[test]
+fn test_full_path_help_text() {
+    let fd_exe = std::path::PathBuf::from(
+        std::env::var("CARGO_BIN_EXE_fd").unwrap_or_else(|_| env!("CARGO_BIN_EXE_fd").to_string()),
+    );
+    let output = std::process::Command::new(&fd_exe)
+        .arg("-h")
+        .output()
+        .expect("fd -h");
+    assert!(output.status.success());
+    let help = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        help.contains("Search absolute path (default: last path component only)"),
+        "unexpected -p help in:\n{help}"
+    );
 }
 
 /// No file extension (test for the pattern provided in the --help text)
