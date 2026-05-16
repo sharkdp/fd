@@ -459,6 +459,13 @@ fn test_explicit_root_path() {
     );
 }
 
+#[test]
+fn test_single_dash_root_path() {
+    let te = TestEnv::new(&["-"], &["-/foo"]);
+
+    te.assert_output(&[".", "-"], "./-/foo");
+}
+
 /// Regex searches
 #[test]
 fn test_regex_searches() {

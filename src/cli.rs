@@ -712,6 +712,10 @@ impl Opts {
         } else if path == Path::new(".") {
             // Change "." to "./" as a workaround for https://github.com/BurntSushi/ripgrep/pull/2711
             PathBuf::from("./")
+        } else if path == Path::new("-") {
+            // Prefix "-" so the underlying walker treats it as a path.
+            // See sharkdp/fd#849.
+            Path::new(".").join(path)
         } else {
             path.to_path_buf()
         }
