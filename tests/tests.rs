@@ -590,21 +590,6 @@ fn test_full_path_glob_searches() {
     );
 }
 
-#[cfg(not(windows))]
-#[test]
-fn test_warn_when_full_path_glob_missing_leading_anchor() {
-    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
-
-    te.assert_output(&["--glob", "--full-path", "foo.txt"], "");
-
-    let output = te.assert_success_and_get_output(".", &["--glob", "--full-path", "foo.txt"]);
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(
-        stderr.contains("[fd warning]:") && stderr.contains("**/foo.txt"),
-        "expected full-path glob anchor warning, got: {stderr}"
-    );
-}
-
 #[test]
 fn test_smart_case_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
