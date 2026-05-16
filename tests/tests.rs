@@ -4,7 +4,7 @@ mod testenv;
 use nix::unistd::{Gid, Group, Uid, User};
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 use test_case::test_case;
 
@@ -1304,15 +1304,12 @@ fn test_normalized_absolute_path() {
 fn test_full_path_normalizes_relative_search_path() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
+    let target = PathBuf::from(&abs_path).join("one").join("b.foo");
+    let pattern = escape(target.to_string_lossy().as_ref());
+
     te.assert_output_subdirectory(
         "one/two",
-        &[
-            "--full-path",
-            "-t",
-            "f",
-            &format!("{abs_path}/one/b.foo"),
-            "..",
-        ],
+        &["--full-path", "-t", "f", &pattern, ".."],
         "../b.foo",
     );
 }
