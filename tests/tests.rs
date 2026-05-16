@@ -1466,7 +1466,8 @@ fn test_extension() {
 /// Help text for `--full-path` should not use ambiguous wording (#1686)
 #[test]
 fn test_full_path_help_text() {
-    let fd_exe = std::path::PathBuf::from(std::env::var("CARGO_BIN_EXE_fd").expect("CARGO_BIN_EXE_fd"));
+    let fd_exe =
+        std::path::PathBuf::from(std::env::var("CARGO_BIN_EXE_fd").expect("CARGO_BIN_EXE_fd"));
     let output = std::process::Command::new(&fd_exe)
         .arg("-h")
         .output()
