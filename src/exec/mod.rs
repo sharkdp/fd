@@ -244,9 +244,7 @@ impl CommandTemplate {
 
         // A placeholder as the executable is meaningful for `--exec` but never for `--exec-batch`.
         if mode == ExecutionMode::Batch && args[0].has_tokens() {
-            bail!(
-                "First argument of --exec-batch must be a fixed executable, not a placeholder"
-            );
+            bail!("First argument of --exec-batch must be a fixed executable, not a placeholder");
         }
 
         // If a placeholder token was not supplied, append one at the end of the command.
@@ -427,7 +425,9 @@ mod tests {
 
     #[test]
     fn template_no_args() {
-        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![], ExecutionMode::OneByOne).is_err());
+        assert!(
+            CommandTemplate::new::<Vec<_>, &'static str>(vec![], ExecutionMode::OneByOne).is_err()
+        );
     }
 
     #[test]
