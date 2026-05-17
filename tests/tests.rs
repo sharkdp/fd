@@ -1100,6 +1100,11 @@ fn test_follow_broken_symlink() {
         "broken_symlink",
     );
     te.assert_output(&["--follow", "--type", "file", "symlink"], "");
+
+    te.assert_output(
+        &["--follow", "--exclude", "broken_symlink", "broken_symlink"],
+        "",
+    );
 }
 
 /// Null separator (--print0)
