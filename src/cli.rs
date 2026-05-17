@@ -22,8 +22,8 @@ use crate::filter::SizeFilter;
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem",
-    after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
+    about = "A program to find entries in your filesystem with glob and regex based matching. By default, fd respects gitignore rules, ignores hidden directories, and is case insensitive.",
+    after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues.",
     max_term_width = 98,
     args_override_self = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
