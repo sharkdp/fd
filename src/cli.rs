@@ -1,3 +1,4 @@
+use std::io;
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -688,32 +689,30 @@ impl Opts {
         } else {
             let current_directory = Path::new("./");
             ensure_current_directory_exists(current_directory)?;
-            return Ok(vec![self.normalize_path(current_directory)]);
+            return Ok(vec![self.normalize_path(current_directory)?]);
         };
-        Ok(paths
-            .iter()
-            .filter_map(|path| {
-                if filesystem::is_existing_directory(path) {
-                    Some(self.normalize_path(path))
-                } else {
-                    print_error(format!(
-                        "Search path '{}' is not a directory.",
-                        path.to_string_lossy()
-                    ));
-                    None
-                }
-            })
-            .collect())
+        let mut normalized_paths = Vec::new();
+        for path in paths {
+            if filesystem::is_existing_directory(path) {
+                normalized_paths.push(self.normalize_path(path)?);
+            } else {
+                print_error(format!(
+                    "Search path '{}' is not a directory.",
+                    path.to_string_lossy()
+                ));
+            }
+        }
+        Ok(normalized_paths)
     }
 
-    fn normalize_path(&self, path: &Path) -> PathBuf {
+    fn normalize_path(&self, path: &Path) -> io::Result<PathBuf> {
         if self.absolute_path {
-            filesystem::absolute_path(path.normalize().unwrap().as_path()).unwrap()
+            filesystem::absolute_path(path.normalize()?.as_path())
         } else if path == Path::new(".") {
             // Change "." to "./" as a workaround for https://github.com/BurntSushi/ripgrep/pull/2711
-            PathBuf::from("./")
+            Ok(PathBuf::from("./"))
         } else {
-            path.to_path_buf()
+            Ok(path.to_path_buf())
         }
     }
 
