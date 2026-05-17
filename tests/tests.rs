@@ -1176,6 +1176,48 @@ fn test_min_depth() {
     );
 }
 
+/// Broken symlinks should respect --min-depth and --exact-depth
+/// Regression test for https://github.com/sharkdp/fd/issues/1017
+#[test]
+fn test_broken_symlink_with_min_depth() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_link")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink at one/two/broken_link is at depth 3
+    // (root=0, one=1, two=2, broken_link=3)
+
+    // Without --follow, broken symlinks are found as regular entries.
+    // With --min-depth=3, the broken symlink at depth 3 should be included
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--min-depth", "1", "--type", "symlink", "broken"],
+        "broken_link",
+    );
+
+    // With --min-depth=2, the broken symlink at depth 1 (relative to one/two)
+    // should be excluded
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--min-depth", "2", "--type", "symlink", "broken"],
+        "",
+    );
+
+    // With --follow, broken symlinks trigger error handling where depth
+    // was previously lost. Verify they still respect depth filters.
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--follow", "--min-depth", "1", "--type", "symlink", "broken"],
+        "broken_link",
+    );
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--follow", "--min-depth", "2", "--type", "symlink", "broken"],
+        "",
+    );
+}
+
 /// Exact depth (--exact-depth)
 #[test]
 fn test_exact_depth() {

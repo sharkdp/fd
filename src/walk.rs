@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -440,11 +440,18 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>, search_paths: &[PathBuf]) {
+        let search_roots: Vec<PathBuf> = search_paths.iter().map(|p| {
+            // Canonicalize the search paths so depth computation works correctly
+            p.canonicalize().unwrap_or_else(|_| p.clone())
+        }).collect();
+        let search_roots = Arc::new(search_roots);
+
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
+            let search_roots = Arc::clone(&search_roots);
 
             let mut limit = 0x100;
             if let Some(cmd) = &config.command
@@ -488,15 +495,18 @@ impl WorkerState {
                         path,
                         err: inner_err,
                     }) => match inner_err.as_ref() {
-                        ignore::Error::Io(io_error)
-                            if io_error.kind() == io::ErrorKind::NotFound
-                                && path
-                                    .symlink_metadata()
-                                    .ok()
-                                    .is_some_and(|m| m.file_type().is_symlink()) =>
-                        {
-                            DirEntry::broken_symlink(path)
-                        }
+            ignore::Error::Io(io_error)
+                    if io_error.kind() == io::ErrorKind::NotFound
+                        && path
+                            .symlink_metadata()
+                            .ok()
+                            .is_some_and(|m| m.file_type().is_symlink()) =>
+                {
+                    let depth = inner_err.depth().or_else(|| {
+                        compute_depth_from_path(&path, &search_roots)
+                    });
+                    DirEntry::broken_symlink(path, depth)
+                }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
                                 path,
@@ -650,7 +660,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            self.spawn_senders(walker, tx, paths);
 
             receiver.join().unwrap()
         });
@@ -696,9 +706,46 @@ pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<E
     WorkerState::new(patterns, config).scan(paths)
 }
 
+/// Compute the depth of a path relative to a set of search root paths.
+///
+/// This is used as a fallback for broken symlinks where the `ignore` crate's
+/// error doesn't carry depth information. It strips the matching root prefix
+/// from the path and counts the remaining components.
+fn compute_depth_from_path(path: &Path, search_roots: &[PathBuf]) -> Option<usize> {
+    use std::path::Component;
+
+    // Canonicalize the path so it can be compared against the canonicalized
+    // search roots. For broken symlinks, canonicalize() will fail because the
+    // target doesn't exist, so we canonicalize the parent and append the file name.
+    let canonical_path = match path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            // Canonicalize the parent directory and re-append the file name
+            let parent = path.parent()?;
+            let canonical_parent = parent.canonicalize().ok()?;
+            let file_name = path.file_name()?;
+            canonical_parent.join(file_name)
+        }
+    };
+
+    // Try to find which search root this path is under
+    let relative_path = search_roots.iter().find_map(|root| {
+        canonical_path.strip_prefix(root).ok()
+    })?;
+
+    // Count the remaining components (the depth relative to the root)
+    Some(
+        relative_path
+            .components()
+            .filter(|c| !matches!(c, Component::Prefix(_) | Component::RootDir | Component::CurDir))
+            .count(),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::search_str_for_entry;
+    use super::compute_depth_from_path;
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -734,5 +781,23 @@ mod tests {
             search_str_for_entry(Path::new("./foo/bar"), None),
             PathBuf::from("bar")
         );
+    }
+
+    #[test]
+    fn compute_depth_from_path_basic() {
+        let tmpdir = std::env::temp_dir();
+        let root = tmpdir.canonicalize().unwrap();
+
+        // Create a nested directory structure
+        let nested = tmpdir.join("fd_test_depth").join("a").join("b");
+        std::fs::create_dir_all(&nested).unwrap();
+
+        // A path at depth 3 (fd_test_depth/a/b)
+        let path = nested.clone();
+        let depth = compute_depth_from_path(&path, &[root.clone()]);
+        assert_eq!(depth, Some(3));
+
+        // Clean up
+        std::fs::remove_dir_all(tmpdir.join("fd_test_depth")).ok();
     }
 }

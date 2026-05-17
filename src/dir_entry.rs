@@ -11,7 +11,7 @@ use crate::filesystem::strip_current_dir;
 #[derive(Debug)]
 enum DirEntryInner {
     Normal(ignore::DirEntry),
-    BrokenSymlink(PathBuf),
+    BrokenSymlink(PathBuf, usize),
 }
 
 #[derive(Debug)]
@@ -31,9 +31,10 @@ impl DirEntry {
         }
     }
 
-    pub fn broken_symlink(path: PathBuf) -> Self {
+    pub fn broken_symlink(path: PathBuf, depth: Option<usize>) -> Self {
+        let depth = depth.unwrap_or_else(|| path_depth(&path));
         Self {
-            inner: DirEntryInner::BrokenSymlink(path),
+            inner: DirEntryInner::BrokenSymlink(path, depth),
             metadata: OnceCell::new(),
             style: OnceCell::new(),
         }
@@ -42,14 +43,14 @@ impl DirEntry {
     pub fn path(&self) -> &Path {
         match &self.inner {
             DirEntryInner::Normal(e) => e.path(),
-            DirEntryInner::BrokenSymlink(pathbuf) => pathbuf.as_path(),
+            DirEntryInner::BrokenSymlink(pathbuf, _) => pathbuf.as_path(),
         }
     }
 
     pub fn into_path(self) -> PathBuf {
         match self.inner {
             DirEntryInner::Normal(e) => e.into_path(),
-            DirEntryInner::BrokenSymlink(p) => p,
+            DirEntryInner::BrokenSymlink(p, _) => p,
         }
     }
 
@@ -74,7 +75,7 @@ impl DirEntry {
     pub fn file_type(&self) -> Option<FileType> {
         match &self.inner {
             DirEntryInner::Normal(e) => e.file_type(),
-            DirEntryInner::BrokenSymlink(_) => self.metadata().map(|m| m.file_type()),
+            DirEntryInner::BrokenSymlink(_, _) => self.metadata().map(|m| m.file_type()),
         }
     }
 
@@ -82,7 +83,7 @@ impl DirEntry {
         self.metadata
             .get_or_init(|| match &self.inner {
                 DirEntryInner::Normal(e) => e.metadata().ok(),
-                DirEntryInner::BrokenSymlink(path) => path.symlink_metadata().ok(),
+                DirEntryInner::BrokenSymlink(path, _) => path.symlink_metadata().ok(),
             })
             .as_ref()
     }
@@ -90,7 +91,7 @@ impl DirEntry {
     pub fn depth(&self) -> Option<usize> {
         match &self.inner {
             DirEntryInner::Normal(e) => Some(e.depth()),
-            DirEntryInner::BrokenSymlink(_) => None,
+            DirEntryInner::BrokenSymlink(_, depth) => Some(*depth),
         }
     }
 
@@ -124,6 +125,32 @@ impl Ord for DirEntry {
     }
 }
 
+/// Compute the depth of a path by counting its meaningful components.
+///
+/// The depth is the number of path components beneath the root. For example:
+/// - `foo` has depth 1
+/// - `foo/bar` has depth 2
+/// - `foo/bar/baz` has depth 3
+///
+/// Prefix components (like `/` on Unix or `C:\` on Windows) and
+/// `CurrentDir` (`.`) components are not counted, matching the
+/// behavior of `ignore::DirEntry::depth()`.
+///
+/// This is used as a fallback when the depth is not available from
+/// the `ignore` crate's error information (e.g., for broken symlinks
+/// where the depth was not captured during traversal).
+fn path_depth(path: &Path) -> usize {
+    use std::path::Component;
+    path.components()
+        .filter(|c| {
+            !matches!(
+                c,
+                Component::Prefix(_) | Component::RootDir | Component::CurDir
+            )
+        })
+        .count()
+}
+
 impl Colorable for DirEntry {
     fn path(&self) -> PathBuf {
         self.path().to_owned()
@@ -132,7 +159,7 @@ impl Colorable for DirEntry {
     fn file_name(&self) -> OsString {
         let name = match &self.inner {
             DirEntryInner::Normal(e) => e.file_name(),
-            DirEntryInner::BrokenSymlink(path) => {
+            DirEntryInner::BrokenSymlink(path, _) => {
                 // Path::file_name() only works if the last component is Normal,
                 // but we want it for all component types, so we open code it.
                 // Copied from LsColors::style_for_path_with_metadata().
