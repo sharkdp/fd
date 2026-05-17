@@ -1906,7 +1906,7 @@ fn test_exec_batch() {
 
         te.assert_failure_with_error(
             &["foo", "--exec-batch", "echo {}"],
-            "error: First argument of --exec/--exec-batch must be a fixed executable, not a placeholder\n\
+            "error: First argument of --exec-batch must be a fixed executable, not a placeholder\n\
             \n\
             Usage: fd [OPTIONS] [pattern] [path]...\n\
             \n\

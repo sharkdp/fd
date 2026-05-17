@@ -43,7 +43,7 @@ impl CommandSet {
             mode: ExecutionMode::OneByOne,
             commands: input
                 .into_iter()
-                .map(CommandTemplate::new)
+                .map(|args| CommandTemplate::new(args, ExecutionMode::OneByOne))
                 .collect::<Result<_>>()?,
         })
     }
@@ -59,7 +59,7 @@ impl CommandSet {
             commands: input
                 .into_iter()
                 .map(|args| {
-                    let cmd = CommandTemplate::new(args)?;
+                    let cmd = CommandTemplate::new(args, ExecutionMode::Batch)?;
                     if cmd.number_of_tokens() > 1 {
                         bail!("Only one placeholder allowed for batch commands");
                     }
@@ -217,7 +217,7 @@ struct CommandTemplate {
 }
 
 impl CommandTemplate {
-    fn new<I, S>(input: I) -> Result<CommandTemplate>
+    fn new<I, S>(input: I, mode: ExecutionMode) -> Result<CommandTemplate>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -242,11 +242,10 @@ impl CommandTemplate {
             bail!("No executable provided for --exec or --exec-batch");
         }
 
-        // Reject placeholder-as-executable for both --exec and --exec-batch
-        // (was previously checked only for --exec-batch).
-        if args[0].has_tokens() {
+        // A placeholder as the executable is meaningful for `--exec` but never for `--exec-batch`.
+        if mode == ExecutionMode::Batch && args[0].has_tokens() {
             bail!(
-                "First argument of --exec/--exec-batch must be a fixed executable, not a placeholder"
+                "First argument of --exec-batch must be a fixed executable, not a placeholder"
             );
         }
 
@@ -370,7 +369,8 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces() {
-        let template = CommandTemplate::new(vec!["{{}}", "{{", "{.}}"]).unwrap();
+        let template =
+            CommandTemplate::new(vec!["{{}}", "{{", "{.}}"], ExecutionMode::OneByOne).unwrap();
         assert_eq!(
             generate_str(&template, "foo"),
             vec!["{}", "{", "{.}", "foo"]
@@ -379,7 +379,8 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces_and_placeholder() {
-        let template = CommandTemplate::new(vec!["echo", "{{{},end}"]).unwrap();
+        let template =
+            CommandTemplate::new(vec!["echo", "{{{},end}"], ExecutionMode::OneByOne).unwrap();
         assert_eq!(generate_str(&template, "foo"), vec!["echo", "{foo,end}"]);
     }
 
@@ -426,7 +427,7 @@ mod tests {
 
     #[test]
     fn template_no_args() {
-        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![]).is_err());
+        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![], ExecutionMode::OneByOne).is_err());
     }
 
     #[test]
@@ -436,8 +437,8 @@ mod tests {
 
     #[test]
     fn placeholder_as_executable_rejected() {
-        assert!(CommandSet::new(vec![vec!["{}"]]).is_err());
-        assert!(CommandSet::new(vec![vec!["{/}", "arg"]]).is_err());
+        assert!(CommandSet::new(vec![vec!["{}"]]).is_ok());
+        assert!(CommandSet::new(vec![vec!["{/}", "arg"]]).is_ok());
         assert!(CommandSet::new_batch(vec![vec!["{}"]]).is_err());
     }
 
