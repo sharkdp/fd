@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
@@ -441,10 +442,13 @@ impl WorkerState {
 
     /// Spawn the sender threads.
     fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>, paths: &[PathBuf]) {
+        let broken_symlink_visits = Mutex::new(HashMap::new());
+
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
+            let broken_symlink_visits = &broken_symlink_visits;
 
             let mut limit = 0x100;
             if let Some(cmd) = &config.command
@@ -495,7 +499,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            let depth = depth_for_path(&path, paths);
+                            let depth =
+                                next_broken_symlink_depth(&path, paths, broken_symlink_visits);
                             DirEntry::broken_symlink(path, depth)
                         }
                         _ => {
@@ -688,7 +693,21 @@ fn search_str_for_entry<'a>(
     }
 }
 
-fn depth_for_path(path: &Path, roots: &[PathBuf]) -> Option<usize> {
+fn next_broken_symlink_depth(
+    path: &Path,
+    roots: &[PathBuf],
+    visits: &Mutex<HashMap<PathBuf, usize>>,
+) -> Option<usize> {
+    let mut visits = visits.lock().unwrap();
+    let visit_count = visits.entry(path.to_path_buf()).or_default();
+    let depth_index = *visit_count;
+    *visit_count += 1;
+    drop(visits);
+
+    depths_for_path(path, roots).get(depth_index).copied()
+}
+
+fn depths_for_path(path: &Path, roots: &[PathBuf]) -> Vec<usize> {
     roots
         .iter()
         .filter_map(|root| {
@@ -698,7 +717,7 @@ fn depth_for_path(path: &Path, roots: &[PathBuf]) -> Option<usize> {
                 relative_depth(&absolute_path, &absolute_root)
             })
         })
-        .min()
+        .collect()
 }
 
 fn relative_depth(path: &Path, root: &Path) -> Option<usize> {

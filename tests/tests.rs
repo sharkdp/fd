@@ -1188,6 +1188,29 @@ fn test_min_depth() {
         "one/two/three/broken_link",
     );
     te.assert_output(&["--follow", "--min-depth", "4", "broken_link", "one"], "");
+    te.assert_output(
+        &[
+            "--follow",
+            "--min-depth",
+            "3",
+            "broken_link",
+            "one",
+            "one/two",
+        ],
+        "one/two/three/broken_link",
+    );
+    te.assert_output(
+        &[
+            "--follow",
+            "--min-depth",
+            "2",
+            "broken_link",
+            "one",
+            "one/two",
+        ],
+        "one/two/three/broken_link
+        one/two/three/broken_link",
+    );
 }
 
 /// Exact depth (--exact-depth)
