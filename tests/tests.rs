@@ -396,6 +396,18 @@ fn test_pattern_with_forward_slash_is_rejected() {
     );
 }
 
+/// With --glob, a path separator in the pattern should produce a glob-specific
+/// diagnostic (see sharkdp/fd#1720).
+#[test]
+fn test_glob_pattern_with_forward_slash_is_rejected() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_failure_with_error(
+        &["--glob", "foo/*.rs"],
+        "[fd error]: The glob pattern 'foo/*.rs' contains a path separator.",
+    );
+}
+
 /// --full-path is the user's explicit opt-in to regex-over-full-path matching,
 /// so a path-separation character in the pattern is expected and must not
 /// trigger the diagnostic.
