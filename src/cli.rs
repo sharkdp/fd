@@ -22,7 +22,7 @@ use crate::filter::SizeFilter;
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem",
+    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and is case insensitive.",
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     max_term_width = 98,
     args_override_self = true,
@@ -712,6 +712,10 @@ impl Opts {
         } else if path == Path::new(".") {
             // Change "." to "./" as a workaround for https://github.com/BurntSushi/ripgrep/pull/2711
             PathBuf::from("./")
+        } else if path == Path::new("-") {
+            // Prefix "-" so the underlying walker treats it as a path.
+            // See sharkdp/fd#849.
+            Path::new(".").join(path)
         } else {
             path.to_path_buf()
         }
