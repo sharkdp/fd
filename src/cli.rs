@@ -22,7 +22,7 @@ use crate::filter::SizeFilter;
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem",
+    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and is case insensitive.",
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     max_term_width = 98,
     args_override_self = true,
