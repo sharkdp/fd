@@ -75,6 +75,7 @@ diff = "0.1"
 tempfile = "3.27"
 filetime = "0.2"
 test-case = "3.3"
+rand = "0.10.1"
 
 [profile.dev]
 debug = "line-tables-only"

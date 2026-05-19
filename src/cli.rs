@@ -11,6 +11,7 @@ use clap::{
 use clap_complete::Shell;
 use normpath::PathExt;
 
+use crate::config::SortKey;
 use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
@@ -546,8 +547,25 @@ pub struct Opts {
     ///
     /// Amount of time in milliseconds to buffer, before streaming the search
     /// results to the console.
-    #[arg(long, hide = true, value_parser = parse_millis)]
+    #[arg(long, hide = true, value_parser = parse_millis, conflicts_with("sort"))]
     pub max_buffer_time: Option<Duration>,
+
+    /// Sort search results by the given key before printing or executing commands via `--exec`/`--exec-batch`.
+    ///
+    /// This option results in slower execution as parallel execution is effectively disabled.
+    ///
+    /// Warning: This option significantly increases memory usage.
+    /// All results are buffered in memory before outputting.
+    #[arg(
+        long,
+        value_name = "key",
+        value_enum,
+        hide_short_help = true,
+        help = "Sort results by: path, size, created, or modified",
+        long_help,
+        conflicts_with_all(&["list_details", "max_buffer_time"])
+    )]
+    pub sort: Option<SortKey>,
 
     ///Limit the number of search results to 'count' and quit immediately.
     #[arg(

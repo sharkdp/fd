@@ -2,6 +2,7 @@
 
 ## Features
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
+- Add `--sort` arg to CLI to sort by path/size/dates, see #1875 and #1982 (@DeflateAwning)
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).

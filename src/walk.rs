@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
@@ -15,7 +15,7 @@ use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
 use regex::bytes::Regex;
 
-use crate::config::Config;
+use crate::config::{Config, SortKey};
 use crate::dir_entry::DirEntry;
 use crate::error::print_error;
 use crate::exec;
@@ -24,7 +24,7 @@ use crate::filesystem;
 use crate::output;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 enum ReceiverMode {
     /// Receiver is still buffering in order to sort the results, if the search finishes fast
     /// enough.
@@ -122,7 +122,8 @@ impl BatchSender {
 }
 
 /// Maximum size of the output buffer before flushing results to the console
-const MAX_BUFFER_LENGTH: usize = 1000;
+pub const DEFAULT_MAX_BUFFER_LENGTH: usize = 1000;
+
 /// Default duration until output buffering switches to streaming.
 const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 
@@ -165,7 +166,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             stdout,
             mode: ReceiverMode::Buffering,
             deadline,
-            buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
+            buffer: Vec::with_capacity(config.max_buffer_size.min(10_000)),
             num_results: 0,
         }
     }
@@ -208,7 +209,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             match self.mode {
                                 ReceiverMode::Buffering => {
                                     self.buffer.push(dir_entry);
-                                    if self.buffer.len() > MAX_BUFFER_LENGTH {
+                                    if self.buffer.len() > self.config.max_buffer_size {
                                         self.stream()?;
                                     }
                                 }
@@ -241,6 +242,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                 self.stream()?;
             }
             Err(RecvTimeoutError::Disconnected) => {
+                // Note: This branch is called when all the results are walked/exhausted.
                 return self.stop();
             }
         }
@@ -280,9 +282,22 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Stop looping.
     fn stop(&mut self) -> Result<(), ExitCode> {
-        if self.mode == ReceiverMode::Buffering {
-            self.buffer.sort();
-            self.stream()?;
+        match (self.mode, self.config.sort_key) {
+            (ReceiverMode::Buffering, None) => {
+                self.buffer.sort();
+                self.stream()?;
+            }
+            (ReceiverMode::Buffering, Some(sort_key)) => {
+                sort_dir_entry_results(&mut self.buffer, sort_key);
+                self.stream()?;
+            }
+            (ReceiverMode::Streaming, None) => {}
+            (ReceiverMode::Streaming, Some(_)) => {
+                // We force Buffering mode in Config construction if --sort is set by setting the timeout to almost infinity.
+                unreachable!(
+                    "--sort cannot work in Streaming mode. Buffering mode is forced in Config construction."
+                );
+            }
         }
 
         if self.config.quiet {
@@ -407,12 +422,23 @@ impl WorkerState {
     /// threads (for --exec).
     fn receive(&self, rx: Receiver<Batch>) -> ExitCode {
         let config = &self.config;
-
         // This will be set to `Some` if the `--exec` argument was supplied.
         if let Some(ref cmd) = config.command {
-            if cmd.in_batch_mode() {
+            if let Some(sort_key) = config.sort_key {
+                // With --sort, we must collect all results before dispatching,
+                // and run sequentially so the order is preserved.
+                let mut results: Vec<WorkerResult> = rx.into_iter().flatten().collect();
+                sort_worker_results(&mut results, sort_key);
+                if cmd.in_batch_mode() {
+                    exec::batch(results, cmd, config)
+                } else {
+                    exec::job(results, cmd, config)
+                }
+            } else if cmd.in_batch_mode() {
+                // Batch mode without sorting.
                 exec::batch(rx.into_iter().flatten(), cmd, config)
             } else {
+                // No sort. Not Batch mode. Dispatch jobs across a thread pool as results stream in.
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
                     let threads = config.threads;
@@ -661,6 +687,44 @@ impl WorkerState {
             Ok(exit_code)
         }
     }
+}
+
+type SortKeyValueFn = Box<dyn Fn(&DirEntry) -> Option<SortKeyValue>>;
+
+fn dir_entry_key_fn(sort_key: SortKey) -> SortKeyValueFn {
+    match sort_key {
+        SortKey::Path => Box::new(|e| Some(SortKeyValue::Path(e.path().to_path_buf()))),
+        SortKey::Size => Box::new(|e| filesystem::file_size(e).map(SortKeyValue::Size)),
+        SortKey::Created => {
+            Box::new(|e| e.metadata().map(|m| SortKeyValue::Time(m.created().ok())))
+        }
+        SortKey::Modified => {
+            Box::new(|e| e.metadata().map(|m| SortKeyValue::Time(m.modified().ok())))
+        }
+    }
+}
+
+fn sort_dir_entry_results(results: &mut [DirEntry], sort_key: SortKey) {
+    let key_fn = dir_entry_key_fn(sort_key);
+    results.sort_by_cached_key(|e| key_fn(e));
+}
+
+fn sort_worker_results(results: &mut [WorkerResult], sort_key: SortKey) {
+    let key_fn = dir_entry_key_fn(sort_key);
+    results.sort_by_cached_key(|r| match r {
+        WorkerResult::Entry(e) => key_fn(e),
+        WorkerResult::Error(_) => None,
+    });
+}
+
+/// Comparable key values, one variant per SortKey.
+/// None sorts last via Option<T: Ord>'s natural ordering (None > Some).
+/// Only like enum variants will be compared (e.g., Path < Size will never be compared).
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+enum SortKeyValue {
+    Path(PathBuf),
+    Size(u64),
+    Time(Option<SystemTime>),
 }
 
 fn search_str_for_entry<'a>(
