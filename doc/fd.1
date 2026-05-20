@@ -114,7 +114,14 @@ Perform a regular-expression based search (default). This can be used to overrid
 .TP
 .B \-F, \-\-fixed\-strings
 Treat the pattern as a literal string instead of a regular expression. Note that this also
-performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'.
+performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'
+or '\-\-exact'.
+.TP
+.B \-\-exact
+Perform an exact match. This is equivalent to '\-\-fixed\-strings' but requires the pattern to
+match the entire filename (or the full path if '\-\-full\-path' is used), rather than a substring.
+Special regex characters in the pattern are treated as literal characters.
+Cannot be used together with '\-\-glob' or '\-\-fixed\-strings'.
 .TP
 .BI "\-\-and " pattern
 Add additional required search patterns, all of which must be matched. Multiple additional
