@@ -316,6 +316,22 @@ mod tests {
     }
 
     #[test]
+    fn tokens_with_extension() {
+        assert_eq!(
+            CommandSet::new(vec![vec!["echo", "{.ext}"]]).unwrap(),
+            CommandSet {
+                commands: vec![CommandTemplate {
+                    args: vec![
+                        FormatTemplate::Text("echo".into()),
+                        FormatTemplate::Tokens(vec![Token::Extension]),
+                    ],
+                }],
+                mode: ExecutionMode::OneByOne,
+            }
+        );
+    }
+
+    #[test]
     fn tokens_with_basename() {
         assert_eq!(
             CommandSet::new(vec![vec!["echo", "{/}"]]).unwrap(),
