@@ -116,6 +116,12 @@ pub struct Config {
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,
 
+    /// Whether to print a message when the search completes with no matches.
+    pub no_matches_message: bool,
+
+    /// The search pattern supplied on the command line (for status messages).
+    pub search_pattern: String,
+
     /// The separator used to print file paths.
     pub path_separator: Option<String>,
 

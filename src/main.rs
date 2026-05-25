@@ -370,6 +370,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         #[cfg(unix)]
         owner_constraint,
         show_filesystem_errors: opts.show_errors,
+        no_matches_message: opts.no_matches_message,
+        search_pattern: opts.pattern.clone(),
         path_separator,
         actual_path_separator,
         max_results: opts.max_results(),

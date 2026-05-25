@@ -79,6 +79,28 @@ fn test_simple() {
     );
 }
 
+/// See: https://github.com/sharkdp/fd/issues/1819
+#[test]
+fn test_no_matches_message() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--no-matches-message", "no_such_file"], "");
+    te.assert_stderr_contains(
+        &["--no-matches-message", "no_such_file"],
+        "[fd]: No matches found for pattern: 'no_such_file'",
+    );
+
+    te.assert_output(&["no_such_file"], "");
+    te.assert_stderr_empty(&["no_such_file"]);
+}
+
+#[test]
+fn test_no_matches_message_respects_quiet() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_empty_stdout_and_stderr(&["-q", "--no-matches-message", "no_such_file"]);
+}
+
 static AND_EXTRA_FILES: &[&str] = &[
     "a.foo",
     "one/b.foo",

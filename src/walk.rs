@@ -285,6 +285,19 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             self.stream()?;
         }
 
+        if self.num_results == 0
+            && self.config.no_matches_message
+            && self.config.is_printing()
+            && !self.config.quiet
+        {
+            let pattern = &self.config.search_pattern;
+            if pattern.is_empty() {
+                crate::error::print_status("No matches found");
+            } else {
+                crate::error::print_status(format!("No matches found for pattern: '{pattern}'"));
+            }
+        }
+
         if self.config.quiet {
             Err(ExitCode::HasResults(self.num_results > 0))
         } else {

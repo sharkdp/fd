@@ -292,6 +292,46 @@ impl TestEnv {
         }
     }
 
+    /// Assert that stderr contains the expected substring and stdout is empty.
+    pub fn assert_stderr_contains(&self, args: &[&str], expected: &str) {
+        let output = self.run_command(Path::new("."), args);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.contains(expected),
+            "expected stderr to contain '{expected}', got:\n{stderr}"
+        );
+        assert!(
+            output.stdout.is_empty(),
+            "expected empty stdout, got:\n{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+    }
+
+    /// Assert that stderr is empty.
+    pub fn assert_stderr_empty(&self, args: &[&str]) {
+        let output = self.run_command(Path::new("."), args);
+        assert!(
+            output.stderr.is_empty(),
+            "expected empty stderr, got:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    /// Assert that both stdout and stderr are empty (exit status is not checked).
+    pub fn assert_empty_stdout_and_stderr(&self, args: &[&str]) {
+        let output = self.run_command(Path::new("."), args);
+        assert!(
+            output.stdout.is_empty(),
+            "expected empty stdout, got:\n{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        assert!(
+            output.stderr.is_empty(),
+            "expected empty stderr, got:\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
     /// Assert that calling *fd* with the specified arguments produces the expected error.
     pub fn assert_error(&self, args: &[&str], expected: &str) -> process::ExitStatus {
         self.assert_error_subdirectory(".", args, Some(expected))
