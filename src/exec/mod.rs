@@ -11,10 +11,10 @@ use anyhow::{Result, bail};
 use argmax::Command;
 
 use crate::exec::command::OutputBuffer;
-use crate::exit_codes::{ExitCode, merge_exitcodes};
+use crate::exit_codes::ExitCode;
 use crate::fmt::{FormatTemplate, Token};
 
-use self::command::{execute_commands, handle_cmd_error};
+use self::command::{execute_batch_commands, execute_commands, handle_cmd_error};
 pub use self::job::{batch, job};
 
 /// Execution mode of the command
@@ -90,36 +90,51 @@ impl CommandSet {
         execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
-    pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
+    pub fn execute_batch<I>(
+        &self,
+        paths: I,
+        limit: usize,
+        path_separator: Option<&str>,
+        parallel: bool,
+        threads: usize,
+    ) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
     {
-        let builders: io::Result<Vec<_>> = self
+        match self.collect_batches(paths, limit, path_separator) {
+            Ok(commands) => execute_batch_commands(commands, parallel, threads),
+            Err(e) => handle_cmd_error(None, e),
+        }
+    }
+
+    fn collect_batches<I>(
+        &self,
+        paths: I,
+        limit: usize,
+        path_separator: Option<&str>,
+    ) -> io::Result<Vec<Command>>
+    where
+        I: Iterator<Item = PathBuf>,
+    {
+        let mut builders: Vec<CommandBuilder> = self
             .commands
             .iter()
             .map(|c| CommandBuilder::new(c, limit))
-            .collect();
+            .collect::<io::Result<_>>()?;
 
-        match builders {
-            Ok(mut builders) => {
-                for path in paths {
-                    for builder in &mut builders {
-                        if let Err(e) = builder.push(&path, path_separator) {
-                            return handle_cmd_error(Some(&builder.cmd), e);
-                        }
-                    }
-                }
+        let mut commands = Vec::new();
 
-                for builder in &mut builders {
-                    if let Err(e) = builder.finish() {
-                        return handle_cmd_error(Some(&builder.cmd), e);
-                    }
-                }
-
-                merge_exitcodes(builders.iter().map(|b| b.exit_code()))
+        for path in paths {
+            for builder in &mut builders {
+                builder.push(&path, path_separator, &mut commands)?;
             }
-            Err(e) => handle_cmd_error(None, e),
         }
+
+        for builder in &mut builders {
+            builder.finish(&mut commands)?;
+        }
+
+        Ok(commands)
     }
 }
 
@@ -132,7 +147,6 @@ struct CommandBuilder {
     cmd: Command,
     count: usize,
     limit: usize,
-    exit_code: ExitCode,
 }
 
 impl CommandBuilder {
@@ -160,7 +174,6 @@ impl CommandBuilder {
             cmd,
             count: 0,
             limit,
-            exit_code: ExitCode::Success,
         })
     }
 
@@ -173,9 +186,14 @@ impl CommandBuilder {
         Ok(cmd)
     }
 
-    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+    fn push(
+        &mut self,
+        path: &Path,
+        separator: Option<&str>,
+        commands: &mut Vec<Command>,
+    ) -> io::Result<()> {
         if self.limit > 0 && self.count >= self.limit {
-            self.finish()?;
+            self.finish(commands)?;
         }
 
         let arg = self.path_arg.generate(path, separator);
@@ -183,7 +201,7 @@ impl CommandBuilder {
             .cmd
             .args_would_fit(iter::once(&arg).chain(&self.post_args))
         {
-            self.finish()?;
+            self.finish(commands)?;
         }
 
         self.cmd.try_arg(arg)?;
@@ -191,22 +209,15 @@ impl CommandBuilder {
         Ok(())
     }
 
-    fn finish(&mut self) -> io::Result<()> {
+    fn finish(&mut self, commands: &mut Vec<Command>) -> io::Result<()> {
         if self.count > 0 {
             self.cmd.try_args(&self.post_args)?;
-            if !self.cmd.status()?.success() {
-                self.exit_code = ExitCode::GeneralError;
-            }
-
-            self.cmd = Self::new_command(&self.pre_args)?;
+            let cmd = std::mem::replace(&mut self.cmd, Self::new_command(&self.pre_args)?);
+            commands.push(cmd);
             self.count = 0;
         }
 
         Ok(())
-    }
-
-    fn exit_code(&self) -> ExitCode {
-        self.exit_code
     }
 }
 

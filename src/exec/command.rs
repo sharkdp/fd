@@ -1,7 +1,10 @@
 use std::io;
 use std::io::Write;
+use std::sync::Mutex;
+use std::thread;
 
 use argmax::Command;
+use crossbeam_channel::unbounded;
 
 use crate::error::print_error;
 use crate::exit_codes::ExitCode;
@@ -96,6 +99,114 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     }
     output_buffer.write();
     ExitCode::Success
+}
+
+/// Execute a list of batch commands, optionally in parallel.
+pub fn execute_batch_commands(commands: Vec<Command>, parallel: bool, threads: usize) -> ExitCode {
+    if commands.is_empty() {
+        return ExitCode::Success;
+    }
+
+    if parallel && threads > 1 {
+        execute_batch_commands_parallel(commands, threads)
+    } else {
+        execute_batch_commands_sequential(commands)
+    }
+}
+
+fn execute_batch_commands_sequential(mut commands: Vec<Command>) -> ExitCode {
+    let mut exit_code = ExitCode::Success;
+
+    for mut cmd in commands.drain(..) {
+        match cmd.status() {
+            Ok(status) => {
+                if !status.success() {
+                    exit_code = ExitCode::GeneralError;
+                }
+            }
+            Err(err) => return handle_cmd_error(Some(&cmd), err),
+        }
+    }
+
+    exit_code
+}
+
+fn execute_batch_commands_parallel(commands: Vec<Command>, threads: usize) -> ExitCode {
+    let num_workers = threads.min(commands.len());
+    let (work_tx, work_rx) = unbounded::<Command>();
+    for cmd in commands {
+        let _ = work_tx.send(cmd);
+    }
+    drop(work_tx);
+
+    let (result_tx, result_rx) = unbounded::<BatchCommandResult>();
+    let stdout_lock = Mutex::new(());
+    let stderr_lock = Mutex::new(());
+
+    thread::scope(|scope| {
+        for _ in 0..num_workers {
+            let work_rx = work_rx.clone();
+            let result_tx = result_tx.clone();
+
+            scope.spawn(move || {
+                while let Ok(mut cmd) = work_rx.recv() {
+                    let result = match cmd.output() {
+                        Ok(output) => BatchCommandResult {
+                            stdout: output.stdout,
+                            stderr: output.stderr,
+                            success: output.status.success(),
+                            cmd,
+                            err: None,
+                        },
+                        Err(err) => BatchCommandResult {
+                            stdout: Vec::new(),
+                            stderr: Vec::new(),
+                            success: false,
+                            cmd,
+                            err: Some(err),
+                        },
+                    };
+
+                    if result_tx.send(result).is_err() {
+                        break;
+                    }
+                }
+            });
+        }
+    });
+
+    drop(result_tx);
+
+    let mut exit_code = ExitCode::Success;
+
+    for result in result_rx {
+        if let Some(err) = result.err {
+            return handle_cmd_error(Some(&result.cmd), err);
+        }
+
+        {
+            let _lock = stdout_lock.lock().unwrap();
+            let _ = io::stdout().lock().write_all(&result.stdout);
+        }
+        {
+            let _lock = stderr_lock.lock().unwrap();
+            let _ = io::stderr().lock().write_all(&result.stderr);
+        }
+
+        if !result.success {
+            exit_code = ExitCode::GeneralError;
+        }
+    }
+
+    exit_code
+}
+
+struct BatchCommandResult {
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    success: bool,
+    cmd: Command,
+    err: Option<io::Error>,
 }
 
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {

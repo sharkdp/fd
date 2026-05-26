@@ -312,6 +312,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         min_depth: opts.min_depth(),
         prune: opts.prune,
         threads: opts.threads().get(),
+        explicit_threads: opts.threads.is_some(),
         max_buffer_time: opts.max_buffer_time,
         ls_colors,
         hyperlink,
