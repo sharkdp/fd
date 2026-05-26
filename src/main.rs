@@ -100,7 +100,9 @@ fn run() -> Result<ExitCode> {
 
     let config = construct_config(opts, &pattern_regexps)?;
 
-    ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regexps)?;
+    if !config.only_restricted {
+        ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regexps)?;
+    }
 
     let regexps = pattern_regexps
         .into_iter()
@@ -375,6 +377,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
         ignore_contain: opts.ignore_contain,
+        only_restricted: opts.only_restricted,
     })
 }
 

@@ -4,7 +4,7 @@ use crate::filesystem;
 use faccess::PathExt;
 
 /// Whether or not to show
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct FileTypes {
     pub files: bool,
     pub directories: bool,

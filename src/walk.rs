@@ -1,8 +1,9 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -134,6 +135,8 @@ struct ReceiverBuffer<'a, W> {
     quit_flag: &'a AtomicBool,
     /// The ^C notifier.
     interrupt_flag: &'a AtomicBool,
+    /// Collect matching paths instead of printing them.
+    path_collector: Option<&'a Arc<Mutex<HashSet<PathBuf>>>>,
     /// Receiver for worker results.
     rx: Receiver<Batch>,
     /// Standard output.
@@ -161,6 +164,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             config,
             quit_flag,
             interrupt_flag,
+            path_collector: state.path_collector.as_ref(),
             rx,
             stdout,
             mode: ReceiverMode::Buffering,
@@ -201,6 +205,20 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                 for result in batch {
                     match result {
                         WorkerResult::Entry(dir_entry) => {
+                            if let Some(collector) = self.path_collector {
+                                collector
+                                    .lock()
+                                    .unwrap()
+                                    .insert(dir_entry.path().to_path_buf());
+                                self.num_results += 1;
+                                if let Some(max_results) = self.config.max_results
+                                    && self.num_results >= max_results
+                                {
+                                    return self.stop();
+                                }
+                                continue;
+                            }
+
                             if self.config.quiet {
                                 return Err(ExitCode::HasResults(true));
                             }
@@ -312,6 +330,10 @@ struct WorkerState {
     quit_flag: Arc<AtomicBool>,
     /// Flag specifically for quitting due to ^C
     interrupt_flag: Arc<AtomicBool>,
+    /// Collect matching paths instead of printing them.
+    path_collector: Option<Arc<Mutex<HashSet<PathBuf>>>>,
+    /// Skip matching paths for which this returns false.
+    path_filter: Option<Arc<dyn Fn(&Path) -> bool + Send + Sync>>,
 }
 
 impl WorkerState {
@@ -324,7 +346,19 @@ impl WorkerState {
             config,
             quit_flag,
             interrupt_flag,
+            path_collector: None,
+            path_filter: None,
         }
+    }
+
+    fn with_path_collector(mut self, path_collector: Arc<Mutex<HashSet<PathBuf>>>) -> Self {
+        self.path_collector = Some(path_collector);
+        self
+    }
+
+    fn with_path_filter(mut self, path_filter: Arc<dyn Fn(&Path) -> bool + Send + Sync>) -> Self {
+        self.path_filter = Some(path_filter);
+        self
     }
 
     fn build_overrides(&self, paths: &[PathBuf]) -> Result<Override> {
@@ -441,10 +475,12 @@ impl WorkerState {
 
     /// Spawn the sender threads.
     fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+        let path_filter = self.path_filter.clone();
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
+            let path_filter = path_filter.clone();
 
             let mut limit = 0x100;
             if let Some(cmd) = &config.command
@@ -607,6 +643,12 @@ impl WorkerState {
                     entry.style(ls_colors);
                 }
 
+                if let Some(filter) = &path_filter
+                    && !filter(entry_path)
+                {
+                    return WalkState::Continue;
+                }
+
                 let send_result = tx.send(WorkerResult::Entry(entry));
 
                 if send_result.is_err() {
@@ -693,7 +735,36 @@ fn search_str_for_entry<'a>(
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
+    if config.only_restricted {
+        return scan_only_restricted(paths, patterns, config);
+    }
+
     WorkerState::new(patterns, config).scan(paths)
+}
+
+fn scan_only_restricted(
+    paths: &[PathBuf],
+    patterns: Vec<Regex>,
+    mut config: Config,
+) -> Result<ExitCode> {
+    config.only_restricted = false;
+
+    let collector = Arc::new(Mutex::new(HashSet::new()));
+    WorkerState::new(patterns.clone(), config.clone())
+        .with_path_collector(Arc::clone(&collector))
+        .scan(paths)?;
+
+    let restricted = Arc::try_unwrap(collector)
+        .expect("path collector should have a single owner")
+        .into_inner()
+        .unwrap();
+
+    let unrestricted_config = config.without_restriction_filters();
+    let path_filter = Arc::new(move |path: &Path| !restricted.contains(path));
+
+    WorkerState::new(patterns, unrestricted_config)
+        .with_path_filter(path_filter)
+        .scan(paths)
 }
 
 #[cfg(test)]

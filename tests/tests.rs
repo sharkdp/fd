@@ -722,6 +722,44 @@ fn test_no_ignore() {
     );
 }
 
+/// Restricted-only search (--only-restricted)
+#[test]
+fn test_only_restricted() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--only-restricted", "foo"],
+        ".hidden.foo
+        fdignored.foo
+        gitignored.foo",
+    );
+}
+
+#[test]
+fn test_only_restricted_with_hidden() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--only-restricted", "--hidden", "foo"],
+        "fdignored.foo
+        gitignored.foo",
+    );
+}
+
+#[test]
+fn test_only_restricted_with_no_ignore() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--only-restricted", "--no-ignore", "foo"], ".hidden.foo");
+}
+
+#[test]
+fn test_only_restricted_with_hidden_and_no_ignore() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(&["--only-restricted", "--hidden", "--no-ignore", "foo"], "");
+}
+
 /// .gitignore and .fdignore
 #[test]
 fn test_gitignore_and_fdignore() {

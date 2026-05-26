@@ -3,7 +3,7 @@ use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Filter based on time ranges.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TimeFilter {
     Before(SystemTime),
     After(SystemTime),
