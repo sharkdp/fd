@@ -24,6 +24,8 @@ use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
 use crate::output;
 
+type PathPredicate = dyn Fn(&Path) -> bool + Send + Sync;
+
 /// The receiver thread can either be buffering results or directly streaming to the console.
 #[derive(PartialEq)]
 enum ReceiverMode {
@@ -333,7 +335,7 @@ struct WorkerState {
     /// Collect matching paths instead of printing them.
     path_collector: Option<Arc<Mutex<HashSet<PathBuf>>>>,
     /// Skip matching paths for which this returns false.
-    path_filter: Option<Arc<dyn Fn(&Path) -> bool + Send + Sync>>,
+    path_filter: Option<Arc<PathPredicate>>,
 }
 
 impl WorkerState {
@@ -356,7 +358,7 @@ impl WorkerState {
         self
     }
 
-    fn with_path_filter(mut self, path_filter: Arc<dyn Fn(&Path) -> bool + Send + Sync>) -> Self {
+    fn with_path_filter(mut self, path_filter: Arc<PathPredicate>) -> Self {
         self.path_filter = Some(path_filter);
         self
     }
