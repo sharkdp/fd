@@ -187,6 +187,16 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     }
 
     if should_warn {
+        if opts.glob {
+            return Err(anyhow!(
+                "The glob pattern '{pattern}' contains a path separator.\n\n\
+                 By default, `fd --glob` matches file names only, not directory paths. \
+                 To match against the full path, use:\n\n  \
+                 fd --glob --full-path '{pattern}'",
+                pattern = &opts.pattern,
+            ));
+        }
+
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
