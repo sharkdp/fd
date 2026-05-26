@@ -15,7 +15,7 @@ mod walk;
 
 use std::env;
 use std::io::IsTerminal;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{Context, Result, anyhow, bail};
@@ -98,7 +98,7 @@ fn run() -> Result<ExitCode> {
         .map(|pat| build_pattern_regex(pat, &opts))
         .collect::<Result<Vec<String>>>()?;
 
-    let config = construct_config(opts, &pattern_regexps)?;
+    let config = construct_config(opts, &pattern_regexps, &search_paths)?;
 
     ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regexps)?;
 
@@ -227,7 +227,11 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
     }
 }
 
-fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config> {
+fn construct_config(
+    mut opts: Opts,
+    pattern_regexps: &[String],
+    search_paths: &[PathBuf],
+) -> Result<Config> {
     // The search will be case-sensitive if the command line flag is set or
     // if any of the patterns has an uppercase character (smart case).
     let case_sensitive = !opts.ignore_case
@@ -295,7 +299,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
         read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
-        require_git_to_read_vcsignore: !opts.no_require_git,
+        require_git_to_read_vcsignore: walk::should_require_git_to_read_vcsignore(
+            search_paths,
+            opts.no_require_git,
+        ),
         read_parent_ignore: !opts.no_ignore_parent,
         read_global_ignore: !(opts.no_ignore
             || opts.rg_alias_ignore()

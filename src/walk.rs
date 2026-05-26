@@ -696,9 +696,27 @@ pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<E
     WorkerState::new(patterns, config).scan(paths)
 }
 
+/// Whether the `ignore` crate should require a `.git` directory to apply gitignore rules.
+///
+/// Jujutsu repositories use a `.jj` directory and still rely on `.gitignore` files. When a
+/// search path is inside such a repository, treat it like `--no-require-git` unless the user
+/// explicitly passes `--require-git`.
+pub fn should_require_git_to_read_vcsignore(
+    search_paths: &[PathBuf],
+    no_require_git: bool,
+) -> bool {
+    if no_require_git {
+        return false;
+    }
+
+    !search_paths
+        .iter()
+        .any(|path| path.ancestors().any(|ancestor| ancestor.join(".jj").is_dir()))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::search_str_for_entry;
+    use super::{search_str_for_entry, should_require_git_to_read_vcsignore};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -734,5 +752,18 @@ mod tests {
             search_str_for_entry(Path::new("./foo/bar"), None),
             PathBuf::from("bar")
         );
+    }
+
+    #[test]
+    fn should_require_git_in_jujutsu_repo() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        std::fs::create_dir(root.join(".jj")).unwrap();
+
+        assert!(!should_require_git_to_read_vcsignore(
+            &[root.join("src")],
+            false
+        ));
+        assert!(!should_require_git_to_read_vcsignore(&[root.join("src")], true));
     }
 }

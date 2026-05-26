@@ -851,6 +851,25 @@ fn test_custom_ignore_precedence() {
     te.assert_output(&["--no-ignore", "foo"], "inner/foo");
 }
 
+/// Respect .gitignore in Jujutsu repositories with a `.jj` directory (fixes #1817)
+#[test]
+fn test_jujutsu_repo_respects_gitignore() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::remove_dir(te.test_root().join(".git")).unwrap();
+    fs::create_dir(te.test_root().join(".jj")).unwrap();
+
+    te.assert_output(
+        &["foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/C.Foo2
+        one/two/three/d.foo
+        one/two/three/directory_foo/",
+    );
+}
+
 /// Don't require git to respect gitignore (--no-require-git)
 #[test]
 fn test_respect_ignore_files() {
