@@ -16,7 +16,9 @@ use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::SizeFilter;
+use crate::filter::{SizeFilter, TimeFilter};
+#[cfg(unix)]
+use crate::filter::LinksFilter;
 
 #[derive(Parser)]
 #[command(
@@ -414,6 +416,23 @@ pub struct Opts {
         verbatim_doc_comment,
         )]
     pub size: Vec<SizeFilter>,
+
+    /// Filter results based on the number of hard links (Unix only).
+    ///
+    /// The filter can be provided as:
+    /// {n}    --links 2       (exactly 2 hard links)
+    /// {n}    --links +2      (at least 2 hard links)
+    /// {n}    --links -1      (at most 1 hard link)
+    #[cfg(unix)]
+    #[arg(
+        long,
+        value_parser = LinksFilter::from_string,
+        allow_hyphen_values = true,
+        value_name = "count",
+        help = "Limit results based on the number of hard links (Unix only)",
+        long_help
+    )]
+    pub links: Vec<LinksFilter>,
 
     /// Filter results based on the file modification time. Files with modification times
     /// greater than the argument are returned. The argument can be provided

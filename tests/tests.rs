@@ -2342,6 +2342,28 @@ fn test_size() {
     te.assert_output(&["", "--size", "4ki"], "4_kibibytes.foo");
 }
 
+/// Filtering by hard link count (--links, Unix only)
+#[cfg(unix)]
+#[test]
+fn test_links_filter() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    fs::hard_link(
+        te.test_root().join("a.foo"),
+        te.test_root().join("a.foo.hardlink"),
+    )
+    .unwrap();
+
+    te.assert_output(
+        &["--type", "f", "--links", "2"],
+        "a.foo
+        a.foo.hardlink",
+    );
+
+    te.assert_output(&["--type", "f", "--links", "+1", "a.foo.hardlink"], "a.foo.hardlink");
+
+    te.assert_output(&["--type", "f", "--links", "-1", "a.foo.hardlink"], "");
+}
+
 #[cfg(test)]
 fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
     let st = SystemTime::now() - Duration::from_secs(duration_in_secs);

@@ -250,6 +250,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     check_path_separator_length(path_separator.as_deref())?;
 
     let size_limits = std::mem::take(&mut opts.size);
+    #[cfg(unix)]
+    let link_limits = std::mem::take(&mut opts.links);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
     let owner_constraint: Option<OwnerFilter> = opts.owner.and_then(OwnerFilter::filter_ignore);
@@ -366,6 +368,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
+        #[cfg(unix)]
+        link_constraints: link_limits,
         time_constraints,
         #[cfg(unix)]
         owner_constraint,

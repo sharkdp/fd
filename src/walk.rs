@@ -584,6 +584,24 @@ impl WorkerState {
                     }
                 }
 
+                #[cfg(unix)]
+                if !config.link_constraints.is_empty() {
+                    if let Some(metadata) = entry.metadata() {
+                        use std::os::unix::fs::MetadataExt;
+
+                        let nlink = metadata.nlink();
+                        if config
+                            .link_constraints
+                            .iter()
+                            .any(|constraint| !constraint.is_within(nlink))
+                        {
+                            return WalkState::Continue;
+                        }
+                    } else {
+                        return WalkState::Continue;
+                    }
+                }
+
                 // Filter out unwanted modification times
                 if !config.time_constraints.is_empty() {
                     let mut matched = false;

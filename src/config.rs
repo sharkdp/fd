@@ -6,8 +6,12 @@ use regex::bytes::RegexSet;
 use crate::exec::CommandSet;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
+#[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::{SizeFilter, TimeFilter};
+use crate::filter::SizeFilter;
+use crate::filter::TimeFilter;
+#[cfg(unix)]
+use crate::filter::LinksFilter;
 use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
@@ -108,6 +112,10 @@ pub struct Config {
 
     /// Constraints on last modification time of files
     pub time_constraints: Vec<TimeFilter>,
+
+    #[cfg(unix)]
+    /// Constraints on the number of hard links
+    pub link_constraints: Vec<LinksFilter>,
 
     #[cfg(unix)]
     /// User/group ownership constraint
