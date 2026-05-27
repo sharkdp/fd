@@ -498,7 +498,6 @@ pub struct Opts {
         long,
         value_name = "size",
         hide_short_help = true,
-        requires("exec_batch"),
         value_parser = value_parser!(usize),
         default_value_t,
         help = "Max number of arguments to run as a batch size with -X",

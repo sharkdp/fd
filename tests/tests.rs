@@ -2618,6 +2618,26 @@ fn test_list_details() {
     te.assert_success_and_get_output(".", &["--list-details"]);
 }
 
+/// `--list-details` runs `ls` in batch mode; make sure large result sets are split
+/// across multiple invocations instead of failing with "Argument list too long".
+#[test]
+#[cfg(unix)]
+fn test_list_details_many_files() {
+    use std::fs;
+
+    let te = TestEnv::new(&["many/"], &[]);
+    let many_dir = te.test_root().join("many");
+    for i in 0..40_000 {
+        fs::write(
+            many_dir.join(format!("list_details_batch_{i:06}.txt")),
+            b"",
+        )
+        .unwrap();
+    }
+
+    te.assert_success_and_get_output("many", &["--list-details"]);
+}
+
 #[test]
 fn test_single_and_multithreaded_execution() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);

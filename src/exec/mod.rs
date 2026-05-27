@@ -17,6 +17,20 @@ use crate::fmt::{FormatTemplate, Token};
 use self::command::{execute_commands, handle_cmd_error};
 pub use self::job::{batch, job};
 
+/// Returns true if an I/O error indicates that a command line exceeded OS limits.
+fn is_argument_list_too_long(err: &io::Error) -> bool {
+    #[cfg(unix)]
+    {
+        // E2BIG: argmax uses this when no more arguments can be added.
+        err.raw_os_error() == Some(7)
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = err;
+        false
+    }
+}
+
 /// Execution mode of the command
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExecutionMode {
@@ -186,7 +200,18 @@ impl CommandBuilder {
             self.finish()?;
         }
 
-        self.cmd.try_arg(arg)?;
+        match self.cmd.try_arg(&arg) {
+            Ok(_) => {}
+            Err(err) if is_argument_list_too_long(&err) => {
+                if self.count > 0 {
+                    self.finish()?;
+                    self.cmd.try_arg(arg)?;
+                } else {
+                    return Err(err);
+                }
+            }
+            Err(err) => return Err(err),
+        }
         self.count += 1;
         Ok(())
     }
