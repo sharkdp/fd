@@ -2628,11 +2628,7 @@ fn test_list_details_many_files() {
     let te = TestEnv::new(&["many/"], &[]);
     let many_dir = te.test_root().join("many");
     for i in 0..40_000 {
-        fs::write(
-            many_dir.join(format!("list_details_batch_{i:06}.txt")),
-            b"",
-        )
-        .unwrap();
+        fs::write(many_dir.join(format!("list_details_batch_{i:06}.txt")), b"").unwrap();
     }
 
     te.assert_success_and_get_output("many", &["--list-details"]);
