@@ -436,13 +436,17 @@ use a character class with a single hyphen character:
 > fd '[-]pattern'
 ```
 
-### "Command not found" for `alias`es or shell functions
+### "Command not found" for `alias`es, shell functions, or shell builtins
 
-Shell `alias`es and shell functions can not be used for command execution via `fd -x` or
-`fd -X`. In `zsh`, you can make the alias global via `alias -g myalias="…"`. In `bash`,
-you can use `export -f my_function` to make available to child processes. You would still
-need to call `fd -x bash -c 'my_function "$1"' bash`. For other use cases or shells, use
-a (temporary) shell script.
+Shell `alias`es, shell functions, and shell builtins (like `cd`, `source`, `export`,
+`echo` in some shells) can not be used for command execution via `fd -x` or `fd -X`,
+because `fd` executes commands as external processes. To use a shell builtin, wrap it
+in a shell invocation, e.g. `fd -x bash -c 'cd "$1" && pwd' bash`.
+
+For shell `alias`es: In `zsh`, you can make the alias global via `alias -g myalias="…"`.
+In `bash`, you can use `export -f my_function` to make a function available to child
+processes. You would still need to call `fd -x bash -c 'my_function "$1"' bash`.
+For other use cases or shells, use a (temporary) shell script.
 
 ### Placeholders in `-x`/`-X`
 
