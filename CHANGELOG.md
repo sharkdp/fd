@@ -5,6 +5,7 @@
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
 
 ## Bugfixes
+- Fix `--glob` patterns not working correctly when used with `--full-path`, see #1650 (@argon17)
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
