@@ -1,8 +1,9 @@
 use std::borrow::Cow;
+use std::env;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -709,14 +710,27 @@ pub fn should_require_git_to_read_vcsignore(
         return false;
     }
 
+    let current_dir = env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     !search_paths
         .iter()
-        .any(|path| path.ancestors().any(|ancestor| ancestor.join(".jj").is_dir()))
+        .all(|path| has_jj_ancestor(path, &current_dir))
+}
+
+fn has_jj_ancestor(path: &Path, current_dir: &Path) -> bool {
+    let search_path = if path.is_absolute() {
+        Cow::Borrowed(path)
+    } else {
+        Cow::Owned(current_dir.join(path))
+    };
+
+    search_path
+        .ancestors()
+        .any(|ancestor| ancestor.join(".jj").is_dir())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{search_str_for_entry, should_require_git_to_read_vcsignore};
+    use super::{has_jj_ancestor, search_str_for_entry, should_require_git_to_read_vcsignore};
     use std::path::{Path, PathBuf};
 
     #[test]
@@ -764,6 +778,33 @@ mod tests {
             &[root.join("src")],
             false
         ));
-        assert!(!should_require_git_to_read_vcsignore(&[root.join("src")], true));
+        assert!(!should_require_git_to_read_vcsignore(
+            &[root.join("src")],
+            true
+        ));
+    }
+
+    #[test]
+    fn should_require_git_for_mixed_jujutsu_and_non_jujutsu_paths() {
+        let jujutsu_temp = tempfile::tempdir().unwrap();
+        let normal_temp = tempfile::tempdir().unwrap();
+        std::fs::create_dir(jujutsu_temp.path().join(".jj")).unwrap();
+
+        assert!(should_require_git_to_read_vcsignore(
+            &[
+                jujutsu_temp.path().join("src"),
+                normal_temp.path().join("src")
+            ],
+            false
+        ));
+    }
+
+    #[test]
+    fn detects_jujutsu_repo_for_relative_search_path() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path();
+        std::fs::create_dir(root.join(".jj")).unwrap();
+
+        assert!(has_jj_ancestor(Path::new("src"), root));
     }
 }
