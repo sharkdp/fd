@@ -374,6 +374,49 @@ fn test_multi_file_with_missing() {
     );
 }
 
+/// Without --full-path, a pattern containing '/' should always produce the
+/// path-separator diagnostic, even if the pattern does not name an existing
+/// directory. Before the fix for sharkdp/fd#1873 this only fired when the
+/// pattern happened to resolve to a real directory, so the common typo of
+/// pasting a full path silently returned zero matches.
+#[test]
+fn test_pattern_with_forward_slash_is_rejected() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // Pattern that is NOT a real directory; old behaviour: no warning.
+    te.assert_failure_with_error(
+        &["nonexistent/path"],
+        "[fd error]: The search pattern 'nonexistent/path' contains a path-separation character and will not lead to any search results.",
+    );
+
+    // Pattern that IS a real directory; old behaviour: warning. Must still fire.
+    te.assert_failure_with_error(
+        &["one/two/three"],
+        "[fd error]: The search pattern 'one/two/three' contains a path-separation character and will not lead to any search results.",
+    );
+}
+
+/// --full-path is the user's explicit opt-in to regex-over-full-path matching,
+/// so a path-separation character in the pattern is expected and must not
+/// trigger the diagnostic.
+///
+/// Gated off Windows: the actual match is regex-over-the-full-path, so a
+/// forward-slash pattern only matches Unix-style paths. On Windows the OS
+/// uses `\` and `one/two/c` (as a literal regex) does not match a real
+/// entry — the behaviour this test is pinning (the diagnostic does not
+/// fire) is covered by the fact that the invocation does not error.
+#[test]
+#[cfg(not(windows))]
+fn test_pattern_with_forward_slash_allowed_with_full_path() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--full-path", "one/two/c"],
+        "one/two/c.foo
+        one/two/C.Foo2",
+    );
+}
+
 /// Explicit root path
 #[test]
 fn test_explicit_root_path() {
@@ -414,6 +457,13 @@ fn test_explicit_root_path() {
         ../three/d.foo
         ../three/directory_foo/",
     );
+}
+
+#[test]
+fn test_single_dash_root_path() {
+    let te = TestEnv::new(&["-"], &["-/foo"]);
+
+    te.assert_output(&[".", "-"], "./-/foo");
 }
 
 /// Regex searches
@@ -2135,14 +2185,57 @@ fn test_fixed_strings() {
     // Regex search, parens are treated as group
     te.assert_output(&["download (1)"], "");
 
-    // Literal search, parens are treated as characters
+    // Literal search, parens are treated as characters. Case-insensitive by default.
     te.assert_output(
         &["--fixed-strings", "download (1)"],
         "test2/Download (1).tar.gz",
     );
 
-    // Combine with --case-sensitive
+    // Combine with --case-sensitive (unmatched).
     te.assert_output(&["--fixed-strings", "--case-sensitive", "download (1)"], "");
+
+    // Combine with --case-sensitive (matched).
+    te.assert_output(
+        &["--fixed-strings", "--case-sensitive", "Download (1)"],
+        "test2/Download (1).tar.gz",
+    );
+}
+
+/// Literal search, non-substring (--exact)
+#[test]
+fn test_exact_literal_nonsubstring() {
+    let dirs = &["test1", "test2"];
+    let files = &[
+        "test1/a.foo",
+        "test1/aa.foo",
+        "test1/a.food",
+        "test1/ca.food",
+        "test1/a_foo",
+        "test2/Download (1).tar.gz",
+    ];
+    let te = TestEnv::new(dirs, files);
+
+    // Literal search, dot is treated as character. Should match only the exact name,
+    // not "aa.foo", "a.food", or "ca.food".
+    te.assert_output(&["--exact", "a.foo"], "test1/a.foo");
+
+    // Literal search, parens are treated as characters. Substring should not match.
+    te.assert_output(&["--exact", "download (1)"], "");
+
+    // Literal search, parens are treated as characters. Case-insensitive by default.
+    te.assert_output(
+        &["--exact", "download (1).tar.gz"],
+        "test2/Download (1).tar.gz",
+    );
+
+    // Combine with --case-sensitive, should not match due to case mismatch.
+    te.assert_output(&["--exact", "--case-sensitive", "download (1).tar.gz"], "");
+
+    // Combine with --case-sensitive, exact match should match.
+    te.assert_output(
+        &["--exact", "--case-sensitive", "Download (1).tar.gz"],
+        "test2/Download (1).tar.gz",
+    );
 }
 
 /// Filenames with invalid UTF-8 sequences
@@ -2465,7 +2558,7 @@ fn test_max_results() {
     assert_just_one_result_with_option("--max-results=1");
     assert_just_one_result_with_option("-1");
 
-    // check that --max-results & -1 conflic with --exec
+    // check that --max-results & -1 conflict with --exec
     te.assert_failure(&["thing", "--max-results=0", "--exec=cat"]);
     te.assert_failure(&["thing", "-1", "--exec=cat"]);
     te.assert_failure(&["thing", "--max-results=1", "-1", "--exec=cat"]);
@@ -2697,7 +2790,7 @@ fn test_hyperlink() {
     #[cfg(unix)]
     let hostname = nix::unistd::gethostname().unwrap().into_string().unwrap();
     #[cfg(not(unix))]
-    let hostname = "";
+    let hostname = "/";
 
     let expected = format!(
         "\x1b]8;;file://{}{}/a.foo\x1b\\a.foo\x1b]8;;\x1b\\",
@@ -2706,4 +2799,55 @@ fn test_hyperlink() {
     );
 
     te.assert_output(&["--hyperlink=always", "a.foo"], &expected);
+}
+
+#[test]
+fn test_ignore_contain() {
+    let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub", "other"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+            "other/ignoremyparent",
+        ],
+    );
+    let expected = "include/
+    include/foo
+    symlink
+    top";
+    te.assert_output(
+        &[
+            "--ignore-contain=CACHEDIR.TAG",
+            "--ignore-contain=ignoremyparent",
+            ".",
+        ],
+        expected,
+    );
+}
+
+#[test]
+fn test_ignore_contain_precedence_over_depth_check() {
+    let te = TestEnv::new(
+        &["include", "exclude", "exclude/sub"],
+        &[
+            "top",
+            "include/foo",
+            "exclude/CACHEDIR.TAG",
+            "exclude/sub/nope",
+        ],
+    );
+    let expected = "include/foo";
+    te.assert_output(
+        &["--ignore-contain=CACHEDIR.TAG", "--min-depth=2", "."],
+        expected,
+    );
+}
+
+#[test]
+fn test_ignore_contain_precedence_over_root_check() {
+    let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
+    let expected = "";
+    te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
 }

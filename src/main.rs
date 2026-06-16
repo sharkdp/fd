@@ -145,21 +145,56 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     Ok(())
 }
 
-/// Detect if the user accidentally supplied a path instead of a search pattern
+/// Detect if the user accidentally supplied a path instead of a search pattern.
+///
+/// Without `--full-path`, fd matches patterns against file names, so any pattern
+/// containing a path separator can never match. Two cases are worth a friendly
+/// error rather than silent "no results":
+///
+/// 1. The pattern contains '/'. '/' is always a path separator (including on
+///    Windows) and has no regex meaning, so flagging it is safe and catches the
+///    common Linux/macOS mistake of pasting a full path as the pattern.
+/// 2. On Windows only, the pattern contains the native `\` separator *and*
+///    names an existing directory on disk. We can't treat `\` as a pure
+///    path-separator signal there because it is also the regex escape char,
+///    so valid regex patterns like `\Ac` or `\d+` must still run. Requiring
+///    that the pattern resolves to a real directory avoids those false
+///    positives while preserving the legacy diagnostic for operators who
+///    literally typed a directory path.
+///
+/// See https://github.com/sharkdp/fd/issues/1873.
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
+    if opts.full_path {
+        return Ok(());
+    }
+
+    // Start with the cheap check: '/' is always a path separator, including on
+    // Windows, and has no regex meaning, so flagging it is safe and catches the
+    // Linux/macOS mistake of pasting a full path as the pattern.
+    #[cfg_attr(not(windows), allow(unused_mut))]
+    let mut should_warn = opts.pattern.contains('/');
+
+    // On Windows we additionally accept the native `\` separator, but only when
+    // the pattern actually resolves to an existing directory - `\` is also the
+    // regex escape char there, so valid patterns like `\Ac` or `\d+` must still
+    // run. The is_dir syscall is only needed when `should_warn` is still false,
+    // so short-circuit via `||` to avoid the stat call on the happy path.
+    #[cfg(windows)]
     {
+        should_warn = should_warn
+            || (opts.pattern.contains(std::path::MAIN_SEPARATOR)
+                && Path::new(&opts.pattern).is_dir());
+    }
+
+    if should_warn {
         Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+            "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
              Instead, if you want your pattern to match the full file path, use:\n\n  \
              fd --full-path '{pattern}'",
             pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
         ))
     } else {
         Ok(())
@@ -170,6 +205,10 @@ fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
+    } else if opts.exact {
+        // Anchor the escaped pattern so the full filename (or path) must match exactly.
+        // Literal. No substring matching.
+        format!("^{}$", regex::escape(pattern))
     } else if opts.fixed_strings {
         // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
@@ -245,9 +284,18 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
 
+    let full_path_base = if opts.full_path {
+        Some(env::current_dir().context(
+            "Could not determine current directory. \
+             This is required for --full-path.",
+        )?)
+    } else {
+        None
+    };
+
     Ok(Config {
         case_sensitive,
-        search_full_path: opts.full_path,
+        full_path_base,
         ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
         read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
@@ -326,6 +374,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
+        ignore_contain: opts.ignore_contain,
     })
 }
 
@@ -375,7 +424,7 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
             // Assume ls is GNU ls
             gnu_ls("ls")
         } else {
-            // MacOS, DragonFlyBSD, FreeBSD
+            // macOS, DragonFlyBSD, FreeBSD
             use std::process::{Command, Stdio};
 
             // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
@@ -482,8 +531,9 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
         .build()
         .map_err(|e| {
             anyhow!(
-                "{}\n\nNote: You can use the '--fixed-strings' option to search for a \
-                 literal string instead of a regular expression. Alternatively, you can \
+                "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
+                 or literal strings with '--exact' options (instead of a regular expression). \
+                 Alternatively, you can \
                  also use the '--glob' option to match on a glob pattern.",
                 e
             )
