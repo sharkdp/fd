@@ -203,22 +203,29 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     }
 }
 
-/// With `--glob` and `--full-path`, patterns match the entire absolute path (from `/`).
-/// Warn when the pattern does not start with `/` or `*`, which often means no matches (#1650).
+/// With `--glob` and `--full-path`, patterns match the entire absolute path.
+/// Warn when the pattern does not start with a path root or glob wildcard, which often means no
+/// matches (#1650).
 fn warn_if_full_path_glob_missing_leading_anchor(opts: &Opts) {
     if !opts.glob || !opts.full_path || opts.pattern.is_empty() {
         return;
     }
-    let Some(first) = opts.pattern.chars().next() else {
-        return;
-    };
-    if first == '/' || first == '*' {
+    if full_path_glob_has_leading_anchor(&opts.pattern) {
         return;
     }
     print_warning(
         "With --glob and --full-path, the pattern matches the whole absolute path and \
          usually should start with '/' or '**/' (for example: '**/foo.txt').",
     );
+}
+
+fn full_path_glob_has_leading_anchor(pattern: &str) -> bool {
+    let bytes = pattern.as_bytes();
+    matches!(bytes.first(), Some(b'*' | b'/' | b'\\'))
+        || matches!(
+            bytes,
+            [drive, b':', b'/' | b'\\', ..] if drive.is_ascii_alphabetic()
+        )
 }
 
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
@@ -553,4 +560,28 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
                 e
             )
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::full_path_glob_has_leading_anchor;
+
+    #[test]
+    fn full_path_glob_anchor_accepts_absolute_and_wildcard_patterns() {
+        assert!(full_path_glob_has_leading_anchor("/tmp/file.txt"));
+        assert!(full_path_glob_has_leading_anchor(r"C:\Users\me\file.txt"));
+        assert!(full_path_glob_has_leading_anchor("C:/Users/me/file.txt"));
+        assert!(full_path_glob_has_leading_anchor(
+            r"\\server\share\file.txt"
+        ));
+        assert!(full_path_glob_has_leading_anchor("**/file.txt"));
+        assert!(full_path_glob_has_leading_anchor("*file.txt"));
+    }
+
+    #[test]
+    fn full_path_glob_anchor_rejects_relative_patterns() {
+        assert!(!full_path_glob_has_leading_anchor("file.txt"));
+        assert!(!full_path_glob_has_leading_anchor("dir/file.txt"));
+        assert!(!full_path_glob_has_leading_anchor(r"C:file.txt"));
+    }
 }
