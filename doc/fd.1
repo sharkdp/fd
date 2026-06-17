@@ -252,9 +252,9 @@ Examples:
 .BI "\-e, \-\-extension " ext
 Filter search results by extension
 .IR ext .
-By default, this applies to all entry types. Use \fB\-\-type\fR to restrict
-the search to specific types.
 This option can be used repeatedly to allow for multiple possible extensions.
+By default, extension filters apply to both files and directories. Use
+\fB\-\-type\fR to restrict the search to specific types.
 
 If you want to search for files without extension, you can use the regex '^[^.]+$'
 as a normal search pattern.
