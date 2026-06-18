@@ -330,12 +330,18 @@ impl WorkerState {
     fn build_overrides(&self, paths: &[PathBuf]) -> Result<Override> {
         let first_path = &paths[0];
         let config = &self.config;
+        let multi_root = paths.len() > 1;
 
         let mut builder = OverrideBuilder::new(first_path);
 
         for pattern in &config.exclude_patterns {
+            let pattern = if multi_root {
+                Cow::Owned(normalize_exclude_pattern_for_multi_root(pattern))
+            } else {
+                Cow::Borrowed(pattern.as_str())
+            };
             builder
-                .add(pattern)
+                .add(pattern.as_ref())
                 .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
         }
 
@@ -687,6 +693,21 @@ fn search_str_for_entry<'a>(
     }
 }
 
+/// When multiple `--search-path` roots are used, exclude globs are matched relative to the
+/// first root in the `ignore` crate. Prefix with `**/` so the pattern applies under each root.
+fn normalize_exclude_pattern_for_multi_root(pattern: &str) -> String {
+    let (prefix, glob) = match pattern.strip_prefix('!') {
+        Some(rest) => ("!", rest),
+        None => ("", pattern),
+    };
+
+    if glob.starts_with("**/") || glob.starts_with('/') {
+        return pattern.to_string();
+    }
+
+    format!("{prefix}**/{glob}")
+}
+
 /// Recursively scan the given search path for files / pathnames matching the patterns.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -698,8 +719,24 @@ pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<E
 
 #[cfg(test)]
 mod tests {
-    use super::search_str_for_entry;
+    use super::{normalize_exclude_pattern_for_multi_root, search_str_for_entry};
     use std::path::{Path, PathBuf};
+
+    #[test]
+    fn normalize_exclude_pattern_for_multi_root_prefixes_relative_globs() {
+        assert_eq!(
+            normalize_exclude_pattern_for_multi_root("!ghi/def"),
+            "!**/ghi/def"
+        );
+        assert_eq!(
+            normalize_exclude_pattern_for_multi_root("!**/ghi/def"),
+            "!**/ghi/def"
+        );
+        assert_eq!(
+            normalize_exclude_pattern_for_multi_root("!/abs/path"),
+            "!/abs/path"
+        );
+    }
 
     #[test]
     fn search_str_for_entry_with_relative_path() {

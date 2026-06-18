@@ -1672,6 +1672,35 @@ fn test_excludes() {
     );
 }
 
+/// Regression test for #1919
+#[test]
+fn test_exclude_with_multiple_search_paths() {
+    let te = TestEnv::new(
+        &["sp1/abc/def", "sp1/ghi/def", "sp2/abc/def", "sp2/ghi/def"],
+        &[
+            "sp1/abc/def/match.txt",
+            "sp1/ghi/def/excluded.txt",
+            "sp2/abc/def/match.txt",
+            "sp2/ghi/def/excluded.txt",
+        ],
+    );
+
+    te.assert_output(
+        &[
+            "--type",
+            "file",
+            "--search-path",
+            "sp1",
+            "--search-path",
+            "sp2",
+            "--exclude",
+            "ghi/def",
+        ],
+        "sp1/abc/def/match.txt
+        sp2/abc/def/match.txt",
+    );
+}
+
 #[test]
 fn format() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
