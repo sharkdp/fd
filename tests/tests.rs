@@ -1470,6 +1470,24 @@ fn test_extension() {
     te4.assert_output(&["--hidden", "--extension", ".hidden"], "test.hidden");
 }
 
+/// Help text for `--full-path` should not use ambiguous wording (#1686)
+#[test]
+fn test_full_path_help_text() {
+    let fd_exe = std::path::PathBuf::from(
+        std::env::var("CARGO_BIN_EXE_fd").unwrap_or_else(|_| env!("CARGO_BIN_EXE_fd").to_string()),
+    );
+    let output = std::process::Command::new(&fd_exe)
+        .arg("-h")
+        .output()
+        .expect("fd -h");
+    assert!(output.status.success());
+    let help = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        help.contains("Search absolute path (default: last path component only)"),
+        "unexpected -p help in:\n{help}"
+    );
+}
+
 /// No file extension (test for the pattern provided in the --help text)
 #[test]
 fn test_no_extension() {

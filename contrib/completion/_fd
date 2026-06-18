@@ -76,7 +76,7 @@ _fd() {
     "$no(no-ignore-full --no-ignore-vcs --no-require-git)--no-require-git[don't require git repo to respect gitignores]"
 
     + '(match-full)' # match against full path
-    {-p,--full-path}'[match the pattern against the full path instead of the basename]'
+    {-p,--full-path}'[match the pattern against the absolute path instead of the last path component]'
 
     + '(follow)' # follow symlinks
     {-L,--follow}'[follow symbolic links to directories]'
