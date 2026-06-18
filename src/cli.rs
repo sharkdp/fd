@@ -127,6 +127,17 @@ pub struct Opts {
         )]
     rg_alias_hidden_ignore: u8,
 
+    /// Show only files and directories that would normally be hidden or ignored.
+    /// Can be combined with `--hidden` or `--no-ignore` to show only ignored or only
+    /// hidden paths, respectively.
+    #[arg(
+        long,
+        hide_short_help = true,
+        long_help,
+        conflicts_with = "rg_alias_hidden_ignore"
+    )]
+    pub only_restricted: bool,
+
     /// Case-sensitive search (default: smart case)
     #[arg(
         long,

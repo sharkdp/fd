@@ -11,6 +11,7 @@ use crate::filter::{SizeFilter, TimeFilter};
 use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
+#[derive(Clone)]
 pub struct Config {
     /// Whether the search is case-sensitive or case-insensitive.
     pub case_sensitive: bool,
@@ -133,9 +134,23 @@ pub struct Config {
 
     /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
     pub ignore_contain: Vec<String>,
+
+    /// Show only paths that would normally be hidden or ignored.
+    pub only_restricted: bool,
 }
 
 impl Config {
+    /// Disable hidden/ignore filters while preserving other settings.
+    pub fn without_restriction_filters(mut self) -> Self {
+        self.ignore_hidden = false;
+        self.read_fdignore = false;
+        self.read_vcsignore = false;
+        self.read_global_ignore = false;
+        self.read_parent_ignore = false;
+        self.only_restricted = false;
+        self
+    }
+
     /// Check whether results are being printed.
     pub fn is_printing(&self) -> bool {
         self.command.is_none()
