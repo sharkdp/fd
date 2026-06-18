@@ -377,8 +377,9 @@ pub struct Opts {
     )]
     pub filetype: Option<Vec<FileType>>,
 
-    /// (Additionally) filter search results by their file extension. Multiple
-    /// allowable file extensions can be specified.
+    /// Filter results by extension. By default, this matches all entry types
+    /// (including directories whose names end with the extension). Use `--type`
+    /// to restrict the search to specific types. Multiple extensions can be specified.
     ///
     /// If you want to search for files without extension,
     /// you can use the regex '^[^.]+$' as a normal search pattern.
@@ -386,7 +387,7 @@ pub struct Opts {
         long = "extension",
         short = 'e',
         value_name = "ext",
-        help = "Filter by file extension",
+        help = "Filter by extension",
         long_help
     )]
     pub extensions: Option<Vec<String>>,
