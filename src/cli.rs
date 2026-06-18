@@ -610,6 +610,15 @@ pub struct Opts {
     )]
     pub show_errors: bool,
 
+    /// Print a message to stderr when the search completes with no matches.
+    #[arg(
+        long,
+        hide_short_help = true,
+        help = "Print a message when no matches are found",
+        long_help
+    )]
+    pub no_matches_message: bool,
+
     /// Change the current working directory of fd to the provided path. This
     /// means that search results will be shown with respect to the given base
     /// path. Note that relative paths which are passed to fd via the positional
