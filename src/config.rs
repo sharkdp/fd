@@ -61,6 +61,9 @@ pub struct Config {
     /// The number of threads to use.
     pub threads: usize,
 
+    /// Whether the user explicitly set `--threads` (as opposed to the default).
+    pub explicit_threads: bool,
+
     /// If true, the program doesn't print anything and will instead return an exit code of 0
     /// if there's at least one match. Otherwise, the exit code will be 1.
     pub quiet: bool,

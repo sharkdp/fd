@@ -2073,6 +2073,51 @@ fn test_exec_batch_with_limit() {
     );
 }
 
+#[test]
+fn test_exec_batch_parallel_with_explicit_threads() {
+    if cfg!(windows) {
+        return;
+    }
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // With explicit --threads > 1 and a small batch size, batches should run in parallel.
+    // Each line is one batch invocation; all paths should still appear exactly once.
+    let output = te.assert_success_and_get_output(
+        ".",
+        &[
+            "foo",
+            "--batch-size=2",
+            "--threads=4",
+            "--exec-batch",
+            "echo",
+            "{}",
+        ],
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    for line in stdout.lines() {
+        assert_eq!(2, line.split_whitespace().count());
+    }
+
+    let mut paths: Vec<_> = stdout
+        .lines()
+        .flat_map(|line| line.split_whitespace())
+        .collect();
+    paths.sort_unstable();
+    assert_eq!(
+        &paths,
+        &[
+            "./a.foo",
+            "./one/b.foo",
+            "./one/two/C.Foo2",
+            "./one/two/c.foo",
+            "./one/two/three/d.foo",
+            "./one/two/three/directory_foo"
+        ],
+    );
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
