@@ -1,8 +1,10 @@
 # Unreleased
 
 ## Features
+
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
+- Add colors to `--help`, see #1846 (@starsep)
 
 ## Bugfixes
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
