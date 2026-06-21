@@ -1702,6 +1702,16 @@ fn format() {
     );
 
     te.assert_output(
+        &["foo", "--format", "extension={.ext}", "--path-separator=/"],
+        "extension=foo
+        extension=foo
+        extension=Foo2
+        extension=foo
+        extension=foo
+        extension=",
+    );
+
+    te.assert_output(
         &["foo", "--format", "basename={/}", "--path-separator=/"],
         "basename=a.foo
         basename=b.foo
@@ -1779,6 +1789,16 @@ fn test_exec() {
             one/two/c
             one/two/three/d
             one/two/three/directory_foo",
+        );
+
+        te.assert_output(
+            &["foo", "--exec", "echo", "{.}_encoded.{.ext}"],
+            "a_encoded.foo
+            one/b_encoded.foo
+            one/two/C_encoded.Foo2
+            one/two/c_encoded.foo
+            one/two/three/d_encoded.foo
+            one/two/three/directory_foo_encoded.",
         );
 
         te.assert_output(
