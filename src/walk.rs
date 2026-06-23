@@ -344,7 +344,7 @@ impl WorkerState {
             .map_err(|_| anyhow!("Mismatch in exclude patterns"))
     }
 
-    fn build_walker(&self, paths: &[PathBuf]) -> Result<WalkParallel> {
+    fn build_walker(&self, paths: &[PathBuf]) -> Result<(WalkParallel, Override)> {
         let first_path = &paths[0];
         let config = &self.config;
         let overrides = self.build_overrides(paths)?;
@@ -358,7 +358,7 @@ impl WorkerState {
             .git_global(config.read_vcsignore)
             .git_exclude(config.read_vcsignore)
             .require_git(config.require_git_to_read_vcsignore)
-            .overrides(overrides)
+            .overrides(overrides.clone())
             .follow_links(config.follow_links)
             // No need to check for supported platforms, option is unavailable on unsupported ones
             .same_file_system(config.one_file_system)
@@ -400,7 +400,7 @@ impl WorkerState {
         }
 
         let walker = builder.threads(config.threads).build_parallel();
-        Ok(walker)
+        Ok((walker, overrides))
     }
 
     /// Run the receiver work, either on this thread or a pool of background
@@ -440,11 +440,12 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, overrides: Override, tx: Sender<Batch>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
+            let overrides = &overrides;
 
             let mut limit = 0x100;
             if let Some(cmd) = &config.command
@@ -495,6 +496,9 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
+                            if overrides.matched(&path, false).is_ignore() {
+                                return WalkState::Continue;
+                            }
                             DirEntry::broken_symlink(path)
                         }
                         _ => {
@@ -626,7 +630,7 @@ impl WorkerState {
     /// Perform the recursive scan.
     fn scan(&self, paths: &[PathBuf]) -> Result<ExitCode> {
         let config = &self.config;
-        let walker = self.build_walker(paths)?;
+        let (walker, overrides) = self.build_walker(paths)?;
 
         if config.ls_colors.is_some() && config.is_printing() {
             let quit_flag = Arc::clone(&self.quit_flag);
@@ -650,7 +654,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            self.spawn_senders(walker, overrides, tx);
 
             receiver.join().unwrap()
         });
