@@ -11,6 +11,7 @@ mod fmt;
 mod hyperlink;
 mod output;
 mod regex_helper;
+mod sanitize;
 mod walk;
 
 use std::env;
@@ -65,7 +66,7 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            eprintln!("[fd error]: {err:#}");
+            crate::error::print_error(format!("{err:#}"));
             ExitCode::GeneralError.exit();
         }
     }
