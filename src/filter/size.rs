@@ -26,7 +26,7 @@ const TEBI: u64 = GIBI * 1024;
 
 impl SizeFilter {
     pub fn from_string(s: &str) -> anyhow::Result<Self> {
-        SizeFilter::parse_opt(s)
+        Self::parse_opt(s)
             .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s))
     }
 
@@ -58,18 +58,18 @@ impl SizeFilter {
 
         let size = quantity * multiplier;
         match limit_kind {
-            "+" => Some(SizeFilter::Min(size)),
-            "-" => Some(SizeFilter::Max(size)),
-            "" => Some(SizeFilter::Equals(size)),
+            "+" => Some(Self::Min(size)),
+            "-" => Some(Self::Max(size)),
+            "" => Some(Self::Equals(size)),
             _ => None,
         }
     }
 
     pub fn is_within(&self, size: u64) -> bool {
         match *self {
-            SizeFilter::Max(limit) => size <= limit,
-            SizeFilter::Min(limit) => size >= limit,
-            SizeFilter::Equals(limit) => size == limit,
+            Self::Max(limit) => size <= limit,
+            Self::Min(limit) => size >= limit,
+            Self::Equals(limit) => size == limit,
         }
     }
 }
