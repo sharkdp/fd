@@ -735,4 +735,20 @@ mod tests {
             PathBuf::from("bar")
         );
     }
+
+    #[test]
+    fn search_str_no_base_dir_with_plain_relative_path() {
+        assert_eq!(
+            search_str_for_entry(Path::new("foo/bar"), None),
+            PathBuf::from("bar")
+        );
+    }
+
+    #[test]
+    fn search_str_no_base_dir_with_file_in_current_dir() {
+        assert_eq!(
+            search_str_for_entry(Path::new("foo"), None),
+            PathBuf::from("foo")
+        );
+    }
 }
