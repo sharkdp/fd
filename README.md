@@ -349,7 +349,7 @@ Note that options can be given after the pattern and/or path as well.
 
 ## Benchmark
 
-Let's search my home folder for files that end in `[0-9].jpg`. It contains ~750.000
+Let's search my home folder for files that end in `[0-9].jpg`. It contains ~750,000
 subdirectories and about a 4 million files. For averaging and statistical analysis, I'm using
 [hyperfine](https://github.com/sharkdp/hyperfine). The following benchmarks are performed
 with a "warm"/pre-filled disk-cache (results for a "cold" disk-cache show the same trends).
