@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -440,7 +440,7 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, roots: &[PathBuf], tx: Sender<Batch>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
@@ -495,7 +495,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let depth = depth_relative_to_roots(&path, roots);
+                            DirEntry::broken_symlink(path, depth)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -650,7 +651,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            self.spawn_senders(walker, paths, tx);
 
             receiver.join().unwrap()
         });
@@ -661,6 +662,25 @@ impl WorkerState {
             Ok(exit_code)
         }
     }
+}
+
+/// Compute the depth of `path` relative to the search root it was found under.
+///
+/// `ignore::DirEntry::depth()` provides this for normal entries, but broken
+/// symlinks are surfaced as errors that carry no depth, so we derive it from the
+/// path components instead (see issue #1017). The matching root is the longest
+/// search root (by component count) that `path` starts with; if none matches we
+/// fall back to the full component count, which keeps the entry visible rather
+/// than silently dropping it.
+fn depth_relative_to_roots(path: &Path, roots: &[PathBuf]) -> usize {
+    let components = path.components().count();
+    let root_components = roots
+        .iter()
+        .filter(|root| path.starts_with(root))
+        .map(|root| root.components().count())
+        .max()
+        .unwrap_or(0);
+    components.saturating_sub(root_components)
 }
 
 fn search_str_for_entry<'a>(
