@@ -1208,6 +1208,161 @@ fn test_min_depth() {
     );
 }
 
+/// Minimum depth with a broken symlink (regression test for #1017)
+///
+/// A broken symlink, surfaced while following links, has no depth reported by
+/// the walker, so --min-depth used to drop it unconditionally.
+#[test]
+fn test_min_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink sits at depth 3, so it is kept up to that depth.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // A --min-depth beyond its actual depth must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "4",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Minimum depth with a broken symlink combined with --absolute-path (#1017)
+///
+/// With --absolute-path the search root is made absolute before walking, so the
+/// broken symlink's depth must still be computed relative to that root rather
+/// than from the absolute path's full component count.
+#[test]
+fn test_min_depth_broken_symlink_absolute_path() {
+    let (mut te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink sits at depth 3 relative to the (absolute) root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "3",
+            "broken_symlink",
+        ],
+        &format!("{abs_path}/one/two/broken_symlink"),
+    );
+
+    // A --min-depth beyond its actual depth must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "4",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Maximum depth with a broken symlink (#1017)
+///
+/// A broken symlink must be filtered by --max-depth like any other entry. The
+/// default environment also exposes it through the followed `symlink` directory
+/// (`symlink -> one/two`), so it is reachable at depth 2 as well as depth 3.
+#[test]
+fn test_max_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // --max-depth 3 keeps both routes to the broken symlink.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--max-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink
+        symlink/broken_symlink",
+    );
+
+    // A --max-depth below either route must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--max-depth",
+            "1",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Exact depth with a broken symlink (#1017)
+///
+/// A broken symlink must be kept only at its exact depth. It is reachable at
+/// depth 3 (`one/two/broken_symlink`) and, through the followed `symlink`
+/// directory, at depth 2 (`symlink/broken_symlink`).
+#[test]
+fn test_exact_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // Only the depth-3 route matches --exact-depth 3.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--exact-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // Only the depth-2 route (via the followed symlink) matches --exact-depth 2,
+    // which confirms the depth is computed relative to the search root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--exact-depth",
+            "2",
+            "broken_symlink",
+        ],
+        "symlink/broken_symlink",
+    );
+}
+
 /// Exact depth (--exact-depth)
 #[test]
 fn test_exact_depth() {

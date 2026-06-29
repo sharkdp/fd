@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -440,7 +440,7 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, roots: &[PathBuf], tx: Sender<Batch>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
@@ -495,7 +495,8 @@ impl WorkerState {
                                     .ok()
                                     .is_some_and(|m| m.file_type().is_symlink()) =>
                         {
-                            DirEntry::broken_symlink(path)
+                            let depth = depth_relative_to_roots(&path, roots);
+                            DirEntry::broken_symlink(path, depth)
                         }
                         _ => {
                             return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
@@ -650,7 +651,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, tx);
+            self.spawn_senders(walker, paths, tx);
 
             receiver.join().unwrap()
         });
@@ -661,6 +662,39 @@ impl WorkerState {
             Ok(exit_code)
         }
     }
+}
+
+/// Compute the depth of `path` relative to the search root it was found under.
+///
+/// `ignore::DirEntry::depth()` provides this for normal entries, but broken
+/// symlinks are surfaced as errors that carry no depth, so we derive it from the
+/// path instead (see issue #1017). The walker reports every entry's path
+/// prefixed by the search root it was found under, so we strip the matching root
+/// and count the remaining components. Both the path and the roots are put into
+/// absolute form first, so the comparison is correct regardless of whether
+/// `--absolute-path` has already made the roots absolute (otherwise an absolute
+/// path would fail to match a relative root and the depth would be wrong). When
+/// more than one root is a prefix, the deepest (most specific) one wins. If none
+/// matches, which should not happen, we fall back to the full component count,
+/// keeping the entry visible rather than silently dropping it.
+fn depth_relative_to_roots(path: &Path, roots: &[PathBuf]) -> usize {
+    // `Path::join` ignores the base when its argument is already absolute, so
+    // this leaves absolute inputs untouched and anchors relative ones at the cwd.
+    let cwd = std::env::current_dir().ok();
+    let absolute = |p: &Path| -> PathBuf {
+        match &cwd {
+            Some(cwd) => cwd.join(p),
+            None => p.to_path_buf(),
+        }
+    };
+
+    let absolute_path = absolute(path);
+    roots
+        .iter()
+        .filter_map(|root| absolute_path.strip_prefix(absolute(root)).ok())
+        .map(|relative| relative.components().count())
+        .min()
+        .unwrap_or_else(|| path.components().count())
 }
 
 fn search_str_for_entry<'a>(
