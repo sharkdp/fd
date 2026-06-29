@@ -13,7 +13,7 @@ enum DirEntryInner {
     Normal(ignore::DirEntry),
     // Broken symlinks are surfaced by the walker as errors that carry no depth,
     // so we record the depth (relative to the search root) at creation time.
-    BrokenSymlink(PathBuf, usize),
+    BrokenSymlink { path: PathBuf, depth: usize },
 }
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ impl DirEntry {
 
     pub fn broken_symlink(path: PathBuf, depth: usize) -> Self {
         Self {
-            inner: DirEntryInner::BrokenSymlink(path, depth),
+            inner: DirEntryInner::BrokenSymlink { path, depth },
             metadata: OnceCell::new(),
             style: OnceCell::new(),
         }
@@ -44,14 +44,14 @@ impl DirEntry {
     pub fn path(&self) -> &Path {
         match &self.inner {
             DirEntryInner::Normal(e) => e.path(),
-            DirEntryInner::BrokenSymlink(pathbuf, _) => pathbuf.as_path(),
+            DirEntryInner::BrokenSymlink { path, .. } => path.as_path(),
         }
     }
 
     pub fn into_path(self) -> PathBuf {
         match self.inner {
             DirEntryInner::Normal(e) => e.into_path(),
-            DirEntryInner::BrokenSymlink(p, _) => p,
+            DirEntryInner::BrokenSymlink { path, .. } => path,
         }
     }
 
@@ -76,7 +76,7 @@ impl DirEntry {
     pub fn file_type(&self) -> Option<FileType> {
         match &self.inner {
             DirEntryInner::Normal(e) => e.file_type(),
-            DirEntryInner::BrokenSymlink(..) => self.metadata().map(|m| m.file_type()),
+            DirEntryInner::BrokenSymlink { .. } => self.metadata().map(|m| m.file_type()),
         }
     }
 
@@ -84,7 +84,7 @@ impl DirEntry {
         self.metadata
             .get_or_init(|| match &self.inner {
                 DirEntryInner::Normal(e) => e.metadata().ok(),
-                DirEntryInner::BrokenSymlink(path, _) => path.symlink_metadata().ok(),
+                DirEntryInner::BrokenSymlink { path, .. } => path.symlink_metadata().ok(),
             })
             .as_ref()
     }
@@ -92,7 +92,7 @@ impl DirEntry {
     pub fn depth(&self) -> Option<usize> {
         match &self.inner {
             DirEntryInner::Normal(e) => Some(e.depth()),
-            DirEntryInner::BrokenSymlink(_, depth) => Some(*depth),
+            DirEntryInner::BrokenSymlink { depth, .. } => Some(*depth),
         }
     }
 
@@ -134,7 +134,7 @@ impl Colorable for DirEntry {
     fn file_name(&self) -> OsString {
         let name = match &self.inner {
             DirEntryInner::Normal(e) => e.file_name(),
-            DirEntryInner::BrokenSymlink(path, _) => {
+            DirEntryInner::BrokenSymlink { path, .. } => {
                 // Path::file_name() only works if the last component is Normal,
                 // but we want it for all component types, so we open code it.
                 // Copied from LsColors::style_for_path_with_metadata().
