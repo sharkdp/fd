@@ -668,19 +668,33 @@ impl WorkerState {
 ///
 /// `ignore::DirEntry::depth()` provides this for normal entries, but broken
 /// symlinks are surfaced as errors that carry no depth, so we derive it from the
-/// path components instead (see issue #1017). The matching root is the longest
-/// search root (by component count) that `path` starts with; if none matches we
-/// fall back to the full component count, which keeps the entry visible rather
-/// than silently dropping it.
+/// path instead (see issue #1017). The walker reports every entry's path
+/// prefixed by the search root it was found under, so we strip the matching root
+/// and count the remaining components. Both the path and the roots are put into
+/// absolute form first, so the comparison is correct regardless of whether
+/// `--absolute-path` has already made the roots absolute (otherwise an absolute
+/// path would fail to match a relative root and the depth would be wrong). When
+/// more than one root is a prefix, the deepest (most specific) one wins. If none
+/// matches, which should not happen, we fall back to the full component count,
+/// keeping the entry visible rather than silently dropping it.
 fn depth_relative_to_roots(path: &Path, roots: &[PathBuf]) -> usize {
-    let components = path.components().count();
-    let root_components = roots
+    // `Path::join` ignores the base when its argument is already absolute, so
+    // this leaves absolute inputs untouched and anchors relative ones at the cwd.
+    let cwd = std::env::current_dir().ok();
+    let absolute = |p: &Path| -> PathBuf {
+        match &cwd {
+            Some(cwd) => cwd.join(p),
+            None => p.to_path_buf(),
+        }
+    };
+
+    let absolute_path = absolute(path);
+    roots
         .iter()
-        .filter(|root| path.starts_with(root))
-        .map(|root| root.components().count())
-        .max()
-        .unwrap_or(0);
-    components.saturating_sub(root_components)
+        .filter_map(|root| absolute_path.strip_prefix(absolute(root)).ok())
+        .map(|relative| relative.components().count())
+        .min()
+        .unwrap_or_else(|| path.components().count())
 }
 
 fn search_str_for_entry<'a>(

@@ -1220,6 +1220,46 @@ fn test_min_depth_broken_symlink() {
     );
 }
 
+/// Minimum depth with a broken symlink combined with --absolute-path (#1017)
+///
+/// With --absolute-path the search root is made absolute before walking, so the
+/// broken symlink's depth must still be computed relative to that root rather
+/// than from the absolute path's full component count.
+#[test]
+fn test_min_depth_broken_symlink_absolute_path() {
+    let (mut te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink sits at depth 3 relative to the (absolute) root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "3",
+            "broken_symlink",
+        ],
+        &format!("{abs_path}/one/two/broken_symlink"),
+    );
+
+    // A --min-depth beyond its actual depth must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "4",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
 /// Exact depth (--exact-depth)
 #[test]
 fn test_exact_depth() {
