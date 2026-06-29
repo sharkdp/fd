@@ -380,9 +380,7 @@ impl<'a> EntryFilter<'a> {
     }
 
     fn check_min_depth(&self, entry: &DirEntry) -> Option<WalkState> {
-        let Some(min_depth) = self.config.min_depth else {
-            return None;
-        };
+        let min_depth = self.config.min_depth?;
 
         if entry.depth().is_none_or(|depth| depth < min_depth) {
             return Some(WalkState::Continue);
@@ -423,7 +421,7 @@ impl<'a> EntryFilter<'a> {
 
     fn check_file_types(&self, entry: &DirEntry) -> Option<WalkState> {
         if let Some(ref file_types) = self.config.file_types
-            && file_types.should_ignore(&entry)
+            && file_types.should_ignore(entry)
         {
             return Some(WalkState::Continue);
         }
@@ -497,7 +495,6 @@ impl<'a> EntryFilter<'a> {
         None
     }
 }
-
 
 /// Converts an `ignore` walker entry into a `DirEntry`.
 ///
@@ -710,12 +707,10 @@ impl WorkerState {
                     return WalkState::Quit;
                 }
 
-                
-
-                if let Ok(e) = &entry {
-                    if let Some(state) = filter.evaluate_before_normalization(e) {
-                        return state;
-                    }
+                if let Ok(e) = &entry
+                    && let Some(state) = filter.evaluate_before_normalization(e)
+                {
+                    return state;
                 }
 
                 let entry = match normalize_walk_entry(entry, &mut tx) {
@@ -727,7 +722,9 @@ impl WorkerState {
                     return state;
                 }
 
-                if config.is_printing() && let Some(ls_colors) = &config.ls_colors {
+                if config.is_printing()
+                    && let Some(ls_colors) = &config.ls_colors
+                {
                     // Compute colors in parallel
                     entry.style(ls_colors);
                 }
