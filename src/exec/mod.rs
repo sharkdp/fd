@@ -102,24 +102,45 @@ impl CommandSet {
 
         match builders {
             Ok(mut builders) => {
-                for path in paths {
-                    for builder in &mut builders {
-                        if let Err(e) = builder.push(&path, path_separator) {
-                            return handle_cmd_error(Some(&builder.cmd), e);
-                        }
-                    }
+                if builders.len() == 1 {
+                    let builder = &mut builders[0];
+                    return match Self::execute_batch_builder(builder, paths, path_separator) {
+                        Ok(exit_code) => exit_code,
+                        Err(e) => handle_cmd_error(Some(&builder.cmd), e),
+                    };
                 }
 
+                let paths: Vec<_> = paths.collect();
+                let mut exit_codes = Vec::with_capacity(builders.len());
                 for builder in &mut builders {
-                    if let Err(e) = builder.finish() {
-                        return handle_cmd_error(Some(&builder.cmd), e);
+                    match Self::execute_batch_builder(builder, paths.iter(), path_separator) {
+                        Ok(exit_code) => exit_codes.push(exit_code),
+                        Err(e) => return handle_cmd_error(Some(&builder.cmd), e),
                     }
                 }
 
-                merge_exitcodes(builders.iter().map(|b| b.exit_code()))
+                merge_exitcodes(exit_codes)
             }
             Err(e) => handle_cmd_error(None, e),
         }
+    }
+
+    fn execute_batch_builder<I, P>(
+        builder: &mut CommandBuilder,
+        paths: I,
+        path_separator: Option<&str>,
+    ) -> io::Result<ExitCode>
+    where
+        I: IntoIterator<Item = P>,
+        P: AsRef<Path>,
+    {
+        for path in paths {
+            builder.push(path.as_ref(), path_separator)?;
+        }
+
+        builder.finish()?;
+
+        Ok(builder.exit_code())
     }
 }
 
