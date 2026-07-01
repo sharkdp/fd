@@ -95,7 +95,7 @@ codegen-units = 1
 use-jemalloc = ["tikv-jemallocator"]
 completions = ["clap_complete"]
 base = ["use-jemalloc"]
-default = ["use-jemalloc", "completions"]
+default = ["completions"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"

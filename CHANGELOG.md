@@ -5,6 +5,10 @@
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
 
 ## Bugfixes
+- Sanitize control characters and bidirectional override characters in filenames
+  when output goes to a terminal, to prevent terminal escape-sequence injection.
+  Also reject a placeholder as the executable for `--exec-batch`, while still
+  allowing it for `--exec`.
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
