@@ -487,26 +487,16 @@ impl WorkerState {
                     Err(ignore::Error::WithPath {
                         path,
                         err: inner_err,
-                    }) => match inner_err.as_ref() {
-                        ignore::Error::Io(io_error)
-                            if io_error.kind() == io::ErrorKind::NotFound
-                                && path
-                                    .symlink_metadata()
-                                    .ok()
-                                    .is_some_and(|m| m.file_type().is_symlink()) =>
-                        {
-                            DirEntry::broken_symlink(path)
-                        }
-                        _ => {
-                            return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
-                                path,
-                                err: inner_err,
-                            })) {
-                                Ok(_) => WalkState::Continue,
-                                Err(_) => WalkState::Quit,
-                            };
-                        }
-                    },
+                    }) if inner_err
+                        .io_error()
+                        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
+                        && path
+                            .symlink_metadata()
+                            .ok()
+                            .is_some_and(|m| m.file_type().is_symlink()) =>
+                    {
+                        DirEntry::broken_symlink(path)
+                    }
                     Err(err) => {
                         return match tx.send(WorkerResult::Error(err)) {
                             Ok(_) => WalkState::Continue,
