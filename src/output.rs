@@ -24,9 +24,10 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
     }
 
     if let Some(meta) = entry.metadata()
-        && config.list_details {
-            print_details(stdout, meta)?;
-        };
+        && config.list_details
+    {
+        print_details(stdout, meta)?;
+    };
 
     if let Some(ref format) = config.format {
         print_entry_format(stdout, entry, config, format)?;
