@@ -54,11 +54,19 @@ impl DirEntry {
     }
 
     /// Returns the path as it should be presented to the user.
+    /// When stripping `./` would leave the path starting with `-`, keep the original
+    /// (with `./`) so downstream tools don't interpret it as an option.
     pub fn stripped_path(&self, config: &Config) -> &Path {
+        let path = self.path();
         if config.strip_cwd_prefix {
-            strip_current_dir(self.path())
+            let stripped = strip_current_dir(path);
+            if starts_with_dash(stripped) {
+                path
+            } else {
+                stripped
+            }
         } else {
-            self.path()
+            path
         }
     }
 
@@ -99,6 +107,10 @@ impl DirEntry {
             .get_or_init(|| ls_colors.style_for(self).cloned())
             .as_ref()
     }
+}
+
+fn starts_with_dash(path: &Path) -> bool {
+    path.as_os_str().as_encoded_bytes().first() == Some(&b'-')
 }
 
 impl PartialEq for DirEntry {
@@ -151,5 +163,27 @@ impl Colorable for DirEntry {
 
     fn metadata(&self) -> Option<Metadata> {
         self.metadata().cloned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::starts_with_dash;
+    use std::path::Path;
+
+    #[test]
+    fn dash_prefixed_paths_detected() {
+        assert!(starts_with_dash(Path::new("-rf")));
+        assert!(starts_with_dash(Path::new("--delete")));
+        assert!(starts_with_dash(Path::new("-")));
+    }
+
+    #[test]
+    fn safe_paths_not_flagged() {
+        assert!(!starts_with_dash(Path::new("foo")));
+        assert!(!starts_with_dash(Path::new("./foo")));
+        assert!(!starts_with_dash(Path::new("sub/-rf")));
+        assert!(!starts_with_dash(Path::new("")));
+        assert!(!starts_with_dash(Path::new(" -rf")));
     }
 }

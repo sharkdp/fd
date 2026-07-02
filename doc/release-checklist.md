@@ -5,6 +5,9 @@ necessary changes for the upcoming release.
 
 ## Version bump
 
+This section can be done by running `scripts/version-bump.sh` with the new version
+as an argument.
+
 - [ ] Create a new branch for the required changes for this release.
 - [ ] Update version in `Cargo.toml`. Run `cargo build` to update `Cargo.lock`.
       Make sure to `git add` the `Cargo.lock` changes as well.
@@ -21,7 +24,7 @@ necessary changes for the upcoming release.
       new version).
 - [ ] Review `-h`, `--help`, and the `man` page.
 - [ ] Run `fd -h` and copy the output to the *"Command-line options"* section in
-      the README
+      the README. This can be done by running `gawk -i inplace -f scripts/update-help.awk README.md`.
 - [ ] Push all changes and wait for CI to succeed (before continuing with the
       next section).
 - [ ] Optional: manually test the new features and command-line options described
