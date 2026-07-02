@@ -133,6 +133,9 @@ pub struct Config {
 
     /// Names that should stop traversal down their parent. (e.g. https://bford.info/cachedir/).
     pub ignore_contain: Vec<String>,
+    
+    /// Whether or not to print details
+    pub list_details: bool,
 }
 
 impl Config {
