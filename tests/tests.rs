@@ -2098,6 +2098,46 @@ fn test_exec_batch_with_limit() {
     );
 }
 
+#[test]
+fn test_exec_batch_multi_with_limit_preserves_command_order() {
+    // TODO Test for windows
+    if cfg!(windows) {
+        return;
+    }
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    let output = te.assert_success_and_get_output(
+        ".",
+        &[
+            "foo",
+            "--batch-size=2",
+            "--exec-batch",
+            "echo",
+            "first",
+            "{}",
+            ";",
+            "--exec-batch",
+            "echo",
+            "second",
+            "{}",
+        ],
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let prefixes: Vec<_> = stdout
+        .lines()
+        .map(|line| line.split_whitespace().next().unwrap())
+        .collect();
+
+    assert_eq!(
+        prefixes,
+        &["first", "first", "first", "second", "second", "second"]
+    );
+    for line in stdout.lines() {
+        assert_eq!(3, line.split_whitespace().count());
+    }
+}
+
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
