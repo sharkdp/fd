@@ -512,16 +512,16 @@ fn normalize_walk_entry(
         Err(ignore::Error::WithPath {
             path,
             err: inner_err,
-        }) => if inner_err
-              .io_error()
-              .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
-              && path
-                  .symlink_metadata()
-                  .ok()
-                  .is_some_and(|m| m.file_type().is_symlink()) =>
+        }) if inner_err
+            .io_error()
+            .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
+            && path
+                .symlink_metadata()
+                .ok()
+                .is_some_and(|m| m.file_type().is_symlink()) =>
         {
-            DirEntry::broken_symlink(path)
-        },
+            Ok(DirEntry::broken_symlink(path))
+        }
 
         Err(err) => {
             let result = tx.send(WorkerResult::Error(err));
