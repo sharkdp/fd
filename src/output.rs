@@ -219,7 +219,7 @@ fn print_details<W: Write>(stdout: &mut W, meta: &std::fs::Metadata) -> io::Resu
     stdout.write_all(&attr_buf)?;
     stdout.write_all(b" ")?;
 
-    print_time(stdout, meta.last_write_time())?;
+    print_time(stdout, filetime_to_unix_seconds(meta.last_write_time()))?;
 
     if meta.is_file() {
         print_size(stdout, meta.len())?;
@@ -262,29 +262,21 @@ fn print_details<W: Write>(stdout: &mut W, meta: &std::fs::Metadata) -> io::Resu
     stdout.write_all(b" ")
 }
 
-#[cfg(target_os = "windows")]
-fn print_time<W: Write>(stdout: &mut W, file_time: u64) -> io::Result<()> {
+fn print_time<W: Write>(stdout: &mut W, unix_seconds: i64) -> io::Result<()> {
     use jiff::{Timestamp, Zoned};
 
-    const INTERVALS_PER_SECOND: u64 = 10_000_000;
-    const EPOCH_DIFF_SECONDS: u64 = 11_644_473_600;
-
-    let unix_seconds = (file_time / INTERVALS_PER_SECOND).saturating_sub(EPOCH_DIFF_SECONDS);
-    let timestamp = Timestamp::from_second(unix_seconds as i64).unwrap_or(Timestamp::UNIX_EPOCH);
-
+    let timestamp = Timestamp::from_second(unix_seconds)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
     let zoned: Zoned = timestamp.to_zoned(jiff::tz::TimeZone::system());
+
     write!(stdout, "  {:>20}", zoned.strftime("%d-%m-%Y %H:%M:%S"))
 }
 
-#[cfg(not(target_os = "windows"))]
-fn print_time<W: Write>(stdout: &mut W, mtime: i64) -> io::Result<()> {
-    use jiff::{Timestamp, Zoned};
-
-    let timestamp =
-        Timestamp::from_second(mtime).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-    let zoned: Zoned = timestamp.to_zoned(jiff::tz::TimeZone::system());
-
-    write!(stdout, "  {:>20}", zoned.strftime("%d-%m-%Y %H:%M:%S"))
+#[cfg(target_os = "windows")]
+fn filetime_to_unix_seconds(file_time: u64) -> i64 {
+    const INTERVALS_PER_SECOND: u64 = 10_000_000;
+    const EPOCH_DIFF_SECONDS: u64 = 11_644_473_600;
+    (file_time / INTERVALS_PER_SECOND).saturating_sub(EPOCH_DIFF_SECONDS) as i64
 }
 
 fn print_size<W: Write>(stdout: &mut W, size: u64) -> io::Result<()> {
@@ -299,5 +291,62 @@ fn print_size<W: Write>(stdout: &mut W, size: u64) -> io::Result<()> {
         write!(stdout, "{:>6}{}", size, UNITS[unit_idx])
     } else {
         write!(stdout, "{:>6.1}{}", sz, UNITS[unit_idx])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_print_size() {
+        let re = regex::Regex::new(r"^\s+\d{0,4}(\.\d?)?[BKMGTP]").unwrap();
+
+        let mut buf = Vec::new();
+
+        let mut sz = 1;
+        for _ in 0..19 {
+            print_size(&mut buf, sz).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+
+            assert!(
+                re.is_match(&out),
+                "{out}\nthe output doesn't math the template"
+            );
+            sz *= 10;
+            buf.clear();
+        }
+
+        let mut check = |size: u64, expect: &str| {
+            print_size(&mut buf, size).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+            assert!(
+                out.contains(expect),
+                "{out}\nthe output doesn't math the template"
+            );
+            buf.clear();
+        };
+
+        check(0, "0B");
+        check(1025, "1.0K");
+        check(6505537, "6.2M");
+    }
+
+    #[test]
+    fn test_print_time() {
+        let re = regex::Regex::new(r"^\s+\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}").unwrap();
+        let mut buf = Vec::new();
+
+        let mut check = |timestamp| {
+            print_time(&mut buf, timestamp).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+            assert!(
+                re.is_match(&out),
+                "{out}\nthe output doesn't math the template"
+            );
+            buf.clear();
+        };
+
+        check(0x00000000_00000000);
     }
 }
