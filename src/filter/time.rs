@@ -26,31 +26,47 @@ fn now() -> Zoned {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
+    /// Parses a duration/timestamp/date/`@`-prefixed unix-timestamp string.
+    ///
+    /// On failure, returns the underlying parse error message from the
+    /// `DateTime` parser (the calendar-date format, and the most common
+    /// source of confusing failures, e.g. `2025-11-31` which is not a valid
+    /// calendar date) instead of silently discarding it, so callers can tell
+    /// the user *why* their input was rejected.
+    fn from_str(s: &str) -> Result<SystemTime, String> {
         if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
-                    .to_ambiguous_zoned(datetime)
-                    .later()
-                    .ok()?
-                    .into(),
-            )
-        } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            let datetime = now().checked_sub(span).map_err(|e| e.to_string())?;
+            return Ok(datetime.into());
+        }
+        if let Ok(timestamp) = s.parse::<Timestamp>() {
+            return Ok(timestamp.into());
+        }
+        match s.parse::<DateTime>() {
+            Ok(datetime) => TimeZone::system()
+                .to_ambiguous_zoned(datetime)
+                .later()
+                .map(Into::into)
+                .map_err(|e| e.to_string()),
+            Err(datetime_err) => {
+                if let Some(timestamp_secs) = s.strip_prefix('@')
+                    && let Ok(timestamp_secs) = timestamp_secs.parse()
+                {
+                    return Ok(UNIX_EPOCH + Duration::from_secs(timestamp_secs));
+                }
+                // None of the supported formats matched. The `DateTime`
+                // parser gives the most useful reason for calendar-date-
+                // shaped input (the common case for this kind of mistake),
+                // so surface that instead of a generic message.
+                Err(datetime_err.to_string())
+            }
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
+    pub fn before(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
+    pub fn after(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -177,7 +193,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
@@ -197,6 +213,25 @@ mod tests {
             TimeFilter::after(&format!("@{ref_timestamp}"))
                 .unwrap()
                 .applies_to(&t1s_later)
+        );
+    }
+
+    #[test]
+    fn invalid_calendar_date_error_includes_inner_reason() {
+        // November only has 30 days, so this is not a valid calendar date.
+        // The error message should include *why* it's invalid (e.g. mention
+        // "day" being out of range) instead of a generic rejection, see
+        // https://github.com/sharkdp/fd/issues/2053
+        let err = TimeFilter::before("2025-11-31").unwrap_err();
+        assert!(
+            err.contains("day"),
+            "error message should mention the invalid 'day' component, got: {err}"
+        );
+
+        let err = TimeFilter::after("2025-11-31").unwrap_err();
+        assert!(
+            err.contains("day"),
+            "error message should mention the invalid 'day' component, got: {err}"
         );
     }
 }
