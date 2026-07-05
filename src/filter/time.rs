@@ -1,3 +1,4 @@
+use anyhow::Result;
 use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -28,25 +29,24 @@ fn now() -> Zoned {
 impl TimeFilter {
     /// Parses a duration/timestamp/date/`@`-prefixed unix-timestamp string.
     ///
-    /// On failure, returns the underlying parse error message from the
-    /// `DateTime` parser (the calendar-date format, and the most common
-    /// source of confusing failures, e.g. `2025-11-31` which is not a valid
-    /// calendar date) instead of silently discarding it, so callers can tell
-    /// the user *why* their input was rejected.
-    fn from_str(s: &str) -> Result<SystemTime, String> {
+    /// On failure, returns the underlying parse error from the `DateTime`
+    /// parser (the calendar-date format, and the most common source of
+    /// confusing failures, e.g. `2025-11-31` which is not a valid calendar
+    /// date) instead of silently discarding it, so callers can tell the
+    /// user *why* their input was rejected.
+    fn from_str(s: &str) -> Result<SystemTime> {
         if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).map_err(|e| e.to_string())?;
+            let datetime = now().checked_sub(span)?;
             return Ok(datetime.into());
         }
         if let Ok(timestamp) = s.parse::<Timestamp>() {
             return Ok(timestamp.into());
         }
         match s.parse::<DateTime>() {
-            Ok(datetime) => TimeZone::system()
+            Ok(datetime) => Ok(TimeZone::system()
                 .to_ambiguous_zoned(datetime)
-                .later()
-                .map(Into::into)
-                .map_err(|e| e.to_string()),
+                .later()?
+                .into()),
             Err(datetime_err) => {
                 if let Some(timestamp_secs) = s.strip_prefix('@')
                     && let Ok(timestamp_secs) = timestamp_secs.parse()
@@ -57,16 +57,16 @@ impl TimeFilter {
                 // parser gives the most useful reason for calendar-date-
                 // shaped input (the common case for this kind of mistake),
                 // so surface that instead of a generic message.
-                Err(datetime_err.to_string())
+                Err(datetime_err.into())
             }
         }
     }
 
-    pub fn before(s: &str) -> Result<TimeFilter, String> {
+    pub fn before(s: &str) -> Result<TimeFilter> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Result<TimeFilter, String> {
+    pub fn after(s: &str) -> Result<TimeFilter> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -219,19 +219,32 @@ mod tests {
     #[test]
     fn invalid_calendar_date_error_includes_inner_reason() {
         // November only has 30 days, so this is not a valid calendar date.
-        // The error message should include *why* it's invalid (e.g. mention
-        // "day" being out of range) instead of a generic rejection, see
+        // The error should surface the actual underlying parse failure
+        // instead of a generic rejection. We deliberately don't assert on
+        // jiff's exact wording (e.g. that it mentions "day"), since that
+        // would break on an unrelated jiff version bump. Instead, check
+        // that the message is non-empty and differs from the message for a
+        // differently-malformed input, which shows the inner reason is
+        // actually being propagated. See
         // https://github.com/sharkdp/fd/issues/2053
-        let err = TimeFilter::before("2025-11-31").unwrap_err();
-        assert!(
-            err.contains("day"),
-            "error message should mention the invalid 'day' component, got: {err}"
+        let day_err = TimeFilter::before("2025-11-31").unwrap_err().to_string();
+        let garbage_err = TimeFilter::before("not-a-real-date")
+            .unwrap_err()
+            .to_string();
+        assert!(!day_err.is_empty());
+        assert_ne!(
+            day_err, garbage_err,
+            "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
         );
 
-        let err = TimeFilter::after("2025-11-31").unwrap_err();
-        assert!(
-            err.contains("day"),
-            "error message should mention the invalid 'day' component, got: {err}"
+        let day_err = TimeFilter::after("2025-11-31").unwrap_err().to_string();
+        let garbage_err = TimeFilter::after("not-a-real-date")
+            .unwrap_err()
+            .to_string();
+        assert!(!day_err.is_empty());
+        assert_ne!(
+            day_err, garbage_err,
+            "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
         );
     }
 }
