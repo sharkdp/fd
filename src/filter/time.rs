@@ -9,6 +9,12 @@ pub enum TimeFilter {
     After(SystemTime),
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum TimeFilterParseError {
+    Invalid,
+    InvalidDateOrTimestamp(String),
+}
+
 #[cfg(not(test))]
 fn now() -> Zoned {
     Zoned::now()
@@ -26,31 +32,57 @@ fn now() -> Zoned {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
+    fn from_str(s: &str) -> Result<SystemTime, TimeFilterParseError> {
         if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
+            let datetime = now()
+                .checked_sub(span)
+                .map_err(|_| TimeFilterParseError::Invalid)?;
+            return Ok(datetime.into());
+        }
+
+        let timestamp_error = match s.parse::<Timestamp>() {
+            Ok(timestamp) => return Ok(timestamp.into()),
+            Err(error) => error,
+        };
+
+        let datetime_error = match s.parse::<DateTime>() {
+            Ok(datetime) => {
+                return TimeZone::system()
                     .to_ambiguous_zoned(datetime)
                     .later()
-                    .ok()?
-                    .into(),
-            )
+                    .map(SystemTime::from)
+                    .map_err(|error| {
+                        TimeFilterParseError::InvalidDateOrTimestamp(error.to_string())
+                    });
+            }
+            Err(error) => error,
+        };
+
+        if let Some(timestamp_secs) = s.strip_prefix('@') {
+            return timestamp_secs
+                .parse()
+                .map(|secs| UNIX_EPOCH + Duration::from_secs(secs))
+                .map_err(|error| TimeFilterParseError::InvalidDateOrTimestamp(error.to_string()));
+        }
+
+        if looks_like_date_or_time(s) {
+            Err(TimeFilterParseError::InvalidDateOrTimestamp(
+                datetime_error.to_string(),
+            ))
+        } else if s.contains('T') {
+            Err(TimeFilterParseError::InvalidDateOrTimestamp(
+                timestamp_error.to_string(),
+            ))
         } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            Err(TimeFilterParseError::Invalid)
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
+    pub fn before(s: &str) -> Result<TimeFilter, TimeFilterParseError> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
+    pub fn after(s: &str) -> Result<TimeFilter, TimeFilterParseError> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -60,6 +92,11 @@ impl TimeFilter {
             TimeFilter::After(limit) => t > limit,
         }
     }
+}
+
+fn looks_like_date_or_time(s: &str) -> bool {
+    s.starts_with(|c: char| c.is_ascii_digit())
+        && (s.contains('-') || s.contains(':') || s.contains('T'))
 }
 
 #[cfg(test)]
@@ -177,7 +214,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()

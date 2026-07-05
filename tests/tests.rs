@@ -2447,6 +2447,16 @@ fn test_modified_absolute() {
     );
 }
 
+#[test]
+fn test_modified_invalid_date_error() {
+    let te = TestEnv::new(&[], &[]);
+
+    te.assert_failure_with_error(
+        &["", "--changed-before", "2025-11-31"],
+        "[fd error]: '2025-11-31' is not a valid date or duration: parsed date is not valid: parameter 'day' for `2025-11` is invalid, must be in range `1..=30`. See 'fd --help'.",
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn test_owner_ignore_all() {

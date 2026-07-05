@@ -32,7 +32,7 @@ use crate::exit_codes::ExitCode;
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
-use crate::filter::TimeFilter;
+use crate::filter::{TimeFilter, TimeFilterParseError};
 use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
@@ -496,26 +496,26 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(ref t) = opts.changed_within {
-        if let Some(f) = TimeFilter::after(t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
+        time_constraints.push(TimeFilter::after(t).map_err(|err| format_time_error(t, err))?);
     }
     if let Some(ref t) = opts.changed_before {
-        if let Some(f) = TimeFilter::before(t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
-        }
+        time_constraints.push(TimeFilter::before(t).map_err(|err| format_time_error(t, err))?);
     }
     Ok(time_constraints)
+}
+
+fn format_time_error(input: &str, err: TimeFilterParseError) -> anyhow::Error {
+    match err {
+        TimeFilterParseError::Invalid => anyhow!(
+            "'{}' is not a valid date or duration. See 'fd --help'.",
+            input
+        ),
+        TimeFilterParseError::InvalidDateOrTimestamp(detail) => anyhow!(
+            "'{}' is not a valid date or duration: {}. See 'fd --help'.",
+            input,
+            detail
+        ),
+    }
 }
 
 fn ensure_use_hidden_option_for_leading_dot_pattern(
