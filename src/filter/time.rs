@@ -216,35 +216,85 @@ mod tests {
         );
     }
 
+    /// Length of the longest contiguous substring shared by `a` and `b`.
+    ///
+    /// Used to check that two error messages share substantial content
+    /// without hardcoding what that content actually says.
+    fn longest_common_substring_len(a: &str, b: &str) -> usize {
+        let a: Vec<char> = a.chars().collect();
+        let b: Vec<char> = b.chars().collect();
+        let mut prev = vec![0usize; b.len() + 1];
+        let mut best = 0;
+        for i in 1..=a.len() {
+            let mut cur = vec![0usize; b.len() + 1];
+            for j in 1..=b.len() {
+                if a[i - 1] == b[j - 1] {
+                    cur[j] = prev[j - 1] + 1;
+                    best = best.max(cur[j]);
+                }
+            }
+            prev = cur;
+        }
+        best
+    }
+
     #[test]
     fn invalid_calendar_date_error_includes_inner_reason() {
-        // November only has 30 days, so this is not a valid calendar date.
-        // The error should surface the actual underlying parse failure
-        // instead of a generic rejection. We deliberately don't assert on
-        // jiff's exact wording (e.g. that it mentions "day"), since that
-        // would break on an unrelated jiff version bump. Instead, check
-        // that the message is non-empty and differs from the message for a
-        // differently-malformed input, which shows the inner reason is
-        // actually being propagated. See
+        // The error must surface *why* parsing failed, not merely echo the
+        // raw input back under a generic wrapper. We deliberately don't
+        // assert on jiff's exact wording (e.g. that it mentions "day"),
+        // since that would break on an unrelated jiff version bump. See
         // https://github.com/sharkdp/fd/issues/2053
-        let day_err = TimeFilter::before("2025-11-31").unwrap_err().to_string();
-        let garbage_err = TimeFilter::before("not-a-real-date")
-            .unwrap_err()
-            .to_string();
-        assert!(!day_err.is_empty());
-        assert_ne!(
-            day_err, garbage_err,
-            "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
-        );
+        //
+        // A naive check that two different invalid inputs produce two
+        // different messages is gameable: a regression that dropped the
+        // real parse reason but still echoed the input (e.g.
+        // `format!("could not parse '{s}' as a date")`) would still make
+        // the two messages differ, purely because the inputs differ, while
+        // never actually surfacing the reason.
+        //
+        // Instead, compare error text for inputs that are invalid for the
+        // *same* underlying reason against error text for an input that's
+        // invalid for a *different* reason:
+        // - "2025-11-31" and "2019-06-31" both fail because day 31 doesn't
+        //   exist in a 30-day month (November / June), despite the raw
+        //   strings barely overlapping (different year and month).
+        // - "2025-13-01" fails for an unrelated reason (month 13 doesn't
+        //   exist).
+        // A message that actually carries the reason will make the first
+        // pair share a large chunk of text that the third message doesn't
+        // share. A message that's just the input echoed into a fixed
+        // template would make all three overlap by roughly the same
+        // (small) amount, since the only shared content would be the fixed
+        // wrapper text.
+        for filter in [TimeFilter::before, TimeFilter::after] {
+            let same_reason_a = filter("2025-11-31").unwrap_err().to_string();
+            let same_reason_b = filter("2019-06-31").unwrap_err().to_string();
+            let different_reason = filter("2025-13-01").unwrap_err().to_string();
 
-        let day_err = TimeFilter::after("2025-11-31").unwrap_err().to_string();
-        let garbage_err = TimeFilter::after("not-a-real-date")
-            .unwrap_err()
-            .to_string();
-        assert!(!day_err.is_empty());
-        assert_ne!(
-            day_err, garbage_err,
-            "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
-        );
+            assert!(!same_reason_a.is_empty());
+            assert_ne!(
+                same_reason_a, different_reason,
+                "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
+            );
+
+            let same_reason_overlap = longest_common_substring_len(&same_reason_a, &same_reason_b);
+            let different_reason_overlap =
+                longest_common_substring_len(&same_reason_a, &different_reason);
+            assert!(
+                same_reason_overlap >= 20,
+                "two dates invalid for the same reason should share substantial error text \
+                 (got only {same_reason_overlap} shared characters between {same_reason_a:?} \
+                 and {same_reason_b:?})"
+            );
+            assert!(
+                same_reason_overlap > different_reason_overlap + 10,
+                "shared text between same-reason errors ({same_reason_overlap} chars) should \
+                 clearly exceed shared text between different-reason errors \
+                 ({different_reason_overlap} chars): {same_reason_a:?} vs {same_reason_b:?} vs \
+                 {different_reason:?}; a smaller gap suggests the message may just be echoing \
+                 the input rather than surfacing the actual reason"
+            );
+        }
     }
 }
