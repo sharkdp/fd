@@ -4,6 +4,9 @@
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
 
+## Changes
+- Switch default allocator from jemalloc to mimalloc for improved performance (2.5x-3x faster per benchmarks), see #2056. Users can still build with jemalloc using `--features=use-jemalloc`.
+
 ## Bugfixes
 - Sanitize control characters and bidirectional override characters in filenames
   when output goes to a terminal, to prevent terminal escape-sequence injection.

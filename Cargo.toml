@@ -70,6 +70,11 @@ libc = "0.2"
 [target.'cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_os = "freebsd"), not(target_os = "openbsd"), not(target_os = "illumos"), not(all(target_env = "musl", target_pointer_width = "32")), not(target_arch = "riscv64")))'.dependencies]
 tikv-jemallocator = {version = "0.7.0", optional = true}
 
+# mimalloc allocator - cross-platform alternative
+[dependencies.mimalloc]
+version = "0.1.43"
+optional = true
+
 [dev-dependencies]
 diff = "0.1"
 tempfile = "3.27"
@@ -91,11 +96,27 @@ lto = true
 strip = true
 codegen-units = 1
 
+# Jemalloc release profile for benchmarking
+[profile.release-jemalloc]
+inherits = "release"
+env = ["CARGO_PROFILE_RELEASE_JEMALLOC=1"]
+
+# Mimalloc release profile for benchmarking
+[profile.release-mimalloc]
+inherits = "release"
+env = ["CARGO_PROFILE_RELEASE_MIMALLOC=1"]
+
 [features]
 use-jemalloc = ["tikv-jemallocator"]
+use-mimalloc = ["mimalloc"]
 completions = ["clap_complete"]
-base = ["use-jemalloc"]
-default = ["completions"]
+# Default allocator is mimalloc (cross-platform, better performance per benchmarks)
+base = ["use-mimalloc"]
+default = ["base", "completions"]
+
+# Allocator benchmark profiles
+# Build with: cargo build --profile=release-jemalloc --features=use-jemalloc
+# Build with: cargo build --profile=release-mimalloc --features=use-mimalloc
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"
