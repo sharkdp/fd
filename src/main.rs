@@ -39,9 +39,8 @@ use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_wi
 // per benchmarks). See https://github.com/sharkdp/fd/pull/481 for original jemalloc adoption.
 // This has to be kept in sync with the Cargo.toml file section that declares the mimalloc dependency.
 #[cfg(all(
-    not(target_os = "windows"),
+    not(windows),
     not(target_os = "android"),
-    not(target_os = "ios"),
     not(target_os = "macos"),
     not(target_os = "freebsd"),
     not(target_os = "openbsd"),

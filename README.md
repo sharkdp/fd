@@ -641,7 +641,7 @@ dnf copr enable tkbcopr/fd
 dnf install fd
 ```
 
-A different version using the system malloc [instead of mimalloc](https://github.com/sharkdp/fd/pull/2056) is also available from the EPEL8/9 repo as the package `fd-find`.
+A different version using the [system malloc](https://github.com/sharkdp/fd/pull/481#issuecomment-534494592) [instead of mimalloc](https://bugzilla.redhat.com/show_bug.cgi?id=2216193#c1) is also available from the EPEL8/9 repo as the package `fd-find`.
 
 ### On macOS
 

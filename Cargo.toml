@@ -62,18 +62,16 @@ nix = { version = "0.31.1", default-features = false, features = ["signal", "use
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
 
+# Both allocator dependencies share the same platform restrictions.
+# These have to be kept in sync with src/main.rs where the allocator for
+# the program is set.
 # FIXME: Re-enable jemalloc on macOS
 # jemalloc is currently disabled on macOS due to a bug in jemalloc in combination with macOS
 # Catalina. See https://github.com/sharkdp/fd/issues/498 for details.
-# This has to be kept in sync with src/main.rs where the allocator for
-# the program is set.
 [target.'cfg(all(not(windows), not(target_os = "android"), not(target_os = "macos"), not(target_os = "freebsd"), not(target_os = "openbsd"), not(target_os = "illumos"), not(all(target_env = "musl", target_pointer_width = "32")), not(target_arch = "riscv64")))'.dependencies]
 tikv-jemallocator = {version = "0.7.0", optional = true}
-
 # mimalloc allocator - cross-platform alternative
-[dependencies.mimalloc]
-version = "0.1.43"
-optional = true
+mimalloc = {version = "0.1.43", optional = true}
 
 [dev-dependencies]
 diff = "0.1"
