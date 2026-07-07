@@ -369,10 +369,9 @@ mod tests {
     fn tokens_with_literal_braces() {
         let template =
             CommandTemplate::new(vec!["{{}}", "{{", "{.}}"], ExecutionMode::OneByOne).unwrap();
-        assert_eq!(
-            generate_str(&template, "foo"),
-            vec!["{}", "{", "{.}", "foo"]
-        );
+        // `{{}}` and `{{` are literal-brace escapes, while `{.}}` expands the
+        // `{.}` placeholder and keeps the trailing `}` as a literal.
+        assert_eq!(generate_str(&template, "foo"), vec!["{}", "{", "foo}"]);
     }
 
     #[test]

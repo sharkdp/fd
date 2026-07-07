@@ -73,20 +73,18 @@ impl FormatTemplate {
                     buf += &remaining[..m.start() + BRACE_LEN];
                     remaining = &remaining[m.end()..];
                 }
-                id if !remaining[m.end()..].starts_with('}') => {
+                id => {
+                    // We found a placeholder. Add any preceding text to the
+                    // buffer, flush it, then push the placeholder token. A
+                    // literal '}' following the placeholder (as in `{}}`) is
+                    // left in `remaining` and handled as ordinary text on the
+                    // next iteration.
                     buf += &remaining[..m.start()];
                     if !buf.is_empty() {
                         tokens.push(Token::Text(std::mem::take(&mut buf)));
                     }
                     tokens.push(token_from_pattern_id(id));
                     remaining = &remaining[m.end()..];
-                }
-                _ => {
-                    // We got a normal pattern, but the final "}"
-                    // is escaped, so add up to that to the buffer, then
-                    // skip the final }
-                    buf += &remaining[..m.end()];
-                    remaining = &remaining[m.end() + BRACE_LEN..];
                 }
             }
         }
@@ -231,6 +229,31 @@ mod fmt_tests {
             templ,
             FormatTemplate::Text("This string only has escapes like { and }".into())
         );
+    }
+
+    #[test]
+    fn parse_placeholder_followed_by_literal_brace() {
+        use Token::*;
+
+        // A placeholder immediately followed by a literal '}' should still be
+        // expanded, with the '}' kept as trailing literal text.
+        assert_eq!(
+            FormatTemplate::parse("{}}"),
+            FormatTemplate::Tokens(vec![Placeholder, Text("}".into())])
+        );
+        assert_eq!(
+            FormatTemplate::parse("{/}}"),
+            FormatTemplate::Tokens(vec![Basename, Text("}".into())])
+        );
+
+        let mut path = PathBuf::new();
+        path.push("a");
+        path.push("file.txt");
+        let expanded = FormatTemplate::parse("{}}")
+            .generate(&path, Some("/"))
+            .into_string()
+            .unwrap();
+        assert_eq!(expanded, "a/file.txt}");
     }
 
     #[test]
