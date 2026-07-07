@@ -367,7 +367,7 @@ impl<'a> EntryFilter<'a> {
             }
         }
 
-        return false;
+        false
     }
 
     /// Check if the entry is a root directory, and skip it if so,
@@ -377,7 +377,7 @@ impl<'a> EntryFilter<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 
     fn is_below_min_depth(&self, entry: &DirEntry) -> bool {
@@ -389,7 +389,7 @@ impl<'a> EntryFilter<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 
     /// Returns whether the entry fails to match the configured patterns.
@@ -406,7 +406,7 @@ impl<'a> EntryFilter<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 
     /// Returns whether the entry fails the configured extension filter.
@@ -421,7 +421,7 @@ impl<'a> EntryFilter<'a> {
                 return true;
             }
         }
-        return false;
+        false
     }
 
     /// Returns whether the entry's file type should be ignored.
@@ -432,7 +432,7 @@ impl<'a> EntryFilter<'a> {
             return true;
         }
 
-        return false;
+        false
     }
 
     #[cfg(unix)]
@@ -448,7 +448,7 @@ impl<'a> EntryFilter<'a> {
             }
         }
 
-        return false;
+        false
     }
 
     /// Returns whether the entry failed configured size constraints.
@@ -474,7 +474,7 @@ impl<'a> EntryFilter<'a> {
             }
         }
 
-        return false;
+        false
     }
 
     /// Returns whether the entry fails the configured modification time constraints.
@@ -495,7 +495,7 @@ impl<'a> EntryFilter<'a> {
             }
         }
 
-        return false;
+        false
     }
 }
 
