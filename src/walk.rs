@@ -313,43 +313,43 @@ impl<'a> EntryFilter<'a> {
     }
 
     /// Fast-path checks that operate on the raw ignore::DirEntry
-    fn evaluate_before_normalization(&self, entry: &ignore::DirEntry) -> Option<WalkState> {
-        if let Some(state) = self.check_ignore_file(entry) {
-            return Some(state);
+    fn evaluate_raw(&self, entry: &ignore::DirEntry) -> Option<WalkState> {
+        if self.skip_ignore_dir(entry) {
+            return Some(WalkState::Skip);
         }
-        if let Some(state) = self.check_root_dir(entry) {
-            return Some(state);
+
+        if self.is_root_dir(entry) {
+            return Some(WalkState::Continue);
         }
+
         None
     }
 
     /// Evaluates a normalized entry against all configured constraints to determine its walk state.
     fn evaluate(&self, entry: &DirEntry) -> Option<WalkState> {
-        if let Some(state) = self.check_min_depth(entry) {
-            return Some(state);
+        #[cfg(unix)]
+        let fails_owner_constraints = self.fails_owner_constraints(entry);
+
+        #[cfg(not(unix))]
+        let fails_owner_constraints = false;
+
+        if self.is_below_min_depth(entry)
+            || self.fails_pattern_filter(entry)
+            || self.fails_extension_filter(entry)
+            || self.matches_ignored_file_type(entry)
+            || fails_owner_constraints
+            || self.fails_size_constraints(entry)
+            || self.fails_modification_time_constraints(entry)
+        {
+            return Some(WalkState::Continue);
         }
-        if let Some(state) = self.check_patterns(entry) {
-            return Some(state);
-        }
-        if let Some(state) = self.check_extensions(entry) {
-            return Some(state);
-        }
-        if let Some(state) = self.check_file_types(entry) {
-            return Some(state);
-        }
-        if let Some(state) = self.check_owner(entry) {
-            return Some(state);
-        }
-        if let Some(state) = self.check_size(entry) {
-            return Some(state);
-        }
-        if let Some(state) = self.check_modification_time(entry) {
-            return Some(state);
-        }
+
         None
     }
 
-    fn check_ignore_file(&self, entry: &ignore::DirEntry) -> Option<WalkState> {
+    // Check whether the given directory contains the file specified by `--ignore-contains`.
+    // This allows to skip the directory entirely.
+    fn skip_ignore_dir(&self, entry: &ignore::DirEntry) -> bool {
         // If the entry is a directory that contains a
         // "ignore contain" file, we want to skip this
         // directory.
@@ -363,33 +363,37 @@ impl<'a> EntryFilter<'a> {
                 .iter()
                 .any(|ic| entry_path.join(ic).exists())
             {
-                return Some(WalkState::Skip);
+                return true;
             }
         }
 
-        None
+        return false;
     }
 
-    fn check_root_dir(&self, entry: &ignore::DirEntry) -> Option<WalkState> {
+    /// Check if the entry is a root directory, and skip it if so,
+    /// so that we don't include the root search paths in the output.
+    fn is_root_dir(&self, entry: &ignore::DirEntry) -> bool {
         if entry.depth() == 0 {
-            // Skip the root directory entry.
-            return Some(WalkState::Continue);
+            return true;
         }
 
-        None
+        return false;
     }
 
-    fn check_min_depth(&self, entry: &DirEntry) -> Option<WalkState> {
-        let min_depth = self.config.min_depth?;
+    fn is_below_min_depth(&self, entry: &DirEntry) -> bool {
+        let Some(min_depth) = self.config.min_depth else {
+            return false;
+        };
 
         if entry.depth().is_none_or(|depth| depth < min_depth) {
-            return Some(WalkState::Continue);
+            return true;
         }
 
-        None
+        return false;
     }
 
-    fn check_patterns(&self, entry: &DirEntry) -> Option<WalkState> {
+    /// Returns whether the entry fails to match the configured patterns.
+    fn fails_pattern_filter(&self, entry: &DirEntry) -> bool {
         let entry_path = entry.path();
 
         let search_str = search_str_for_entry(entry_path, self.config.full_path_base.as_deref());
@@ -399,37 +403,56 @@ impl<'a> EntryFilter<'a> {
             .iter()
             .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
         {
-            return Some(WalkState::Continue);
+            return true;
         }
 
-        None
+        return false;
     }
 
-    fn check_extensions(&self, entry: &DirEntry) -> Option<WalkState> {
+    /// Returns whether the entry fails the configured extension filter.
+    fn fails_extension_filter(&self, entry: &DirEntry) -> bool {
         let entry_path = entry.path();
         if let Some(ref exts_regex) = self.config.extensions {
             if let Some(path_str) = entry_path.file_name() {
                 if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
-                    return Some(WalkState::Continue);
+                    return true;
                 }
             } else {
-                return Some(WalkState::Continue);
+                return true;
             }
         }
-        None
+        return false;
     }
 
-    fn check_file_types(&self, entry: &DirEntry) -> Option<WalkState> {
+    /// Returns whether the entry's file type should be ignored.
+    fn matches_ignored_file_type(&self, entry: &DirEntry) -> bool {
         if let Some(ref file_types) = self.config.file_types
             && file_types.should_ignore(entry)
         {
-            return Some(WalkState::Continue);
+            return true;
         }
 
-        None
+        return false;
     }
 
-    fn check_size(&self, entry: &DirEntry) -> Option<WalkState> {
+    #[cfg(unix)]
+    /// Returns whether the entry fails the configured owner constraint.
+    fn fails_owner_constraints(&self, entry: &DirEntry) -> bool {
+        if let Some(ref owner_constraint) = self.config.owner_constraint {
+            if let Some(metadata) = entry.metadata() {
+                if !owner_constraint.matches(metadata) {
+                    return true;
+                }
+            } else {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// Returns whether the entry failed configured size constraints.
+    fn fails_size_constraints(&self, entry: &DirEntry) -> bool {
         let entry_path = entry.path();
         if !self.config.size_constraints.is_empty() {
             if entry_path.is_file() {
@@ -441,20 +464,21 @@ impl<'a> EntryFilter<'a> {
                         .iter()
                         .any(|sc| !sc.is_within(file_size))
                     {
-                        return Some(WalkState::Continue);
+                        return true;
                     }
                 } else {
-                    return Some(WalkState::Continue);
+                    return true;
                 }
             } else {
-                return Some(WalkState::Continue);
+                return true;
             }
         }
 
-        None
+        return false;
     }
 
-    fn check_modification_time(&self, entry: &DirEntry) -> Option<WalkState> {
+    /// Returns whether the entry fails the configured modification time constraints.
+    fn fails_modification_time_constraints(&self, entry: &DirEntry) -> bool {
         if !self.config.time_constraints.is_empty() {
             let mut matched = false;
             if let Some(metadata) = entry.metadata()
@@ -467,32 +491,11 @@ impl<'a> EntryFilter<'a> {
                     .all(|tf| tf.applies_to(&modified));
             }
             if !matched {
-                return Some(WalkState::Continue);
+                return true;
             }
         }
 
-        None
-    }
-
-    #[cfg(unix)]
-    fn check_owner(&self, entry: &DirEntry) -> Option<WalkState> {
-        if let Some(ref owner_constraint) = self.config.owner_constraint {
-            if let Some(metadata) = entry.metadata() {
-                if !owner_constraint.matches(metadata) {
-                    return Some(WalkState::Continue);
-                }
-            } else {
-                return Some(WalkState::Continue);
-            }
-        }
-
-        None
-    }
-
-    #[cfg(not(unix))]
-    #[inline]
-    fn check_owner(&self, _entry: &DirEntry) -> Option<WalkState> {
-        None
+        return false;
     }
 }
 
@@ -695,7 +698,7 @@ impl WorkerState {
                 }
 
                 if let Ok(e) = &entry
-                    && let Some(state) = filter.evaluate_before_normalization(e)
+                    && let Some(state) = filter.evaluate_raw(e)
                 {
                     return state;
                 }
