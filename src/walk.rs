@@ -313,20 +313,20 @@ impl<'a> EntryFilter<'a> {
     }
 
     /// Fast-path checks that operate on the raw ignore::DirEntry
-    fn evaluate_raw(&self, entry: &ignore::DirEntry) -> Option<WalkState> {
+    fn evaluate_raw(&self, entry: &ignore::DirEntry) -> Result<(), WalkState> {
         if self.skip_ignore_dir(entry) {
-            return Some(WalkState::Skip);
+            return Err(WalkState::Skip);
         }
 
         if self.is_root_dir(entry) {
-            return Some(WalkState::Continue);
+            return Err(WalkState::Continue);
         }
 
-        None
+        Ok(())
     }
 
     /// Evaluates a normalized entry against all configured constraints to determine its walk state.
-    fn evaluate(&self, entry: &DirEntry) -> Option<WalkState> {
+    fn evaluate(&self, entry: &DirEntry) -> Result<(), WalkState> {
         #[cfg(unix)]
         let fails_owner_constraints = self.fails_owner_constraints(entry);
 
@@ -341,10 +341,10 @@ impl<'a> EntryFilter<'a> {
             || self.fails_size_constraints(entry)
             || self.fails_modification_time_constraints(entry)
         {
-            return Some(WalkState::Continue);
+            return Err(WalkState::Continue);
         }
 
-        None
+        Ok(())
     }
 
     // Check whether the given directory contains the file specified by `--ignore-contains`.
@@ -699,7 +699,7 @@ impl WorkerState {
                 }
 
                 if let Ok(e) = &entry
-                    && let Some(state) = filter.evaluate_raw(e)
+                    && let Err(state) = filter.evaluate_raw(e)
                 {
                     return state;
                 }
@@ -709,7 +709,7 @@ impl WorkerState {
                     Err(state) => return state,
                 };
 
-                if let Some(state) = filter.evaluate(&entry) {
+                if let Err(state) = filter.evaluate(&entry) {
                     return state;
                 }
 
