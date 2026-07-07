@@ -380,6 +380,7 @@ impl<'a> EntryFilter<'a> {
         false
     }
 
+    /// Returns whether `entry` is shallower than the configured minimum depth.
     fn is_below_min_depth(&self, entry: &DirEntry) -> bool {
         let Some(min_depth) = self.config.min_depth else {
             return false;
