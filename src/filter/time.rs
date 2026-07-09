@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -26,14 +26,23 @@ fn now() -> Zoned {
     TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(Zoned::now))
 }
 
+/// Whether the input starts like a calendar date (`YYYY-`). Only then does
+/// the `DateTime` parser's error refer to the format the user most likely
+/// meant; for span- or timestamp-shaped input it would be misleading.
+fn looks_like_calendar_date(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    bytes.len() > 4 && bytes[..4].iter().all(u8::is_ascii_digit) && bytes[4] == b'-'
+}
+
 impl TimeFilter {
     /// Parses a duration/timestamp/date/`@`-prefixed unix-timestamp string.
     ///
-    /// On failure, returns the underlying parse error from the `DateTime`
-    /// parser (the calendar-date format, and the most common source of
-    /// confusing failures, e.g. `2025-11-31` which is not a valid calendar
-    /// date) instead of silently discarding it, so callers can tell the
-    /// user *why* their input was rejected.
+    /// On failure for date-shaped input, returns the underlying parse error
+    /// from the `DateTime` parser (the most common source of confusing
+    /// failures, e.g. `2025-11-31` which is not a valid calendar date)
+    /// instead of silently discarding it, so callers can tell the user
+    /// *why* their input was rejected. Input that does not look like a
+    /// calendar date gets a summary of the accepted formats instead.
     fn from_str(s: &str) -> Result<SystemTime> {
         if let Ok(span) = s.parse::<Span>() {
             let datetime = now().checked_sub(span)?;
@@ -56,8 +65,19 @@ impl TimeFilter {
                 // None of the supported formats matched. The `DateTime`
                 // parser gives the most useful reason for calendar-date-
                 // shaped input (the common case for this kind of mistake),
-                // so surface that instead of a generic message.
-                Err(datetime_err.into())
+                // so surface that instead of a generic message. For input
+                // shaped like a span (e.g. a typo'd duration) that reason
+                // would point at the wrong format entirely, so summarize
+                // the accepted formats instead.
+                if looks_like_calendar_date(s) {
+                    Err(datetime_err.into())
+                } else {
+                    Err(anyhow!(
+                        "expected a duration (e.g. '10h', '2d'), a date (e.g. '2018-10-27'), \
+                         a timestamp (e.g. '2018-10-27T10:00:00-05:00'), or '@' followed by \
+                         a unix timestamp"
+                    ))
+                }
             }
         }
     }
@@ -236,6 +256,29 @@ mod tests {
             prev = cur;
         }
         best
+    }
+
+    #[test]
+    fn non_date_input_gets_format_summary_not_calendar_date_reason() {
+        // A typo'd duration or otherwise non-date-shaped input must not
+        // surface the calendar-date parser's reason (which would point at
+        // the wrong format entirely), but a neutral summary of the
+        // accepted formats.
+        for filter in [TimeFilter::before, TimeFilter::after] {
+            for input in ["1 huor", "yesterday", "@notanumber"] {
+                let err = filter(input).unwrap_err().to_string();
+                assert!(
+                    err.contains("duration") && err.contains("unix timestamp"),
+                    "non-date-shaped input {input:?} should get the format summary, got: {err:?}"
+                );
+            }
+            // Date-shaped input keeps the underlying parse reason.
+            let date_err = filter("2025-11-31").unwrap_err().to_string();
+            assert!(
+                !date_err.contains("expected a duration"),
+                "date-shaped input should surface the parser's reason, got: {date_err:?}"
+            );
+        }
     }
 
     #[test]
