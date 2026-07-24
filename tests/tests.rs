@@ -1274,7 +1274,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/
             {abs_path}/symlink",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 
@@ -1287,7 +1287,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1306,7 +1306,7 @@ fn test_implicit_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1326,7 +1326,7 @@ fn test_normalized_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1560,7 +1560,7 @@ fn test_symlink_as_root() {
             {dir}/one/two/three/d.foo
             {dir}/one/two/three/directory_foo/
             {dir}/symlink",
-            dir = &parent_parent
+            dir = parent_parent
         ),
     );
 }
@@ -1580,7 +1580,7 @@ fn test_symlink_and_absolute_path() {
             {abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
             {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
+            abs_path = abs_path,
             expected_path = expected_path
         ),
     );
@@ -1598,7 +1598,7 @@ fn test_symlink_as_absolute_root() {
             {abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1622,7 +1622,7 @@ fn test_symlink_and_full_path() {
             "{abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
             {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
+            abs_path = abs_path,
             expected_path = expected_path
         ),
     );
@@ -1643,7 +1643,7 @@ fn test_symlink_and_full_path_abs_path() {
             "{abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1772,7 +1772,7 @@ fn test_exec() {
                 {abs_path}/one/two/c.foo
                 {abs_path}/one/two/three/d.foo
                 {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                abs_path = abs_path
             ),
         );
 
@@ -1871,7 +1871,7 @@ fn test_exec_multi() {
                 test c.foo
                 test d.foo
                 test directory_foo",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 
@@ -1927,7 +1927,7 @@ fn test_exec_batch() {
             &["--absolute-path", "foo", "--exec-batch", "echo"],
             &format!(
                 "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                abs_path = abs_path
             ),
         );
 
@@ -2539,7 +2539,7 @@ fn test_base_directory() {
 
     // Ignore base directory when absolute path is used
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
-    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = &abs_path);
+    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = abs_path);
     te.assert_output(
         &["--base-directory", abs_base_dir, "foo", &abs_path],
         &format!(
@@ -2549,7 +2549,7 @@ fn test_base_directory() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
