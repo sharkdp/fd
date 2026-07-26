@@ -4,6 +4,7 @@
 [![Version info](https://img.shields.io/crates/v/fd-find.svg)](https://crates.io/crates/fd-find)
 [[中文](https://github.com/cha0ran/fd-zh)]
 [[한국어](https://github.com/spearkkk/fd-kor)]
+[[Tiếng Việt](README_vi.md)]
 
 `fd` is a program to find entries in your filesystem.
 It is a simple, fast and user-friendly alternative to [`find`](https://www.gnu.org/software/findutils/).
