@@ -147,7 +147,7 @@ By default, *fd* only matches the filename of each file. However, using the `--f
 you can match against the full path.
 
 ```bash
-> fd -p -g '**/.git/config'
+> fd -u -p -g '**/.git/config'
 > fd -p '.*/lesson-\d+/[a-z]+.(jpg|png)'
 ```
 
