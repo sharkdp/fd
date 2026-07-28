@@ -42,6 +42,9 @@ impl TimeFilter {
             )
         } else {
             let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
+            if timestamp_secs > i64::MAX as u64 {
+                return None;
+            }
             Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
         }
     }
