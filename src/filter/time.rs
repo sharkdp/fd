@@ -42,7 +42,7 @@ impl TimeFilter {
             )
         } else {
             let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            UNIX_EPOCH.checked_add(Duration::from_secs(timestamp_secs))
         }
     }
 
