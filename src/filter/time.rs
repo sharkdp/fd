@@ -199,4 +199,12 @@ mod tests {
                 .applies_to(&t1s_later)
         );
     }
+
+    #[test]
+    fn out_of_range_unix_timestamp_is_rejected() {
+        // A '@' timestamp large enough to overflow SystemTime must return
+        // None rather than panicking.
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_none());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_none());
+    }
 }
