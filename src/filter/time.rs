@@ -26,31 +26,56 @@ fn now() -> Zoned {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
-        if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
+    fn from_str(s: &str) -> Result<SystemTime, String> {
+        // Try as a relative duration span (e.g. "1min", "2h30m").
+        let span_err = match s.parse::<Span>() {
+            Ok(span) => {
+                return now()
+                    .checked_sub(span)
+                    .map(SystemTime::from)
+                    .map_err(|e| e.to_string());
+            }
+            Err(e) => e,
+        };
+
+        // Try as an absolute RFC 3339 timestamp (e.g. "2024-01-01T00:00:00Z").
+        if let Ok(ts) = s.parse::<Timestamp>() {
+            return Ok(ts.into());
+        }
+
+        // Try as a civil date/datetime (e.g. "2025-11-30" or "2025-11-30 10:00:00").
+        let datetime_err = match s.parse::<DateTime>() {
+            Ok(datetime) => {
+                return TimeZone::system()
                     .to_ambiguous_zoned(datetime)
                     .later()
-                    .ok()?
-                    .into(),
-            )
+                    .map(SystemTime::from)
+                    .map_err(|e| e.to_string());
+            }
+            Err(e) => e,
+        };
+
+        // Try as a Unix epoch seconds with '@' prefix (e.g. "@1707723412").
+        if let Some(secs_str) = s.strip_prefix('@') {
+            if let Ok(secs) = secs_str.parse::<u64>() {
+                return Ok(UNIX_EPOCH + Duration::from_secs(secs));
+            }
+        }
+
+        // Report the most relevant error: date/time error for date-like input,
+        // duration error otherwise.
+        if s.contains('-') || (s.contains(':') && !s.starts_with('@')) {
+            Err(datetime_err.to_string())
         } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            Err(span_err.to_string())
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
+    pub fn before(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
+    pub fn after(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -177,7 +202,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
