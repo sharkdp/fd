@@ -516,9 +516,23 @@ impl WorkerState {
 
                 let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
+                #[cfg_attr(not(windows), allow(unused_mut))]
+                let mut search_bytes = filesystem::osstr_to_bytes(search_str.as_ref());
+
+                // globset canonicalizes separators in glob patterns to '/', so the
+                // candidate path has to be canonicalized the same way.
+                #[cfg(windows)]
+                if config.normalize_path_separators {
+                    for byte in search_bytes.to_mut() {
+                        if *byte == b'\\' {
+                            *byte = b'/';
+                        }
+                    }
+                }
+
                 if !patterns
                     .iter()
-                    .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
+                    .all(|pattern| pattern.is_match(&search_bytes))
                 {
                     return WalkState::Continue;
                 }
