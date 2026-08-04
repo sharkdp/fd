@@ -599,7 +599,6 @@ fn test_glob_searches() {
 }
 
 /// Glob-based searches (--glob) in combination with full path searches (--full-path)
-#[cfg(not(windows))] // TODO: make this work on Windows
 #[test]
 fn test_full_path_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
@@ -620,6 +619,35 @@ fn test_full_path_glob_searches() {
         &["--glob", "--full-path", "**/one/*/*/*.foo"],
         " one/two/three/d.foo",
     );
+
+    // Every --and pattern is matched against the same full-path candidate.
+    te.assert_output(
+        &["--glob", "--full-path", "**/one/**", "--and", "**/*.foo"],
+        "one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    #[cfg(windows)]
+    {
+        // globset accepts native separators in patterns and canonicalizes them
+        // to '/', so they need the same candidate normalization.
+        te.assert_output(
+            &["--glob", "--full-path", r"**\one\**\*.foo"],
+            "one/b.foo
+            one/two/c.foo
+            one/two/three/d.foo",
+        );
+
+        // --regex overrides --glob. Native-separator regexes must continue to
+        // receive the unmodified Windows path.
+        te.assert_output(
+            &["--glob", "--regex", "--full-path", r"\\one\\.*\.foo$"],
+            "one/b.foo
+            one/two/c.foo
+            one/two/three/d.foo",
+        );
+    }
 }
 
 #[test]
@@ -1273,8 +1301,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/three/
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/
-            {abs_path}/symlink",
-            abs_path = &abs_path
+            {abs_path}/symlink"
         ),
     );
 
@@ -1286,8 +1313,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/one/two/three/directory_foo/"
         ),
     );
 }
@@ -1305,8 +1331,7 @@ fn test_implicit_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/one/two/three/directory_foo/"
         ),
     );
 }
@@ -1325,8 +1350,7 @@ fn test_normalized_absolute_path() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/one/two/three/directory_foo/"
         ),
     );
 }
@@ -1560,7 +1584,7 @@ fn test_symlink_as_root() {
             {dir}/one/two/three/d.foo
             {dir}/one/two/three/directory_foo/
             {dir}/symlink",
-            dir = &parent_parent
+            dir = parent_parent
         ),
     );
 }
@@ -1579,9 +1603,7 @@ fn test_symlink_and_absolute_path() {
             {abs_path}/{expected_path}/C.Foo2
             {abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
-            {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
-            expected_path = expected_path
+            {abs_path}/{expected_path}/three/directory_foo/"
         ),
     );
 }
@@ -1597,8 +1619,7 @@ fn test_symlink_as_absolute_root() {
             {abs_path}/symlink/C.Foo2
             {abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/symlink/three/directory_foo/"
         ),
     );
 }
@@ -1621,9 +1642,7 @@ fn test_symlink_and_full_path() {
         &format!(
             "{abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
-            {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
-            expected_path = expected_path
+            {abs_path}/{expected_path}/three/directory_foo/"
         ),
     );
 }
@@ -1642,8 +1661,7 @@ fn test_symlink_and_full_path_abs_path() {
         &format!(
             "{abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
-            {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/symlink/three/directory_foo/"
         ),
     );
 }
@@ -1771,8 +1789,7 @@ fn test_exec() {
                 {abs_path}/one/two/C.Foo2
                 {abs_path}/one/two/c.foo
                 {abs_path}/one/two/three/d.foo
-                {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                {abs_path}/one/two/three/directory_foo"
             ),
         );
 
@@ -1870,8 +1887,7 @@ fn test_exec_multi() {
                 test C.Foo2
                 test c.foo
                 test d.foo
-                test directory_foo",
-            abs_path = &abs_path
+                test directory_foo"
         ),
     );
 
@@ -1926,8 +1942,7 @@ fn test_exec_batch() {
         te.assert_output(
             &["--absolute-path", "foo", "--exec-batch", "echo"],
             &format!(
-                "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo"
             ),
         );
 
@@ -2539,7 +2554,7 @@ fn test_base_directory() {
 
     // Ignore base directory when absolute path is used
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
-    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = &abs_path);
+    let abs_base_dir = &format!("{abs_path}/one/two/");
     te.assert_output(
         &["--base-directory", abs_base_dir, "foo", &abs_path],
         &format!(
@@ -2548,8 +2563,7 @@ fn test_base_directory() {
             {abs_path}/one/two/c.foo
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
-            {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            {abs_path}/one/two/three/directory_foo/"
         ),
     );
 }

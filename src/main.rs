@@ -310,6 +310,8 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     Ok(Config {
         case_sensitive,
         full_path_base,
+        #[cfg(windows)]
+        normalize_path_separators: opts.glob && opts.full_path,
         ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
         read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),

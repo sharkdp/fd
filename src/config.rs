@@ -19,6 +19,10 @@ pub struct Config {
     /// Populated when `--full-path` is set; `None` means search by filename only.
     pub full_path_base: Option<PathBuf>,
 
+    /// Whether to normalize native path separators before applying the search regex.
+    #[cfg(windows)]
+    pub normalize_path_separators: bool,
+
     /// Whether to ignore hidden files and directories (or not).
     pub ignore_hidden: bool,
 
