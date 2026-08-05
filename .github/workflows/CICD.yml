@@ -279,7 +279,7 @@ jobs:
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
     - name: "Attest artifacts"
-      uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+      uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
       if: steps.is-release.outputs.IS_RELEASE
       with:
         subject-path: |
