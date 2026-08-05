@@ -440,7 +440,7 @@ impl WorkerState {
     }
 
     /// Spawn the sender threads.
-    fn spawn_senders(&self, walker: WalkParallel, roots: &[PathBuf], tx: Sender<Batch>) {
+    fn spawn_senders(&self, walker: WalkParallel, tx: Sender<Batch>) {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
@@ -484,25 +484,24 @@ impl WorkerState {
                 }
                 let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
-                    Err(ignore::Error::WithPath {
-                        path,
-                        err: inner_err,
-                    }) if inner_err
-                        .io_error()
-                        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
-                        && path
-                            .symlink_metadata()
-                            .ok()
-                            .is_some_and(|m| m.file_type().is_symlink()) =>
-                    {
-                        let depth = depth_relative_to_roots(&path, roots);
-                        DirEntry::broken_symlink(path, depth)
-                    }
                     Err(err) => {
-                        return match tx.send(WorkerResult::Error(err)) {
-                            Ok(_) => WalkState::Continue,
-                            Err(_) => WalkState::Quit,
-                        };
+                        // The depth has to be read off the error before it is
+                        // taken apart, since it is recorded on an inner variant.
+                        let depth = err.depth();
+                        match err {
+                            ignore::Error::WithPath {
+                                path,
+                                err: inner_err,
+                            } if is_broken_symlink(&path, &inner_err) => {
+                                DirEntry::broken_symlink(path, depth)
+                            }
+                            err => {
+                                return match tx.send(WorkerResult::Error(err)) {
+                                    Ok(_) => WalkState::Continue,
+                                    Err(_) => WalkState::Quit,
+                                };
+                            }
+                        }
                     }
                 };
 
@@ -641,7 +640,7 @@ impl WorkerState {
             let receiver = scope.spawn(|| self.receive(rx));
 
             // Spawn the sender threads.
-            self.spawn_senders(walker, paths, tx);
+            self.spawn_senders(walker, tx);
 
             receiver.join().unwrap()
         });
@@ -654,37 +653,19 @@ impl WorkerState {
     }
 }
 
-/// Compute the depth of `path` relative to the search root it was found under.
+/// Whether a walk error is really a broken symlink rather than a failure worth
+/// reporting.
 ///
-/// `ignore::DirEntry::depth()` provides this for normal entries, but broken
-/// symlinks are surfaced as errors that carry no depth, so we derive it from the
-/// path instead (see issue #1017). The walker reports every entry's path
-/// prefixed by the search root it was found under, so we strip the matching root
-/// and count the remaining components. Both the path and the roots are put into
-/// absolute form first, so the comparison is correct regardless of whether
-/// `--absolute-path` has already made the roots absolute (otherwise an absolute
-/// path would fail to match a relative root and the depth would be wrong). When
-/// more than one root is a prefix, the deepest (most specific) one wins. If none
-/// matches, which should not happen, we fall back to the full component count,
-/// keeping the entry visible rather than silently dropping it.
-fn depth_relative_to_roots(path: &Path, roots: &[PathBuf]) -> usize {
-    // `Path::join` ignores the base when its argument is already absolute, so
-    // this leaves absolute inputs untouched and anchors relative ones at the cwd.
-    let cwd = std::env::current_dir().ok();
-    let absolute = |p: &Path| -> PathBuf {
-        match &cwd {
-            Some(cwd) => cwd.join(p),
-            None => p.to_path_buf(),
-        }
-    };
-
-    let absolute_path = absolute(path);
-    roots
-        .iter()
-        .filter_map(|root| absolute_path.strip_prefix(absolute(root)).ok())
-        .map(|relative| relative.components().count())
-        .min()
-        .unwrap_or_else(|| path.components().count())
+/// A symlink whose target is missing is surfaced by the walker as a NotFound
+/// error against the link's own path, so it never arrives as an entry. fd still
+/// wants to match and print it (see issue #1017), which means recovering it here.
+fn is_broken_symlink(path: &Path, err: &ignore::Error) -> bool {
+    err.io_error()
+        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
+        && path
+            .symlink_metadata()
+            .ok()
+            .is_some_and(|m| m.file_type().is_symlink())
 }
 
 fn search_str_for_entry<'a>(

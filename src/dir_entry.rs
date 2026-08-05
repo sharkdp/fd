@@ -11,9 +11,9 @@ use crate::filesystem::strip_current_dir;
 #[derive(Debug)]
 enum DirEntryInner {
     Normal(ignore::DirEntry),
-    // Broken symlinks are surfaced by the walker as errors that carry no depth,
-    // so we record the depth (relative to the search root) at creation time.
-    BrokenSymlink { path: PathBuf, depth: usize },
+    // Broken symlinks reach us as walk errors rather than entries, so we carry
+    // over the depth the walker recorded on the error.
+    BrokenSymlink { path: PathBuf, depth: Option<usize> },
 }
 
 #[derive(Debug)]
@@ -33,7 +33,7 @@ impl DirEntry {
         }
     }
 
-    pub fn broken_symlink(path: PathBuf, depth: usize) -> Self {
+    pub fn broken_symlink(path: PathBuf, depth: Option<usize>) -> Self {
         Self {
             inner: DirEntryInner::BrokenSymlink { path, depth },
             metadata: OnceCell::new(),
@@ -100,7 +100,7 @@ impl DirEntry {
     pub fn depth(&self) -> Option<usize> {
         match &self.inner {
             DirEntryInner::Normal(e) => Some(e.depth()),
-            DirEntryInner::BrokenSymlink { depth, .. } => Some(*depth),
+            DirEntryInner::BrokenSymlink { depth, .. } => *depth,
         }
     }
 

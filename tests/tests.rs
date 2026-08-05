@@ -1285,6 +1285,52 @@ fn test_min_depth_broken_symlink_absolute_path() {
     );
 }
 
+/// Minimum depth with a broken symlink under overlapping search roots (#1017)
+///
+/// When two search roots overlap, the walker visits the same broken symlink once
+/// per root, at a different depth each time. Here `one/two/broken_symlink` is at
+/// depth 2 under root `one` and at depth 1 under root `one/two`, so --min-depth 2
+/// must keep the entry the walker reached via `one` and drop the one it reached
+/// via `one/two`. A depth derived from the entry's path cannot distinguish the
+/// two visits, since both carry the same path.
+#[test]
+fn test_min_depth_broken_symlink_overlapping_roots() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // Only the route through `one` reaches depth 2.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "2",
+            "broken_symlink",
+            "one",
+            "one/two",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // Both routes clear --min-depth 1, so it is reported once per root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "1",
+            "broken_symlink",
+            "one",
+            "one/two",
+        ],
+        "one/two/broken_symlink
+        one/two/broken_symlink",
+    );
+}
+
 /// Maximum depth with a broken symlink (#1017)
 ///
 /// A broken symlink must be filtered by --max-depth like any other entry. The
