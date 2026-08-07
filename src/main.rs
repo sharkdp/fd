@@ -215,10 +215,60 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
     }
 }
 
+/// Rewrite a globset-generated regex so that either `/` or `\` is accepted wherever
+/// globset emitted a path separator. Windows candidate paths keep their backslashes
+/// at match time, so a regex that only accepts `/` never matches.
+///
+/// Separators inside a character class have to be handled differently from the ones
+/// outside it: inside, the backslash joins the existing members (`[^/]` -> `[^/\\]`),
+/// outside, the separator becomes a class of its own (`a/b` -> `a[/\\]b`).
+fn accept_either_separator(regex: &str) -> String {
+    let mut out = String::with_capacity(regex.len());
+    let mut chars = regex.chars();
+    let mut in_class = false;
+
+    while let Some(c) = chars.next() {
+        match c {
+            // Keep escape sequences intact so an escaped `[` doesn't open a class.
+            '\\' => {
+                out.push(c);
+                if let Some(escaped) = chars.next() {
+                    out.push(escaped);
+                }
+            }
+            '[' if !in_class => {
+                in_class = true;
+                out.push(c);
+            }
+            ']' if in_class => {
+                in_class = false;
+                out.push(c);
+            }
+            '/' if in_class => out.push_str("/\\\\"),
+            '/' => out.push_str("[/\\\\]"),
+            _ => out.push(c),
+        }
+    }
+
+    out
+}
+
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
-        let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
-        glob.regex().to_owned()
+        let pattern_str = if cfg!(windows) {
+            pattern.replace('\\', "/")
+        } else {
+            pattern.to_string()
+        };
+        let glob = GlobBuilder::new(&pattern_str)
+            .literal_separator(true)
+            .build()?;
+        let regex_str = glob.regex();
+        if cfg!(windows) {
+            accept_either_separator(regex_str)
+        } else {
+            regex_str.to_owned()
+        }
     } else if opts.exact {
         // Anchor the escaped pattern so the full filename (or path) must match exactly.
         // Literal. No substring matching.
@@ -552,4 +602,42 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
                 e
             )
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{GlobBuilder, accept_either_separator};
+
+    #[test]
+    fn accept_either_separator_rewrites_literal_separators() {
+        assert_eq!(accept_either_separator(r"^a/b$"), r"^a[/\\]b$");
+        assert_eq!(
+            accept_either_separator(r"^(?:/?|.*/)foo$"),
+            r"^(?:[/\\]?|.*[/\\])foo$"
+        );
+    }
+
+    #[test]
+    fn accept_either_separator_rewrites_separators_inside_a_class() {
+        assert_eq!(accept_either_separator(r"^[^/]*$"), r"^[^/\\]*$");
+        assert_eq!(accept_either_separator(r"^[/x]$"), r"^[/\\x]$");
+    }
+
+    #[test]
+    fn accept_either_separator_leaves_escaped_brackets_alone() {
+        assert_eq!(accept_either_separator(r"^a\[/b$"), r"^a\[[/\\]b$");
+    }
+
+    #[test]
+    fn rewritten_glob_regex_matches_backslash_paths() {
+        let glob = GlobBuilder::new("**/src/**/*.spec.ts")
+            .literal_separator(true)
+            .build()
+            .unwrap();
+        let regex = regex::bytes::Regex::new(&accept_either_separator(glob.regex())).unwrap();
+
+        assert!(regex.is_match(br"fixture\src\foo\a.spec.ts"));
+        assert!(regex.is_match(b"fixture/src/foo/a.spec.ts"));
+        assert!(!regex.is_match(br"fixture\lib\foo\a.spec.ts"));
+    }
 }
