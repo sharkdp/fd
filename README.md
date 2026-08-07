@@ -674,6 +674,8 @@ Or via [Winget](https://learn.microsoft.com/en-us/windows/package-manager/):
 winget install sharkdp.fd
 ```
 
+After Scoop, Chocolatey, or Winget install, open a **new** terminal so `PATH` picks up the `fd` shim.
+
 ### On GuixOS
 
 You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) from the official repo:
