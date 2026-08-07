@@ -1,3 +1,4 @@
+use anyhow::{Result, anyhow};
 use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -25,32 +26,67 @@ fn now() -> Zoned {
     TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(Zoned::now))
 }
 
+/// Whether the input starts like a calendar date (`YYYY-`). Only then does
+/// the `DateTime` parser's error refer to the format the user most likely
+/// meant; for span- or timestamp-shaped input it would be misleading.
+fn looks_like_calendar_date(s: &str) -> bool {
+    let bytes = s.as_bytes();
+    bytes.len() > 4 && bytes[..4].iter().all(u8::is_ascii_digit) && bytes[4] == b'-'
+}
+
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
+    /// Parses a duration/timestamp/date/`@`-prefixed unix-timestamp string.
+    ///
+    /// On failure for date-shaped input, returns the underlying parse error
+    /// from the `DateTime` parser (the most common source of confusing
+    /// failures, e.g. `2025-11-31` which is not a valid calendar date)
+    /// instead of silently discarding it, so callers can tell the user
+    /// *why* their input was rejected. Input that does not look like a
+    /// calendar date gets a summary of the accepted formats instead.
+    fn from_str(s: &str) -> Result<SystemTime> {
         if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
-                    .to_ambiguous_zoned(datetime)
-                    .later()
-                    .ok()?
-                    .into(),
-            )
-        } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            let datetime = now().checked_sub(span)?;
+            return Ok(datetime.into());
+        }
+        if let Ok(timestamp) = s.parse::<Timestamp>() {
+            return Ok(timestamp.into());
+        }
+        match s.parse::<DateTime>() {
+            Ok(datetime) => Ok(TimeZone::system()
+                .to_ambiguous_zoned(datetime)
+                .later()?
+                .into()),
+            Err(datetime_err) => {
+                if let Some(timestamp_secs) = s.strip_prefix('@')
+                    && let Ok(timestamp_secs) = timestamp_secs.parse()
+                {
+                    return Ok(UNIX_EPOCH + Duration::from_secs(timestamp_secs));
+                }
+                // None of the supported formats matched. The `DateTime`
+                // parser gives the most useful reason for calendar-date-
+                // shaped input (the common case for this kind of mistake),
+                // so surface that instead of a generic message. For input
+                // shaped like a span (e.g. a typo'd duration) that reason
+                // would point at the wrong format entirely, so summarize
+                // the accepted formats instead.
+                if looks_like_calendar_date(s) {
+                    Err(datetime_err.into())
+                } else {
+                    Err(anyhow!(
+                        "expected a duration (e.g. '10h', '2d'), a date (e.g. '2018-10-27'), \
+                         a timestamp (e.g. '2018-10-27T10:00:00-05:00'), or '@' followed by \
+                         a unix timestamp"
+                    ))
+                }
+            }
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
+    pub fn before(s: &str) -> Result<TimeFilter> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
+    pub fn after(s: &str) -> Result<TimeFilter> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -177,7 +213,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
@@ -198,5 +234,110 @@ mod tests {
                 .unwrap()
                 .applies_to(&t1s_later)
         );
+    }
+
+    /// Length of the longest contiguous substring shared by `a` and `b`.
+    ///
+    /// Used to check that two error messages share substantial content
+    /// without hardcoding what that content actually says.
+    fn longest_common_substring_len(a: &str, b: &str) -> usize {
+        let a: Vec<char> = a.chars().collect();
+        let b: Vec<char> = b.chars().collect();
+        let mut prev = vec![0usize; b.len() + 1];
+        let mut best = 0;
+        for i in 1..=a.len() {
+            let mut cur = vec![0usize; b.len() + 1];
+            for j in 1..=b.len() {
+                if a[i - 1] == b[j - 1] {
+                    cur[j] = prev[j - 1] + 1;
+                    best = best.max(cur[j]);
+                }
+            }
+            prev = cur;
+        }
+        best
+    }
+
+    #[test]
+    fn non_date_input_gets_format_summary_not_calendar_date_reason() {
+        // A typo'd duration or otherwise non-date-shaped input must not
+        // surface the calendar-date parser's reason (which would point at
+        // the wrong format entirely), but a neutral summary of the
+        // accepted formats.
+        for filter in [TimeFilter::before, TimeFilter::after] {
+            for input in ["1 huor", "yesterday", "@notanumber"] {
+                let err = filter(input).unwrap_err().to_string();
+                assert!(
+                    err.contains("duration") && err.contains("unix timestamp"),
+                    "non-date-shaped input {input:?} should get the format summary, got: {err:?}"
+                );
+            }
+            // Date-shaped input keeps the underlying parse reason.
+            let date_err = filter("2025-11-31").unwrap_err().to_string();
+            assert!(
+                !date_err.contains("expected a duration"),
+                "date-shaped input should surface the parser's reason, got: {date_err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn invalid_calendar_date_error_includes_inner_reason() {
+        // The error must surface *why* parsing failed, not merely echo the
+        // raw input back under a generic wrapper. We deliberately don't
+        // assert on jiff's exact wording (e.g. that it mentions "day"),
+        // since that would break on an unrelated jiff version bump. See
+        // https://github.com/sharkdp/fd/issues/2053
+        //
+        // A naive check that two different invalid inputs produce two
+        // different messages is gameable: a regression that dropped the
+        // real parse reason but still echoed the input (e.g.
+        // `format!("could not parse '{s}' as a date")`) would still make
+        // the two messages differ, purely because the inputs differ, while
+        // never actually surfacing the reason.
+        //
+        // Instead, compare error text for inputs that are invalid for the
+        // *same* underlying reason against error text for an input that's
+        // invalid for a *different* reason:
+        // - "2025-11-31" and "2019-06-31" both fail because day 31 doesn't
+        //   exist in a 30-day month (November / June), despite the raw
+        //   strings barely overlapping (different year and month).
+        // - "2025-13-01" fails for an unrelated reason (month 13 doesn't
+        //   exist).
+        // A message that actually carries the reason will make the first
+        // pair share a large chunk of text that the third message doesn't
+        // share. A message that's just the input echoed into a fixed
+        // template would make all three overlap by roughly the same
+        // (small) amount, since the only shared content would be the fixed
+        // wrapper text.
+        for filter in [TimeFilter::before, TimeFilter::after] {
+            let same_reason_a = filter("2025-11-31").unwrap_err().to_string();
+            let same_reason_b = filter("2019-06-31").unwrap_err().to_string();
+            let different_reason = filter("2025-13-01").unwrap_err().to_string();
+
+            assert!(!same_reason_a.is_empty());
+            assert_ne!(
+                same_reason_a, different_reason,
+                "distinct invalid inputs should surface distinct underlying reasons, not a shared generic message"
+            );
+
+            let same_reason_overlap = longest_common_substring_len(&same_reason_a, &same_reason_b);
+            let different_reason_overlap =
+                longest_common_substring_len(&same_reason_a, &different_reason);
+            assert!(
+                same_reason_overlap >= 20,
+                "two dates invalid for the same reason should share substantial error text \
+                 (got only {same_reason_overlap} shared characters between {same_reason_a:?} \
+                 and {same_reason_b:?})"
+            );
+            assert!(
+                same_reason_overlap > different_reason_overlap + 10,
+                "shared text between same-reason errors ({same_reason_overlap} chars) should \
+                 clearly exceed shared text between different-reason errors \
+                 ({different_reason_overlap} chars): {same_reason_a:?} vs {same_reason_b:?} vs \
+                 {different_reason:?}; a smaller gap suggests the message may just be echoing \
+                 the input rather than surfacing the actual reason"
+            );
+        }
     }
 }
