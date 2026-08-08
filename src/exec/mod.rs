@@ -100,6 +100,17 @@ impl CommandSet {
         match builders {
             Ok(mut builders) => {
                 for path in paths {
+                    if builders
+                        .iter()
+                        .any(|builder| builder.needs_flush(&path, path_separator))
+                    {
+                        for builder in &mut builders {
+                            if let Err(e) = builder.finish() {
+                                return handle_cmd_error(Some(&builder.cmd), e);
+                            }
+                        }
+                    }
+
                     for builder in &mut builders {
                         if let Err(e) = builder.push(&path, path_separator) {
                             return handle_cmd_error(Some(&builder.cmd), e);
@@ -170,19 +181,19 @@ impl CommandBuilder {
         Ok(cmd)
     }
 
-    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+    fn needs_flush(&self, path: &Path, separator: Option<&str>) -> bool {
         if self.limit > 0 && self.count >= self.limit {
-            self.finish()?;
+            return true;
         }
 
         let arg = self.path_arg.generate(path, separator);
-        if !self
+        !self
             .cmd
             .args_would_fit(iter::once(&arg).chain(&self.post_args))
-        {
-            self.finish()?;
-        }
+    }
 
+    fn push(&mut self, path: &Path, separator: Option<&str>) -> io::Result<()> {
+        let arg = self.path_arg.generate(path, separator);
         self.cmd.try_arg(arg)?;
         self.count += 1;
         Ok(())
@@ -421,6 +432,101 @@ mod tests {
     #[test]
     fn tokens_multiple_batch() {
         assert!(CommandSet::new_batch(vec![vec!["echo", "{.}", "{}"]]).is_err());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn batch_command_order_is_preserved_when_argument_limit_flushes_one_command() {
+        use std::ffi::OsStr;
+
+        fn args_fit(
+            cmd: &Command,
+            path_arg: &OsStr,
+            post_args: &[String],
+            path_count: usize,
+        ) -> bool {
+            let mut args = Vec::with_capacity(path_count + post_args.len());
+            for _ in 0..path_count {
+                args.push(path_arg);
+            }
+            args.extend(post_args.iter().map(OsStr::new));
+            cmd.args_would_fit(args)
+        }
+
+        let output_dir = tempfile::tempdir().unwrap();
+        let output_path = output_dir.path().join("order");
+        let output_path = output_path.to_str().unwrap();
+        let path = PathBuf::from(format!("0-{}", "path".repeat(8192)));
+
+        let first_command = vec![
+            "sh".to_owned(),
+            "-c".to_owned(),
+            r#"printf 'first\n' >> "$1""#.to_owned(),
+            "sh".to_owned(),
+            output_path.to_owned(),
+        ];
+
+        let mut second_command = vec![
+            "sh".to_owned(),
+            "-c".to_owned(),
+            r#"printf 'second\n' >> "$1""#.to_owned(),
+            "sh".to_owned(),
+            output_path.to_owned(),
+            "{}".to_owned(),
+        ];
+        let post_arg_start = second_command.len();
+
+        let second_template = CommandTemplate::new(&second_command, ExecutionMode::Batch).unwrap();
+        let second_builder = CommandBuilder::new(&second_template, 0).unwrap();
+        let path_arg = second_builder.path_arg.generate(&path, None);
+
+        // Scale the padding to the runner's effective ARG_MAX: one path fits,
+        // but two paths force this command to flush before the other command.
+        let padding = "x".repeat(4096);
+        while args_fit(
+            &second_builder.cmd,
+            path_arg.as_os_str(),
+            &second_command[post_arg_start..],
+            2,
+        ) {
+            second_command.push(padding.clone());
+            assert!(
+                second_command.len() < 4096,
+                "could not find test padding that triggers a one-command flush"
+            );
+        }
+        assert!(
+            args_fit(
+                &second_builder.cmd,
+                path_arg.as_os_str(),
+                &second_command[post_arg_start..],
+                1
+            ),
+            "one path plus post arguments should fit before the shared flush"
+        );
+
+        let paths = [path, PathBuf::from(format!("1-{}", "path".repeat(8192)))].into_iter();
+
+        let commands = CommandSet::new_batch(vec![first_command, second_command]).unwrap();
+        assert_eq!(ExitCode::Success, commands.execute_batch(paths, 0, None));
+
+        let output = std::fs::read_to_string(output_path).unwrap();
+        let lines = output.lines().collect::<Vec<_>>();
+        assert!(
+            lines.len() >= 4,
+            "expected multiple shared batch flushes, got {lines:?}"
+        );
+        assert_eq!(
+            lines.len() % 2,
+            0,
+            "expected paired command output, got {lines:?}"
+        );
+        assert!(
+            lines
+                .chunks_exact(2)
+                .all(|chunk| chunk == ["first", "second"]),
+            "expected each batch to run commands in CLI order, got {lines:?}"
+        );
     }
 
     #[test]
