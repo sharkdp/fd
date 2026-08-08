@@ -1755,6 +1755,13 @@ fn format() {
         parent=one/two/three
         parent=one/two/three",
     );
+
+    // A placeholder immediately followed by a literal '}' is still expanded,
+    // with the '}' kept as trailing literal text (see issue with `{}}`).
+    te.assert_output(
+        &["^a\\.foo$", "--format", "{}}", "--path-separator=/"],
+        "a.foo}",
+    );
 }
 
 /// Shell script execution (--exec)
