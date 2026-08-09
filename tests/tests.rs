@@ -10,7 +10,7 @@ use test_case::test_case;
 
 use jiff::Timestamp;
 use normpath::PathExt;
-use regex::escape;
+use regex::{Regex, escape};
 
 use crate::testenv::TestEnv;
 
@@ -2875,4 +2875,34 @@ fn test_ignore_contain_precedence_over_root_check() {
     let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}
+
+#[test]
+fn test_print_details() {
+    #[cfg(target_os = "windows")]
+    let re = Regex::new(
+        r"^[darh-]{6}\s+\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}\s+(\d{0,4}(\.\d?)?[BKMGTP])?\s.*",
+    )
+    .unwrap();
+
+    #[cfg(not(target_os = "windows"))]
+    let re = Regex::new(
+        r"^([drwxlsStT-]{10})\s+(\d+)\s+(\S+)\s+(\S+)\s+([\d.]+[KMB]?)\s+(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})\s+(.+)$",
+    )
+    .unwrap();
+
+    let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
+
+    let output = te.assert_success_and_get_output(".", &["-l", "--hidden"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+
+    let mut out: Vec<&str> = stdout.split('\n').collect();
+    out.pop();
+
+    for row in out {
+        assert!(
+            re.is_match(row),
+            "{row}\nthe output doesn't match the pattern"
+        );
+    }
 }
