@@ -18,6 +18,8 @@ use crate::filesystem;
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
+const MAX_NUM_THREADS: usize = 64;
+
 #[derive(Parser)]
 #[command(
     name = "fd",
@@ -553,7 +555,7 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_num_threads)]
     pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
@@ -792,11 +794,23 @@ fn default_num_threads() -> NonZeroUsize {
     let fallback = NonZeroUsize::MIN;
     // To limit startup overhead on massively parallel machines, don't use more
     // than 64 threads.
-    let limit = NonZeroUsize::new(64).unwrap();
+    let limit = NonZeroUsize::new(MAX_NUM_THREADS).unwrap();
 
     std::thread::available_parallelism()
         .unwrap_or(fallback)
         .min(limit)
+}
+
+fn parse_num_threads(arg: &str) -> Result<NonZeroUsize, String> {
+    let threads = arg
+        .parse::<NonZeroUsize>()
+        .map_err(|error| error.to_string())?;
+    if threads.get() > MAX_NUM_THREADS {
+        return Err(format!(
+            "the number of threads cannot exceed {MAX_NUM_THREADS}"
+        ));
+    }
+    Ok(threads)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
@@ -967,5 +981,17 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
         Err(anyhow!(
             "Could not retrieve current directory (has it been deleted?)."
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_num_threads;
+
+    #[test]
+    fn number_of_threads_is_bounded() {
+        assert_eq!(parse_num_threads("64").unwrap().get(), 64);
+        assert!(parse_num_threads("65").is_err());
+        assert!(parse_num_threads("9223372036854775807").is_err());
     }
 }

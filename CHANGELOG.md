@@ -5,6 +5,8 @@
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
 
 ## Bugfixes
+- Reject `--threads` values above 64 instead of panicking during resource
+  allocation, see #2078 (@Sushanth012).
 - Sanitize control characters and bidirectional override characters in filenames
   when output goes to a terminal, to prevent terminal escape-sequence injection.
   Also reject a placeholder as the executable for `--exec-batch`, while still
