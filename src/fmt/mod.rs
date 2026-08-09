@@ -9,6 +9,8 @@ use std::sync::OnceLock;
 use aho_corasick::AhoCorasick;
 
 use self::input::{basename, dirname, remove_extension};
+use crate::config::Config;
+use crate::dir_entry::DirEntry;
 
 /// Designates what should be written to a buffer
 ///
@@ -21,6 +23,8 @@ pub enum Token {
     Parent,
     NoExt,
     BasenameNoExt,
+    Inode,
+    FileSize,
     Text(String),
 }
 
@@ -32,6 +36,8 @@ impl Display for Token {
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
+            Token::Inode => f.write_str("{inode}")?,
+            Token::FileSize => f.write_str("{filesize}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
@@ -62,7 +68,18 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
+            AhoCorasick::new([
+                "{{",
+                "}}",
+                "{}",
+                "{/}",
+                "{//}",
+                "{.}",
+                "{/.}",
+                "{inode}",
+                "{filesize}",
+            ])
+            .unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
@@ -106,12 +123,42 @@ impl FormatTemplate {
         FormatTemplate::Tokens(tokens)
     }
 
-    /// Generate a result string from this template. If path_separator is Some, then it will replace
-    /// the path separator in all placeholder tokens. Fixed text and tokens are not affected by
-    /// path separator substitution.
-    pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
+    /// Generate a result string from this template using a DirEntry and Config.
+    /// This method supports metadata-based tokens like {inode}.
+    pub fn generate(&self, entry: &DirEntry, config: &Config) -> OsString {
+        self.generate_impl(
+            entry.stripped_path(config),
+            config.path_separator.as_deref(),
+            Some(entry),
+        )
+    }
+
+    /// Extract the text content for Text templates. Panics if this is a Tokens template.
+    pub fn as_text(&self) -> OsString {
+        match self {
+            Self::Text(text) => OsString::from(text),
+            Self::Tokens(_) => panic!("as_text() called on Tokens template"),
+        }
+    }
+
+    /// Test-only helper to generate from a path without DirEntry.
+    /// Metadata-based tokens like {inode} will be ignored.
+    #[cfg(test)]
+    pub fn generate_from_path(
+        &self,
+        path: impl AsRef<Path>,
+        path_separator: Option<&str>,
+    ) -> OsString {
+        self.generate_impl(path.as_ref(), path_separator, None)
+    }
+
+    fn generate_impl(
+        &self,
+        path: &Path,
+        path_separator: Option<&str>,
+        dir_entry: Option<&DirEntry>,
+    ) -> OsString {
         use Token::*;
-        let path = path.as_ref();
 
         match *self {
             Self::Tokens(ref tokens) => {
@@ -130,6 +177,20 @@ impl FormatTemplate {
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
                         Placeholder => {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
+                        }
+                        Inode => {
+                            if let Some(entry) = dir_entry
+                                && let Some(ino) = entry.ino()
+                            {
+                                s.push(ino.to_string());
+                            }
+                        }
+                        FileSize => {
+                            if let Some(entry) = dir_entry
+                                && let Some(metadata) = entry.metadata()
+                            {
+                                s.push(metadata.len().to_string());
+                            }
                         }
                         Text(string) => s.push(string),
                     }
@@ -206,6 +267,8 @@ fn token_from_pattern_id(id: u32) -> Token {
         4 => Parent,
         5 => NoExt,
         6 => BasenameNoExt,
+        7 => Inode,
+        8 => FileSize,
         _ => unreachable!(),
     }
 }
@@ -267,7 +330,10 @@ mod fmt_tests {
         path.push("folder");
         path.push("file.txt");
 
-        let expanded = templ.generate(&path, Some("/")).into_string().unwrap();
+        let expanded = templ
+            .generate_from_path(&path, Some("/"))
+            .into_string()
+            .unwrap();
 
         assert_eq!(
             expanded,
