@@ -14,6 +14,7 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
+- Report the underlying reason when `--changed-before`/`--changed-within` fails to parse its argument, e.g. `--changed-before=2025-11-31` now explains that November has only 30 days instead of just calling the input invalid, see #2053 (@MsfPablo).
 
 # 10.4.2
 
