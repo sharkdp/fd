@@ -694,6 +694,28 @@ fn test_hidden() {
     );
 }
 
+/// Hidden entries un-ignored by a negated .gitignore pattern must stay hidden without --hidden
+#[test]
+fn test_hidden_negated_gitignore() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"!.gitignore\n!.hdir/")
+        .unwrap();
+    fs::create_dir(te.test_root().join(".hdir")).unwrap();
+    fs::File::create(te.test_root().join(".hdir").join("x.txt")).unwrap();
+
+    // The negation un-ignores .gitignore, but it is a hidden file and must not be
+    // listed without --hidden.
+    te.assert_output(&[".gitignore"], "");
+    te.assert_output(&["--hidden", ".gitignore"], ".gitignore");
+
+    // A negated hidden directory is not searched without --hidden.
+    te.assert_output(&["x.txt"], "");
+    te.assert_output(&["--hidden", "x.txt"], ".hdir/x.txt");
+}
+
 /// Hidden file attribute on Windows
 #[cfg(windows)]
 #[test]

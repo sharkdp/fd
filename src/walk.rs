@@ -511,6 +511,19 @@ impl WorkerState {
                     return WalkState::Continue;
                 }
 
+                // Never show hidden entries unless --hidden is set. This is enforced here
+                // instead of relying on the ignore crate's hidden filter, because a negated
+                // ignore pattern overrides that filter (see #1266). Skipping prunes hidden
+                // directories as well, so their contents are not searched.
+                if config.ignore_hidden
+                    && entry
+                        .path()
+                        .file_name()
+                        .is_some_and(|name| name.as_encoded_bytes().first() == Some(&b'.'))
+                {
+                    return WalkState::Skip;
+                }
+
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
