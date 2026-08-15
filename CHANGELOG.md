@@ -14,6 +14,7 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
+- `fd` now exits with a non-zero status if a filesystem/traversal error occurs (e.g. a path exceeding `PATH_MAX`), even when the error isn't printed (i.e. without `--show-errors`). Previously it always reported success as long as it didn't crash, silently hiding the fact that part of the search was skipped. Applies to normal output, `--exec`, and `--exec-batch`. See #1985 (@ezekiel06).
 
 # 10.4.2
 

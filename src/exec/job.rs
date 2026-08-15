@@ -26,6 +26,9 @@ pub fn job(
                 if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
+                // A traversal error means the search was incomplete; reflect that in
+                // the exit code even if it isn't printed (i.e. without --show-errors).
+                ret = merge_exitcodes([ret, ExitCode::GeneralError]);
                 continue;
             }
         };
@@ -48,6 +51,11 @@ pub fn batch(
     cmd: &CommandSet,
     config: &Config,
 ) -> ExitCode {
+    // Tracks whether any `WorkerResult::Error` was seen while draining `paths` below, so
+    // that a traversal error can still affect the exit code even though it isn't a path
+    // and therefore can't be passed through to `execute_batch`.
+    let had_filesystem_error = std::cell::Cell::new(false);
+
     let paths = results
         .into_iter()
         .filter_map(|worker_result| match worker_result {
@@ -56,9 +64,16 @@ pub fn batch(
                 if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
+                had_filesystem_error.set(true);
                 None
             }
         });
 
-    cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
+    let exit_code = cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref());
+
+    if had_filesystem_error.get() {
+        merge_exitcodes([exit_code, ExitCode::GeneralError])
+    } else {
+        exit_code
+    }
 }
