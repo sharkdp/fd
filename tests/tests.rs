@@ -714,6 +714,10 @@ fn test_hidden_negated_gitignore() {
     // A negated hidden directory is not searched without --hidden.
     te.assert_output(&["x.txt"], "");
     te.assert_output(&["--hidden", "x.txt"], ".hdir/x.txt");
+
+    // The hidden check applies regardless of --min-depth.
+    te.assert_output(&["--min-depth", "2", "x.txt"], "");
+    te.assert_output(&["--hidden", "--min-depth", "2", "x.txt"], ".hdir/x.txt");
 }
 
 /// Hidden file attribute on Windows

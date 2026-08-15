@@ -14,7 +14,7 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
-- Fix hidden files being listed when a `.gitignore` pattern negates them, even without `--hidden`, see #1266 (@SomSamantray).
+- Fix dot-prefixed hidden files being listed when a `.gitignore` pattern negates them, even without `--hidden`, see #1266 (@SomSamantray).
 
 # 10.4.2
 
