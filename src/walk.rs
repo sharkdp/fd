@@ -505,6 +505,19 @@ impl WorkerState {
                     }
                 };
 
+                // Never show dot-prefixed hidden entries unless --hidden is set. This is
+                // enforced here instead of relying on the ignore crate's hidden filter,
+                // because a negated ignore pattern overrides that filter (see #1266).
+                // Skipping prunes hidden directories as well, so their contents are not
+                // searched.
+                let entry_path = entry.path();
+                let file_name = entry_path.file_name();
+                if config.ignore_hidden
+                    && file_name.is_some_and(|name| name.as_encoded_bytes().first() == Some(&b'.'))
+                {
+                    return WalkState::Skip;
+                }
+
                 if let Some(min_depth) = config.min_depth
                     && entry.depth().is_none_or(|d| d < min_depth)
                 {
@@ -512,8 +525,6 @@ impl WorkerState {
                 }
 
                 // Check the name first, since it doesn't require metadata
-                let entry_path = entry.path();
-
                 let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
                 if !patterns
@@ -525,7 +536,7 @@ impl WorkerState {
 
                 // Filter out unwanted extensions.
                 if let Some(ref exts_regex) = config.extensions {
-                    if let Some(path_str) = entry_path.file_name() {
+                    if let Some(path_str) = file_name {
                         if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
                             return WalkState::Continue;
                         }
