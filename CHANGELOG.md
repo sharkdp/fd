@@ -14,7 +14,7 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
-- Fix panic/abort when `--threads`/`-j` is given an unsatisfiably large value (e.g. `-j 9223372036854775807`, which overflowed the `2 * threads` channel capacity, or `-j 200000 --exec`, which exhausted thread creation). The thread count is now clamped to a sane maximum, see #2078 (@nagendramohan).
+- Fix panic/abort when `--threads`/`-j` is given an unsatisfiably large value (e.g. `-j 9223372036854775807`, which overflowed the `2 * threads` channel capacity, or `-j 200000 --exec`, which exhausted thread creation). The thread count is now clamped to a sane maximum, see #2078 and #2099 (@nagendramohan).
 
 # 10.4.2
 
