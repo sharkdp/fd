@@ -86,7 +86,10 @@ fn test_simple() {
 fn test_threads_large_value_does_not_panic() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
-    te.assert_output(&["--threads", "9223372036854775807", "a.foo"], "a.foo");
+    // `usize::MAX` is portable across 32- and 64-bit targets; without the clamp, `2 * threads`
+    // overflows the work-channel capacity and aborts.
+    let huge = usize::MAX.to_string();
+    te.assert_output(&["--threads", &huge, "a.foo"], "a.foo");
     te.assert_output(&["-j", "200000", "a.foo"], "a.foo");
 }
 
