@@ -753,7 +753,13 @@ impl Opts {
     }
 
     pub fn threads(&self) -> NonZeroUsize {
-        self.threads.unwrap_or_else(default_num_threads)
+        // Clamp the requested thread count to a sane maximum. Using far more worker threads than
+        // the machine can run provides no benefit for fd's workload, and pathological values
+        // otherwise overflow the work-channel capacity (`2 * threads`) or exhaust thread creation
+        // with `--exec`, surfacing as a panic/abort instead of a normal run. See #2078.
+        self.threads
+            .unwrap_or_else(default_num_threads)
+            .min(max_num_threads())
     }
 
     pub fn max_results(&self) -> Option<usize> {
@@ -797,6 +803,18 @@ fn default_num_threads() -> NonZeroUsize {
     std::thread::available_parallelism()
         .unwrap_or(fallback)
         .min(limit)
+}
+
+/// Upper bound on worker threads for an explicit `--threads`/`-j` value.
+///
+/// Using more worker threads than the hardware can run provides no benefit for fd's workload, and
+/// unbounded values otherwise overflow the work-channel capacity (`2 * threads`) or exhaust thread
+/// creation with `--exec`, aborting the process (#2078). We never clamp below the machine's
+/// available parallelism, nor below the 64-thread default cap, so realistic values are unaffected.
+fn max_num_threads() -> NonZeroUsize {
+    let floor = NonZeroUsize::new(64).unwrap();
+    let hardware = std::thread::available_parallelism().unwrap_or(NonZeroUsize::MIN);
+    hardware.max(floor)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
