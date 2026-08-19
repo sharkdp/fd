@@ -79,6 +79,29 @@ fn test_simple() {
     );
 }
 
+/// Regression test for #2078: a pathologically large `--threads`/`-j` value must not overflow the
+/// work-channel capacity (`2 * threads`) and abort. The requested count is clamped, so the search
+/// still runs and returns the correct results.
+#[test]
+fn test_threads_large_value_does_not_panic() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // `usize::MAX` is portable across 32- and 64-bit targets; without the clamp, `2 * threads`
+    // overflows the work-channel capacity and aborts.
+    let huge = usize::MAX.to_string();
+    te.assert_output(&["--threads", &huge, "a.foo"], "a.foo");
+    te.assert_output(&["-j", "200000", "a.foo"], "a.foo");
+}
+
+/// Regression test for #2078: a large `--threads` value combined with `--exec` must not exhaust
+/// thread creation and abort.
+#[test]
+fn test_threads_large_value_with_exec_does_not_panic() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_success_and_get_output(".", &["-j", "200000", "a.foo", "--exec", "echo"]);
+}
+
 static AND_EXTRA_FILES: &[&str] = &[
     "a.foo",
     "one/b.foo",
