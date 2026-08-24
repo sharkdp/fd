@@ -2659,8 +2659,8 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=a"]);
     te.assert_failure(&["-j", ""]);
     te.assert_failure(&["--threads=0"]);
-    te.assert_failure(&["--threads=65"]);
-    te.assert_failure(&["--threads=9223372036854775807"]);
+    let _ = te.assert_success_and_get_output(".", &["--threads=65"]);
+    te.assert_failure(&["--threads=65537"]);
 
     te.assert_failure(&["--min-depth=a"]);
     te.assert_failure(&["--mindepth=a"]);

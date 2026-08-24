@@ -18,7 +18,17 @@ use crate::filesystem;
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
-const MAX_NUM_THREADS: usize = 64;
+/// Upper bound for the `--threads` option. This is not meant to reflect the
+/// maximum number of useful threads (which depends on the OS, available
+/// memory, ulimit settings, etc.), but only to catch absurd values that
+/// would otherwise fail much later with a panic during channel or thread
+/// allocation.
+const MAX_NUM_THREADS: usize = 1 << 16;
+
+/// Cap for the implicit default thread count to limit startup overhead on
+/// massively parallel machines. Explicitly requested thread counts are only
+/// bounded by MAX_NUM_THREADS.
+const DEFAULT_NUM_THREADS_LIMIT: usize = 64;
 
 #[derive(Parser)]
 #[command(
@@ -793,8 +803,8 @@ fn default_num_threads() -> NonZeroUsize {
     // default to a single thread, because that is safe.
     let fallback = NonZeroUsize::MIN;
     // To limit startup overhead on massively parallel machines, don't use more
-    // than 64 threads.
-    let limit = NonZeroUsize::new(MAX_NUM_THREADS).unwrap();
+    // than DEFAULT_NUM_THREADS_LIMIT threads.
+    let limit = NonZeroUsize::new(DEFAULT_NUM_THREADS_LIMIT).unwrap();
 
     std::thread::available_parallelism()
         .unwrap_or(fallback)
@@ -990,8 +1000,14 @@ mod tests {
 
     #[test]
     fn number_of_threads_is_bounded() {
+        assert_eq!(parse_num_threads("1").unwrap().get(), 1);
         assert_eq!(parse_num_threads("64").unwrap().get(), 64);
-        assert!(parse_num_threads("65").is_err());
+        assert_eq!(parse_num_threads("128").unwrap().get(), 128);
+        assert_eq!(
+            parse_num_threads("65536").unwrap().get(),
+            super::MAX_NUM_THREADS
+        );
+        assert!(parse_num_threads("65537").is_err());
         assert!(parse_num_threads("9223372036854775807").is_err());
     }
 }
