@@ -80,8 +80,8 @@ pub struct Opts {
 
     ///Show search results from files and directories that
     ///would otherwise be ignored by '.git/info/exclude'.
-    ///Git ignore files are still respected unless --no-ignore-vsc is given.
-    ///The flag can be overridden with --ignore-vcs.
+    ///Git ignore files are still respected unless --no-ignore-vcs is given.
+    ///The flag can be overridden with --ignore-vcs-exclude.
     #[arg(
         long,
         hide_short_help = true,
