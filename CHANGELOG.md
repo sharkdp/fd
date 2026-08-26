@@ -1,4 +1,12 @@
-# Unreleased
+# Upcoming Release
+
+## Features
+-
+
+## Bugfixes
+-
+
+# 10.5.0
 
 ## Features
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
