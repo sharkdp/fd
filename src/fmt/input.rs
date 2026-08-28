@@ -20,9 +20,7 @@ pub fn remove_extension(path: &Path) -> OsString {
 
 /// Returns the extension of the file, or an empty OsString.
 pub fn extension(path: &Path) -> OsString {
-    path.extension()
-        .unwrap_or(OsStr::new(""))
-        .to_owned()
+    path.extension().unwrap_or(OsStr::new("")).to_owned()
 }
 
 /// Returns the extension of the basename, or an empty OsString.

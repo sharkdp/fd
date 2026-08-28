@@ -66,8 +66,10 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{.ext}", "{/.ext}"])
-                .unwrap()
+            AhoCorasick::new([
+                "{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{.ext}", "{/.ext}",
+            ])
+            .unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
