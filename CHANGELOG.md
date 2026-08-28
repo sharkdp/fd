@@ -5,6 +5,7 @@
 
 ## Bugfixes
 - Don't incorrectly escape newlines in error messages, see #2104
+- Restore jemalloc as default allocator on supported systems
 
 # 10.5.0
 
