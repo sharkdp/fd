@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 
 use aho_corasick::AhoCorasick;
 
-use self::input::{basename, dirname, remove_extension};
+use self::input::{basename, basename_extension, dirname, extension, remove_extension};
 
 /// Designates what should be written to a buffer
 ///
@@ -21,6 +21,8 @@ pub enum Token {
     Parent,
     NoExt,
     BasenameNoExt,
+    Extension,
+    BasenameExtension,
     Text(String),
 }
 
@@ -32,6 +34,8 @@ impl Display for Token {
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
+            Token::Extension => f.write_str("{.ext}")?,
+            Token::BasenameExtension => f.write_str("{/.ext}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
@@ -62,7 +66,8 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
+            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{.ext}", "{/.ext}"])
+                .unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
@@ -74,6 +79,23 @@ impl FormatTemplate {
                     remaining = &remaining[m.end()..];
                 }
                 id if !remaining[m.end()..].starts_with('}') => {
+                    // Check if {.} or {/.} is actually the start of {.ext} or {/.ext}
+                    if id == 5 || id == 6 {
+                        // {.} or {/.}
+                        let rest = &remaining[m.end()..];
+                        if rest.starts_with("ext}") || rest.starts_with("/ext}") {
+                            // This is {.ext} or {/.ext}, skip and let the longer pattern match
+                            buf += &remaining[..m.start()];
+                            if !buf.is_empty() {
+                                tokens.push(Token::Text(std::mem::take(&mut buf)));
+                            }
+                            // Push the full {.ext} or {/.ext} as text for now
+                            let full_len = if id == 5 { 5 } else { 6 }; // {.ext} or {/.ext}
+                            buf += &remaining[..m.start() + full_len];
+                            remaining = &remaining[m.start() + full_len..];
+                            continue;
+                        }
+                    }
                     buf += &remaining[..m.start()];
                     if !buf.is_empty() {
                         tokens.push(Token::Text(std::mem::take(&mut buf)));
@@ -123,10 +145,16 @@ impl FormatTemplate {
                             &remove_extension(basename(path).as_ref()),
                             path_separator,
                         )),
+                        BasenameExtension => {
+                            s.push(&basename_extension(path));
+                        }
                         NoExt => s.push(Self::replace_separator(
                             &remove_extension(path),
                             path_separator,
                         )),
+                        Extension => {
+                            s.push(&extension(path));
+                        }
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
                         Placeholder => {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
@@ -206,6 +234,8 @@ fn token_from_pattern_id(id: u32) -> Token {
         4 => Parent,
         5 => NoExt,
         6 => BasenameNoExt,
+        7 => Extension,
+        8 => BasenameExtension,
         _ => unreachable!(),
     }
 }
@@ -243,6 +273,8 @@ mod fmt_tests {
             parent={//} \
             noExt={.} \
             basenameNoExt={/.} \
+            extension={.ext} \
+            basenameExt={/.ext} \
             }}",
         );
         assert_eq!(
@@ -258,6 +290,10 @@ mod fmt_tests {
                 NoExt,
                 Text(" basenameNoExt=".into()),
                 BasenameNoExt,
+                Text(" extension=".into()),
+                Extension,
+                Text(" basenameExt=".into()),
+                BasenameExtension,
                 Text(" }".into()),
             ])
         );
@@ -275,7 +311,9 @@ mod fmt_tests {
             basename=file.txt \
             parent=a/folder \
             noExt=a/folder/file \
-            basenameNoExt=file }"
+            basenameNoExt=file \
+            extension=txt \
+            basenameExt=txt }"
         );
     }
 }

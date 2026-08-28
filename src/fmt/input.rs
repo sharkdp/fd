@@ -18,6 +18,21 @@ pub fn remove_extension(path: &Path) -> OsString {
     strip_current_dir(&path).to_owned().into_os_string()
 }
 
+/// Returns the extension of the file, or an empty OsString.
+pub fn extension(path: &Path) -> OsString {
+    path.extension()
+        .unwrap_or(OsStr::new(""))
+        .to_owned()
+}
+
+/// Returns the extension of the basename, or an empty OsString.
+pub fn basename_extension(path: &Path) -> OsString {
+    path.file_name()
+        .and_then(|name| Path::new(name).extension())
+        .unwrap_or(OsStr::new(""))
+        .to_owned()
+}
+
 /// Removes the basename from the path.
 pub fn dirname(path: &Path) -> OsString {
     path.parent()
@@ -70,6 +85,17 @@ mod path_tests {
         dirname_dir:     dirname  for  "dir/foo.txt"  =>  "dir"
         dirname_utf8_0:  dirname  for  "💖/foo.txt"   =>  "💖"
         dirname_utf8_1:  dirname  for  "dir/💖.txt"   =>  "dir"
+
+        ext_simple:     extension  for  "foo.txt"      =>  "txt"
+        ext_dir:        extension  for  "dir/foo.txt"  =>  "txt"
+        ext_none:       extension  for  "foo"          =>  ""
+        ext_utf8:       extension  for  "💖.txt"       =>  "txt"
+        ext_hidden:     extension  for  ".foo"         =>  ""
+
+        bname_ext_simple:  basename_extension  for  "foo.txt"      =>  "txt"
+        bname_ext_dir:     basename_extension  for  "dir/foo.txt"  =>  "txt"
+        bname_ext_none:    basename_extension  for  "foo"          =>  ""
+        bname_ext_utf8:    basename_extension  for  "dir/💖.txt"   =>  "txt"
     }
 
     #[test]
