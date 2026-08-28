@@ -610,6 +610,15 @@ pub struct Opts {
     )]
     pub show_errors: bool,
 
+    /// Return non-zero exit code if any filesystem errors were encountered.
+    #[arg(
+        long,
+        hide_short_help = true,
+        help = "Exit with code 1 on filesystem errors",
+        long_help
+    )]
+    pub error_on_fs_errors: bool,
+
     /// Change the current working directory of fd to the provided path. This
     /// means that search results will be shown with respect to the given base
     /// path. Note that relative paths which are passed to fd via the positional

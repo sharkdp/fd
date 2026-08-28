@@ -146,6 +146,8 @@ struct ReceiverBuffer<'a, W> {
     buffer: Vec<DirEntry>,
     /// Result count.
     num_results: usize,
+    /// Whether any filesystem errors were encountered.
+    had_fs_errors: bool,
 }
 
 impl<'a, W: Write> ReceiverBuffer<'a, W> {
@@ -167,6 +169,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             deadline,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
+            had_fs_errors: false,
         }
     }
 
@@ -228,6 +231,9 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             if self.config.show_filesystem_errors {
                                 print_error(err.to_string());
                             }
+                            if self.config.error_on_fs_errors {
+                                self.had_fs_errors = true;
+                            }
                         }
                     }
                 }
@@ -283,6 +289,10 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         if self.mode == ReceiverMode::Buffering {
             self.buffer.sort();
             self.stream()?;
+        }
+
+        if self.config.error_on_fs_errors && self.had_fs_errors {
+            return Err(ExitCode::GeneralError);
         }
 
         if self.config.quiet {
