@@ -11,6 +11,7 @@
 ## Features
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
+- Add `{.ext}` placeholder for file extensions in `--format`, `--exec`, and `--exec-batch`, see #1818 (@puneetdixit200).
 
 ## Bugfixes
 - Sanitize control characters and bidirectional override characters in filenames
