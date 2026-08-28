@@ -148,14 +148,14 @@ impl FormatTemplate {
                             path_separator,
                         )),
                         BasenameExtension => {
-                            s.push(&basename_extension(path));
+                            s.push(basename_extension(path));
                         }
                         NoExt => s.push(Self::replace_separator(
                             &remove_extension(path),
                             path_separator,
                         )),
                         Extension => {
-                            s.push(&extension(path));
+                            s.push(extension(path));
                         }
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
                         Placeholder => {
