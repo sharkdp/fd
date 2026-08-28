@@ -9,8 +9,10 @@
 # 10.5.0
 
 ## Features
+
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
+- Add colors to `--help`, see #1846 (@starsep)
 
 ## Bugfixes
 - Sanitize control characters and bidirectional override characters in filenames
