@@ -15,6 +15,7 @@ fn needs_escape(c: char) -> bool {
             '\u{00AD}'                  // soft hyphen (invisible)
             | '\u{180E}'                // Mongolian vowel separator
             | '\u{200B}'..='\u{200F}'   // zero-width + LRM/RLM
+            | '\u{2028}'..='\u{2029}'   // line + paragraph separators
             | '\u{202A}'..='\u{202E}'   // bidi embedding/override
             | '\u{2060}'..='\u{206F}'   // word joiner, invisibles, deprecated formats
             | '\u{FEFF}'                // BOM / zero-width no-break space
@@ -137,6 +138,12 @@ mod tests {
         // Zero-width space and BOM are also format chars used to disguise filenames.
         assert_eq!(sanitize_for_terminal("a\u{200B}b"), "a\\u{200B}b");
         assert_eq!(sanitize_for_terminal("\u{FEFF}name"), "\\u{FEFF}name");
+    }
+
+    #[test]
+    fn strips_unicode_line_separators() {
+        assert_eq!(sanitize_for_terminal("A\u{2028}B"), "A\\u{2028}B");
+        assert_eq!(sanitize_for_terminal("A\u{2029}B"), "A\\u{2029}B");
     }
 
     #[test]

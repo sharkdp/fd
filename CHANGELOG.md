@@ -4,7 +4,7 @@
 -
 
 ## Bugfixes
--
+- Escape U+2028 (line separator) and U+2029 (paragraph separator) when sanitizing paths for terminal output, so a filename can't forge terminal lines, see #2105 (@nikolauspschuetz)
 
 # 10.5.0
 
