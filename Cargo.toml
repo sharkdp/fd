@@ -46,6 +46,7 @@ crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.6.5", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.27"
+unix_mode = "0.1"
 
 [dependencies.clap]
 version = "4.6.1"
@@ -58,6 +59,7 @@ features = ["nu-ansi-term"]
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31.1", default-features = false, features = ["signal", "user", "hostname"] }
+users = "0.11"
 
 [target.'cfg(all(unix, not(target_os = "redox")))'.dependencies]
 libc = "0.2"
