@@ -4,7 +4,7 @@
 -
 
 ## Bugfixes
--
+- Don't incorrectly escape newlines in error messages, see #2104
 
 # 10.5.0
 
