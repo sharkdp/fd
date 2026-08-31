@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum,
+    builder::RangedU64ValueParser, error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -565,8 +565,15 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_num_threads)]
-    pub threads: Option<NonZeroUsize>,
+    #[arg(
+        long,
+        short = 'j',
+        value_name = "num",
+        hide_short_help = true,
+        value_parser = RangedU64ValueParser::<usize>::new()
+            .range(1..=MAX_NUM_THREADS as u64)
+    )]
+    pub threads: Option<usize>,
 
     /// Milliseconds to buffer before streaming search results to console
     ///
@@ -765,7 +772,9 @@ impl Opts {
     }
 
     pub fn threads(&self) -> NonZeroUsize {
-        self.threads.unwrap_or_else(default_num_threads)
+        self.threads.map_or_else(default_num_threads, |threads| {
+            NonZeroUsize::new(threads).expect("--threads is validated as nonzero")
+        })
     }
 
     pub fn max_results(&self) -> Option<usize> {
@@ -809,18 +818,6 @@ fn default_num_threads() -> NonZeroUsize {
     std::thread::available_parallelism()
         .unwrap_or(fallback)
         .min(limit)
-}
-
-fn parse_num_threads(arg: &str) -> Result<NonZeroUsize, String> {
-    let threads = arg
-        .parse::<NonZeroUsize>()
-        .map_err(|error| error.to_string())?;
-    if threads.get() > MAX_NUM_THREADS {
-        return Err(format!(
-            "the number of threads cannot exceed {MAX_NUM_THREADS}"
-        ));
-    }
-    Ok(threads)
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, ValueEnum)]
@@ -996,18 +993,18 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
 
 #[cfg(test)]
 mod tests {
-    use super::parse_num_threads;
+    use super::{MAX_NUM_THREADS, Opts};
+    use clap::Parser;
 
     #[test]
     fn number_of_threads_is_bounded() {
-        assert_eq!(parse_num_threads("1").unwrap().get(), 1);
-        assert_eq!(parse_num_threads("64").unwrap().get(), 64);
-        assert_eq!(parse_num_threads("128").unwrap().get(), 128);
         assert_eq!(
-            parse_num_threads("65536").unwrap().get(),
-            super::MAX_NUM_THREADS
+            Opts::try_parse_from(["fd", "--threads", "65536"])
+                .unwrap()
+                .threads,
+            Some(MAX_NUM_THREADS)
         );
-        assert!(parse_num_threads("65537").is_err());
-        assert!(parse_num_threads("9223372036854775807").is_err());
+        assert!(Opts::try_parse_from(["fd", "--threads", "0"]).is_err());
+        assert!(Opts::try_parse_from(["fd", "--threads", "65537"]).is_err());
     }
 }
