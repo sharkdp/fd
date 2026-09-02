@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -484,24 +484,24 @@ impl WorkerState {
                 }
                 let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
-                    Err(ignore::Error::WithPath {
-                        path,
-                        err: inner_err,
-                    }) if inner_err
-                        .io_error()
-                        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
-                        && path
-                            .symlink_metadata()
-                            .ok()
-                            .is_some_and(|m| m.file_type().is_symlink()) =>
-                    {
-                        DirEntry::broken_symlink(path)
-                    }
                     Err(err) => {
-                        return match tx.send(WorkerResult::Error(err)) {
-                            Ok(_) => WalkState::Continue,
-                            Err(_) => WalkState::Quit,
-                        };
+                        // The depth has to be read off the error before it is
+                        // taken apart, since it is recorded on an inner variant.
+                        let depth = err.depth();
+                        match err {
+                            ignore::Error::WithPath {
+                                path,
+                                err: inner_err,
+                            } if is_broken_symlink(&path, &inner_err) => {
+                                DirEntry::broken_symlink(path, depth)
+                            }
+                            err => {
+                                return match tx.send(WorkerResult::Error(err)) {
+                                    Ok(_) => WalkState::Continue,
+                                    Err(_) => WalkState::Quit,
+                                };
+                            }
+                        }
                     }
                 };
 
@@ -651,6 +651,21 @@ impl WorkerState {
             Ok(exit_code)
         }
     }
+}
+
+/// Whether a walk error is really a broken symlink rather than a failure worth
+/// reporting.
+///
+/// A symlink whose target is missing is surfaced by the walker as a NotFound
+/// error against the link's own path, so it never arrives as an entry. fd still
+/// wants to match and print it (see issue #1017), which means recovering it here.
+fn is_broken_symlink(path: &Path, err: &ignore::Error) -> bool {
+    err.io_error()
+        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
+        && path
+            .symlink_metadata()
+            .ok()
+            .is_some_and(|m| m.file_type().is_symlink())
 }
 
 fn search_str_for_entry<'a>(
