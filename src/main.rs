@@ -496,23 +496,15 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
     if let Some(ref t) = opts.changed_within {
-        if let Some(f) = TimeFilter::after(t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
+        match TimeFilter::after(t) {
+            Ok(f) => time_constraints.push(f),
+            Err(e) => return Err(anyhow!("{}. See 'fd --help'.", e)),
         }
     }
     if let Some(ref t) = opts.changed_before {
-        if let Some(f) = TimeFilter::before(t) {
-            time_constraints.push(f);
-        } else {
-            return Err(anyhow!(
-                "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
-            ));
+        match TimeFilter::before(t) {
+            Ok(f) => time_constraints.push(f),
+            Err(e) => return Err(anyhow!("{}. See 'fd --help'.", e)),
         }
     }
     Ok(time_constraints)
