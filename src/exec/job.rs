@@ -17,6 +17,7 @@ pub fn job(
     let buffer_output: bool = config.threads > 1;
 
     let mut ret = ExitCode::Success;
+    let mut had_fs_errors = false;
     for result in results {
         // Obtain the next result from the receiver, else if the channel
         // has closed, exit from the loop
@@ -25,6 +26,9 @@ pub fn job(
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
                     print_error(err.to_string());
+                }
+                if config.error_on_fs_errors {
+                    had_fs_errors = true;
                 }
                 continue;
             }
@@ -39,6 +43,9 @@ pub fn job(
         );
         ret = merge_exitcodes([ret, code]);
     }
+    if had_fs_errors && config.error_on_fs_errors {
+        return ExitCode::GeneralError;
+    }
     // Returns error in case of any error.
     ret
 }
@@ -48,6 +55,7 @@ pub fn batch(
     cmd: &CommandSet,
     config: &Config,
 ) -> ExitCode {
+    let mut had_fs_errors = false;
     let paths = results
         .into_iter()
         .filter_map(|worker_result| match worker_result {
@@ -56,9 +64,16 @@ pub fn batch(
                 if config.show_filesystem_errors {
                     print_error(err.to_string());
                 }
+                if config.error_on_fs_errors {
+                    had_fs_errors = true;
+                }
                 None
             }
         });
 
-    cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref())
+    let code = cmd.execute_batch(paths, config.batch_size, config.path_separator.as_deref());
+    if had_fs_errors && config.error_on_fs_errors {
+        return ExitCode::GeneralError;
+    }
+    code
 }

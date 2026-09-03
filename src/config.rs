@@ -116,6 +116,9 @@ pub struct Config {
     /// Whether or not to display filesystem errors
     pub show_filesystem_errors: bool,
 
+    /// Whether to exit with non-zero code on filesystem errors
+    pub error_on_fs_errors: bool,
+
     /// The separator used to print file paths.
     pub path_separator: Option<String>,
 
