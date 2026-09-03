@@ -972,6 +972,53 @@ fn test_no_ignore_vcs_child_dir() {
     );
 }
 
+/// VCS exclude files (--no-ignore-vcs-exclude)
+#[test]
+fn test_no_ignore_vcs_exclude() {
+    let files = &[
+        "ignored-by-nothing",
+        "ignored-by-gitignore",
+        "ignored-by-exclude",
+    ];
+    let te = TestEnv::new(&[], files);
+
+    fs::File::create(te.test_root().join(".gitignore"))
+        .unwrap()
+        .write_all(b"ignored-by-gitignore")
+        .unwrap();
+
+    fs::create_dir_all(te.test_root().join(".git/info")).unwrap();
+    fs::File::create(te.test_root().join(".git/info/exclude"))
+        .unwrap()
+        .write_all(b"ignored-by-exclude")
+        .unwrap();
+
+    te.assert_output(&["ignored"], "ignored-by-nothing");
+
+    // Files ignored via .git/info/exclude are shown, but .gitignore is still respected
+    te.assert_output(
+        &["--no-ignore-vcs-exclude", "ignored"],
+        "ignored-by-nothing
+        ignored-by-exclude",
+    );
+
+    // --ignore-vcs-exclude overrides --no-ignore-vcs-exclude
+    te.assert_output(
+        &["--no-ignore-vcs-exclude", "--ignore-vcs-exclude", "ignored"],
+        "ignored-by-nothing",
+    );
+
+    // --no-ignore-vcs, --no-ignore and -u also disable .git/info/exclude
+    for flag in ["--no-ignore-vcs", "--no-ignore", "-u"] {
+        te.assert_output(
+            &[flag, "ignored"],
+            "ignored-by-nothing
+            ignored-by-gitignore
+            ignored-by-exclude",
+        );
+    }
+}
+
 /// Custom ignore files (--ignore-file)
 #[test]
 fn test_custom_ignore_files() {
@@ -2674,6 +2721,7 @@ fn test_number_parsing_errors() {
 #[test_case("--hidden", &["--no-hidden"] ; "hidden")]
 #[test_case("--no-ignore", &["--ignore"] ; "no-ignore")]
 #[test_case("--no-ignore-vcs", &["--ignore-vcs"] ; "no-ignore-vcs")]
+#[test_case("--no-ignore-vcs-exclude", &["--ignore-vcs-exclude"] ; "no-ignore-vcs-exclude")]
 #[test_case("--no-require-git", &["--require-git"] ; "no-require-git")]
 #[test_case("--follow", &["--no-follow"] ; "follow")]
 #[test_case("--absolute-path", &["--relative-path"] ; "absolute-path")]

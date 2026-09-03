@@ -10,6 +10,7 @@
 # 10.5.0
 
 ## Features
+- Add `--no-ignore-vcs-exclude` option to show search results that would otherwise be ignored by `.git/info/exclude`, while still respecting other gitignore files, see #1612 and #1652 (@AckslD)
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
 - Add `--exact` option to match the entire filename exactly (literal, non-substring).
 

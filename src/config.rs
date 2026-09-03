@@ -31,6 +31,9 @@ pub struct Config {
     /// Whether to respect VCS ignore files (`.gitignore`, ..) or not.
     pub read_vcsignore: bool,
 
+    /// Whether to respect VCS exclude files (`.git/info/exclude`, ..) or not.
+    pub read_vcsexclude: bool,
+
     /// Whether to require a `.git` directory to respect gitignore files.
     pub require_git_to_read_vcsignore: bool,
 
