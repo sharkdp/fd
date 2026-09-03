@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum,
+    builder::RangedU64ValueParser, error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -17,6 +17,18 @@ use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
+
+/// Upper bound for the `--threads` option. This is not meant to reflect the
+/// maximum number of useful threads (which depends on the OS, available
+/// memory, ulimit settings, etc.), but only to catch absurd values that
+/// would otherwise fail much later with a panic during channel or thread
+/// allocation.
+const MAX_NUM_THREADS: usize = 1 << 16;
+
+/// Cap for the implicit default thread count to limit startup overhead on
+/// massively parallel machines. Explicitly requested thread counts are only
+/// bounded by MAX_NUM_THREADS.
+const DEFAULT_NUM_THREADS_LIMIT: usize = 64;
 
 #[derive(Parser)]
 #[command(
@@ -553,8 +565,15 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
-    pub threads: Option<NonZeroUsize>,
+    #[arg(
+        long,
+        short = 'j',
+        value_name = "num",
+        hide_short_help = true,
+        value_parser = RangedU64ValueParser::<usize>::new()
+            .range(1..=MAX_NUM_THREADS as u64)
+    )]
+    pub threads: Option<usize>,
 
     /// Milliseconds to buffer before streaming search results to console
     ///
@@ -753,7 +772,9 @@ impl Opts {
     }
 
     pub fn threads(&self) -> NonZeroUsize {
-        self.threads.unwrap_or_else(default_num_threads)
+        self.threads.map_or_else(default_num_threads, |threads| {
+            NonZeroUsize::new(threads).expect("--threads is validated as nonzero")
+        })
     }
 
     pub fn max_results(&self) -> Option<usize> {
@@ -791,8 +812,8 @@ fn default_num_threads() -> NonZeroUsize {
     // default to a single thread, because that is safe.
     let fallback = NonZeroUsize::MIN;
     // To limit startup overhead on massively parallel machines, don't use more
-    // than 64 threads.
-    let limit = NonZeroUsize::new(64).unwrap();
+    // than DEFAULT_NUM_THREADS_LIMIT threads.
+    let limit = NonZeroUsize::new(DEFAULT_NUM_THREADS_LIMIT).unwrap();
 
     std::thread::available_parallelism()
         .unwrap_or(fallback)
@@ -967,5 +988,23 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
         Err(anyhow!(
             "Could not retrieve current directory (has it been deleted?)."
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MAX_NUM_THREADS, Opts};
+    use clap::Parser;
+
+    #[test]
+    fn number_of_threads_is_bounded() {
+        assert_eq!(
+            Opts::try_parse_from(["fd", "--threads", "65536"])
+                .unwrap()
+                .threads,
+            Some(MAX_NUM_THREADS)
+        );
+        assert!(Opts::try_parse_from(["fd", "--threads", "0"]).is_err());
+        assert!(Opts::try_parse_from(["fd", "--threads", "65537"]).is_err());
     }
 }
