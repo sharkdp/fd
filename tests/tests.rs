@@ -2491,6 +2491,50 @@ fn test_owner_root() {
     te.assert_output(&["--owner", ":0", "a.foo"], "");
 }
 
+/// A traversal error (e.g. a directory that can't be read) should be reflected in the
+/// exit code, even though it isn't fatal to the overall search. Previously, `fd` always
+/// reported success as long as it didn't crash, silently hiding the fact that part of
+/// the search was skipped. See https://github.com/sharkdp/fd/issues/1985.
+#[cfg(unix)]
+#[test]
+fn test_exit_code_reflects_traversal_errors() {
+    use std::os::unix::fs::PermissionsExt;
+
+    // This test assumes the current user isn't root (root can read anything,
+    // permission bits notwithstanding).
+    if Uid::current().is_root() {
+        return;
+    }
+
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let unreadable_dir = te.test_root().join("one/two/three/directory_foo");
+
+    // A directory search should complete successfully and report success when there
+    // are no filesystem errors.
+    te.assert_success_and_get_output(".", &[]);
+
+    // Remove read+execute permissions so that `fd` can't list this directory's
+    // contents, which surfaces as a traversal (`WorkerResult::Error`) during the walk.
+    fs::set_permissions(&unreadable_dir, fs::Permissions::from_mode(0o000))
+        .expect("could not change permissions for test");
+
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        te.assert_failure(&[]);
+        // The default output should still include the results fd *was* able to find.
+        te.assert_failure(&["--exec", "true", ";"]);
+        te.assert_failure(&["--exec-batch", "true"]);
+    }));
+
+    // Restore permissions before the temp directory is cleaned up, regardless of
+    // whether the assertions above passed, so we don't leak an unreadable directory.
+    fs::set_permissions(&unreadable_dir, fs::Permissions::from_mode(0o755))
+        .expect("could not restore permissions for test");
+
+    if let Err(err) = result {
+        std::panic::resume_unwind(err);
+    }
+}
+
 #[test]
 fn test_custom_path_separator() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
