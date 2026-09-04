@@ -100,6 +100,9 @@ pub struct Config {
     /// A list of glob patterns that should be excluded from the search.
     pub exclude_patterns: Vec<String>,
 
+    /// A list of paths that should be excluded from the search.
+    pub exclude_absolute_paths: Vec<String>,
+
     /// A list of custom ignore files.
     pub ignore_files: Vec<PathBuf>,
 
