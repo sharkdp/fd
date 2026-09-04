@@ -26,6 +26,16 @@ fn needs_escape(c: char) -> bool {
 /// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
 /// escaped copy. Use this when an owned `&str`/`String` is required (e.g. ANSI paint).
 pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
+    sanitize(s, false)
+}
+
+/// Like `sanitize_for_terminal`, but keeps newlines so multi-line messages stay readable.
+pub fn sanitize_message(s: &str) -> Cow<'_, str> {
+    sanitize(s, true)
+}
+
+fn sanitize(s: &str, keep_newlines: bool) -> Cow<'_, str> {
+    let needs_escape = |c: char| needs_escape(c) && !(keep_newlines && c == '\n');
     if !s.chars().any(needs_escape) {
         return Cow::Borrowed(s);
     }
@@ -153,6 +163,17 @@ mod tests {
                 "{s:?}"
             );
         }
+    }
+
+    #[test]
+    fn sanitize_message_keeps_newlines_only() {
+        let msg = "line one\nline two\x1b]0;x\x07\r";
+        assert_eq!(
+            sanitize_message(msg),
+            "line one\nline two\\x1B]0;x\\x07\\x0D"
+        );
+        assert!(matches!(sanitize_message("a\nb"), Cow::Borrowed(_)));
+        assert_eq!(sanitize_for_terminal("a\nb"), "a\\x0Ab");
     }
 
     #[test]
