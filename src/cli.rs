@@ -675,8 +675,15 @@ pub struct Opts {
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
     /// this flag to change this behavior. If this flag is used without a value,
-    /// it is equivalent to passing "always".
-    #[arg(long, conflicts_with_all(&["path", "search_path"]), value_name = "when", hide_short_help = true, require_equals = true, long_help)]
+    /// it is equivalent to passing "always". This also works with explicit search
+    /// paths. In "auto" mode, prefixes are only stripped without explicit search paths.
+    #[arg(
+        long,
+        value_name = "when",
+        hide_short_help = true,
+        require_equals = true,
+        long_help
+    )]
     strip_cwd_prefix: Option<Option<StripCwdWhen>>,
 
     /// By default, fd will traverse the file system tree as far as other options
@@ -764,12 +771,11 @@ impl Opts {
 
     pub fn strip_cwd_prefix<P: FnOnce() -> bool>(&self, auto_pred: P) -> bool {
         use self::StripCwdWhen::*;
-        self.no_search_paths()
-            && match self.strip_cwd_prefix.map_or(Auto, |o| o.unwrap_or(Always)) {
-                Auto => auto_pred(),
-                Always => true,
-                Never => false,
-            }
+        match self.strip_cwd_prefix.map_or(Auto, |o| o.unwrap_or(Always)) {
+            Auto => self.no_search_paths() && auto_pred(),
+            Always => true,
+            Never => false,
+        }
     }
 
     #[cfg(feature = "completions")]

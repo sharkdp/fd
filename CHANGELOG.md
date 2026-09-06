@@ -1,7 +1,7 @@
 # Upcoming Release
 
 ## Features
--
+- Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
 - Don't incorrectly escape newlines in error messages, see #2104

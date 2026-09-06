@@ -2712,6 +2712,37 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
 }
 
 #[test]
+fn test_strip_cwd_prefix_search_paths() {
+    let te = TestEnv::new(
+        &["a/b/c"],
+        &["a/fileA", "a/b/fileB", "a/b/c/fileC", "a/-file"],
+    );
+
+    for paths in [
+        vec!["--search-path=.", "--search-path=b/c"],
+        vec!["", ".", "b/c"],
+    ] {
+        let mut args = vec!["-C", "a", "--type", "f", "--exclude", "b"];
+        args.extend_from_slice(&paths);
+        te.assert_output(&args, "./-file\n./fileA\nb/c/fileC");
+
+        for mode in ["--strip-cwd-prefix=auto", "--strip-cwd-prefix=never"] {
+            let mut args = args.clone();
+            args.push(mode);
+            te.assert_output(&args, "./-file\n./fileA\nb/c/fileC");
+        }
+
+        for mode in ["--strip-cwd-prefix", "--strip-cwd-prefix=always"] {
+            let mut args = args.clone();
+            args.push(mode);
+            te.assert_output(&args, "./-file\nfileA\nb/c/fileC");
+            args.push("--print0");
+            te.assert_output(&args, "./-fileNULL\nfileANULL\nb/c/fileCNULL");
+        }
+    }
+}
+
+#[test]
 fn test_strip_cwd_prefix() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
