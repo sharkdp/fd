@@ -4,6 +4,7 @@
 -
 
 ## Bugfixes
+- Include files modified exactly at the starting timestamp for `--changed-after` and its aliases, see #2122 (@pederbe).
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
 

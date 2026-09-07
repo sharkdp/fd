@@ -417,7 +417,7 @@ pub struct Opts {
     pub size: Vec<SizeFilter>,
 
     /// Filter results based on the file modification time. Files with modification times
-    /// greater than the argument are returned. The argument can be provided
+    /// greater than or equal to the argument are returned. The argument can be provided
     /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min).
     /// If the time is not specified, it defaults to 00:00:00.
     /// '--change-newer-than', '--newer', or '--changed-after' can be used as aliases.

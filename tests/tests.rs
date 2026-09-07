@@ -2447,6 +2447,46 @@ fn test_modified_absolute() {
     );
 }
 
+#[test]
+fn test_modified_range_boundaries() {
+    let te = TestEnv::new(&[], &["before", "start", "inside", "end"]);
+    remove_symlink(te.test_root().join("symlink"));
+    for (name, timestamp) in [
+        ("before", "2018-01-01T23:59:59Z"),
+        ("start", "2018-01-02T00:00:00Z"),
+        ("inside", "2018-01-02T00:30:00Z"),
+        ("end", "2018-01-02T01:00:00Z"),
+    ] {
+        change_file_modified(te.test_root().join(name), timestamp);
+    }
+
+    for after in [
+        "--changed-after",
+        "--changed-within",
+        "--change-newer-than",
+        "--newer",
+    ] {
+        te.assert_output(
+            &[
+                after,
+                "2018-01-02T00:00:00Z",
+                "--changed-before",
+                "2018-01-02T01:00:00Z",
+            ],
+            "start\ninside",
+        );
+    }
+    te.assert_output(
+        &[
+            "--changed-after",
+            "2018-01-02T01:00:00Z",
+            "--changed-before",
+            "2018-01-02T02:00:00Z",
+        ],
+        "end",
+    );
+}
+
 #[cfg(unix)]
 #[test]
 fn test_owner_ignore_all() {
