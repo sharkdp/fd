@@ -482,7 +482,8 @@ pub struct Opts {
         long,
         value_name = "fmt",
         help = "Print results according to template",
-        conflicts_with = "list_details"
+        conflicts_with = "list_details",
+        allow_hyphen_values = true
     )]
     pub format: Option<String>,
 

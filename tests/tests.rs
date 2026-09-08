@@ -1755,6 +1755,17 @@ fn format() {
         parent=one/two/three
         parent=one/two/three",
     );
+
+    // Templates may start with '-' (e.g. markdown list items); see #2126.
+    te.assert_output(
+        &["foo", "--format", "- {/.}", "--path-separator=/"],
+        "- a
+        - b
+        - C
+        - c
+        - d
+        - directory_foo",
+    );
 }
 
 /// Shell script execution (--exec)
