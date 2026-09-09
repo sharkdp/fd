@@ -653,18 +653,44 @@ impl WorkerState {
     }
 }
 
+/// Normalize path separators for pattern matching.
+///
+/// Glob patterns (and `--full-path` patterns containing `/`) are compiled into
+/// regexes that use `/` as the path separator.  On Windows, paths use `\`
+/// natively, so a glob regex will never match unless we normalize the candidate
+/// path first.  The normalized string is only used for matching; the original
+/// path is still shown in the output.
+#[cfg(windows)]
+fn normalize_separators(s: &std::ffi::OsStr) -> std::ffi::OsString {
+    let lossy = s.to_string_lossy();
+    if lossy.contains('\\') {
+        std::ffi::OsString::from(lossy.replace('\\', "/"))
+    } else {
+        std::ffi::OsString::from(lossy.as_ref())
+    }
+}
+
 fn search_str_for_entry<'a>(
     entry_path: &'a std::path::Path,
     full_path_base: Option<&std::path::Path>,
 ) -> Cow<'a, OsStr> {
     if let Some(cwd) = full_path_base {
-        // If full_path_base is some, that means that we need to return
-        // the absolute path
-        if entry_path.is_absolute() {
-            return Cow::Borrowed(entry_path.as_os_str());
+        let path: Cow<'a, OsStr> = if entry_path.is_absolute() {
+            Cow::Borrowed(entry_path.as_os_str())
+        } else {
+            let stripped = entry_path.strip_prefix(".").unwrap_or(entry_path);
+            Cow::Owned(cwd.join(stripped).into())
+        };
+        // On Windows, normalize backslashes to forward slashes so that
+        // globset regexes (which use '/') can match against the path.
+        #[cfg(windows)]
+        {
+            Cow::Owned(normalize_separators(&path))
         }
-        let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
-        Cow::Owned(cwd.join(path).into())
+        #[cfg(not(windows))]
+        {
+            path
+        }
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
@@ -740,5 +766,21 @@ mod tests {
             search_str_for_entry(Path::new("foo"), None),
             PathBuf::from("foo")
         );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn search_str_for_entry_normalizes_backslashes() {
+        let full_path_base = Some(Path::new(r"C:\Users\me\project"));
+        let result = search_str_for_entry(Path::new(r"src\foo\bar.rs"), full_path_base);
+        assert_eq!(result.to_str(), Some("C:/Users/me/project/src/foo/bar.rs"));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn search_str_for_entry_normalizes_absolute_backslashes() {
+        let full_path_base = Some(Path::new(r"C:\root"));
+        let result = search_str_for_entry(Path::new(r"C:\Users\me\foo.rs"), full_path_base);
+        assert_eq!(result.to_str(), Some("C:/Users/me/foo.rs"));
     }
 }
