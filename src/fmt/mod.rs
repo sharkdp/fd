@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 
 use aho_corasick::AhoCorasick;
 
-use self::input::{basename, dirname, remove_extension};
+use self::input::{basename, dirname, extension, remove_extension};
 
 /// Designates what should be written to a buffer
 ///
@@ -20,6 +20,7 @@ pub enum Token {
     Basename,
     Parent,
     NoExt,
+    Extension,
     BasenameNoExt,
     Text(String),
 }
@@ -31,6 +32,7 @@ impl Display for Token {
             Token::Basename => f.write_str("{/}")?,
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
+            Token::Extension => f.write_str("{.ext}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
@@ -62,7 +64,7 @@ impl FormatTemplate {
         let mut remaining = fmt;
         let mut buf = String::new();
         let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
+            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{.ext}", "{/.}"]).unwrap()
         });
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
@@ -127,6 +129,9 @@ impl FormatTemplate {
                             &remove_extension(path),
                             path_separator,
                         )),
+                        Extension => {
+                            s.push(Self::replace_separator(extension(path), path_separator))
+                        }
                         Parent => s.push(Self::replace_separator(&dirname(path), path_separator)),
                         Placeholder => {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
@@ -205,7 +210,8 @@ fn token_from_pattern_id(id: u32) -> Token {
         3 => Basename,
         4 => Parent,
         5 => NoExt,
-        6 => BasenameNoExt,
+        6 => Extension,
+        7 => BasenameNoExt,
         _ => unreachable!(),
     }
 }
@@ -242,6 +248,7 @@ mod fmt_tests {
             basename={/} \
             parent={//} \
             noExt={.} \
+            ext={.ext} \
             basenameNoExt={/.} \
             }}",
         );
@@ -256,6 +263,8 @@ mod fmt_tests {
                 Parent,
                 Text(" noExt=".into()),
                 NoExt,
+                Text(" ext=".into()),
+                Extension,
                 Text(" basenameNoExt=".into()),
                 BasenameNoExt,
                 Text(" }".into()),
@@ -275,7 +284,22 @@ mod fmt_tests {
             basename=file.txt \
             parent=a/folder \
             noExt=a/folder/file \
+            ext=txt \
             basenameNoExt=file }"
         );
+    }
+
+    #[test]
+    fn extension_placeholder() {
+        let templ = FormatTemplate::parse("extension={.ext}");
+
+        let mut path = PathBuf::new();
+        path.push("a");
+        path.push("folder");
+        path.push("file.txt");
+
+        let expanded = templ.generate(&path, Some("/")).into_string().unwrap();
+
+        assert_eq!(expanded, "extension=txt");
     }
 }
