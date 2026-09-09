@@ -202,7 +202,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                     match result {
                         WorkerResult::Entry(dir_entry) => {
                             if self.config.quiet {
-                                return Err(ExitCode::HasResults(true));
+                                return Err(ExitCode::Success);
                             }
 
                             match self.mode {
@@ -286,7 +286,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         }
 
         if self.config.quiet {
-            Err(ExitCode::HasResults(self.num_results > 0))
+            Err(ExitCode::has_results(self.num_results))
         } else {
             Err(ExitCode::Success)
         }

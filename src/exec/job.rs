@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::error::print_error;
-use crate::exit_codes::{ExitCode, merge_exitcodes};
+use crate::exit_codes::ExitCode;
 use crate::walk::WorkerResult;
 
 use super::CommandSet;
@@ -37,7 +37,7 @@ pub fn job(
             config.null_separator,
             buffer_output,
         );
-        ret = merge_exitcodes([ret, code]);
+        ret = ret.merge(code);
     }
     // Returns error in case of any error.
     ret
