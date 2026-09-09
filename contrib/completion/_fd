@@ -58,6 +58,7 @@ _fd() {
 
     + no-ignore-partial # some ignore files
     "(no-ignore-full --no-ignore-vcs)--no-ignore-vcs[don't respect .gitignore files]"
+    "(no-ignore-full --no-ignore-vcs --no-ignore-vcs-exclude)--no-ignore-vcs-exclude[don't respect .git/info/exclude files]"
     "!(no-ignore-full --no-global-ignore-file)--no-global-ignore-file[don't respect the global ignore file]"
     $no'(no-ignore-full --no-ignore-parent)--no-ignore-parent[]'
 
