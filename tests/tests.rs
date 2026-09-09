@@ -1438,6 +1438,81 @@ fn test_type_empty() {
     te.assert_output(&["--type", "empty", "--type", "directory"], "dir_empty/");
 }
 
+/// The `executable` type modifier must only constrain the file results it
+/// applies to. When another type such as `symlink` is requested in addition,
+/// those entries must still be included even if they are not executable.
+#[cfg(unix)]
+#[test]
+fn test_type_executable_combined_with_symlink() {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    // This test assumes the current user isn't root
+    // (otherwise if the executable bit is set for any level, it is executable for the current
+    // user)
+    if Uid::current().is_root() {
+        return;
+    }
+
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::OpenOptions::new()
+        .create_new(true)
+        .truncate(true)
+        .write(true)
+        .mode(0o777)
+        .open(te.test_root().join("executable-file.sh"))
+        .unwrap();
+
+    // A broken symlink is a symlink that is not executable.
+    te.create_broken_symlink("broken_symlink").unwrap();
+
+    // `--type executable` on its own only lists executable regular files.
+    te.assert_output(&["--type", "executable"], "executable-file.sh");
+
+    // Adding `--type symlink` must additionally list *all* symlinks, including
+    // the non-executable broken symlink. `symlink` is the pre-existing symlink
+    // in the test fixture (pointing at a directory).
+    te.assert_output(
+        &["--type", "executable", "--type", "symlink"],
+        "executable-file.sh
+        symlink
+        broken_symlink",
+    );
+}
+
+/// The `empty` type modifier must only constrain the file/directory results it
+/// applies to. When another type such as `symlink` is requested in addition,
+/// those entries must still be included even if they are not empty.
+#[cfg(unix)]
+#[test]
+fn test_type_empty_combined_with_symlink() {
+    let mut te = TestEnv::new(&["dir_empty"], &[]);
+
+    create_file_with_size(te.test_root().join("0_bytes.foo"), 0);
+    create_file_with_size(te.test_root().join("5_bytes.foo"), 5);
+
+    // A broken symlink is a symlink that is not considered empty.
+    te.create_broken_symlink("broken_symlink").unwrap();
+
+    // `--type empty` on its own only lists empty files and directories.
+    te.assert_output(
+        &["--type", "empty"],
+        "0_bytes.foo
+        dir_empty/",
+    );
+
+    // Adding `--type symlink` must additionally list *all* symlinks, including
+    // the non-empty broken symlink. `symlink` is the symlink from the test
+    // fixture (dangling here, as its target does not exist in this environment).
+    te.assert_output(
+        &["--type", "empty", "--type", "symlink"],
+        "0_bytes.foo
+        dir_empty/
+        broken_symlink
+        symlink",
+    );
+}
+
 /// File extension (--extension)
 #[test]
 fn test_extension() {
