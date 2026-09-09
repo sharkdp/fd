@@ -384,6 +384,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         #[cfg(unix)]
         owner_constraint,
         show_filesystem_errors: opts.show_errors,
+        error_on_fs_errors: opts.error_on_fs_errors,
         path_separator,
         actual_path_separator,
         max_results: opts.max_results(),

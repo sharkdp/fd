@@ -3,11 +3,11 @@
 use std::borrow::Cow;
 use std::fmt::Write;
 
-/// True for any char that is neither printable nor permitted whitespace (only HT).
+/// True for any char that is neither printable nor permitted whitespace (HT, LF).
 /// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
 #[inline]
 fn needs_escape(c: char) -> bool {
-    if c == '\t' {
+    if c == '\t' || c == '\n' {
         return false;
     }
     c.is_control()
@@ -107,8 +107,8 @@ mod tests {
     }
 
     #[test]
-    fn strips_newline() {
-        assert_eq!(sanitize_for_terminal("a\nb"), "a\\x0Ab");
+    fn preserves_newline() {
+        assert_eq!(sanitize_for_terminal("a\nb"), "a\nb");
     }
 
     #[test]
