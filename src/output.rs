@@ -23,6 +23,12 @@ pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) 
         has_hyperlink = true;
     }
 
+    if let Some(meta) = entry.metadata()
+        && config.list_details
+    {
+        print_details(stdout, meta)?;
+    };
+
     if let Some(ref format) = config.format {
         print_entry_format(stdout, entry, config, format)?;
     } else if let Some(ref ls_colors) = config.ls_colors {
@@ -178,5 +184,169 @@ fn print_entry_uncolorized<W: Write>(
         // Piped output: raw bytes so invalid UTF-8 filenames reach downstream tools intact.
         stdout.write_all(entry.stripped_path(config).as_os_str().as_bytes())?;
         print_trailing_slash(stdout, entry, config, None)
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn print_details<W: Write>(stdout: &mut W, meta: &std::fs::Metadata) -> io::Result<()> {
+    use std::os::windows::fs::MetadataExt;
+
+    const FILE_ATTRIBUTE_DIRECTORY: u32 = 0x10;
+    const FILE_ATTRIBUTE_ARCHIVE: u32 = 0x20;
+    const FILE_ATTRIBUTE_READONLY: u32 = 0x01;
+    const FILE_ATTRIBUTE_HIDDEN: u32 = 0x02;
+    const FILE_ATTRIBUTE_SYSTEM: u32 = 0x04;
+
+    let attrs = meta.file_attributes();
+    let mut attr_buf = [b'-'; 6];
+
+    if attrs & FILE_ATTRIBUTE_DIRECTORY != 0 {
+        attr_buf[0] = b'd';
+    }
+    if attrs & FILE_ATTRIBUTE_ARCHIVE != 0 {
+        attr_buf[1] = b'a';
+    }
+    if attrs & FILE_ATTRIBUTE_READONLY != 0 {
+        attr_buf[2] = b'r';
+    }
+    if attrs & FILE_ATTRIBUTE_HIDDEN != 0 {
+        attr_buf[3] = b'h';
+    }
+    if attrs & FILE_ATTRIBUTE_SYSTEM != 0 {
+        attr_buf[4] = b's';
+    }
+
+    stdout.write_all(&attr_buf)?;
+    stdout.write_all(b" ")?;
+
+    print_time(stdout, filetime_to_unix_seconds(meta.last_write_time()))?;
+
+    if meta.is_file() {
+        print_size(stdout, meta.len())?;
+    } else {
+        write!(stdout, "{:>7}", "")?
+    }
+
+    stdout.write_all(b"  ")
+}
+
+#[cfg(not(target_os = "windows"))]
+fn print_details<W: Write>(stdout: &mut W, meta: &std::fs::Metadata) -> io::Result<()> {
+    use std::os::unix::fs::MetadataExt;
+
+    let mode = meta.mode();
+    let mode_string = unix_mode::to_string(mode);
+
+    let nlink = meta.nlink();
+
+    let uid = meta.uid();
+    let gid = meta.gid();
+
+    let user_name = users::get_user_by_uid(uid)
+        .map(|u| u.name().to_string_lossy().into_owned())
+        .unwrap_or_else(|| uid.to_string());
+
+    let group_name = users::get_group_by_gid(gid)
+        .map(|g| g.name().to_string_lossy().into_owned())
+        .unwrap_or_else(|| gid.to_string());
+
+    write!(
+        stdout,
+        "{:<10} {:>3} {:<8} {:<8} ",
+        mode_string, nlink, user_name, group_name,
+    )?;
+
+    print_size(stdout, meta.len())?;
+    print_time(stdout, meta.mtime())?;
+
+    stdout.write_all(b" ")
+}
+
+fn print_time<W: Write>(stdout: &mut W, unix_seconds: i64) -> io::Result<()> {
+    use jiff::{Timestamp, Zoned};
+
+    let timestamp = Timestamp::from_second(unix_seconds)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let zoned: Zoned = timestamp.to_zoned(jiff::tz::TimeZone::system());
+
+    write!(stdout, "  {:>20}", zoned.strftime("%d-%m-%Y %H:%M:%S"))
+}
+
+#[cfg(target_os = "windows")]
+fn filetime_to_unix_seconds(file_time: u64) -> i64 {
+    const INTERVALS_PER_SECOND: u64 = 10_000_000;
+    const EPOCH_DIFF_SECONDS: u64 = 11_644_473_600;
+    (file_time / INTERVALS_PER_SECOND).saturating_sub(EPOCH_DIFF_SECONDS) as i64
+}
+
+fn print_size<W: Write>(stdout: &mut W, size: u64) -> io::Result<()> {
+    const UNITS: &[&str] = &["B", "K", "M", "G", "T", "P"];
+    let mut sz = size as f64;
+    let mut unit_idx = 0;
+    while sz >= 1024.0 && unit_idx < UNITS.len() - 1 {
+        sz /= 1024.0;
+        unit_idx += 1;
+    }
+    if unit_idx == 0 {
+        write!(stdout, "{:>6}{}", size, UNITS[unit_idx])
+    } else {
+        write!(stdout, "{:>6.1}{}", sz, UNITS[unit_idx])
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_print_size() {
+        let re = regex::Regex::new(r"^\s+\d{0,4}(\.\d?)?[BKMGTP]").unwrap();
+
+        let mut buf = Vec::new();
+
+        let mut sz = 1;
+        for _ in 0..19 {
+            print_size(&mut buf, sz).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+
+            assert!(
+                re.is_match(&out),
+                "{out}\nthe output doesn't math the template"
+            );
+            sz *= 10;
+            buf.clear();
+        }
+
+        let mut check = |size: u64, expect: &str| {
+            print_size(&mut buf, size).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+            assert!(
+                out.contains(expect),
+                "{out}\nthe output doesn't math the template"
+            );
+            buf.clear();
+        };
+
+        check(0, "0B");
+        check(1025, "1.0K");
+        check(6505537, "6.2M");
+    }
+
+    #[test]
+    fn test_print_time() {
+        let re = regex::Regex::new(r"^\s+\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}").unwrap();
+        let mut buf = Vec::new();
+
+        let mut check = |timestamp| {
+            print_time(&mut buf, timestamp).unwrap();
+            let out = String::from_utf8_lossy(&buf);
+            assert!(
+                re.is_match(&out),
+                "{out}\nthe output doesn't math the template"
+            );
+            buf.clear();
+        };
+
+        check(0x00000000_00000000);
     }
 }
