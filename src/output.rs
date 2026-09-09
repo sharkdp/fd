@@ -72,10 +72,7 @@ fn print_entry_format<W: Write>(
     config: &Config,
     format: &FormatTemplate,
 ) -> io::Result<()> {
-    let output = format.generate(
-        entry.stripped_path(config),
-        config.path_separator.as_deref(),
-    );
+    let output = format.generate(entry, config);
     // TODO: support writing raw bytes on unix?
     let s = output.to_string_lossy();
     write!(
