@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::anyhow;
+use clap::builder::Styles;
+use clap::builder::styling::{AnsiColor, Effects};
 use clap::{
     Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
     value_parser,
@@ -18,6 +20,12 @@ use crate::filesystem;
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
+const STYLES: Styles = Styles::styled()
+    .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
+    .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
+    .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
+    .placeholder(AnsiColor::Cyan.on_default());
+
 #[derive(Parser)]
 #[command(
     name = "fd",
@@ -28,6 +36,7 @@ use crate::filter::SizeFilter;
     args_override_self = true,
     group(ArgGroup::new("execs").args(&["exec", "exec_batch", "list_details"]).conflicts_with_all(&[
             "max_results", "quiet", "max_one_result"])),
+    styles = STYLES,
 )]
 pub struct Opts {
     /// Include hidden directories and files in the search results (default:
