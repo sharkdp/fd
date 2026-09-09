@@ -146,6 +146,8 @@ struct ReceiverBuffer<'a, W> {
     buffer: Vec<DirEntry>,
     /// Result count.
     num_results: usize,
+    /// Whether a filesystem/traversal error (e.g. `WorkerResult::Error`) was encountered.
+    had_filesystem_error: bool,
 }
 
 impl<'a, W: Write> ReceiverBuffer<'a, W> {
@@ -167,6 +169,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             deadline,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
+            had_filesystem_error: false,
         }
     }
 
@@ -225,6 +228,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             }
                         }
                         WorkerResult::Error(err) => {
+                            self.had_filesystem_error = true;
                             if self.config.show_filesystem_errors {
                                 print_error(err.to_string());
                             }
@@ -285,7 +289,15 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             self.stream()?;
         }
 
-        if self.config.quiet {
+        // A filesystem/traversal error (e.g. a path exceeding PATH_MAX) means the search
+        // was incomplete, even if it otherwise finished normally. Surface that as a
+        // non-zero exit code instead of silently reporting success, mirroring the
+        // behavior of GNU find. This takes priority over the `--quiet` exit status,
+        // since an incomplete search shouldn't be reported the same as a complete one
+        // with no results.
+        if self.had_filesystem_error {
+            Err(ExitCode::GeneralError)
+        } else if self.config.quiet {
             Err(ExitCode::HasResults(self.num_results > 0))
         } else {
             Err(ExitCode::Success)
