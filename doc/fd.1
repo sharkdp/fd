@@ -448,13 +448,13 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
-This option can be specified multiple times, in which case all commands are run for each
-file found, in the order they are provided. In that case, you must supply a ';' argument for
-all but the last commands.
+This option can be specified multiple times. Commands for the same search result run sequentially
+in the order they are given. In that case, you must supply a ';' argument for all but the last command.
+When running in parallel, fd buffers command output and prints it together for each search result,
+without interleaving it with command output for other results.
 
-If parallelism is enabled, the order commands will be executed in is non-deterministic. And even with
---threads=1, the order is determined by the operating system and may not be what you expect. Thus, it is
-recommended that you don't rely on any ordering of the results.
+The order in which different search results are processed and their output is printed is not
+guaranteed, even with --threads=1.
 
 Before executing the command, any placeholder patterns in the command are replaced with the
 corresponding values for the current file. The same placeholders are used as in the "\-\-format"
