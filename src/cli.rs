@@ -894,10 +894,14 @@ impl clap::Args for Exec {
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
-                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
+                     The order in which different search results are processed and their output is printed is not guaranteed, even with --threads=1. \
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
                      It is therefore recommended to place the '-x'/'--exec' option last. \
-                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\
+                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\n\
+                     This option can be specified multiple times. Commands for the same search result run sequentially in the order they are given. \
+                     Terminate each command except the last with '\\;'. \
+                     When running in parallel, fd buffers command output and prints it together for each search result, \
+                     without interleaving it with command output for other results.\n\n\
                      The following placeholders are substituted before the command is executed:\n  \
                        '{}':   path (of the current search result)\n  \
                        '{/}':  basename\n  \
