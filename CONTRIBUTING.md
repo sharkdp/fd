@@ -45,6 +45,55 @@ Entries follow this format:
 Here, `#123` is the number of the original issue and/or your pull request.
 Please replace `@user` by your GitHub username.
 
+## `--format` and metadata output
+
+The `--format` option formats each search result using a template. Path placeholders are:
+
+| Placeholder | Meaning |
+| --- | --- |
+| `{}` | Full path of the search result |
+| `{/}` | File name (basename) |
+| `{//}` | Parent directory |
+| `{.}` | Full path without the extension |
+| `{/.}` | File name without the extension |
+
+Metadata placeholders are:
+
+| Placeholder | Meaning |
+| --- | --- |
+| `%y` | File type: `file`, `dir`, `symlink`, or `other` |
+| `%s` | File size in bytes |
+| `%n` | File name (basename) |
+| `%p` | File path |
+| `%t` | Last modification time as `YYYY-MM-DD HH:MM:SS` with the local timezone |
+
+Literal escapes in `--format` are interpreted as follows: `\\t` is a tab, `\\n` is a newline,
+`\\r` is a carriage return, `\\0` is NUL, and `\\\\` is a literal backslash. The short `%`
+placeholders are only interpreted by `--format`; they remain literal in `--exec` and
+`--exec-batch`.
+
+For a readable standard table, use:
+
+```bash
+fd --format-metadata pattern
+```
+
+This prints a header and one row per result:
+
+```text
+Type | Size | Name | Path | Modified
+file | 10376 bytes | exit.exe | target/.../exit.exe | 2026-09-10 14:35:27 CEST
+```
+
+For a custom layout, use:
+
+```bash
+fd --format='%y | %s bytes | %n | %p | %t' pattern
+```
+
+When changing this behavior, update the CLI help in `src/cli.rs`, the user-facing examples in
+`README.md`, tests in `src/fmt/mod.rs` and `tests/tests.rs`, and add a `CHANGELOG.md` entry.
+
 ## Important links
 
   * [Open issues](https://github.com/sharkdp/fd/issues)

@@ -478,6 +478,17 @@ pub struct Opts {
     ///   '{//}': parent directory
     ///   '{.}': path without file extension
     ///   '{/.}': basename without file extension
+    ///   '%y': file type (file, dir, symlink, or other)
+    ///   '%s': file size in bytes
+    ///   '%n': file name (basename)
+    ///   '%p': file path
+    ///   '%t': last modification time as YYYY-MM-DD HH:MM:SS timezone
+    ///
+    /// Use '--format-metadata' for the default layout with a header:
+    ///   Type | Size | Name | Path | Modified
+    ///
+    /// Literal text, including separators such as tabs (\\t), can be placed between placeholders.
+    /// Example: --format='%y\\t%s\\t%n\\t%p\\t%t'
     #[arg(
         long,
         value_name = "fmt",
@@ -486,6 +497,15 @@ pub struct Opts {
         allow_hyphen_values = true
     )]
     pub format: Option<String>,
+
+    /// Print type, size, name, path, and modification time as readable fields.
+    #[arg(
+        long = "format-metadata",
+        conflicts_with = "list_details",
+        conflicts_with = "format",
+        help = "Print file metadata as readable fields"
+    )]
+    pub format_metadata: bool,
 
     #[command(flatten)]
     pub exec: Exec,
