@@ -6,8 +6,8 @@ use std::fmt::Write;
 /// True for any char that is neither printable nor permitted whitespace (only HT).
 /// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
 #[inline]
-fn needs_escape(c: char) -> bool {
-    if c == '\t' {
+fn needs_escape(c: char, keep_newline: bool) -> bool {
+    if c == '\t' || (keep_newline && c == '\n') {
         return false;
     }
     c.is_control()
@@ -23,15 +23,13 @@ fn needs_escape(c: char) -> bool {
         )
 }
 
-/// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
-/// escaped copy. Use this when an owned `&str`/`String` is required (e.g. ANSI paint).
-pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
-    if !s.chars().any(needs_escape) {
+fn sanitize_inner(s: &str, keep_newline: bool) -> Cow<'_, str> {
+    if !s.chars().any(|c| needs_escape(c, keep_newline)) {
         return Cow::Borrowed(s);
     }
     let mut out = String::with_capacity(s.len());
     for c in s.chars() {
-        if needs_escape(c) {
+        if needs_escape(c, keep_newline) {
             let v = c as u32;
             if v <= 0xFF {
                 let _ = write!(out, "\\x{v:02X}");
@@ -43,6 +41,20 @@ pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
         }
     }
     Cow::Owned(out)
+}
+
+/// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
+/// escaped copy. Use this when an owned `&str`/`String` is required (e.g. ANSI paint).
+pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
+    sanitize_inner(s, false)
+}
+
+/// Like [`sanitize_for_terminal`], but keeps newlines intact.
+///
+/// Error messages are often multi-line; newlines are safe for a terminal, while
+/// every other control and format character is still escaped.
+pub fn sanitize_for_terminal_except_newline(s: &str) -> Cow<'_, str> {
+    sanitize_inner(s, true)
 }
 
 /// Sanitize for terminal output only; raw bytes pass through on pipes/files.
@@ -109,6 +121,31 @@ mod tests {
     #[test]
     fn strips_newline() {
         assert_eq!(sanitize_for_terminal("a\nb"), "a\\x0Ab");
+    }
+
+    #[test]
+    fn except_newline_keeps_newlines() {
+        assert!(matches!(
+            sanitize_for_terminal_except_newline("a\nb"),
+            Cow::Borrowed(_)
+        ));
+        assert_eq!(sanitize_for_terminal_except_newline("a\nb"), "a\nb");
+    }
+
+    #[test]
+    fn except_newline_still_escapes_other_controls() {
+        assert_eq!(
+            sanitize_for_terminal_except_newline("a\x1bb\nc"),
+            "a\\x1Bb\nc"
+        );
+        assert_eq!(
+            sanitize_for_terminal_except_newline("a\0b\nc"),
+            "a\\x00b\nc"
+        );
+        assert_eq!(
+            sanitize_for_terminal_except_newline("A\rFAKE\nOUTPUT"),
+            "A\\x0DFAKE\nOUTPUT"
+        );
     }
 
     #[test]
