@@ -5,7 +5,7 @@ use lscolors::{Indicator, LsColors, Style};
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::fmt::FormatTemplate;
+use crate::fmt::{FormatContext, FormatTemplate};
 use crate::hyperlink::PathUrl;
 use crate::sanitize::maybe_sanitize;
 
@@ -72,10 +72,13 @@ fn print_entry_format<W: Write>(
     config: &Config,
     format: &FormatTemplate,
 ) -> io::Result<()> {
-    let output = format.generate(
-        entry.stripped_path(config),
-        config.path_separator.as_deref(),
-    );
+    let path = entry.stripped_path(config);
+    let metadata = std::fs::symlink_metadata(entry.path())?;
+    let context = FormatContext {
+        path,
+        metadata: Some(&metadata),
+    };
+    let output = format.generate_with_context(context, config.path_separator.as_deref());
     // TODO: support writing raw bytes on unix?
     let s = output.to_string_lossy();
     write!(

@@ -3,8 +3,10 @@ mod input;
 use std::borrow::Cow;
 use std::ffi::{OsStr, OsString};
 use std::fmt::{self, Display, Formatter};
+use std::fs::Metadata;
 use std::path::{Component, Path, Prefix};
-use std::sync::OnceLock;
+
+use jiff::{Timestamp, tz::TimeZone};
 
 use aho_corasick::AhoCorasick;
 
@@ -21,6 +23,11 @@ pub enum Token {
     Parent,
     NoExt,
     BasenameNoExt,
+    Type,
+    Size,
+    Name,
+    Path,
+    Modified,
     Text(String),
 }
 
@@ -32,10 +39,20 @@ impl Display for Token {
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
+            Token::Type => f.write_str("%y")?,
+            Token::Size => f.write_str("%s")?,
+            Token::Name => f.write_str("%n")?,
+            Token::Path => f.write_str("%p")?,
+            Token::Modified => f.write_str("%t")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
     }
+}
+
+pub struct FormatContext<'a> {
+    pub path: &'a Path,
+    pub metadata: Option<&'a Metadata>,
 }
 
 /// A parsed format string
@@ -48,7 +65,32 @@ pub enum FormatTemplate {
     Text(String),
 }
 
-static PLACEHOLDERS: OnceLock<AhoCorasick> = OnceLock::new();
+fn unescape_text(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut chars = text.chars();
+
+    while let Some(ch) = chars.next() {
+        if ch != '\\' {
+            result.push(ch);
+            continue;
+        }
+
+        match chars.next() {
+            Some('t') => result.push('\t'),
+            Some('n') => result.push('\n'),
+            Some('r') => result.push('\r'),
+            Some('0') => result.push('\0'),
+            Some('\\') => result.push('\\'),
+            Some(other) => {
+                result.push('\\');
+                result.push(other);
+            }
+            None => result.push('\\'),
+        }
+    }
+
+    result
+}
 
 impl FormatTemplate {
     pub fn has_tokens(&self) -> bool {
@@ -56,14 +98,27 @@ impl FormatTemplate {
     }
 
     pub fn parse(fmt: &str) -> Self {
+        Self::parse_with_short_placeholders(fmt, true)
+    }
+
+    pub fn parse_exec(fmt: &str) -> Self {
+        Self::parse_with_short_placeholders(fmt, false)
+    }
+
+    fn parse_with_short_placeholders(fmt: &str, include_short_placeholders: bool) -> Self {
         // NOTE: we assume that { and } have the same length
         const BRACE_LEN: usize = '{'.len_utf8();
         let mut tokens = Vec::new();
         let mut remaining = fmt;
         let mut buf = String::new();
-        let placeholders = PLACEHOLDERS.get_or_init(|| {
-            AhoCorasick::new(["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]).unwrap()
-        });
+        let patterns = if include_short_placeholders {
+            vec![
+                "{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "%y", "%s", "%n", "%p", "%t",
+            ]
+        } else {
+            vec!["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]
+        };
+        let placeholders = AhoCorasick::new(patterns).unwrap();
         while let Some(m) = placeholders.find(remaining) {
             match m.pattern().as_u32() {
                 0 | 1 => {
@@ -96,22 +151,57 @@ impl FormatTemplate {
         }
         if tokens.is_empty() {
             // No placeholders were found, so just return the text
-            return FormatTemplate::Text(buf);
+            return FormatTemplate::Text(unescape_text(&buf));
         }
         // Add final text segment
         if !buf.is_empty() {
-            tokens.push(Token::Text(buf));
+            tokens.push(Token::Text(unescape_text(&buf)));
         }
         debug_assert!(!tokens.is_empty());
         FormatTemplate::Tokens(tokens)
+    }
+
+    fn file_type(metadata: Option<&Metadata>) -> &'static str {
+        let Some(metadata) = metadata else {
+            return "unknown";
+        };
+
+        let file_type = metadata.file_type();
+
+        if file_type.is_symlink() {
+            "symlink"
+        } else if file_type.is_dir() {
+            "dir"
+        } else if file_type.is_file() {
+            "file"
+        } else {
+            "other"
+        }
     }
 
     /// Generate a result string from this template. If path_separator is Some, then it will replace
     /// the path separator in all placeholder tokens. Fixed text and tokens are not affected by
     /// path separator substitution.
     pub fn generate(&self, path: impl AsRef<Path>, path_separator: Option<&str>) -> OsString {
-        use Token::*;
         let path = path.as_ref();
+        let metadata = std::fs::symlink_metadata(path).ok();
+        self.generate_with_context(
+            FormatContext {
+                path,
+                metadata: metadata.as_ref(),
+            },
+            path_separator,
+        )
+    }
+
+    pub fn generate_with_context(
+        &self,
+        context: FormatContext<'_>,
+        path_separator: Option<&str>,
+    ) -> OsString {
+        use Token::*;
+        let path = context.path;
+        let metadata = context.metadata;
 
         match *self {
             Self::Tokens(ref tokens) => {
@@ -132,6 +222,25 @@ impl FormatTemplate {
                             s.push(Self::replace_separator(path.as_ref(), path_separator))
                         }
                         Text(string) => s.push(string),
+                        Type => s.push(Self::file_type(metadata)),
+                        Size => s.push(
+                            metadata
+                                .map_or_else(String::new, |metadata| metadata.len().to_string()),
+                        ),
+                        Name => s.push(Self::replace_separator(basename(path), path_separator)),
+                        Path => s.push(Self::replace_separator(path.as_os_str(), path_separator)),
+                        Modified => s.push(
+                            metadata
+                                .and_then(|metadata| metadata.modified().ok())
+                                .and_then(|modified| Timestamp::try_from(modified).ok())
+                                .map(|timestamp| {
+                                    timestamp
+                                        .to_zoned(TimeZone::system())
+                                        .strftime("%Y-%m-%d %H:%M:%S %Z")
+                                        .to_string()
+                                })
+                                .unwrap_or_default(),
+                        ),
                     }
                 }
                 s
@@ -206,6 +315,11 @@ fn token_from_pattern_id(id: u32) -> Token {
         4 => Parent,
         5 => NoExt,
         6 => BasenameNoExt,
+        7 => Type,
+        8 => Size,
+        9 => Name,
+        10 => Path,
+        11 => Modified,
         _ => unreachable!(),
     }
 }
@@ -230,6 +344,16 @@ mod fmt_tests {
         assert_eq!(
             templ,
             FormatTemplate::Text("This string only has escapes like { and }".into())
+        );
+    }
+
+    #[test]
+    fn parse_short_placeholders() {
+        use Token::*;
+
+        assert_eq!(
+            FormatTemplate::parse("%y%s%n%p%t"),
+            FormatTemplate::Tokens(vec![Type, Size, Name, Path, Modified])
         );
     }
 

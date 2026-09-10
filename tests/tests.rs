@@ -1756,6 +1756,19 @@ fn format() {
         parent=one/two/three",
     );
 
+    let output = te.assert_success_and_get_output(
+        "foo",
+        &[
+            "--format",
+            "%y\\t%s\\t%n\\t%p\\t%t",
+            "--path-separator",
+            "/",
+        ],
+    );
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        assert_eq!(line.split('\t').count(), 5);
+    }
+
     // Templates may start with '-' (e.g. markdown list items); see #2126.
     te.assert_output(
         &["foo", "--format", "- {/.}", "--path-separator=/"],

@@ -374,7 +374,12 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         format: opts
             .format
             .as_deref()
-            .map(crate::fmt::FormatTemplate::parse),
+            .map(crate::fmt::FormatTemplate::parse)
+            .or_else(|| {
+                opts.format_metadata
+                    .then(|| crate::fmt::FormatTemplate::parse("%y | %s bytes | %n | %p | %t"))
+            }),
+        format_metadata: opts.format_metadata,
         command: command.map(Arc::new),
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),

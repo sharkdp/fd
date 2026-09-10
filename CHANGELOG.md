@@ -1,4 +1,8 @@
-# Upcoming Release
+## Upcoming Release
+
+### Features
+
+- Add metadata placeholders and readable table output for `--format` via `--format-metadata`.
 
 ## Features
 -
