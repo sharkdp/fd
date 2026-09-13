@@ -1760,7 +1760,7 @@ fn format() {
         "foo",
         &[
             "--format",
-            "%y\\t%s\\t%n\\t%p\\t%t",
+            "{%y}\\t{%s}\\t{%n}\\t{%p}\\t{%t}",
             "--path-separator",
             "/",
         ],

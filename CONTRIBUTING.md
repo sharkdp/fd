@@ -61,16 +61,19 @@ Metadata placeholders are:
 
 | Placeholder | Meaning |
 | --- | --- |
-| `%y` | File type: `file`, `dir`, `symlink`, or `other` |
-| `%s` | File size in bytes |
-| `%n` | File name (basename) |
-| `%p` | File path |
-| `%t` | Last modification time as `YYYY-MM-DD HH:MM:SS` with the local timezone |
+| `{%y}` | File type: `file`, `dir`, `symlink`, or `other` |
+| `{%s}` | File size in bytes |
+| `{%n}` | File name (basename) |
+| `{%p}` | File path |
+| `{%t}` | Last modification time as `YYYY-MM-DD HH:MM:SS` with the local timezone |
 
 Literal escapes in `--format` are interpreted as follows: `\\t` is a tab, `\\n` is a newline,
-`\\r` is a carriage return, `\\0` is NUL, and `\\\\` is a literal backslash. The short `%`
-placeholders are only interpreted by `--format`; they remain literal in `--exec` and
-`--exec-batch`.
+`\\r` is a carriage return, `\\0` is NUL, and `\\\\` is a literal backslash. Use `{{` and `}}`
+for literal `{` and `}`. The `%` placeholders are only interpreted inside the `{...}`
+tokens by `--format`; they remain literal in `--exec` and `--exec-batch`.
+
+For clean output containing just the file name and size, use
+`fd --format='{%n} {%s} bytes' pattern`.
 
 For a readable standard table, use:
 
@@ -88,7 +91,14 @@ file | 10376 bytes | exit.exe | target/.../exit.exe | 2026-09-10 14:35:27 CEST
 For a custom layout, use:
 
 ```bash
-fd --format='%y | %s bytes | %n | %p | %t' pattern
+fd --format='{%y} | {%s} bytes | {%n} | {%p} | {%t}' pattern
+```
+
+`--format-metadata` can be combined with `--format` to keep the standard
+header while supplying a custom row layout:
+
+```bash
+fd --format-metadata --format='{%y} | {%s} bytes | {%n} | {%p} | {%t}' pattern
 ```
 
 When changing this behavior, update the CLI help in `src/cli.rs`, the user-facing examples in

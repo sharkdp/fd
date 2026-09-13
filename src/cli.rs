@@ -478,17 +478,20 @@ pub struct Opts {
     ///   '{//}': parent directory
     ///   '{.}': path without file extension
     ///   '{/.}': basename without file extension
-    ///   '%y': file type (file, dir, symlink, or other)
-    ///   '%s': file size in bytes
-    ///   '%n': file name (basename)
-    ///   '%p': file path
-    ///   '%t': last modification time as YYYY-MM-DD HH:MM:SS timezone
+    ///   '{%y}': file type (file, dir, symlink, or other)
+    ///   '{%s}': file size in bytes
+    ///   '{%n}': file name (basename)
+    ///   '{%p}': file path
+    ///   '{%t}': last modification time as YYYY-MM-DD HH:MM:SS timezone
     ///
-    /// Use '--format-metadata' for the default layout with a header:
+    /// Use '{{' and '}}' for literal braces.
+    ///
+    /// Use '--format-metadata' for the default layout with a header. It can also be
+    /// combined with '--format' to keep the header and use a custom row layout:
     ///   Type | Size | Name | Path | Modified
     ///
     /// Literal text, including separators such as tabs (\\t), can be placed between placeholders.
-    /// Example: --format='%y\\t%s\\t%n\\t%p\\t%t'
+    /// Example: --format='{%y}\\t{%s}\\t{%n}\\t{%p}\\t{%t}'
     #[arg(
         long,
         value_name = "fmt",
@@ -502,7 +505,6 @@ pub struct Opts {
     #[arg(
         long = "format-metadata",
         conflicts_with = "list_details",
-        conflicts_with = "format",
         help = "Print file metadata as readable fields"
     )]
     pub format_metadata: bool,

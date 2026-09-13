@@ -376,8 +376,9 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
             .as_deref()
             .map(crate::fmt::FormatTemplate::parse)
             .or_else(|| {
-                opts.format_metadata
-                    .then(|| crate::fmt::FormatTemplate::parse("%y | %s bytes | %n | %p | %t"))
+                opts.format_metadata.then(|| {
+                    crate::fmt::FormatTemplate::parse("{%y} | {%s} bytes | {%n} | {%p} | {%t}")
+                })
             }),
         format_metadata: opts.format_metadata,
         command: command.map(Arc::new),

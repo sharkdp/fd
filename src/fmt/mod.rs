@@ -39,11 +39,11 @@ impl Display for Token {
             Token::Parent => f.write_str("{//}")?,
             Token::NoExt => f.write_str("{.}")?,
             Token::BasenameNoExt => f.write_str("{/.}")?,
-            Token::Type => f.write_str("%y")?,
-            Token::Size => f.write_str("%s")?,
-            Token::Name => f.write_str("%n")?,
-            Token::Path => f.write_str("%p")?,
-            Token::Modified => f.write_str("%t")?,
+            Token::Type => f.write_str("{%y}")?,
+            Token::Size => f.write_str("{%s}")?,
+            Token::Name => f.write_str("{%n}")?,
+            Token::Path => f.write_str("{%p}")?,
+            Token::Modified => f.write_str("{%t}")?,
             Token::Text(ref string) => f.write_str(string)?,
         }
         Ok(())
@@ -113,7 +113,8 @@ impl FormatTemplate {
         let mut buf = String::new();
         let patterns = if include_short_placeholders {
             vec![
-                "{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "%y", "%s", "%n", "%p", "%t",
+                "{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}", "{%y}", "{%s}", "{%n}", "{%p}",
+                "{%t}",
             ]
         } else {
             vec!["{{", "}}", "{}", "{/}", "{//}", "{.}", "{/.}"]
@@ -352,7 +353,7 @@ mod fmt_tests {
         use Token::*;
 
         assert_eq!(
-            FormatTemplate::parse("%y%s%n%p%t"),
+            FormatTemplate::parse("{%y}{%s}{%n}{%p}{%t}"),
             FormatTemplate::Tokens(vec![Type, Size, Name, Path, Modified])
         );
     }

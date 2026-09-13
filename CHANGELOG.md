@@ -3,6 +3,8 @@
 ### Features
 
 - Add metadata placeholders and readable table output for `--format` via `--format-metadata`.
+  `--format-metadata` can be combined with `--format` for a standard header and custom rows.
+  feature-request #2131
 
 ## Features
 -

@@ -248,11 +248,11 @@ readable default layout `Type | Size | Name | Path | Modified` and prints a head
 | `{//}` | Parent directory |
 | `{.}` | Full path without the file extension |
 | `{/.}` | File name without the extension |
-| `%y` | File type: `file`, `dir`, `symlink`, or `other` |
-| `%s` | File size in bytes |
-| `%n` | File name (basename) |
-| `%p` | File path |
-| `%t` | Last modification time as `YYYY-MM-DD HH:MM:SS` with timezone |
+| `{%y}` | File type: `file`, `dir`, `symlink`, or `other` |
+| `{%s}` | File size in bytes |
+| `{%n}` | File name (basename) |
+| `{%p}` | File path |
+| `{%t}` | Last modification time as `YYYY-MM-DD HH:MM:SS` with timezone |
 
 Place literal separators between placeholders. For example, this prints tab-separated values:
 
@@ -270,12 +270,20 @@ file | 10376 bytes | exit.exe | target/.../exit.exe | 2026-09-10 14:35:27 CEST
 For a custom layout, use `--format`:
 
 ```bash
-fd --format='%y | %s bytes | %n | %p | %t' pattern
+fd --format='{%y} | {%s} bytes | {%n} | {%p} | {%t}' pattern
 ```
 
+Use `--format-metadata` together with `--format` when you want the standard
+metadata header and a custom row layout:
 
-The `%` placeholders are only interpreted by `--format`. They remain literal text in
-`--exec` and `--exec-batch`, so commands such as `fd -x printf '%s\\n'` continue to work.
+```bash
+fd --format-metadata --format='{%y} | {%s} bytes | {%n} | {%p} | {%t}' pattern
+```
+
+The `%` placeholders are interpreted only inside `{...}` tokens by `--format`. They remain
+literal text in `--exec` and `--exec-batch`, so commands such as `fd -x printf '%s\\n'`
+continue to work. Use `{{` and `}}` only when literal braces are needed. For a clean output containing
+just the file name and size, use `fd --format='{%n} {%s} bytes' pattern`.
 
 #### Parallel vs. serial execution
 
