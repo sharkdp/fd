@@ -554,7 +554,7 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_thread_count)]
     pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
@@ -787,6 +787,21 @@ impl Opts {
 }
 
 /// Get the default number of threads to use, if not explicitly specified.
+/// Custom value parser for `--threads` / `-j`.
+///
+/// Rejects values that would cause `2 * N` to overflow `usize`, which would otherwise
+/// produce a panic inside `crossbeam_channel::bounded(2 * config.threads)` in walk.rs.
+fn parse_thread_count(s: &str) -> Result<NonZeroUsize, String> {
+    let n: NonZeroUsize = s
+        .parse()
+        .map_err(|_| format!("'{s}' is not a valid number of threads"))?;
+    // walk.rs creates a bounded channel with capacity `2 * threads`; guard against overflow.
+    n.get()
+        .checked_mul(2)
+        .ok_or_else(|| format!("{n} threads would overflow the channel capacity"))?;
+    Ok(n)
+}
+
 fn default_num_threads() -> NonZeroUsize {
     // If we can't get the amount of parallelism for some reason, then
     // default to a single thread, because that is safe.
