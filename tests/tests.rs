@@ -2670,6 +2670,8 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=a"]);
     te.assert_failure(&["-j", ""]);
     te.assert_failure(&["--threads=0"]);
+    // Values where 2 * N overflows usize must be rejected cleanly (no panic).
+    te.assert_failure(&[&format!("--threads={}", usize::MAX)]);
 
     te.assert_failure(&["--min-depth=a"]);
     te.assert_failure(&["--mindepth=a"]);
