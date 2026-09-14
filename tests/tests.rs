@@ -345,7 +345,7 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["a.foo", "real", "fake"],
-        "[fd error]: Search path 'fake' is not a directory.",
+        "[fd error]: Search path \"fake\" is not a directory.",
     );
 
     te.assert_output(
@@ -362,14 +362,14 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["", "real", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.",
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.",
     );
 
     te.assert_failure_with_error(
         &["", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.
         [fd error]: No valid search paths given.",
     );
 }
@@ -2886,4 +2886,34 @@ fn test_ignore_contain_precedence_over_root_check() {
     let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}
+
+// The error message is probably OS-specific.
+// This is also somewhat fragile as it depends on the error message
+// from creating an executable, and the debug formatting of strings
+// could possibly change in the future.
+#[cfg(unix)]
+#[test]
+fn test_sanitize_exec_error_msg() {
+    let mut te = TestEnv::new(&[], &[]);
+    te.create_broken_symlink("Hello\x1b\r World!\x7fwith\u{9b}\u{1F600}\u{200B}a\u{FEFF}b")
+        .expect("failed to create symlink");
+
+    te.assert_error(&["Hello", "--exec", "{}"], 
+        "[fd error]: Command not found: \"./Hello\\u{1b}\\r World!\\u{7f}with\\u{9b}\u{1F600}\\u{200b}a\\u{feff}b\""
+        );
+}
+
+// Windows doesn't let us make files containing \x1b so only test on unix
+#[cfg(unix)]
+#[test]
+fn test_sanitize_recursive_link_msg() {
+    let mut te = TestEnv::new(&["loop"], &[]);
+    te.create_symlink("loop", "loop/foo\x1bb")
+        .expect("failed to create symlink");
+
+    te.assert_error(
+        &["--follow", "--show-errors", "foo"],
+        "[fd error]: File system loop found: ./loop/foo\\x1Bb points to an ancestor ./loop",
+    );
 }
