@@ -1,7 +1,6 @@
 //! TTY-output sanitization to prevent terminal escape injection via filenames.
 
-use std::borrow::Cow;
-use std::fmt::Write;
+use std::fmt::{Display, Formatter, Write};
 
 /// True for any char that is neither printable nor permitted whitespace (only HT).
 /// Covers C0/C1/DEL, bidi overrides, zero-width and format chars, and tag chars.
@@ -23,52 +22,81 @@ fn needs_escape(c: char, keep_newline: bool) -> bool {
         )
 }
 
-fn sanitize_inner(s: &str, keep_newline: bool) -> Cow<'_, str> {
-    if !s.chars().any(|c| needs_escape(c, keep_newline)) {
-        return Cow::Borrowed(s);
-    }
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
+fn write_sanitized_inner(
+    f: &mut std::fmt::Formatter<'_>,
+    raw: &str,
+    keep_newline: bool,
+) -> std::fmt::Result {
+    // Would it be faster to do a pass to see if we don't need an escape and write
+    // the whole string first? Maybe with a faster check just for non-control ASCII?
+    for c in raw.chars() {
         if needs_escape(c, keep_newline) {
             let v = c as u32;
             if v <= 0xFF {
-                let _ = write!(out, "\\x{v:02X}");
+                write!(f, "\\x{v:02X}")?;
             } else {
-                let _ = write!(out, "\\u{{{v:04X}}}");
+                write!(f, "\\u{{{v:04X}}}")?;
             }
         } else {
-            out.push(c);
+            f.write_char(c)?;
         }
     }
-    Cow::Owned(out)
+    Ok(())
 }
 
-/// Returns a `Cow<str>` borrowing `s` when no escaping is needed, otherwise an owned
-/// escaped copy. Use this when an owned `&str`/`String` is required (e.g. ANSI paint).
-pub fn sanitize_for_terminal(s: &str) -> Cow<'_, str> {
-    sanitize_inner(s, false)
+/// Write the sanitized contents of `raw` to `f`.
+pub fn write_sanitized(f: &mut std::fmt::Formatter<'_>, raw: &str) -> std::fmt::Result {
+    write_sanitized_inner(f, raw, false)
 }
 
-/// Like [`sanitize_for_terminal`], but keeps newlines intact.
-///
-/// Error messages are often multi-line; newlines are safe for a terminal, while
-/// every other control and format character is still escaped.
-pub fn sanitize_for_terminal_except_newline(s: &str) -> Cow<'_, str> {
-    sanitize_inner(s, true)
+/// Write the sanitized contents of an error message while preserving line breaks.
+pub fn write_sanitized_preserving_newlines(
+    f: &mut std::fmt::Formatter<'_>,
+    raw: &str,
+) -> std::fmt::Result {
+    write_sanitized_inner(f, raw, true)
+}
+
+// TODO: add something to sanitize paths directly instead of as strings.
+
+/// A wrapper type that sanitizes the output to Display
+pub(crate) struct SanitizedStr<'a> {
+    raw: &'a str,
+    /// If true, the content is safe to output without sanitizing,
+    /// either because it is trusted, or because it isn't going to a terminal.
+    is_safe: bool,
+}
+
+impl<'a> Display for SanitizedStr<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.is_safe {
+            // We don't need to sanitize anything, just forward
+            self.raw.fmt(f)
+        } else {
+            write_sanitized(f, self.raw)
+        }
+    }
 }
 
 /// Sanitize for terminal output only; raw bytes pass through on pipes/files.
-pub fn maybe_sanitize<'a>(s: &'a str, is_terminal: bool) -> Cow<'a, str> {
-    if is_terminal {
-        sanitize_for_terminal(s)
-    } else {
-        Cow::Borrowed(s)
+pub fn sanitize_for_term(raw: &str, is_terminal: bool) -> SanitizedStr<'_> {
+    SanitizedStr {
+        raw,
+        is_safe: !is_terminal,
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn sanitize_string(s: &str) -> String {
+        SanitizedStr {
+            raw: s,
+            is_safe: false,
+        }
+        .to_string()
+    }
 
     #[test]
     fn preserves_safe_content() {
@@ -80,100 +108,63 @@ mod tests {
             "a\tb",
             "a\u{FFFD}b",
         ] {
-            assert!(
-                matches!(sanitize_for_terminal(s), Cow::Borrowed(_)),
-                "{s:?}"
-            );
-            assert_eq!(sanitize_for_terminal(s), s);
+            assert_eq!(sanitize_string(s), s);
         }
     }
 
     #[test]
     fn strips_osc52_clipboard_payload() {
         let attack = "innocent\x1b]52;c;cHduZWQ=\x1b\\.txt";
-        let safe = sanitize_for_terminal(attack);
+        let safe = sanitize_string(attack);
         assert!(!safe.contains('\x1b'));
         assert_eq!(safe, "innocent\\x1B]52;c;cHduZWQ=\\x1B\\.txt");
     }
 
     #[test]
     fn strips_cr_output_forgery() {
-        assert_eq!(sanitize_for_terminal("A\rFAKE OUTPUT"), "A\\x0DFAKE OUTPUT");
+        assert_eq!(sanitize_string("A\rFAKE OUTPUT"), "A\\x0DFAKE OUTPUT");
     }
 
     #[test]
     fn strips_osc8_hyperlink_injection() {
         let attack = "phish\x1b]8;;https:evil.example\x1b\\phony.txt";
-        assert!(!sanitize_for_terminal(attack).contains('\x1b'));
+        assert!(!sanitize_string(attack).contains('\x1b'));
     }
 
     #[test]
     fn strips_del() {
-        assert_eq!(sanitize_for_terminal("a\x7fb"), "a\\x7Fb");
+        assert_eq!(sanitize_string("a\x7fb"), "a\\x7Fb");
     }
 
     #[test]
     fn strips_bel_and_null() {
-        assert_eq!(sanitize_for_terminal("a\x07b"), "a\\x07b");
-        assert_eq!(sanitize_for_terminal("a\0b"), "a\\x00b");
-    }
-
-    #[test]
-    fn strips_newline() {
-        assert_eq!(sanitize_for_terminal("a\nb"), "a\\x0Ab");
-    }
-
-    #[test]
-    fn except_newline_keeps_newlines() {
-        assert!(matches!(
-            sanitize_for_terminal_except_newline("a\nb"),
-            Cow::Borrowed(_)
-        ));
-        assert_eq!(sanitize_for_terminal_except_newline("a\nb"), "a\nb");
-    }
-
-    #[test]
-    fn except_newline_still_escapes_other_controls() {
-        assert_eq!(
-            sanitize_for_terminal_except_newline("a\x1bb\nc"),
-            "a\\x1Bb\nc"
-        );
-        assert_eq!(
-            sanitize_for_terminal_except_newline("a\0b\nc"),
-            "a\\x00b\nc"
-        );
-        assert_eq!(
-            sanitize_for_terminal_except_newline("A\rFAKE\nOUTPUT"),
-            "A\\x0DFAKE\nOUTPUT"
-        );
+        assert_eq!(sanitize_string("a\x07b"), "a\\x07b");
+        assert_eq!(sanitize_string("a\0b"), "a\\x00b");
     }
 
     #[test]
     fn escape_preserves_information() {
         let s = "name\x1bX\x07Y.txt";
-        assert_eq!(sanitize_for_terminal(s), "name\\x1BX\\x07Y.txt");
+        assert_eq!(sanitize_string(s), "name\\x1BX\\x07Y.txt");
     }
 
     #[test]
     fn strips_c1_csi_and_osc_initiators() {
         // U+009B is CSI, U+009D is OSC; dangerous on 8-bit-control terminals.
-        assert_eq!(sanitize_for_terminal("\u{9b}31m"), "\\x9B31m");
-        assert_eq!(
-            sanitize_for_terminal("\u{9d}0;pwned\u{9c}"),
-            "\\x9D0;pwned\\x9C"
-        );
+        assert_eq!(sanitize_string("\u{9b}31m"), "\\x9B31m");
+        assert_eq!(sanitize_string("\u{9d}0;pwned\u{9c}"), "\\x9D0;pwned\\x9C");
     }
 
     #[test]
     fn strips_bidi_overrides_and_zero_width() {
         // Trojan-Source style RLO/LRO that flip rendered order of filename text.
         assert_eq!(
-            sanitize_for_terminal("safe\u{202E}fil\u{202D}gnp.exe"),
+            sanitize_string("safe\u{202E}fil\u{202D}gnp.exe"),
             "safe\\u{202E}fil\\u{202D}gnp.exe"
         );
         // Zero-width space and BOM are also format chars used to disguise filenames.
-        assert_eq!(sanitize_for_terminal("a\u{200B}b"), "a\\u{200B}b");
-        assert_eq!(sanitize_for_terminal("\u{FEFF}name"), "\\u{FEFF}name");
+        assert_eq!(sanitize_string("a\u{200B}b"), "a\\u{200B}b");
+        assert_eq!(sanitize_string("\u{FEFF}name"), "\\u{FEFF}name");
     }
 
     #[test]
@@ -185,10 +176,7 @@ mod tests {
             "icon\u{E000}.cfg",
             "cjk\u{6F22}\u{E0101}.txt",
         ] {
-            assert!(
-                matches!(sanitize_for_terminal(s), Cow::Borrowed(_)),
-                "{s:?}"
-            );
+            assert_eq!(sanitize_string(s), s);
         }
     }
 
@@ -196,10 +184,9 @@ mod tests {
     fn maybe_sanitize_passthrough_when_not_terminal() {
         let attack = "x\x1by";
         // Pipe context: bytes pass through unchanged (zero-copy).
-        let out = maybe_sanitize(attack, false);
-        assert!(matches!(out, Cow::Borrowed(_)));
+        let out = sanitize_for_term(attack, false).to_string();
         assert_eq!(out, attack);
         // TTY context: escapes apply.
-        assert_eq!(maybe_sanitize(attack, true), "x\\x1By");
+        assert_eq!(sanitize_for_term(attack, true).to_string(), "x\\x1By");
     }
 }

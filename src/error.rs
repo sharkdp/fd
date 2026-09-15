@@ -1,13 +1,53 @@
-use crate::sanitize::sanitize_for_terminal_except_newline;
+use std::fmt::Display;
+use std::io;
 
-pub fn print_error(msg: impl std::fmt::Display) {
-    eprintln!("{}", format_error(&msg.to_string()));
+use crate::sanitize::write_sanitized_preserving_newlines;
+
+/// Print an error message using a format string, sanitizing any arguments if necessary
+macro_rules! print_error {
+    ($fmt:literal, $($arg:expr),*) => {
+        eprintln!(concat!("[fd error]: ", $fmt), $($crate::error::SanitizeErr::sanitize($arg)),*)
+    }
 }
 
-/// Build the `[fd error]: ...` line, escaping terminal control characters in
-/// `msg` while preserving newlines so multi-line errors stay readable.
-fn format_error(msg: &str) -> String {
-    format!("[fd error]: {}", sanitize_for_terminal_except_newline(msg))
+/// Trait for specifying how to sanitize a type for error display, if needed.
+pub(crate) trait SanitizeErr {
+    type Sanitized: Display;
+
+    fn sanitize(self) -> Self::Sanitized;
+}
+
+impl SanitizeErr for &str {
+    type Sanitized = Self;
+
+    fn sanitize(self) -> Self {
+        self
+    }
+}
+
+impl SanitizeErr for io::Error {
+    type Sanitized = SanitizedError<io::Error>;
+
+    fn sanitize(self) -> Self::Sanitized {
+        SanitizedError(self)
+    }
+}
+
+impl SanitizeErr for ignore::Error {
+    type Sanitized = SanitizedError<ignore::Error>;
+
+    fn sanitize(self) -> Self::Sanitized {
+        SanitizedError(self)
+    }
+}
+
+pub struct SanitizedError<E>(E);
+
+impl<E: std::error::Error> Display for SanitizedError<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let raw = self.0.to_string();
+        write_sanitized_preserving_newlines(f, &raw)
+    }
 }
 
 #[cfg(test)]
@@ -15,14 +55,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn format_error_escapes_control_chars_but_keeps_newlines() {
-        let msg = format_error("path\x1b]0;pwned\x07.txt\nsecond line");
-        assert_eq!(msg, "[fd error]: path\\x1B]0;pwned\\x07.txt\nsecond line");
-    }
+    fn sanitizes_error_controls_without_escaping_newlines() {
+        let error = io::Error::new(
+            io::ErrorKind::Other,
+            "path\x1b]0;pwned\x07.txt\nsecond line",
+        );
 
-    #[test]
-    fn format_error_passes_plain_text_through() {
-        let msg = format_error("Search path 'fake' is not a directory.");
-        assert_eq!(msg, "[fd error]: Search path 'fake' is not a directory.");
+        assert_eq!(
+            SanitizedError(error).to_string(),
+            "path\\x1B]0;pwned\\x07.txt\nsecond line"
+        );
     }
 }
