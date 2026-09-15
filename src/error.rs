@@ -56,10 +56,7 @@ mod tests {
 
     #[test]
     fn sanitizes_error_controls_without_escaping_newlines() {
-        let error = io::Error::new(
-            io::ErrorKind::Other,
-            "path\x1b]0;pwned\x07.txt\nsecond line",
-        );
+        let error = io::Error::other("path\x1b]0;pwned\x07.txt\nsecond line");
 
         assert_eq!(
             SanitizedError(error).to_string(),
