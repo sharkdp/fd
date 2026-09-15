@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
-version = "10.4.2"
+version = "10.5.0"
 edition= "2024"
 rust-version = "1.90.0"
 
@@ -95,7 +95,7 @@ codegen-units = 1
 use-jemalloc = ["tikv-jemallocator"]
 completions = ["clap_complete"]
 base = ["use-jemalloc"]
-default = ["completions"]
+default = ["use-jemalloc", "completions"]
 
 [package.metadata.binstall]
 pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"

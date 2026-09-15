@@ -1,7 +1,10 @@
+// needs to be first because it defines a macro
+#[macro_use]
+mod error;
+
 mod cli;
 mod config;
 mod dir_entry;
-mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;
@@ -66,7 +69,9 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            crate::error::print_error(format!("{err:#}"));
+            // NB: we use eprintln directly instead of print_error!() because
+            // we sanitize anyhow errors at the generation site
+            eprintln!("[fd error]: {:#}", err);
             ExitCode::GeneralError.exit();
         }
     }
@@ -132,14 +137,14 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     if let Some(ref base_directory) = opts.base_directory {
         if !filesystem::is_existing_directory(base_directory) {
             return Err(anyhow!(
-                "The '--base-directory' path '{}' is not a directory.",
-                base_directory.to_string_lossy()
+                "The '--base-directory' path {:?} is not a directory.",
+                base_directory.to_string_lossy().as_ref()
             ));
         }
         env::set_current_dir(base_directory).with_context(|| {
             format!(
-                "Could not set '{}' as the current working directory",
-                base_directory.to_string_lossy()
+                "Could not set {:?} as the current working directory",
+                base_directory.to_string_lossy().as_ref()
             )
         })?;
     }

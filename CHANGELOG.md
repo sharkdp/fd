@@ -1,4 +1,14 @@
-# Unreleased
+# Upcoming Release
+
+## Features
+-
+
+## Bugfixes
+- Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
+- Don't incorrectly escape newlines in error messages, see #2104
+- Restore jemalloc as default allocator on supported systems
+
+# 10.5.0
 
 ## Features
 - Add `--ignore-parent` option to override `--no-ignore-parent`, see #1958 (@tmchow)
@@ -13,6 +23,7 @@
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
+- Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
 
 # 10.4.2
 

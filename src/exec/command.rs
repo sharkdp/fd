@@ -3,7 +3,6 @@ use std::io::Write;
 
 use argmax::Command;
 
-use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 
 struct Outputs {
@@ -101,14 +100,14 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
-            print_error(format!(
-                "Command not found: {}",
-                cmd.get_program().to_string_lossy()
-            ));
+            print_error!(
+                "Command not found: {:?}",
+                cmd.get_program().to_string_lossy().as_ref()
+            );
             ExitCode::GeneralError
         }
         (_, err) => {
-            print_error(format!("Problem while executing command: {err}"));
+            print_error!("Problem while executing command: {}", err);
             ExitCode::GeneralError
         }
     }

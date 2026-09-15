@@ -345,7 +345,7 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["a.foo", "real", "fake"],
-        "[fd error]: Search path 'fake' is not a directory.",
+        "[fd error]: Search path \"fake\" is not a directory.",
     );
 
     te.assert_output(
@@ -362,14 +362,14 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["", "real", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.",
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.",
     );
 
     te.assert_failure_with_error(
         &["", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.
         [fd error]: No valid search paths given.",
     );
 }
@@ -1274,7 +1274,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/
             {abs_path}/symlink",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 
@@ -1287,7 +1287,7 @@ fn test_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1306,7 +1306,7 @@ fn test_implicit_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1326,7 +1326,7 @@ fn test_normalized_absolute_path() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1560,7 +1560,7 @@ fn test_symlink_as_root() {
             {dir}/one/two/three/d.foo
             {dir}/one/two/three/directory_foo/
             {dir}/symlink",
-            dir = &parent_parent
+            dir = parent_parent
         ),
     );
 }
@@ -1580,7 +1580,7 @@ fn test_symlink_and_absolute_path() {
             {abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
             {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
+            abs_path = abs_path,
             expected_path = expected_path
         ),
     );
@@ -1598,7 +1598,7 @@ fn test_symlink_as_absolute_root() {
             {abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1622,7 +1622,7 @@ fn test_symlink_and_full_path() {
             "{abs_path}/{expected_path}/three/
             {abs_path}/{expected_path}/three/d.foo
             {abs_path}/{expected_path}/three/directory_foo/",
-            abs_path = &abs_path,
+            abs_path = abs_path,
             expected_path = expected_path
         ),
     );
@@ -1643,7 +1643,7 @@ fn test_symlink_and_full_path_abs_path() {
             "{abs_path}/symlink/three/
             {abs_path}/symlink/three/d.foo
             {abs_path}/symlink/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -1755,6 +1755,17 @@ fn format() {
         parent=one/two/three
         parent=one/two/three",
     );
+
+    // Templates may start with '-' (e.g. markdown list items); see #2126.
+    te.assert_output(
+        &["foo", "--format", "- {/.}", "--path-separator=/"],
+        "- a
+        - b
+        - C
+        - c
+        - d
+        - directory_foo",
+    );
 }
 
 /// Shell script execution (--exec)
@@ -1772,7 +1783,7 @@ fn test_exec() {
                 {abs_path}/one/two/c.foo
                 {abs_path}/one/two/three/d.foo
                 {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                abs_path = abs_path
             ),
         );
 
@@ -1871,7 +1882,7 @@ fn test_exec_multi() {
                 test c.foo
                 test d.foo
                 test directory_foo",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 
@@ -1927,7 +1938,7 @@ fn test_exec_batch() {
             &["--absolute-path", "foo", "--exec-batch", "echo"],
             &format!(
                 "{abs_path}/a.foo {abs_path}/one/b.foo {abs_path}/one/two/C.Foo2 {abs_path}/one/two/c.foo {abs_path}/one/two/three/d.foo {abs_path}/one/two/three/directory_foo",
-                abs_path = &abs_path
+                abs_path = abs_path
             ),
         );
 
@@ -2539,7 +2550,7 @@ fn test_base_directory() {
 
     // Ignore base directory when absolute path is used
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
-    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = &abs_path);
+    let abs_base_dir = &format!("{abs_path}/one/two/", abs_path = abs_path);
     te.assert_output(
         &["--base-directory", abs_base_dir, "foo", &abs_path],
         &format!(
@@ -2549,7 +2560,7 @@ fn test_base_directory() {
             {abs_path}/one/two/C.Foo2
             {abs_path}/one/two/three/d.foo
             {abs_path}/one/two/three/directory_foo/",
-            abs_path = &abs_path
+            abs_path = abs_path
         ),
     );
 }
@@ -2875,4 +2886,34 @@ fn test_ignore_contain_precedence_over_root_check() {
     let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}
+
+// The error message is probably OS-specific.
+// This is also somewhat fragile as it depends on the error message
+// from creating an executable, and the debug formatting of strings
+// could possibly change in the future.
+#[cfg(unix)]
+#[test]
+fn test_sanitize_exec_error_msg() {
+    let mut te = TestEnv::new(&[], &[]);
+    te.create_broken_symlink("Hello\x1b\r World!\x7fwith\u{9b}\u{1F600}\u{200B}a\u{FEFF}b")
+        .expect("failed to create symlink");
+
+    te.assert_error(&["Hello", "--exec", "{}"], 
+        "[fd error]: Command not found: \"./Hello\\u{1b}\\r World!\\u{7f}with\\u{9b}\u{1F600}\\u{200b}a\\u{feff}b\""
+        );
+}
+
+// Windows doesn't let us make files containing \x1b so only test on unix
+#[cfg(unix)]
+#[test]
+fn test_sanitize_recursive_link_msg() {
+    let mut te = TestEnv::new(&["loop"], &[]);
+    te.create_symlink("loop", "loop/foo\x1bb")
+        .expect("failed to create symlink");
+
+    te.assert_error(
+        &["--follow", "--show-errors", "foo"],
+        "[fd error]: File system loop found: ./loop/foo\\x1Bb points to an ancestor ./loop",
+    );
 }

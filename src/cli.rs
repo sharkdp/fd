@@ -11,7 +11,6 @@ use clap::{
 use clap_complete::Shell;
 use normpath::PathExt;
 
-use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
@@ -482,7 +481,8 @@ pub struct Opts {
         long,
         value_name = "fmt",
         help = "Print results according to template",
-        conflicts_with = "list_details"
+        conflicts_with = "list_details",
+        allow_hyphen_values = true
     )]
     pub format: Option<String>,
 
@@ -710,10 +710,12 @@ impl Opts {
                 if filesystem::is_existing_directory(path) {
                     Some(self.normalize_path(path))
                 } else {
-                    print_error(format!(
-                        "Search path '{}' is not a directory.",
-                        path.to_string_lossy()
-                    ));
+                    // We use debug for the path to make it more readable if it has special characters
+                    // Should we use a more reliable escape?
+                    print_error!(
+                        "Search path {:?} is not a directory.",
+                        path.to_string_lossy().as_ref()
+                    );
                     None
                 }
             })

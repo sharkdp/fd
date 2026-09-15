@@ -56,10 +56,12 @@ impl TimeFilter {
         };
 
         // Try as a Unix epoch seconds with '@' prefix (e.g. "@1707723412").
-        if let Some(secs_str) = s.strip_prefix('@') {
-            if let Ok(secs) = secs_str.parse::<u64>() {
-                return Ok(UNIX_EPOCH + Duration::from_secs(secs));
-            }
+        if let Some(secs_str) = s.strip_prefix('@')
+            && let Ok(secs) = secs_str.parse::<u64>()
+        {
+            return UNIX_EPOCH
+                .checked_add(Duration::from_secs(secs))
+                .ok_or_else(|| format!("timestamp '{s}' is out of range"));
         }
 
         // Report the most relevant error: date/time error for date-like input,
@@ -223,5 +225,13 @@ mod tests {
                 .unwrap()
                 .applies_to(&t1s_later)
         );
+    }
+
+    #[test]
+    fn out_of_range_unix_timestamp_is_rejected() {
+        // A '@' timestamp large enough to overflow SystemTime must return
+        // an error rather than panicking.
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_err());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_err());
     }
 }
