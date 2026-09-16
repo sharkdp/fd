@@ -786,11 +786,11 @@ impl Opts {
     }
 }
 
-/// Get the default number of threads to use, if not explicitly specified.
 /// Custom value parser for `--threads` / `-j`.
 ///
-/// Rejects values that would cause `2 * N` to overflow `usize`, which would otherwise
-/// produce a panic inside `crossbeam_channel::bounded(2 * config.threads)` in walk.rs.
+/// Rejects values that would:
+/// - cause `2 * N` to overflow `usize` (panic in `crossbeam_channel::bounded`)
+/// - exceed `MAX_THREADS`, preventing runaway OS-thread exhaustion from `-x`
 fn parse_thread_count(s: &str) -> Result<NonZeroUsize, String> {
     let n: NonZeroUsize = s
         .parse()
@@ -799,9 +799,22 @@ fn parse_thread_count(s: &str) -> Result<NonZeroUsize, String> {
     n.get()
         .checked_mul(2)
         .ok_or_else(|| format!("{n} threads would overflow the channel capacity"))?;
+    if n > MAX_THREADS {
+        return Err(format!(
+            "{n} exceeds the maximum allowed thread count ({MAX_THREADS})"
+        ));
+    }
     Ok(n)
 }
 
+/// Sane upper bound for `--threads`.  High enough to be irrelevant on any
+/// real machine while preventing unbounded `-x` thread spawning.
+const MAX_THREADS: NonZeroUsize = match NonZeroUsize::new(16384) {
+    Some(v) => v,
+    None => unreachable!(),
+};
+
+/// Get the default number of threads to use, if not explicitly specified.
 fn default_num_threads() -> NonZeroUsize {
     // If we can't get the amount of parallelism for some reason, then
     // default to a single thread, because that is safe.
