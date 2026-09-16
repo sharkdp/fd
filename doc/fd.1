@@ -448,8 +448,9 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
-This option can be specified multiple times. Commands for the same search result run sequentially
-in the order they are given. In that case, you must supply a ';' argument for all but the last command.
+Specify this option multiple times to run several commands for each file or directory found.
+For each file or directory, fd runs these commands one after another in the order they appear
+on the command line. In that case, you must supply a ';' argument for all but the last command.
 When running in parallel, fd buffers command output and prints it together for each search result,
 without interleaving it with command output for other results.
 
