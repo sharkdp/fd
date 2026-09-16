@@ -898,7 +898,8 @@ impl clap::Args for Exec {
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
                      It is therefore recommended to place the '-x'/'--exec' option last. \
                      Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\n\
-                     This option can be specified multiple times. Commands for the same search result run sequentially in the order they are given. \
+                     Specify this option multiple times to run several commands for each file or directory found. \
+                     For each file or directory, fd runs these commands one after another in the order they appear on the command line. \
                      Terminate each command except the last with '\\;'. \
                      When running in parallel, fd buffers command output and prints it together for each search result, \
                      without interleaving it with command output for other results.\n\n\
