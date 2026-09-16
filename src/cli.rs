@@ -553,7 +553,7 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_thread_count)]
     pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
@@ -786,6 +786,34 @@ impl Opts {
             .transpose()
     }
 }
+
+/// Custom value parser for `--threads` / `-j`.
+///
+/// Rejects values that would:
+/// - cause `2 * N` to overflow `usize` (panic in `crossbeam_channel::bounded`)
+/// - exceed `MAX_THREADS`, preventing runaway OS-thread exhaustion from `-x`
+fn parse_thread_count(s: &str) -> Result<NonZeroUsize, String> {
+    let n: NonZeroUsize = s
+        .parse()
+        .map_err(|_| format!("'{s}' is not a valid number of threads"))?;
+    // walk.rs creates a bounded channel with capacity `2 * threads`; guard against overflow.
+    n.get()
+        .checked_mul(2)
+        .ok_or_else(|| format!("{n} threads would overflow the channel capacity"))?;
+    if n > MAX_THREADS {
+        return Err(format!(
+            "{n} exceeds the maximum allowed thread count ({MAX_THREADS})"
+        ));
+    }
+    Ok(n)
+}
+
+/// Sane upper bound for `--threads`.  High enough to be irrelevant on any
+/// real machine while preventing unbounded `-x` thread spawning.
+const MAX_THREADS: NonZeroUsize = match NonZeroUsize::new(16384) {
+    Some(v) => v,
+    None => unreachable!(),
+};
 
 /// Get the default number of threads to use, if not explicitly specified.
 fn default_num_threads() -> NonZeroUsize {
