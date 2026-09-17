@@ -70,6 +70,14 @@ pub fn sanitize_for_term(raw: &str, is_terminal: bool) -> SanitizedStr<'_> {
     }
 }
 
+/// Escape control characters in an error message but keep its line breaks.
+pub fn sanitized_error(raw: &str) -> String {
+    raw.split('\n')
+        .map(|line| sanitize_for_term(line, true).to_string())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
