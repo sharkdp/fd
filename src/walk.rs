@@ -335,7 +335,13 @@ impl WorkerState {
         for pattern in &config.exclude_patterns {
             builder
                 .add(pattern)
-                .map_err(|e| anyhow!("Malformed exclude pattern: {}", e))?;
+                // escape control characters from the pattern before showing the error
+                .map_err(|e| {
+                    anyhow!(
+                        "Malformed exclude pattern: {}",
+                        crate::sanitize::sanitized_error(&e.to_string())
+                    )
+                })?;
         }
 
         builder

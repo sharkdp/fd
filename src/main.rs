@@ -78,7 +78,15 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let opts = Opts::parse();
+    let opts = match Opts::try_parse() {
+        Ok(opts) => opts,
+        Err(err) if err.use_stderr() => {
+            // escape control characters in the clap error before printing
+            eprint!("{}", sanitize::sanitized_error(&err.render().to_string()));
+            std::process::exit(err.exit_code());
+        }
+        Err(err) => err.exit(),
+    };
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {
@@ -206,6 +214,8 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
     }
 
     if should_warn {
+        // escape control characters from the pattern before showing the error
+        let pattern = sanitize::sanitized_error(pattern);
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
@@ -222,7 +232,11 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
 
 fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
-        let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
+        // escape control characters from the pattern before showing the error
+        let glob = GlobBuilder::new(pattern)
+            .literal_separator(true)
+            .build()
+            .map_err(|e| anyhow!("{}", sanitize::sanitized_error(&e.to_string())))?;
         glob.regex().to_owned()
     } else if opts.exact {
         // Anchor the escaped pattern so the full filename (or path) must match exactly.
@@ -244,7 +258,7 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
                  In some shells on Windows, '/' is automatically \
                  expanded. Try to use '//' instead.",
             sep.len(),
-            sep
+            sanitize::sanitized_error(sep)
         )),
         _ => Ok(()),
     }
@@ -506,7 +520,7 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
         } else {
             return Err(anyhow!(
                 "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
+                sanitize::sanitized_error(t)
             ));
         }
     }
@@ -516,7 +530,7 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
         } else {
             return Err(anyhow!(
                 "'{}' is not a valid date or duration. See 'fd --help'.",
-                t
+                sanitize::sanitized_error(t)
             ));
         }
     }
@@ -554,7 +568,7 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
                  or literal strings with '--exact' options (instead of a regular expression). \
                  Alternatively, you can \
                  also use the '--glob' option to match on a glob pattern.",
-                e
+                sanitize::sanitized_error(&e.to_string())
             )
         })
 }
