@@ -54,6 +54,20 @@ pub fn symlinks_supported() -> bool {
     })
 }
 
+/// Whether an external command required by a test can be executed.
+///
+/// Windows does not ship the GNU utilities that some tests shell out to (`echo`, `printf`,
+/// `ls`); they are only available when something like Git Bash is on `PATH`.
+pub fn command_available(command: &str, args: &[&str]) -> bool {
+    process::Command::new(command)
+        .args(args)
+        .stdin(process::Stdio::null())
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .status()
+        .is_ok()
+}
+
 /// Create the working directory and the test files.
 fn create_working_directory(
     directories: &[&'static str],
