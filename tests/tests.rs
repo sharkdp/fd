@@ -12,7 +12,7 @@ use jiff::Timestamp;
 use normpath::PathExt;
 use regex::escape;
 
-use crate::testenv::TestEnv;
+use crate::testenv::{TestEnv, command_available, symlinks_supported};
 
 static DEFAULT_DIRS: &[&str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -1110,6 +1110,10 @@ fn test_file_system_boundaries() {
 
 #[test]
 fn test_follow_broken_symlink() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.create_broken_symlink("broken_symlink")
         .expect("Failed to create broken symlink.");
@@ -1526,6 +1530,10 @@ fn test_no_extension() {
 /// Symlink as search directory
 #[test]
 fn test_symlink_as_root() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.create_broken_symlink("broken_symlink")
         .expect("Failed to create broken symlink.");
@@ -1567,6 +1575,10 @@ fn test_symlink_as_root() {
 
 #[test]
 fn test_symlink_and_absolute_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     let expected_path = if cfg!(windows) { "symlink" } else { "one/two" };
@@ -1588,6 +1600,10 @@ fn test_symlink_and_absolute_path() {
 
 #[test]
 fn test_symlink_as_absolute_root() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
@@ -1605,6 +1621,10 @@ fn test_symlink_as_absolute_root() {
 
 #[test]
 fn test_symlink_and_full_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
@@ -1630,6 +1650,10 @@ fn test_symlink_and_full_path() {
 
 #[test]
 fn test_symlink_and_full_path_abs_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
@@ -1755,6 +1779,20 @@ fn format() {
         parent=one/two/three
         parent=one/two/three",
     );
+
+    let output = te.assert_success_and_get_output(
+        ".",
+        &[
+            "foo",
+            "--format",
+            "{%y}\\t{%s}\\t{%n}\\t{%p}\\t{%t}",
+            "--path-separator",
+            "/",
+        ],
+    );
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        assert_eq!(line.split('\t').count(), 5);
+    }
 
     // Templates may start with '-' (e.g. markdown list items); see #2126.
     te.assert_output(
@@ -2112,6 +2150,10 @@ fn test_exec_batch_with_limit() {
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
+    if !command_available("echo", &[]) {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(
         &[
@@ -2388,6 +2430,10 @@ fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
 
 #[cfg(test)]
 fn remove_symlink<P: AsRef<Path>>(path: P) {
+    if !symlinks_supported() {
+        return;
+    }
+
     #[cfg(unix)]
     fs::remove_file(path).expect("remove symlink");
 
@@ -2648,6 +2694,11 @@ fn test_exec_invalid_utf8() {
 
 #[test]
 fn test_list_details() {
+    // `--list-details` shells out to GNU `ls` on Windows.
+    if cfg!(windows) && !command_available("ls", &["--version"]) {
+        return;
+    }
+
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // Make sure we can execute 'fd --list-details' without any errors.
