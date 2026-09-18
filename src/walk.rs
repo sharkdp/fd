@@ -17,7 +17,6 @@ use regex::bytes::Regex;
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
@@ -228,7 +227,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                         }
                         WorkerResult::Error(err) => {
                             if self.config.show_filesystem_errors {
-                                print_error(err.to_string());
+                                print_error!("{}", err);
                             }
                         }
                     }
@@ -261,7 +260,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
             && e.kind() != ::std::io::ErrorKind::BrokenPipe
         {
-            print_error(format!("Could not write to output: {e}"));
+            print_error!("Could not write to output: {}", e);
             return Err(ExitCode::GeneralError);
         }
 
@@ -385,7 +384,7 @@ impl WorkerState {
                 match result {
                     Some(ignore::Error::Partial(_)) => (),
                     Some(err) => {
-                        print_error(format!("Malformed pattern in global ignore file. {err}."));
+                        print_error!("Malformed pattern in global ignore file. {}.", err);
                     }
                     None => (),
                 }
@@ -397,7 +396,7 @@ impl WorkerState {
             match result {
                 Some(ignore::Error::Partial(_)) => (),
                 Some(err) => {
-                    print_error(format!("Malformed pattern in custom ignore file. {err}."));
+                    print_error!("Malformed pattern in custom ignore file. {}.", err);
                 }
                 None => (),
             }
