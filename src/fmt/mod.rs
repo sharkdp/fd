@@ -132,7 +132,7 @@ impl FormatTemplate {
                 id if !remaining[m.end()..].starts_with('}') => {
                     buf += &remaining[..m.start()];
                     if !buf.is_empty() {
-                        tokens.push(Token::Text(std::mem::take(&mut buf)));
+                        tokens.push(Token::Text(unescape_text(&std::mem::take(&mut buf))));
                     }
                     tokens.push(token_from_pattern_id(id));
                     remaining = &remaining[m.end()..];
@@ -355,6 +355,16 @@ mod fmt_tests {
         assert_eq!(
             FormatTemplate::parse("{%y}{%s}{%n}{%p}{%t}"),
             FormatTemplate::Tokens(vec![Type, Size, Name, Path, Modified])
+        );
+    }
+
+    #[test]
+    fn parse_escapes_between_placeholders() {
+        use Token::*;
+
+        assert_eq!(
+            FormatTemplate::parse("{%y}\\t{%s}\\n"),
+            FormatTemplate::Tokens(vec![Type, Text("\t".into()), Size, Text("\n".into())])
         );
     }
 

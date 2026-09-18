@@ -1757,8 +1757,9 @@ fn format() {
     );
 
     let output = te.assert_success_and_get_output(
-        "foo",
+        ".",
         &[
+            "foo",
             "--format",
             "{%y}\\t{%s}\\t{%n}\\t{%p}\\t{%t}",
             "--path-separator",
