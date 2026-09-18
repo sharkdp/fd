@@ -12,7 +12,7 @@ use jiff::Timestamp;
 use normpath::PathExt;
 use regex::escape;
 
-use crate::testenv::TestEnv;
+use crate::testenv::{TestEnv, symlinks_supported};
 
 static DEFAULT_DIRS: &[&str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -1110,6 +1110,10 @@ fn test_file_system_boundaries() {
 
 #[test]
 fn test_follow_broken_symlink() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.create_broken_symlink("broken_symlink")
         .expect("Failed to create broken symlink.");
@@ -1526,6 +1530,10 @@ fn test_no_extension() {
 /// Symlink as search directory
 #[test]
 fn test_symlink_as_root() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.create_broken_symlink("broken_symlink")
         .expect("Failed to create broken symlink.");
@@ -1567,6 +1575,10 @@ fn test_symlink_as_root() {
 
 #[test]
 fn test_symlink_and_absolute_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     let expected_path = if cfg!(windows) { "symlink" } else { "one/two" };
@@ -1588,6 +1600,10 @@ fn test_symlink_and_absolute_path() {
 
 #[test]
 fn test_symlink_as_absolute_root() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
 
     te.assert_output(
@@ -1605,6 +1621,10 @@ fn test_symlink_as_absolute_root() {
 
 #[test]
 fn test_symlink_and_full_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
@@ -1630,6 +1650,10 @@ fn test_symlink_and_full_path() {
 
 #[test]
 fn test_symlink_and_full_path_abs_path() {
+    if !symlinks_supported() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     let root = te.system_root();
     let prefix = escape(&root.to_string_lossy());
@@ -2402,6 +2426,10 @@ fn create_file_with_modified<P: AsRef<Path>>(path: P, duration_in_secs: u64) {
 
 #[cfg(test)]
 fn remove_symlink<P: AsRef<Path>>(path: P) {
+    if !symlinks_supported() {
+        return;
+    }
+
     #[cfg(unix)]
     fs::remove_file(path).expect("remove symlink");
 
