@@ -12,7 +12,7 @@ use jiff::Timestamp;
 use normpath::PathExt;
 use regex::escape;
 
-use crate::testenv::{TestEnv, symlinks_supported};
+use crate::testenv::{TestEnv, command_available, symlinks_supported};
 
 static DEFAULT_DIRS: &[&str] = &["one/two/three", "one/two/three/directory_foo"];
 
@@ -2150,6 +2150,10 @@ fn test_exec_batch_with_limit() {
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
+    if !command_available("echo", &[]) {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(
         &[
@@ -2690,6 +2694,11 @@ fn test_exec_invalid_utf8() {
 
 #[test]
 fn test_list_details() {
+    // `--list-details` shells out to GNU `ls` on Windows.
+    if cfg!(windows) && !command_available("ls", &["--version"]) {
+        return;
+    }
+
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // Make sure we can execute 'fd --list-details' without any errors.
