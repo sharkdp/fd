@@ -145,6 +145,7 @@ struct ReceiverBuffer<'a, W> {
     buffer: Vec<DirEntry>,
     /// Result count.
     num_results: usize,
+    format_metadata_header_printed: bool,
 }
 
 impl<'a, W: Write> ReceiverBuffer<'a, W> {
@@ -166,6 +167,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             deadline,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
+            format_metadata_header_printed: false,
         }
     }
 
@@ -249,6 +251,12 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Output a path.
     fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
+        if self.config.format_metadata && !self.format_metadata_header_printed {
+            writeln!(self.stdout, "Type | Size | Name | Path | Modified")
+                .map_err(|_| ExitCode::GeneralError)?;
+            self.format_metadata_header_printed = true;
+        }
+
         if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
             && e.kind() != ::std::io::ErrorKind::BrokenPipe
         {

@@ -7,6 +7,8 @@ use std::os::unix;
 use std::os::windows;
 use std::path::{Path, PathBuf};
 use std::process;
+#[cfg(windows)]
+use std::sync::OnceLock;
 
 use tempfile::TempDir;
 
@@ -23,6 +25,47 @@ pub struct TestEnv {
 
     /// Temporary directory for storing test config (global ignore file)
     config_dir: Option<TempDir>,
+}
+
+/// Whether symlinks can be created by this process.
+///
+/// Creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege`, which is only
+/// granted to administrators or to processes running with developer mode enabled. Tests that
+/// depend on symlinks are skipped when the privilege is missing.
+#[cfg(unix)]
+pub fn symlinks_supported() -> bool {
+    true
+}
+
+#[cfg(windows)]
+pub fn symlinks_supported() -> bool {
+    static SUPPORTED: OnceLock<bool> = OnceLock::new();
+
+    *SUPPORTED.get_or_init(|| {
+        let Ok(temp_dir) = tempfile::Builder::new()
+            .prefix("fd-symlink-check")
+            .tempdir()
+        else {
+            return false;
+        };
+        let target = temp_dir.path().join("target");
+        fs::create_dir(&target).is_ok()
+            && windows::fs::symlink_dir(&target, temp_dir.path().join("link")).is_ok()
+    })
+}
+
+/// Whether an external command required by a test can be executed.
+///
+/// Windows does not ship the GNU utilities that some tests shell out to (`echo`, `printf`,
+/// `ls`); they are only available when something like Git Bash is on `PATH`.
+pub fn command_available(command: &str, args: &[&str]) -> bool {
+    process::Command::new(command)
+        .args(args)
+        .stdin(process::Stdio::null())
+        .stdout(process::Stdio::null())
+        .stderr(process::Stdio::null())
+        .status()
+        .is_ok()
 }
 
 /// Create the working directory and the test files.
@@ -49,10 +92,10 @@ fn create_working_directory(
         #[cfg(unix)]
         unix::fs::symlink(root.join("one/two"), root.join("symlink"))?;
 
-        // Note: creating symlinks on Windows requires the `SeCreateSymbolicLinkPrivilege` which
-        // is by default only granted for administrators.
         #[cfg(windows)]
-        windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+        if symlinks_supported() {
+            windows::fs::symlink_dir(root.join("one/two"), root.join("symlink"))?;
+        }
 
         fs::File::create(root.join(".fdignore"))?.write_all(b"fdignored.foo")?;
 
@@ -128,6 +171,11 @@ fn normalize_output(s: &str, trim_start: bool, normalize_line: bool) -> String {
             line
         })
         .collect::<Vec<_>>();
+
+    #[cfg(windows)]
+    if !symlinks_supported() {
+        lines.retain(|line| !line.contains("symlink"));
+    }
 
     lines.sort();
     lines.join("\n")

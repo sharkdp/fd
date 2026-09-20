@@ -228,7 +228,7 @@ impl CommandTemplate {
         for arg in input {
             let arg = arg.as_ref();
 
-            let tmpl = FormatTemplate::parse(arg);
+            let tmpl = FormatTemplate::parse_exec(arg);
             has_placeholder |= tmpl.has_tokens();
             args.push(tmpl);
         }
