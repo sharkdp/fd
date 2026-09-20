@@ -11,7 +11,6 @@ use clap::{
 use clap_complete::Shell;
 use normpath::PathExt;
 
-use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
@@ -482,7 +481,8 @@ pub struct Opts {
         long,
         value_name = "fmt",
         help = "Print results according to template",
-        conflicts_with = "list_details"
+        conflicts_with = "list_details",
+        allow_hyphen_values = true
     )]
     pub format: Option<String>,
 
@@ -651,9 +651,10 @@ pub struct Opts {
 
     /// The directory where the filesystem search is rooted (optional). If
     /// omitted, search the current working directory.
+    /// If supplied, the pattern must come first.
     #[arg(action = ArgAction::Append,
         value_name = "path",
-        help = "the root directories for the filesystem search (optional)",
+        help = "the root directories for the filesystem search (optional, requires pattern first)",
         long_help,
         )]
     path: Vec<PathBuf>,
@@ -710,10 +711,12 @@ impl Opts {
                 if filesystem::is_existing_directory(path) {
                     Some(self.normalize_path(path))
                 } else {
-                    print_error(format!(
-                        "Search path '{}' is not a directory.",
-                        path.to_string_lossy()
-                    ));
+                    // We use debug for the path to make it more readable if it has special characters
+                    // Should we use a more reliable escape?
+                    print_error!(
+                        "Search path {:?} is not a directory.",
+                        path.to_string_lossy().as_ref()
+                    );
                     None
                 }
             })
@@ -893,10 +896,15 @@ impl clap::Args for Exec {
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
-                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
+                     The order in which different search results are processed and their output is printed is not guaranteed, even with --threads=1. \
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
                      It is therefore recommended to place the '-x'/'--exec' option last. \
-                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\
+                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\n\
+                     Specify this option multiple times to run several commands for each file or directory found. \
+                     For each file or directory, fd runs these commands one after another in the order they appear on the command line. \
+                     Terminate each command except the last with '\\;'. \
+                     When running in parallel, fd buffers command output and prints it together for each search result, \
+                     without interleaving it with command output for other results.\n\n\
                      The following placeholders are substituted before the command is executed:\n  \
                        '{}':   path (of the current search result)\n  \
                        '{/}':  basename\n  \
