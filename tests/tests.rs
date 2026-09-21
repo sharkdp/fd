@@ -1131,6 +1131,17 @@ fn test_follow_broken_symlink() {
         &["--follow", "--type", "symlink", "symlink"],
         "broken_symlink",
     );
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--exclude",
+            "broken_symlink",
+            "symlink",
+        ],
+        "",
+    );
     te.assert_output(&["--follow", "--type", "file", "symlink"], "");
 }
 
