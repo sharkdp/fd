@@ -65,8 +65,12 @@ impl TimeFilter {
         }
 
         // Report the most relevant error: date/time error for date-like input,
-        // duration error otherwise.
-        if s.contains('-') || (s.contains(':') && !s.starts_with('@')) {
+        // duration error otherwise.  Exclude a leading '-' sign so that
+        // negative-duration inputs (e.g. "-5min") are not mis-classified as
+        // date-like and shown a confusing DateTime error.
+        let looks_like_date =
+            (!s.starts_with('-') && s.contains('-')) || (s.contains(':') && !s.starts_with('@'));
+        if looks_like_date {
             Err(datetime_err.to_string())
         } else {
             Err(span_err.to_string())
