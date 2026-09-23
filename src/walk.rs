@@ -125,6 +125,9 @@ const MAX_BUFFER_LENGTH: usize = 1000;
 /// Default duration until output buffering switches to streaming.
 const DEFAULT_MAX_BUFFER_TIME: Duration = Duration::from_millis(100);
 
+/// Maximum wait before flushing pending streamed output.
+const MAX_FLUSH_DELAY: Duration = Duration::from_millis(100);
+
 /// Wrapper for the receiver thread's buffering behavior.
 struct ReceiverBuffer<'a, W> {
     /// The configuration.
@@ -141,6 +144,8 @@ struct ReceiverBuffer<'a, W> {
     mode: ReceiverMode,
     /// The deadline to switch to streaming mode.
     deadline: Instant,
+    /// The deadline to flush pending streamed output.
+    flush_deadline: Option<Instant>,
     /// The buffer of quickly received paths.
     buffer: Vec<DirEntry>,
     /// Result count.
@@ -164,6 +169,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             stdout,
             mode: ReceiverMode::Buffering,
             deadline,
+            flush_deadline: None,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
         }
@@ -187,8 +193,13 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                 self.rx.recv_deadline(self.deadline)
             }
             ReceiverMode::Streaming => {
-                // Wait however long it takes for a result
-                Ok(self.rx.recv()?)
+                if let Some(deadline) = self.flush_deadline {
+                    // Give workers time to send another batch before flushing.
+                    self.rx.recv_deadline(deadline)
+                } else {
+                    // No pending output: wait without waking up periodically.
+                    Ok(self.rx.recv()?)
+                }
             }
         }
     }
@@ -230,15 +241,11 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                         }
                     }
                 }
-
-                // If we don't have another batch ready, flush before waiting
-                if self.mode == ReceiverMode::Streaming && self.rx.is_empty() {
-                    self.flush()?;
-                }
             }
-            Err(RecvTimeoutError::Timeout) => {
-                self.stream()?;
-            }
+            Err(RecvTimeoutError::Timeout) => match self.mode {
+                ReceiverMode::Buffering => self.stream()?,
+                ReceiverMode::Streaming => self.flush()?,
+            },
             Err(RecvTimeoutError::Disconnected) => {
                 return self.stop();
             }
@@ -255,6 +262,10 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             print_error!("Could not write to output: {}", e);
             return Err(ExitCode::GeneralError);
         }
+
+        // Keep the first deadline so a trickle of results cannot postpone the flush.
+        self.flush_deadline
+            .get_or_insert_with(|| Instant::now() + MAX_FLUSH_DELAY);
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
             // Ignore any errors on flush, because we're about to exit anyway
@@ -282,6 +293,8 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         if self.mode == ReceiverMode::Buffering {
             self.buffer.sort();
             self.stream()?;
+        } else if self.flush_deadline.is_some() {
+            self.flush()?;
         }
 
         if self.config.quiet {
@@ -297,6 +310,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
+        self.flush_deadline = None;
         Ok(())
     }
 }
@@ -687,8 +701,184 @@ pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<E
 
 #[cfg(test)]
 mod tests {
-    use super::search_str_for_entry;
+    use super::*;
+    use clap::Parser;
     use std::path::{Path, PathBuf};
+
+    #[derive(Default)]
+    struct RecordingWriter {
+        bytes: Vec<u8>,
+        flushes: usize,
+    }
+
+    impl Write for RecordingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            self.bytes.extend_from_slice(bytes);
+            Ok(bytes.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            self.flushes += 1;
+            Ok(())
+        }
+    }
+
+    fn receiver_state(args: &[&str]) -> WorkerState {
+        let opts = crate::cli::Opts::parse_from(
+            ["fd", "--color=never"]
+                .into_iter()
+                .chain(args.iter().copied()),
+        );
+        WorkerState::new(vec![], crate::construct_config(opts, &[]).unwrap())
+    }
+
+    fn send_path(tx: &Sender<Batch>, path: &str) {
+        let batch = Batch::new();
+        batch
+            .lock()
+            .as_mut()
+            .unwrap()
+            .push(WorkerResult::Entry(DirEntry::broken_symlink(
+                PathBuf::from(path),
+            )));
+        tx.send(batch).unwrap();
+    }
+
+    #[test]
+    fn receiver_batches_across_empty_queue() {
+        let state = receiver_state(&["--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let mut receiver = ReceiverBuffer::new(&state, rx, RecordingWriter::default());
+        // Switch to streaming before any results arrive.
+        receiver.poll().unwrap();
+        let initial_flushes = receiver.stdout.flushes;
+        for path in ["first", "second", "third"] {
+            send_path(&tx, path);
+            receiver.poll().unwrap();
+            assert!(receiver.rx.is_empty());
+        }
+        assert_eq!(receiver.stdout.bytes, b"first\nsecond\nthird\n");
+        assert_eq!(receiver.stdout.flushes - initial_flushes, 0);
+        drop(tx);
+        assert_eq!(receiver.poll(), Err(ExitCode::Success));
+        assert_eq!(receiver.stdout.flushes - initial_flushes, 1);
+    }
+
+    #[test]
+    fn receiver_flushes_pending_output_on_timeout() {
+        let state = receiver_state(&["--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let mut receiver =
+            ReceiverBuffer::new(&state, rx, io::BufWriter::new(RecordingWriter::default()));
+        receiver.poll().unwrap();
+        send_path(&tx, "first");
+        receiver.poll().unwrap();
+        let deadline = receiver.flush_deadline.unwrap();
+        send_path(&tx, "second");
+        receiver.poll().unwrap();
+        assert_eq!(receiver.flush_deadline, Some(deadline));
+        assert!(receiver.stdout.get_ref().bytes.is_empty());
+        // Expire the deadline explicitly instead of depending on a sleep.
+        receiver.flush_deadline = Some(Instant::now());
+        receiver.poll().unwrap();
+        assert_eq!(receiver.stdout.get_ref().bytes, b"first\nsecond\n");
+        assert!(receiver.flush_deadline.is_none());
+        // A later burst starts a fresh deadline.
+        send_path(&tx, "third");
+        receiver.poll().unwrap();
+        assert!(receiver.flush_deadline.is_some());
+        drop(tx);
+        assert_eq!(receiver.poll(), Err(ExitCode::Success));
+        assert_eq!(receiver.stdout.get_ref().bytes, b"first\nsecond\nthird\n");
+    }
+
+    #[test]
+    fn receiver_flushes_at_result_limit() {
+        let state = receiver_state(&["--max-buffer-time=0", "--max-results=1"]);
+        let (tx, rx) = bounded(1);
+        let mut receiver =
+            ReceiverBuffer::new(&state, rx, io::BufWriter::new(RecordingWriter::default()));
+        receiver.poll().unwrap();
+        send_path(&tx, "only");
+        assert_eq!(receiver.process(), ExitCode::Success);
+        assert_eq!(receiver.stdout.get_ref().bytes, b"only\n");
+        assert!(state.quit_flag.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn receiver_sorts_initial_buffer() {
+        let state = receiver_state(&["--max-buffer-time=60000"]);
+        let (tx, rx) = bounded(2);
+        send_path(&tx, "z");
+        send_path(&tx, "a");
+        drop(tx);
+        let mut receiver = ReceiverBuffer::new(&state, rx, RecordingWriter::default());
+        assert_eq!(receiver.process(), ExitCode::Success);
+        assert_eq!(receiver.stdout.bytes, b"a\nz\n");
+        assert_eq!(receiver.stdout.flushes, 1);
+    }
+
+    #[test]
+    fn receiver_quiet_does_not_print() {
+        let state = receiver_state(&["--quiet", "--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let mut receiver = ReceiverBuffer::new(&state, rx, RecordingWriter::default());
+        receiver.poll().unwrap();
+        send_path(&tx, "match");
+        assert_eq!(receiver.process(), ExitCode::HasResults(true));
+        assert!(receiver.stdout.bytes.is_empty());
+        assert!(receiver.flush_deadline.is_none());
+    }
+
+    #[test]
+    fn receiver_flushes_on_interrupt() {
+        let state = receiver_state(&["--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let mut receiver =
+            ReceiverBuffer::new(&state, rx, io::BufWriter::new(RecordingWriter::default()));
+        receiver.poll().unwrap();
+        send_path(&tx, "last");
+        state.interrupt_flag.store(true, Ordering::Relaxed);
+        assert_eq!(receiver.process(), ExitCode::KilledBySigint);
+        assert_eq!(receiver.stdout.get_ref().bytes, b"last\n");
+        assert!(state.quit_flag.load(Ordering::Relaxed));
+    }
+
+    struct FailingWriter {
+        fail_write: bool,
+        kind: io::ErrorKind,
+    }
+
+    impl Write for FailingWriter {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            if self.fail_write {
+                Err(self.kind.into())
+            } else {
+                Ok(bytes.len())
+            }
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Err(self.kind.into())
+        }
+    }
+
+    #[test]
+    fn receiver_reports_output_errors() {
+        for kind in [io::ErrorKind::BrokenPipe, io::ErrorKind::Other] {
+            for fail_write in [false, true] {
+                let state = receiver_state(&[]);
+                let (tx, rx) = bounded(1);
+                send_path(&tx, "last");
+                drop(tx);
+                let writer = FailingWriter { fail_write, kind };
+                let mut receiver = ReceiverBuffer::new(&state, rx, writer);
+                receiver.mode = ReceiverMode::Streaming;
+                assert_eq!(receiver.process(), ExitCode::GeneralError);
+                assert!(state.quit_flag.load(Ordering::Relaxed));
+            }
+        }
+    }
 
     #[test]
     fn search_str_for_entry_with_relative_path() {
