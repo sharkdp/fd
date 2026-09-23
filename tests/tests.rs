@@ -2110,6 +2110,7 @@ fn test_exec_batch_with_limit() {
 }
 
 /// Shell script execution (--exec) with a custom --path-separator
+#[cfg(not(windows))] // Windows has no `echo` executable, only the shell builtin
 #[test]
 fn test_exec_with_separator() {
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
@@ -2649,6 +2650,20 @@ fn test_exec_invalid_utf8() {
 #[test]
 fn test_list_details() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // On Windows, 'fd --list-details' needs GNU 'ls'.
+    if cfg!(windows)
+        && std::process::Command::new("ls")
+            .arg("--version")
+            .output()
+            .is_err()
+    {
+        te.assert_failure_with_error(
+            &["--list-details"],
+            "[fd error]: 'fd --list-details' is not supported on Windows unless GNU 'ls' is installed.",
+        );
+        return;
+    }
 
     // Make sure we can execute 'fd --list-details' without any errors.
     te.assert_success_and_get_output(".", &["--list-details"]);
