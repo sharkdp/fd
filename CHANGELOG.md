@@ -4,6 +4,7 @@
 -
 
 ## Bugfixes
+- Respect `--exclude` for broken symlinks when using `--follow`, see #746 (@sb123sb123)
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
