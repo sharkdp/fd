@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -483,25 +483,15 @@ impl WorkerState {
                 }
                 let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
-                    Err(err) => {
-                        // The depth has to be read off the error before it is
-                        // taken apart, since it is recorded on an inner variant.
-                        let depth = err.depth();
-                        match err {
-                            ignore::Error::WithPath {
-                                path,
-                                err: inner_err,
-                            } if is_broken_symlink(&path, &inner_err) => {
-                                DirEntry::broken_symlink(path, depth)
-                            }
-                            err => {
-                                return match tx.send(WorkerResult::Error(err)) {
-                                    Ok(_) => WalkState::Continue,
-                                    Err(_) => WalkState::Quit,
-                                };
-                            }
+                    Err(err) => match broken_symlink_from_err(err) {
+                        Ok(entry) => entry,
+                        Err(err) => {
+                            return match tx.send(WorkerResult::Error(err)) {
+                                Ok(_) => WalkState::Continue,
+                                Err(_) => WalkState::Quit,
+                            };
                         }
-                    }
+                    },
                 };
 
                 if let Some(min_depth) = config.min_depth
@@ -652,19 +642,47 @@ impl WorkerState {
     }
 }
 
-/// Whether a walk error is really a broken symlink rather than a failure worth
-/// reporting.
-///
-/// A symlink whose target is missing is surfaced by the walker as a NotFound
-/// error against the link's own path, so it never arrives as an entry. fd still
-/// wants to match and print it (see issue #1017), which means recovering it here.
-fn is_broken_symlink(path: &Path, err: &ignore::Error) -> bool {
-    err.io_error()
-        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
-        && path
-            .symlink_metadata()
-            .ok()
-            .is_some_and(|m| m.file_type().is_symlink())
+/// If `err` is for a broken symlink, create a broken symlink DirEntry,
+/// otherwise, return the original error.
+fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::Error> {
+    use ignore::Error::*;
+    let mut depth = None;
+    let mut path = None;
+    let mut current = &mut err;
+    // Loop through the items in the chain, and extract the path and depth as we find them.
+    // Then once we get to the (terminal) io error, check that it is for a broken symlink.
+    loop {
+        match current {
+            WithPath { err, path: p } => {
+                path = Some(p);
+                current = err;
+            }
+            WithDepth { err, depth: d } => {
+                depth = Some(*d);
+                current = err;
+            }
+            Io(e) if e.kind() == io::ErrorKind::NotFound => {
+                if let Some(path) = path
+                    && path
+                        .symlink_metadata()
+                        .ok()
+                        .is_some_and(|m| m.file_type().is_symlink())
+                {
+                    // Since we no longer need the original error, we can take the PathBuf of the
+                    // path out of it.
+                    return Ok(DirEntry::broken_symlink(mem::take(path), depth));
+                } else {
+                    // This is pretty unlikely.
+                    return Err(err);
+                }
+            }
+            // We don't care about Loop because that won't happen
+            // for broken symlinks, and there are two paths involved
+            // and we don't care about WithLineNumber because that only applies
+            // to errors while parsing ignore files.
+            _ => return Err(err),
+        }
+    }
 }
 
 fn search_str_for_entry<'a>(
