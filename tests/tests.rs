@@ -2689,6 +2689,20 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=a"]);
     te.assert_failure(&["-j", ""]);
     te.assert_failure(&["--threads=0"]);
+    // Values where 2 * N overflows usize must be rejected during argument parsing, not panic.
+    te.assert_failure_with_error(
+        &[&format!("--threads={}", usize::MAX)],
+        &format!(
+            "error: invalid value '{}' for '--threads <num>': {} threads would overflow the channel capacity",
+            usize::MAX,
+            usize::MAX,
+        ),
+    );
+    // Values above MAX_THREADS must also be rejected during argument parsing.
+    te.assert_failure_with_error(
+        &["--threads=16385"],
+        "error: invalid value '16385' for '--threads <num>': 16385 exceeds the maximum allowed thread count (16384)",
+    );
 
     te.assert_failure(&["--min-depth=a"]);
     te.assert_failure(&["--mindepth=a"]);
