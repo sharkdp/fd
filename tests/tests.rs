@@ -2110,9 +2110,13 @@ fn test_exec_batch_with_limit() {
 }
 
 /// Shell script execution (--exec) with a custom --path-separator
-#[cfg(not(windows))] // Windows has no `echo` executable, only the shell builtin
 #[test]
 fn test_exec_with_separator() {
+    // On Windows, `echo` is only a shell builtin unless an `echo` executable is installed.
+    if cfg!(windows) && std::process::Command::new("echo").output().is_err() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(
         &[
