@@ -142,10 +142,8 @@ struct ReceiverBuffer<'a, W> {
     stdout: W,
     /// The current buffer mode.
     mode: ReceiverMode,
-    /// The deadline to switch to streaming mode.
-    deadline: Instant,
-    /// The deadline to flush pending streamed output.
-    flush_deadline: Option<Instant>,
+    /// The deadline to switch to streaming or flush pending output.
+    deadline: Option<Instant>,
     /// The buffer of quickly received paths.
     buffer: Vec<DirEntry>,
     /// Result count.
@@ -159,7 +157,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         let quit_flag = state.quit_flag.as_ref();
         let interrupt_flag = state.interrupt_flag.as_ref();
         let max_buffer_time = config.max_buffer_time.unwrap_or(DEFAULT_MAX_BUFFER_TIME);
-        let deadline = Instant::now() + max_buffer_time;
+        let deadline = Some(Instant::now() + max_buffer_time);
 
         Self {
             config,
@@ -169,7 +167,6 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             stdout,
             mode: ReceiverMode::Buffering,
             deadline,
-            flush_deadline: None,
             buffer: Vec::with_capacity(MAX_BUFFER_LENGTH),
             num_results: 0,
         }
@@ -187,20 +184,11 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Receive the next worker result.
     fn recv(&self) -> Result<Batch, RecvTimeoutError> {
-        match self.mode {
-            ReceiverMode::Buffering => {
-                // Wait at most until we should switch to streaming
-                self.rx.recv_deadline(self.deadline)
-            }
-            ReceiverMode::Streaming => {
-                if let Some(deadline) = self.flush_deadline {
-                    // Give workers time to send another batch before flushing.
-                    self.rx.recv_deadline(deadline)
-                } else {
-                    // No pending output: wait without waking up periodically.
-                    Ok(self.rx.recv()?)
-                }
-            }
+        if let Some(deadline) = self.deadline {
+            self.rx.recv_deadline(deadline)
+        } else {
+            // No pending output: wait without waking up periodically.
+            Ok(self.rx.recv()?)
         }
     }
 
@@ -264,7 +252,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         }
 
         // Keep the first deadline so a trickle of results cannot postpone the flush.
-        self.flush_deadline
+        self.deadline
             .get_or_insert_with(|| Instant::now() + MAX_FLUSH_DELAY);
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
@@ -279,6 +267,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
     /// Switch ourselves into streaming mode.
     fn stream(&mut self) -> Result<(), ExitCode> {
         self.mode = ReceiverMode::Streaming;
+        self.deadline = None;
 
         let buffer = mem::take(&mut self.buffer);
         for path in buffer {
@@ -293,7 +282,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         if self.mode == ReceiverMode::Buffering {
             self.buffer.sort();
             self.stream()?;
-        } else if self.flush_deadline.is_some() {
+        } else {
             self.flush()?;
         }
 
@@ -310,7 +299,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
             // Probably a broken pipe. Exit gracefully.
             return Err(ExitCode::GeneralError);
         }
-        self.flush_deadline = None;
+        self.deadline = None;
         Ok(())
     }
 }
@@ -755,6 +744,7 @@ mod tests {
             .unwrap()
             .push(WorkerResult::Entry(DirEntry::broken_symlink(
                 PathBuf::from(path),
+                None,
             )));
         tx.send(batch).unwrap();
     }
@@ -766,17 +756,18 @@ mod tests {
         let mut receiver = ReceiverBuffer::new(&state, rx, RecordingWriter::default());
         // Switch to streaming before any results arrive.
         receiver.poll().unwrap();
-        let initial_flushes = receiver.stdout.flushes;
+        // Switching to streaming flushes even an empty initial buffer.
+        assert_eq!(receiver.stdout.flushes, 1);
         for path in ["first", "second", "third"] {
             send_path(&tx, path);
             receiver.poll().unwrap();
             assert!(receiver.rx.is_empty());
         }
         assert_eq!(receiver.stdout.bytes, b"first\nsecond\nthird\n");
-        assert_eq!(receiver.stdout.flushes - initial_flushes, 0);
+        assert_eq!(receiver.stdout.flushes, 1);
         drop(tx);
         assert_eq!(receiver.poll(), Err(ExitCode::Success));
-        assert_eq!(receiver.stdout.flushes - initial_flushes, 1);
+        assert_eq!(receiver.stdout.flushes, 2);
     }
 
     #[test]
@@ -788,20 +779,20 @@ mod tests {
         receiver.poll().unwrap();
         send_path(&tx, "first");
         receiver.poll().unwrap();
-        let deadline = receiver.flush_deadline.unwrap();
+        let deadline = receiver.deadline.unwrap();
         send_path(&tx, "second");
         receiver.poll().unwrap();
-        assert_eq!(receiver.flush_deadline, Some(deadline));
+        assert_eq!(receiver.deadline, Some(deadline));
         assert!(receiver.stdout.get_ref().bytes.is_empty());
         // Expire the deadline explicitly instead of depending on a sleep.
-        receiver.flush_deadline = Some(Instant::now());
+        receiver.deadline = Some(Instant::now());
         receiver.poll().unwrap();
         assert_eq!(receiver.stdout.get_ref().bytes, b"first\nsecond\n");
-        assert!(receiver.flush_deadline.is_none());
+        assert!(receiver.deadline.is_none());
         // A later burst starts a fresh deadline.
         send_path(&tx, "third");
         receiver.poll().unwrap();
-        assert!(receiver.flush_deadline.is_some());
+        assert!(receiver.deadline.is_some());
         drop(tx);
         assert_eq!(receiver.poll(), Err(ExitCode::Success));
         assert_eq!(receiver.stdout.get_ref().bytes, b"first\nsecond\nthird\n");
@@ -842,7 +833,7 @@ mod tests {
         send_path(&tx, "match");
         assert_eq!(receiver.process(), ExitCode::HasResults(true));
         assert!(receiver.stdout.bytes.is_empty());
-        assert!(receiver.flush_deadline.is_none());
+        assert!(receiver.deadline.is_none());
     }
 
     #[test]
@@ -876,6 +867,59 @@ mod tests {
         fn flush(&mut self) -> io::Result<()> {
             Err(self.kind.into())
         }
+    }
+
+    #[test]
+    fn receiver_reports_final_flush_error_without_deadline() {
+        let state = receiver_state(&[]);
+        let (tx, rx) = bounded(1);
+        drop(tx);
+        let writer = FailingWriter {
+            fail_write: false,
+            kind: io::ErrorKind::Other,
+        };
+        let mut receiver = ReceiverBuffer::new(&state, rx, writer);
+        receiver.mode = ReceiverMode::Streaming;
+        receiver.deadline = None;
+        assert_eq!(receiver.process(), ExitCode::GeneralError);
+        assert!(state.quit_flag.load(Ordering::Relaxed));
+    }
+
+    #[test]
+    fn receiver_flushes_through_outer_buffer_to_line_writer() {
+        let state = receiver_state(&["--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let stdout = io::BufWriter::new(io::LineWriter::new(RecordingWriter::default()));
+        let mut receiver = ReceiverBuffer::new(&state, rx, stdout);
+        receiver.poll().unwrap();
+        send_path(&tx, "line");
+        receiver.poll().unwrap();
+        // Newlines cannot reach the line writer until the outer buffer writes.
+        assert_eq!(receiver.stdout.buffer(), b"line\n");
+        assert!(receiver.stdout.get_ref().get_ref().bytes.is_empty());
+        receiver.deadline = Some(Instant::now());
+        receiver.poll().unwrap();
+        assert_eq!(receiver.stdout.get_ref().get_ref().bytes, b"line\n");
+        assert!(receiver.deadline.is_none());
+    }
+
+    #[test]
+    fn receiver_flushes_tail_after_buffer_fills() {
+        let state = receiver_state(&["--max-buffer-time=0"]);
+        let (tx, rx) = bounded(1);
+        let stdout = io::BufWriter::with_capacity(8, RecordingWriter::default());
+        let mut receiver = ReceiverBuffer::new(&state, rx, stdout);
+        receiver.poll().unwrap();
+        send_path(&tx, "12345678");
+        receiver.poll().unwrap();
+        send_path(&tx, "tail");
+        receiver.poll().unwrap();
+        // Filling the buffer makes progress, but can leave a partial tail behind.
+        assert_eq!(receiver.stdout.get_ref().bytes, b"12345678");
+        assert_eq!(receiver.stdout.buffer(), b"\ntail\n");
+        receiver.deadline = Some(Instant::now());
+        receiver.poll().unwrap();
+        assert_eq!(receiver.stdout.get_ref().bytes, b"12345678\ntail\n");
     }
 
     #[test]
