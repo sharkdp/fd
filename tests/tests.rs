@@ -417,6 +417,20 @@ fn test_pattern_with_forward_slash_allowed_with_full_path() {
     );
 }
 
+/// `--full-path` must match against the normalized path when the search path
+/// contains `..`, giving the same results as `--absolute-path` (#1513).
+#[test]
+#[cfg(not(windows))]
+fn test_full_path_with_parent_dir_search_path() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output_subdirectory(
+        "one/two",
+        &["--full-path", "/one/b\\.foo$", ".."],
+        "../b.foo",
+    );
+}
+
 /// `--and` patterns are matched against the file name exactly like the primary
 /// pattern, so a path separator in any of them is the same silent "no results"
 /// footgun and must trigger the same diagnostic. Regression for the sibling of

@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
+use normpath::PathExt;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -692,11 +693,24 @@ fn search_str_for_entry<'a>(
     if let Some(cwd) = full_path_base {
         // If full_path_base is some, that means that we need to return
         // the absolute path
-        if entry_path.is_absolute() {
-            return Cow::Borrowed(entry_path.as_os_str());
+        let path = if entry_path.is_absolute() {
+            Cow::Borrowed(entry_path)
+        } else {
+            let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
+            Cow::Owned(cwd.join(path))
+        };
+        // Resolve `..` components (e.g. from a search path like `..`), so that the
+        // result is the same as with `--absolute-path`.
+        if path.components().any(|c| c == Component::ParentDir)
+            && let (Some(parent), Some(name)) = (path.parent(), path.file_name())
+            && let Ok(parent) = parent.normalize()
+        {
+            return Cow::Owned(parent.into_path_buf().join(name).into());
         }
-        let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
-        Cow::Owned(cwd.join(path).into())
+        match path {
+            Cow::Borrowed(p) => Cow::Borrowed(p.as_os_str()),
+            Cow::Owned(p) => Cow::Owned(p.into()),
+        }
     } else {
         match entry_path.file_name() {
             Some(filename) => Cow::Borrowed(filename),
