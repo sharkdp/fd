@@ -447,6 +447,33 @@ fn test_full_path_with_parent_dir_search_path_through_symlink() {
     );
 }
 
+/// When the component a `..` pops is itself a symlink, it must resolve by
+/// its real location, not by where the symlink itself lives: with
+/// `blink -> one/two/three`, `blink/..` is really `one/two`, not `one` (the
+/// directory `blink` lives in). A purely lexical `..` pop disagrees with
+/// `--absolute-path` here, same as the bug this PR originally fixed.
+#[test]
+#[cfg(not(windows))]
+fn test_full_path_with_parent_dir_through_symlinked_component() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_symlink("one/two/three", "one/blink").unwrap();
+
+    // blink/.. really is one/two, which contains c.foo: must match.
+    te.assert_output_subdirectory(
+        "one",
+        &["--full-path", "-p", "two/c\\.foo$", "blink/.."],
+        "blink/../c.foo",
+    );
+
+    // blink/.. is NOT `one` (blink's own lexical location), even though a
+    // purely lexical pop would land there: must not match.
+    te.assert_output_subdirectory(
+        "one",
+        &["--full-path", "-p", "^one/[^/]+\\.foo$", "blink/.."],
+        "",
+    );
+}
+
 /// `--and` patterns are matched against the file name exactly like the primary
 /// pattern, so a path separator in any of them is the same silent "no results"
 /// footgun and must trigger the same diagnostic. Regression for the sibling of

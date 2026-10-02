@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
+use normpath::PathExt;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -685,15 +686,32 @@ fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::E
     }
 }
 
-/// Collapse `.` and `..` path components lexically, without touching the
-/// filesystem (so no symlink is ever resolved). A leading `..` that can't be
-/// popped (there's nothing above it in `path`) is kept as-is.
+/// Collapse `.` and `..` path components. This stays purely lexical (no
+/// filesystem access, so no symlink is resolved) *except* when the component
+/// a `..` would pop is itself a symlink: lexically popping it would disagree
+/// with the OS, since e.g. `symlink_dir/..` resolves relative to the
+/// symlink's real location, not to its parent directory. That's rare enough
+/// (nearly every `..` pops a real directory name found during the walk, not
+/// the symlink itself) that checking costs one extra `symlink_metadata` call
+/// only on a `..` component, not per entry, and only resolves that one
+/// component rather than the whole path. A leading `..` that can't be popped
+/// (there's nothing above it in `path`) is kept as-is.
 fn normalize_lexically(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
+                let is_symlink = out
+                    .symlink_metadata()
+                    .is_ok_and(|m| m.file_type().is_symlink());
+                if is_symlink
+                    && let Ok(resolved) = out.normalize()
+                {
+                    out = resolved.into_path_buf();
+                    out.pop();
+                    continue;
+                }
                 if !out.pop() {
                     out.push(component);
                 }
