@@ -431,6 +431,22 @@ fn test_full_path_with_parent_dir_search_path() {
     );
 }
 
+/// A symlinked directory reached through a `..` search path must keep its
+/// link name in `--full-path` output, the same as `--absolute-path` — both
+/// only resolve the search root itself, not every entry found during the
+/// walk, so a symlink encountered along the way is never followed by name.
+#[test]
+#[cfg(not(windows))]
+fn test_full_path_with_parent_dir_search_path_through_symlink() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output_subdirectory(
+        "one",
+        &["--follow", "--full-path", "-p", "symlink/c\\.foo$", ".."],
+        "../symlink/c.foo",
+    );
+}
+
 /// `--and` patterns are matched against the file name exactly like the primary
 /// pattern, so a path separator in any of them is the same silent "no results"
 /// footgun and must trigger the same diagnostic. Regression for the sibling of

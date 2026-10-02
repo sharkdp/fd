@@ -13,7 +13,6 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
-use normpath::PathExt;
 use regex::bytes::Regex;
 
 use crate::config::Config;
@@ -686,6 +685,25 @@ fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::E
     }
 }
 
+/// Collapse `.` and `..` path components lexically, without touching the
+/// filesystem (so no symlink is ever resolved). A leading `..` that can't be
+/// popped (there's nothing above it in `path`) is kept as-is.
+fn normalize_lexically(path: &Path) -> PathBuf {
+    let mut out = PathBuf::new();
+    for component in path.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => {
+                if !out.pop() {
+                    out.push(component);
+                }
+            }
+            other => out.push(other),
+        }
+    }
+    out
+}
+
 fn search_str_for_entry<'a>(
     entry_path: &'a std::path::Path,
     full_path_base: Option<&std::path::Path>,
@@ -699,13 +717,16 @@ fn search_str_for_entry<'a>(
             let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
             Cow::Owned(cwd.join(path))
         };
-        // Resolve `..` components (e.g. from a search path like `..`), so that the
-        // result is the same as with `--absolute-path`.
-        if path.components().any(|c| c == Component::ParentDir)
-            && let (Some(parent), Some(name)) = (path.parent(), path.file_name())
-            && let Ok(parent) = parent.normalize()
-        {
-            return Cow::Owned(parent.into_path_buf().join(name).into());
+        // Collapse `..` components (e.g. from a search path like `..`) lexically,
+        // so the result doesn't contain a literal `..`, matching `--absolute-path`
+        // (which only resolves the search root once). This must not touch the
+        // filesystem: `--absolute-path` never re-resolves symlinks found during
+        // the walk, only the root search path, and doing a per-entry
+        // `fs::canonicalize` here was both ~4x slower on `..` searches and
+        // resolved symlinked directories to their target name instead of the
+        // link name, disagreeing with `--absolute-path` and with `-L`.
+        if path.components().any(|c| c == Component::ParentDir) {
+            return Cow::Owned(normalize_lexically(&path).into());
         }
         match path {
             Cow::Borrowed(p) => Cow::Borrowed(p.as_os_str()),
