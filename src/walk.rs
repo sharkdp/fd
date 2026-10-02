@@ -705,9 +705,7 @@ fn normalize_lexically(path: &Path) -> PathBuf {
                 let is_symlink = out
                     .symlink_metadata()
                     .is_ok_and(|m| m.file_type().is_symlink());
-                if is_symlink
-                    && let Ok(resolved) = out.normalize()
-                {
+                if is_symlink && let Ok(resolved) = out.normalize() {
                     out = resolved.into_path_buf();
                     out.pop();
                     continue;
