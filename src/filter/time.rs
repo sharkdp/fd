@@ -57,7 +57,7 @@ impl TimeFilter {
     pub fn applies_to(&self, t: &SystemTime) -> bool {
         match self {
             TimeFilter::Before(limit) => t < limit,
-            TimeFilter::After(limit) => t > limit,
+            TimeFilter::After(limit) => t >= limit,
         }
     }
 }
@@ -198,6 +198,21 @@ mod tests {
                 .unwrap()
                 .applies_to(&t1s_later)
         );
+    }
+
+    #[test]
+    fn time_filter_boundaries() {
+        let limit = UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+        let tick = Duration::from_nanos(100);
+        let after = TimeFilter::after("@1700000000").unwrap();
+        let before = TimeFilter::before("@1700000000").unwrap();
+
+        assert!(!after.applies_to(&(limit - tick)));
+        assert!(after.applies_to(&limit));
+        assert!(after.applies_to(&(limit + tick)));
+        assert!(before.applies_to(&(limit - tick)));
+        assert!(!before.applies_to(&limit));
+        assert!(!before.applies_to(&(limit + tick)));
     }
 
     #[test]
