@@ -56,12 +56,12 @@ impl TimeFilter {
         };
 
         // Try as a Unix epoch seconds with '@' prefix (e.g. "@1707723412").
-        if let Some(secs_str) = s.strip_prefix('@') {
-            if let Ok(secs) = secs_str.parse::<u64>() {
-                return UNIX_EPOCH
-                    .checked_add(Duration::from_secs(secs))
-                    .ok_or_else(|| format!("unix timestamp @{secs} is out of range"));
-            }
+        if let Some(secs_str) = s.strip_prefix('@')
+            && let Ok(secs) = secs_str.parse::<u64>()
+        {
+            return UNIX_EPOCH
+                .checked_add(Duration::from_secs(secs))
+                .ok_or_else(|| format!("unix timestamp @{secs} is out of range"));
         }
 
         // Report the most relevant error: date/time error for date-like input,
@@ -245,7 +245,10 @@ mod tests {
         // "not a valid date or duration".
         let err = TimeFilter::before("2025-11-31").unwrap_err();
         assert!(
-            err.contains("31") || err.contains("day") || err.contains("November") || err.contains("range"),
+            err.contains("31")
+                || err.contains("day")
+                || err.contains("November")
+                || err.contains("range"),
             "expected a helpful message about the invalid day, got: {err}"
         );
     }
