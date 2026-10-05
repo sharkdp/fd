@@ -98,7 +98,7 @@ base = ["use-jemalloc"]
 default = ["use-jemalloc", "completions"]
 
 [package.metadata.binstall]
-pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"
+pkg-url = "{ repo }/releases/download/v{ version }/fd-v{ version }-{ target }.{ archive-format }"
 bin-dir = "{ bin }-v{ version }-{ target }/{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
 
