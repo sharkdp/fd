@@ -4,6 +4,7 @@
 -
 
 ## Bugfixes
+- Avoid excessive output flushing with a single worker, see #1691 (@KingEmma7)
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
