@@ -1,10 +1,11 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -686,27 +687,53 @@ fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::E
     }
 }
 
+/// Caches the per-component resolution `normalize_lexically` does when a
+/// `..` pops a symlink. The prefix being popped at that point is the same
+/// path for every entry under a given search root: it comes from the search
+/// path itself (e.g. `blink/..`), not from anything the walk discovers, so
+/// the `symlink_metadata`/canonicalize call was being repeated, unchanged,
+/// once per entry. On a large tree that's measurable, and on Windows (where
+/// those calls are far more expensive) it was seconds rather than
+/// milliseconds; see the benchmarks on PR #2149. The number of distinct
+/// prefixes ever looked up in one run is tiny (one per `..`-containing
+/// search path in practice), so a plain `HashMap` behind a `Mutex` is enough.
+fn symlink_pop_cache() -> &'static Mutex<HashMap<PathBuf, Option<PathBuf>>> {
+    static CACHE: OnceLock<Mutex<HashMap<PathBuf, Option<PathBuf>>>> = OnceLock::new();
+    CACHE.get_or_init(Default::default)
+}
+
 /// Collapse `.` and `..` path components. This stays purely lexical (no
 /// filesystem access, so no symlink is resolved) *except* when the component
 /// a `..` would pop is itself a symlink: lexically popping it would disagree
 /// with the OS, since e.g. `symlink_dir/..` resolves relative to the
 /// symlink's real location, not to its parent directory. That's rare enough
 /// (nearly every `..` pops a real directory name found during the walk, not
-/// the symlink itself) that checking costs one extra `symlink_metadata` call
-/// only on a `..` component, not per entry, and only resolves that one
-/// component rather than the whole path. A leading `..` that can't be popped
-/// (there's nothing above it in `path`) is kept as-is.
+/// the symlink itself) that checking costs one `symlink_metadata` call per
+/// distinct popped prefix, not per entry (see `symlink_pop_cache`), and only
+/// resolves that one component rather than the whole path. A leading `..`
+/// that can't be popped (there's nothing above it in `path`) is kept as-is.
 fn normalize_lexically(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
-                let is_symlink = out
-                    .symlink_metadata()
-                    .is_ok_and(|m| m.file_type().is_symlink());
-                if is_symlink && let Ok(resolved) = out.normalize() {
-                    out = resolved.into_path_buf();
+                let resolved = symlink_pop_cache()
+                    .lock()
+                    .unwrap()
+                    .entry(out.clone())
+                    .or_insert_with(|| {
+                        let is_symlink = out
+                            .symlink_metadata()
+                            .is_ok_and(|m| m.file_type().is_symlink());
+                        is_symlink
+                            .then(|| out.normalize().ok())
+                            .flatten()
+                            .map(|n| n.into_path_buf())
+                    })
+                    .clone();
+                if let Some(resolved) = resolved {
+                    out = resolved;
                     out.pop();
                     continue;
                 }
