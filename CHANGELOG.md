@@ -1,7 +1,7 @@
 # Upcoming Release
 
 ## Features
--
+- Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
