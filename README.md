@@ -676,7 +676,7 @@ winget install sharkdp.fd
 
 ### On GuixOS
 
-You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) from the official repo:
+You can install [the fd package](https://packages.guix.gnu.org/packages/fd/10.4.2/) from the official repo:
 ```
 guix install fd
 ```
