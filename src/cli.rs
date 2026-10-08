@@ -476,6 +476,7 @@ pub struct Opts {
     ///   '{/}': basename
     ///   '{//}': parent directory
     ///   '{.}': path without file extension
+    ///   '{.ext}': file extension
     ///   '{/.}': basename without file extension
     #[arg(
         long,
@@ -910,6 +911,7 @@ impl clap::Args for Exec {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
+                       '{.ext}': file extension\n  \
                        '{/.}': basename without file extension\n  \
                        '{{':   literal '{' (for escaping)\n  \
                        '}}':   literal '}' (for escaping)\n\n\
@@ -945,6 +947,7 @@ impl clap::Args for Exec {
                        '{/}':  basename\n  \
                        '{//}': parent directory\n  \
                        '{.}':  path without file extension\n  \
+                       '{.ext}': file extension\n  \
                        '{/.}': basename without file extension\n  \
                        '{{':   literal '{' (for escaping)\n  \
                        '}}':   literal '}' (for escaping)\n\n\
