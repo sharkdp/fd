@@ -2724,6 +2724,7 @@ fn test_custom_path_separator() {
 
 /// Explicit search paths should print with one native separator style.
 /// Compare raw stdout so the usual `/` -> OS-separator rewrite cannot hide a mixed `./foo\\bar`.
+/// TestEnv clears MSYSTEM so Git Bash CI does not force `/` via default_path_separator.
 #[test]
 fn test_explicit_search_path_uses_native_separators() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
