@@ -120,6 +120,21 @@ pub fn strip_current_dir(path: &Path) -> &Path {
     path.strip_prefix(".").unwrap_or(path)
 }
 
+/// Replace `/` with the platform's main separator.
+///
+/// On Windows, both `/` and `\\` are valid separators, but walk results keep the
+/// search-path prefix as given and join the remainder with `\\`. Converting the
+/// prefix up front keeps each printed path on one separator style.
+pub fn normalize_path_separators(path: &Path) -> PathBuf {
+    if std::path::MAIN_SEPARATOR == '/' {
+        return path.to_path_buf();
+    }
+    match path.to_str() {
+        Some(s) if s.contains('/') => PathBuf::from(s.replace('/', std::path::MAIN_SEPARATOR_STR)),
+        _ => path.to_path_buf(),
+    }
+}
+
 /// Default value for the path_separator, mainly for MSYS/MSYS2, which set the MSYSTEM
 /// environment variable, and we set fd's path separator to '/' rather than Rust's default of '\'.
 ///
@@ -137,7 +152,7 @@ pub fn default_path_separator() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::strip_current_dir;
+    use super::{normalize_path_separators, strip_current_dir};
     use std::path::Path;
 
     #[test]
@@ -152,5 +167,25 @@ mod tests {
             strip_current_dir(Path::new("foo/bar/baz")),
             Path::new("foo/bar/baz")
         );
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn normalize_path_separators_keeps_unix_slashes() {
+        assert_eq!(
+            normalize_path_separators(Path::new("./foo/bar")),
+            Path::new("./foo/bar")
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn normalize_path_separators_converts_slashes_on_windows() {
+        assert_eq!(
+            normalize_path_separators(Path::new("./foo/bar")),
+            Path::new(r".\foo\bar")
+        );
+        assert_eq!(normalize_path_separators(Path::new("./")), Path::new(r".\"));
+        assert_eq!(normalize_path_separators(Path::new(".")), Path::new("."));
     }
 }
