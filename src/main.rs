@@ -180,19 +180,28 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     // against the file name (see `run`), so a path separator in any of them is
     // the same silent "no results" footgun.
     for pattern in std::iter::once(&opts.pattern).chain(opts.exprs.iter().flatten()) {
-        ensure_single_search_pattern_is_not_a_path(pattern)?;
+        ensure_single_search_pattern_is_not_a_path(pattern, opts.glob)?;
     }
     Ok(())
 }
 
 /// Apply the path-separator diagnostic to a single pattern. See
 /// [`ensure_search_pattern_is_not_a_path`] for the rationale of each case.
-fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
+fn ensure_single_search_pattern_is_not_a_path(pattern: &str, glob: bool) -> Result<()> {
+    // A leading `**/` in a glob matches zero or more directories, so e.g.
+    // `**/*.rs` still matches plain file names. Only look for separators after it.
+    let mut checked = pattern;
+    if glob {
+        while let Some(rest) = checked.strip_prefix("**/") {
+            checked = rest;
+        }
+    }
+
     // Start with the cheap check: '/' is always a path separator, including on
     // Windows, and has no regex meaning, so flagging it is safe and catches the
     // Linux/macOS mistake of pasting a full path as the pattern.
     #[cfg_attr(not(windows), allow(unused_mut))]
-    let mut should_warn = pattern.contains('/');
+    let mut should_warn = checked.contains('/');
 
     // On Windows we additionally accept the native `\` separator, but only when
     // the pattern actually resolves to an existing directory - `\` is also the

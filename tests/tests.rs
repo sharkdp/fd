@@ -442,6 +442,47 @@ fn test_and_pattern_with_forward_slash_is_rejected() {
     );
 }
 
+/// A leading `**/` in a glob matches zero or more directories, so such a glob
+/// can still match a plain file name and must not trigger the path-separator
+/// diagnostic. Regression from the fix for #1873, see #2154.
+#[test]
+fn test_glob_with_leading_double_star_is_not_rejected() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_output(
+        &["--glob", "**/*.foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    te.assert_output(
+        &["--glob", "**/**/[a-c].foo"],
+        "a.foo
+        one/b.foo
+        one/two/c.foo",
+    );
+
+    te.assert_output(
+        &["--glob", "*.foo", "--and", "**/[cd]*"],
+        "one/two/c.foo
+        one/two/three/d.foo",
+    );
+
+    // A separator after the leading `**/` can still never match a file name.
+    te.assert_failure_with_error(
+        &["--glob", "**/two/*.foo"],
+        "[fd error]: The search pattern '**/two/*.foo' contains a path-separation character and will not lead to any search results.",
+    );
+
+    // Outside of --glob, `**/` has no special meaning.
+    te.assert_failure_with_error(
+        &["**/foo"],
+        "[fd error]: The search pattern '**/foo' contains a path-separation character and will not lead to any search results.",
+    );
+}
+
 /// Explicit root path
 #[test]
 fn test_explicit_root_path() {
