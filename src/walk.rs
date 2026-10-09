@@ -1,11 +1,10 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::io::{self, Write};
 use std::mem;
 use std::path::{Component, Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -313,6 +312,9 @@ struct WorkerState {
     quit_flag: Arc<AtomicBool>,
     /// Flag specifically for quitting due to ^C
     interrupt_flag: Arc<AtomicBool>,
+    /// Search roots containing a `..` (as joined onto `full_path_base`), paired with their
+    /// normalized form. Only filled for `--full-path`.
+    resolved_roots: Vec<(PathBuf, PathBuf)>,
 }
 
 impl WorkerState {
@@ -325,7 +327,25 @@ impl WorkerState {
             config,
             quit_flag,
             interrupt_flag,
+            resolved_roots: Vec::new(),
         }
+    }
+
+    /// A `..` in a path can only come from a search root, never from the walk itself, so
+    /// normalize each such root once here instead of once per entry.
+    fn resolve_search_roots(&mut self, paths: &[PathBuf]) {
+        let Some(cwd) = self.config.full_path_base.as_deref() else {
+            return;
+        };
+        self.resolved_roots = paths
+            .iter()
+            .map(|path| absolute_search_path(path, cwd))
+            .filter(|path| path.components().any(|c| c == Component::ParentDir))
+            .map(|path| {
+                let normalized = normalize_lexically(&path);
+                (path, normalized)
+            })
+            .collect();
     }
 
     fn build_overrides(&self, paths: &[PathBuf]) -> Result<Override> {
@@ -445,6 +465,7 @@ impl WorkerState {
         walker.run(|| {
             let patterns = &self.patterns;
             let config = &self.config;
+            let resolved_roots = self.resolved_roots.as_slice();
             let quit_flag = self.quit_flag.as_ref();
 
             let mut limit = 0x100;
@@ -505,7 +526,11 @@ impl WorkerState {
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
+                let search_str = search_str_for_entry(
+                    entry_path,
+                    config.full_path_base.as_deref(),
+                    resolved_roots,
+                );
 
                 if !patterns
                     .iter()
@@ -687,53 +712,33 @@ fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::E
     }
 }
 
-/// Caches the per-component resolution `normalize_lexically` does when a
-/// `..` pops a symlink. The prefix being popped at that point is the same
-/// path for every entry under a given search root: it comes from the search
-/// path itself (e.g. `blink/..`), not from anything the walk discovers, so
-/// the `symlink_metadata`/canonicalize call was being repeated, unchanged,
-/// once per entry. On a large tree that's measurable, and on Windows (where
-/// those calls are far more expensive) it was seconds rather than
-/// milliseconds; see the benchmarks on PR #2149. The number of distinct
-/// prefixes ever looked up in one run is tiny (one per `..`-containing
-/// search path in practice), so a plain `HashMap` behind a `Mutex` is enough.
-fn symlink_pop_cache() -> &'static Mutex<HashMap<PathBuf, Option<PathBuf>>> {
-    static CACHE: OnceLock<Mutex<HashMap<PathBuf, Option<PathBuf>>>> = OnceLock::new();
-    CACHE.get_or_init(Default::default)
+/// Join a search path onto `cwd` the way `search_str_for_entry` does for its entries.
+fn absolute_search_path(path: &Path, cwd: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        cwd.join(path.strip_prefix(".").unwrap_or(path))
+    }
 }
 
 /// Collapse `.` and `..` path components. This stays purely lexical (no
 /// filesystem access, so no symlink is resolved) *except* when the component
 /// a `..` would pop is itself a symlink: lexically popping it would disagree
 /// with the OS, since e.g. `symlink_dir/..` resolves relative to the
-/// symlink's real location, not to its parent directory. That's rare enough
-/// (nearly every `..` pops a real directory name found during the walk, not
-/// the symlink itself) that checking costs one `symlink_metadata` call per
-/// distinct popped prefix, not per entry (see `symlink_pop_cache`), and only
-/// resolves that one component rather than the whole path. A leading `..`
-/// that can't be popped (there's nothing above it in `path`) is kept as-is.
+/// symlink's real location, not to its parent directory. Only that one
+/// component is resolved, not the whole path. A leading `..` that can't be
+/// popped (there's nothing above it in `path`) is kept as-is.
 fn normalize_lexically(path: &Path) -> PathBuf {
     let mut out = PathBuf::new();
     for component in path.components() {
         match component {
             Component::CurDir => {}
             Component::ParentDir => {
-                let resolved = symlink_pop_cache()
-                    .lock()
-                    .unwrap()
-                    .entry(out.clone())
-                    .or_insert_with(|| {
-                        let is_symlink = out
-                            .symlink_metadata()
-                            .is_ok_and(|m| m.file_type().is_symlink());
-                        is_symlink
-                            .then(|| out.normalize().ok())
-                            .flatten()
-                            .map(|n| n.into_path_buf())
-                    })
-                    .clone();
-                if let Some(resolved) = resolved {
-                    out = resolved;
+                let is_symlink = out
+                    .symlink_metadata()
+                    .is_ok_and(|m| m.file_type().is_symlink());
+                if let Some(resolved) = is_symlink.then(|| out.normalize().ok()).flatten() {
+                    out = resolved.into_path_buf();
                     out.pop();
                     continue;
                 }
@@ -750,6 +755,7 @@ fn normalize_lexically(path: &Path) -> PathBuf {
 fn search_str_for_entry<'a>(
     entry_path: &'a std::path::Path,
     full_path_base: Option<&std::path::Path>,
+    resolved_roots: &[(PathBuf, PathBuf)],
 ) -> Cow<'a, OsStr> {
     if let Some(cwd) = full_path_base {
         // If full_path_base is some, that means that we need to return
@@ -760,16 +766,25 @@ fn search_str_for_entry<'a>(
             let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
             Cow::Owned(cwd.join(path))
         };
-        // Collapse `..` components (e.g. from a search path like `..`) lexically,
-        // so the result doesn't contain a literal `..`, matching `--absolute-path`
-        // (which only resolves the search root once). This must not touch the
-        // filesystem: `--absolute-path` never re-resolves symlinks found during
-        // the walk, only the root search path, and doing a per-entry
-        // `fs::canonicalize` here was both ~4x slower on `..` searches and
-        // resolved symlinked directories to their target name instead of the
-        // link name, disagreeing with `--absolute-path` and with `-L`.
+        // Collapse `..` components (e.g. from a search path like `..`), so the result
+        // doesn't contain a literal `..`, matching `--absolute-path` (which only resolves
+        // the search root once). A `..` can only come from the search root, so replace that
+        // root by its already-normalized form instead of normalizing every entry. This
+        // must not re-resolve symlinks found during the walk: `--absolute-path` never does.
         if path.components().any(|c| c == Component::ParentDir) {
-            return Cow::Owned(normalize_lexically(&path).into());
+            let root = resolved_roots
+                .iter()
+                .filter(|(root, _)| path.starts_with(root))
+                .max_by_key(|(root, _)| root.components().count());
+            let normalized = match root {
+                Some((root, normalized)) => match path.strip_prefix(root) {
+                    Ok(rest) if rest.as_os_str().is_empty() => normalized.clone(),
+                    Ok(rest) => normalized.join(rest),
+                    Err(_) => normalize_lexically(&path),
+                },
+                None => normalize_lexically(&path),
+            };
+            return Cow::Owned(normalized.into());
         }
         match path {
             Cow::Borrowed(p) => Cow::Borrowed(p.as_os_str()),
@@ -793,7 +808,9 @@ fn search_str_for_entry<'a>(
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
-    WorkerState::new(patterns, config).scan(paths)
+    let mut state = WorkerState::new(patterns, config);
+    state.resolve_search_roots(paths);
+    state.scan(paths)
 }
 
 #[cfg(test)]
@@ -805,7 +822,7 @@ mod tests {
     fn search_str_for_entry_with_relative_path() {
         let full_path_base = Some(Path::new("/home/user"));
         assert_eq!(
-            search_str_for_entry(Path::new("foo/bar"), full_path_base),
+            search_str_for_entry(Path::new("foo/bar"), full_path_base, &[]),
             PathBuf::from("/home/user/foo/bar")
         );
     }
@@ -814,7 +831,7 @@ mod tests {
     fn search_str_for_entry_strips_dot_prefix() {
         let full_path_base = Some(Path::new("/home/user"));
         assert_eq!(
-            search_str_for_entry(Path::new("./foo/bar"), full_path_base),
+            search_str_for_entry(Path::new("./foo/bar"), full_path_base, &[]),
             PathBuf::from("/home/user/foo/bar")
         );
     }
@@ -823,7 +840,7 @@ mod tests {
     fn search_str_for_entry_with_absolute_path() {
         let full_path_base = Some(Path::new("/home/user"));
         assert_eq!(
-            search_str_for_entry(Path::new("/absolute/path"), full_path_base),
+            search_str_for_entry(Path::new("/absolute/path"), full_path_base, &[]),
             PathBuf::from("/absolute/path")
         );
     }
@@ -831,7 +848,7 @@ mod tests {
     #[test]
     fn search_str_no_base_dir() {
         assert_eq!(
-            search_str_for_entry(Path::new("./foo/bar"), None),
+            search_str_for_entry(Path::new("./foo/bar"), None, &[]),
             PathBuf::from("bar")
         );
     }
@@ -839,7 +856,7 @@ mod tests {
     #[test]
     fn search_str_no_base_dir_with_plain_relative_path() {
         assert_eq!(
-            search_str_for_entry(Path::new("foo/bar"), None),
+            search_str_for_entry(Path::new("foo/bar"), None, &[]),
             PathBuf::from("bar")
         );
     }
@@ -847,7 +864,7 @@ mod tests {
     #[test]
     fn search_str_no_base_dir_with_file_in_current_dir() {
         assert_eq!(
-            search_str_for_entry(Path::new("foo"), None),
+            search_str_for_entry(Path::new("foo"), None, &[]),
             PathBuf::from("foo")
         );
     }
