@@ -48,7 +48,7 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file,
+    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
