@@ -167,7 +167,7 @@ _fd() {
     $no'(strip-cwd-prefix exec-cmds)--strip-cwd-prefix=-[When to strip ./]::when:(always never auto)'
 
     + and
-    '--and=[additional required search path]:pattern'
+    '--and=[additional required search pattern]:pattern'
 
 
     + args # positional arguments
