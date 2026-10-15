@@ -449,6 +449,27 @@ a (temporary) shell script.
 Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{//}`,
 `{.}`, `{/.}`) to prevent the shell from interpreting them before `fd` sees them.
 
+### `fd` crashes when another memory allocator is preloaded
+
+The Linux binaries link against jemalloc for speed, through the `use-jemalloc` feature that is on by
+default. Preloading a different allocator, for example
+
+``` bash
+> LD_PRELOAD=/usr/bin/mimalloc fd
+```
+
+makes the two disagree about which of them owns an allocation, and `fd` crashes. `fd` cannot detect
+this and report it: by the time it runs its first allocation, the preloaded library is already the one
+answering.
+
+If you need `fd` to run with a preloaded allocator, build it without that feature:
+
+``` bash
+> cargo build --release --no-default-features --features completions
+```
+
+The `completions` feature is listed separately because `--no-default-features` turns it off too.
+
 ## Integration with other programs
 
 ### Using fd with `fzf`
