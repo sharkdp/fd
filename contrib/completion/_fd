@@ -217,7 +217,7 @@ _fd() {
           'T:terabytes  (10^12 = 1000^4 bytes)'
           'Ki:kibibytes  ( 2^10 = 1024   bytes)'
           'Mi:mebibytes  ( 2^20 = 1024^2 bytes)'
-          'Gi:gigibytes  ( 2^30 = 1024^3 bytes)'
+          'Gi:gibibytes  ( 2^30 = 1024^3 bytes)'
           'Ti:tebibytes  ( 2^40 = 1024^4 bytes)'
         )
         _describe -t units 'size limit units' suff -V 'units'
