@@ -639,7 +639,9 @@ pub struct Opts {
     pub pattern: String,
 
     /// Set the path separator to use when printing file paths. The default is
-    /// the OS-specific separator ('/' on Unix, '\' on Windows).
+    /// the OS-specific separator ('/' on Unix, '\' on Windows), except that on
+    /// Windows fd uses '/' when the MSYS environment variable is set (MSYS2,
+    /// Git Bash, ...).
     #[arg(
         long,
         value_name = "separator",
