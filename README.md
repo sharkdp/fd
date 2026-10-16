@@ -311,7 +311,7 @@ Usage: fd [OPTIONS] [pattern [path]...]
 
 Arguments:
   [pattern]  the search pattern (a regular expression, unless '--glob' is used; optional)
-  [path]...  the root directories for the filesystem search (optional)
+  [path]...  the root directories for the filesystem search (optional, requires pattern first)
 
 Options:
   -H, --hidden                     Search hidden files and directories
