@@ -335,34 +335,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         ls_colors,
         hyperlink,
         interactive_terminal,
-        file_types: opts.filetype.as_ref().map(|values| {
-            use crate::cli::FileType::*;
-            let mut file_types = FileTypes::default();
-            for value in values {
-                match value {
-                    File => file_types.files = true,
-                    Directory => file_types.directories = true,
-                    Symlink => file_types.symlinks = true,
-                    Executable => {
-                        file_types.executables_only = true;
-                        file_types.files = true;
-                    }
-                    Empty => file_types.empty_only = true,
-                    BlockDevice => file_types.block_devices = true,
-                    CharDevice => file_types.char_devices = true,
-                    Socket => file_types.sockets = true,
-                    Pipe => file_types.pipes = true,
-                }
-            }
-
-            // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
-                file_types.files = true;
-                file_types.directories = true;
-            }
-
-            file_types
-        }),
+        file_types: opts
+            .filetype
+            .as_ref()
+            .map(|values| FileTypes::from_types(values)),
         extensions: opts
             .extensions
             .as_ref()
