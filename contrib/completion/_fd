@@ -71,6 +71,7 @@ _fd() {
     + '(no-regex-pattern)' # non-regex-based search pattern
     {-g,--glob}'[perform a glob-based search]'
     {-F,--fixed-strings}'[treat pattern as literal string instead of a regex]'
+    '!--literal'
 
     + '(no-require-git)'
     "$no(no-ignore-full --no-ignore-vcs --no-require-git)--no-require-git[don't require git repo to respect gitignores]"
@@ -89,6 +90,9 @@ _fd() {
 
     + '(long-listing)' # long-listing output
     '(abs-path null-sep max-results exec-cmds)'{-l,--list-details}'[use a long listing format with file metadata]'
+
+    + '(output-format)' # template-based output
+    '(long-listing)'--format=[print results according to template]:format
 
     + '(max-results)' # max number of results
     '(long-listing exec-cmds)--max-results=[limit number of search results to given count and quit]:count'
