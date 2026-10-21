@@ -54,7 +54,7 @@ _fd() {
 
     + '(no-ignore-full)' # all ignore files
     '(no-ignore-partial)'{-I,--no-ignore}"[don't respect .(git|fd)ignore and global ignore files]"
-    $no'(no-ignore-partial)*'{-u,--unrestricted}'[alias for --no-ignore, when repeated also alias for --hidden]'
+    $no'(no-ignore-partial)*'{-u,--unrestricted}'[alias for --no-ignore --hidden]'
 
     + no-ignore-partial # some ignore files
     "(no-ignore-full --no-ignore-vcs)--no-ignore-vcs[don't respect .gitignore files]"
@@ -71,6 +71,7 @@ _fd() {
     + '(no-regex-pattern)' # non-regex-based search pattern
     {-g,--glob}'[perform a glob-based search]'
     {-F,--fixed-strings}'[treat pattern as literal string instead of a regex]'
+    '--exact[pattern must exactly match the full filename]'
 
     + '(no-require-git)'
     "$no(no-ignore-full --no-ignore-vcs --no-require-git)--no-require-git[don't require git repo to respect gitignores]"
@@ -80,6 +81,7 @@ _fd() {
 
     + '(follow)' # follow symlinks
     {-L,--follow}'[follow symbolic links to directories]'
+    '!--dereference'
 
     + '(abs-path)' # show absolute paths
     '(long-listing)'{-a,--absolute-path}'[show absolute paths instead of relative paths]'
@@ -91,8 +93,12 @@ _fd() {
     '(abs-path null-sep max-results exec-cmds)'{-l,--list-details}'[use a long listing format with file metadata]'
 
     + '(max-results)' # max number of results
-    '(long-listing exec-cmds)--max-results=[limit number of search results to given count and quit]:count'
+    '(long-listing exec-cmds quiet)--max-results=[limit number of search results to given count and quit]:count'
     '(long-listing exec-cmds)-1[limit to a single search result and quit]'
+
+    + '(quiet)'
+    '(max-results)'{-q,--quiet}'[print nothing. exit code 1 if no matches]'
+    '!(max-results)--has-results'
 
     + '(fs-errors)' # file-system errors
     $no'--show-errors[enable the display of filesystem errors]'
@@ -104,8 +110,9 @@ _fd() {
 
     + dir-depth # directory depth
     '(--exact-depth -d --max-depth)'{-d+,--max-depth=}'[set max directory depth to descend when searching]:depth'
-    '!(--exact-depth -d --max-depth)--maxdepth:depth'
+    '!(--exact-depth -d --max-depth)--maxdepth=:depth'
     '(--exact-depth --min-depth)--min-depth=[set directory depth to descend before start searching]:depth'
+    '!(--exact-depth --min-depth)--mindepth=:depth'
     '(--exact-depth -d --max-depth --maxdepth --min-depth)--exact-depth=[only search at the exact given directory depth]:depth'
 
     + prune # pruning
@@ -140,6 +147,7 @@ _fd() {
     ))'
 
     '--hyperlink=-[add hyperlinks to output paths]::when:(auto never always)'
+    '!--hyper=-'
 
     + '(threads)'
     {-j+,--threads=}'[set the number of threads for searching and executing]:number of threads'
@@ -151,6 +159,8 @@ _fd() {
 
     + other
     '!(--max-buffer-time)--max-buffer-time=[set amount of time to buffer before showing output]:time (ms)'
+
+    '*--ignore-contain=[Ignore dirs containing named file]:name'
 
     + '(about)' # about flags
     '(: * -)'{-h,--help}'[display help message]'
@@ -167,7 +177,7 @@ _fd() {
     $no'(strip-cwd-prefix exec-cmds)--strip-cwd-prefix=-[When to strip ./]::when:(always never auto)'
 
     + and
-    '--and=[additional required search pattern]:pattern'
+    '*--and=[additional required search pattern]:pattern'
 
 
     + args # positional arguments
