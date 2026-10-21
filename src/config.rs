@@ -93,6 +93,12 @@ pub struct Config {
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandSet>>,
 
+    /// If supplied, run this command for each match; only include results where it exits 0.
+    pub filter_command: Option<Arc<CommandSet>>,
+
+    /// If supplied, run this command for each match; exclude results where it exits 0.
+    pub reject_command: Option<Arc<CommandSet>>,
+
     /// Maximum number of search results to pass to each `command`. If zero, the number is
     /// unlimited.
     pub batch_size: usize,
