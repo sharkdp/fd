@@ -18,6 +18,11 @@ pub fn remove_extension(path: &Path) -> OsString {
     strip_current_dir(&path).to_owned().into_os_string()
 }
 
+/// Returns the extension of the path.
+pub fn extension(path: &Path) -> &OsStr {
+    path.extension().unwrap_or_default()
+}
+
 /// Removes the basename from the path.
 pub fn dirname(path: &Path) -> OsString {
     path.parent()
@@ -59,6 +64,12 @@ mod path_tests {
         hidden:             remove_extension  for  ".foo"         =>  ".foo"
         remove_ext_utf8:    remove_extension  for  "💖.txt"       =>  "💖"
         remove_ext_empty:   remove_extension  for  ""             =>  ""
+
+        extension_simple:  extension  for  "foo.txt"      =>  "txt"
+        extension_dir:     extension  for  "dir/foo.txt"  =>  "txt"
+        extension_hidden:  extension  for  ".foo"         =>  ""
+        extension_no_ext:  extension  for  "foo"          =>  ""
+        extension_utf8:    extension  for  "dir/foo.💖"   =>  "💖"
 
         basename_simple:  basename  for  "foo.txt"      =>  "foo.txt"
         basename_dir:     basename  for  "dir/foo.txt"  =>  "foo.txt"
