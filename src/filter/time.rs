@@ -26,31 +26,38 @@ fn now() -> Zoned {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
+    fn from_str(s: &str) -> Result<SystemTime, String> {
         if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
+            now()
+                .checked_sub(span)
+                .map(Into::into)
+                .map_err(|e| format!("duration '{s}' is out of range: {e}"))
+        } else if let Some(secs) = s.strip_prefix('@') {
+            secs.parse::<u64>()
+                .ok()
+                .and_then(|secs| UNIX_EPOCH.checked_add(Duration::from_secs(secs)))
+                .ok_or_else(|| {
+                    format!("'{s}' is not a valid unix timestamp: expected '@' followed by a number of seconds since the epoch")
+                })
         } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
+            Ok(timestamp.into())
+        } else {
+            match s.parse::<DateTime>() {
+                Ok(datetime) => TimeZone::system()
                     .to_ambiguous_zoned(datetime)
                     .later()
-                    .ok()?
-                    .into(),
-            )
-        } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            UNIX_EPOCH.checked_add(Duration::from_secs(timestamp_secs))
+                    .map(Into::into)
+                    .map_err(|e| format!("date '{s}' does not exist in the local time zone: {e}")),
+                Err(e) => Err(format!("'{s}' is not a valid date or duration: {e}")),
+            }
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
+    pub fn before(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
+    pub fn after(s: &str) -> Result<TimeFilter, String> {
         TimeFilter::from_str(s).map(TimeFilter::After)
     }
 
@@ -177,7 +184,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
@@ -203,8 +210,32 @@ mod tests {
     #[test]
     fn out_of_range_unix_timestamp_is_rejected() {
         // A '@' timestamp large enough to overflow SystemTime must return
-        // None rather than panicking.
-        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_none());
-        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_none());
+        // an error rather than panicking.
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_err());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_err());
+    }
+
+    #[test]
+    fn error_messages_explain_why_parsing_failed() {
+        // A well-formatted date that does not exist in the calendar should say so,
+        // instead of only claiming the input is invalid.
+        let err = TimeFilter::before("2025-11-31").unwrap_err();
+        assert!(
+            err.contains("2025-11-31") && err.contains("day"),
+            "unexpected error message: {err}"
+        );
+
+        let err = TimeFilter::after("not-a-date").unwrap_err();
+        assert!(
+            err.contains("not-a-date")
+                && err.len() > "'not-a-date' is not a valid date or duration".len(),
+            "unexpected error message: {err}"
+        );
+
+        let err = TimeFilter::before("@nope").unwrap_err();
+        assert!(
+            err.contains("unix timestamp"),
+            "unexpected error message: {err}"
+        );
     }
 }
