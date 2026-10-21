@@ -1,8 +1,5 @@
-use std::sync::Mutex;
-
 use crate::config::Config;
-use crate::error::print_error;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::walk::WorkerResult;
 
 use super::CommandSet;
@@ -13,7 +10,6 @@ use super::CommandSet;
 pub fn job(
     results: impl IntoIterator<Item = WorkerResult>,
     cmd: &CommandSet,
-    out_perm: &Mutex<()>,
     config: &Config,
 ) -> ExitCode {
     // Output should be buffered when only running a single thread
@@ -27,7 +23,7 @@ pub fn job(
             WorkerResult::Entry(dir_entry) => dir_entry,
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
-                    print_error(err.to_string());
+                    print_error!("{}", err);
                 }
                 continue;
             }
@@ -37,7 +33,7 @@ pub fn job(
         let code = cmd.execute(
             dir_entry.stripped_path(config),
             config.path_separator.as_deref(),
-            out_perm,
+            config.null_separator,
             buffer_output,
         );
         ret = merge_exitcodes([ret, code]);
@@ -57,7 +53,7 @@ pub fn batch(
             WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
-                    print_error(err.to_string());
+                    print_error!("{}", err);
                 }
                 None
             }

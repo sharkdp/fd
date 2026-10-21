@@ -7,6 +7,7 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
+use crate::sanitize::sanitize_for_term;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -15,11 +16,11 @@ fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
 // TODO: this function is performance critical and can probably be optimized
 pub fn print_entry<W: Write>(stdout: &mut W, entry: &DirEntry, config: &Config) -> io::Result<()> {
     let mut has_hyperlink = false;
-    if config.hyperlink {
-        if let Some(url) = PathUrl::new(entry.path()) {
-            write!(stdout, "\x1B]8;;{url}\x1B\\")?;
-            has_hyperlink = true;
-        }
+    if config.hyperlink
+        && let Some(url) = PathUrl::new(entry.path())
+    {
+        write!(stdout, "\x1B]8;;{url}\x1B\\")?;
+        has_hyperlink = true;
     }
 
     if let Some(ref format) = config.format {
@@ -76,7 +77,12 @@ fn print_entry_format<W: Write>(
         config.path_separator.as_deref(),
     );
     // TODO: support writing raw bytes on unix?
-    write!(stdout, "{}", output.to_string_lossy())
+    let s = output.to_string_lossy();
+    write!(
+        stdout,
+        "{}",
+        sanitize_for_term(&s, config.interactive_terminal)
+    )
 }
 
 // TODO: this function is performance critical and can probably be optimized
@@ -86,7 +92,6 @@ fn print_entry_colorized<W: Write>(
     config: &Config,
     ls_colors: &LsColors,
 ) -> io::Result<()> {
-    // Split the path between the parent and the last component
     let mut offset = 0;
     let path = entry.stripped_path(config);
     let path_str = path.to_string_lossy();
@@ -112,14 +117,30 @@ fn print_entry_colorized<W: Write>(
             .style_for_indicator(Indicator::Directory)
             .map(Style::to_nu_ansi_term_style)
             .unwrap_or_default();
-        write!(stdout, "{}", style.paint(parent_str))?;
+        let safe_parent = sanitize_for_term(&parent_str, config.interactive_terminal);
+        // We explicitly use prefix/suffix instead of paint so that we can use Sanitized
+        write!(
+            stdout,
+            "{}{}{}",
+            style.prefix(),
+            safe_parent,
+            style.suffix()
+        )?;
     }
 
     let style = entry
         .style(ls_colors)
         .map(Style::to_nu_ansi_term_style)
         .unwrap_or_default();
-    write!(stdout, "{}", style.paint(&path_str[offset..]))?;
+    let safe_basename = sanitize_for_term(&path_str[offset..], config.interactive_terminal);
+    // We explicitly use prefix/suffix instead of paint so that we can use Sanitized
+    write!(
+        stdout,
+        "{}{}{}",
+        style.prefix(),
+        safe_basename,
+        style.suffix()
+    )?;
 
     print_trailing_slash(
         stdout,
@@ -143,7 +164,8 @@ fn print_entry_uncolorized_base<W: Write>(
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    write!(stdout, "{path_string}")?;
+    let safe = sanitize_for_term(&path_string, config.interactive_terminal);
+    write!(stdout, "{safe}")?;
     print_trailing_slash(stdout, entry, config, None)
 }
 
@@ -165,10 +187,9 @@ fn print_entry_uncolorized<W: Write>(
     use std::os::unix::ffi::OsStrExt;
 
     if config.interactive_terminal || config.path_separator.is_some() {
-        // Fall back to the base implementation
         print_entry_uncolorized_base(stdout, entry, config)
     } else {
-        // Print path as raw bytes, allowing invalid UTF-8 filenames to be passed to other processes
+        // Piped output: raw bytes so invalid UTF-8 filenames reach downstream tools intact.
         stdout.write_all(entry.stripped_path(config).as_os_str().as_bytes())?;
         print_trailing_slash(stdout, entry, config, None)
     }

@@ -6,12 +6,12 @@ use std::io;
 use std::iter;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use std::sync::Mutex;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use argmax::Command;
 
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exec::command::OutputBuffer;
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::fmt::{FormatTemplate, Token};
 
 use self::command::{execute_commands, handle_cmd_error};
@@ -43,7 +43,7 @@ impl CommandSet {
             mode: ExecutionMode::OneByOne,
             commands: input
                 .into_iter()
-                .map(CommandTemplate::new)
+                .map(|args| CommandTemplate::new(args, ExecutionMode::OneByOne))
                 .collect::<Result<_>>()?,
         })
     }
@@ -59,12 +59,9 @@ impl CommandSet {
             commands: input
                 .into_iter()
                 .map(|args| {
-                    let cmd = CommandTemplate::new(args)?;
+                    let cmd = CommandTemplate::new(args, ExecutionMode::Batch)?;
                     if cmd.number_of_tokens() > 1 {
                         bail!("Only one placeholder allowed for batch commands");
-                    }
-                    if cmd.args[0].has_tokens() {
-                        bail!("First argument of exec-batch is expected to be a fixed executable");
                     }
                     Ok(cmd)
                 })
@@ -80,14 +77,14 @@ impl CommandSet {
         &self,
         input: &Path,
         path_separator: Option<&str>,
-        out_perm: &Mutex<()>,
+        null_separator: bool,
         buffer_output: bool,
     ) -> ExitCode {
         let commands = self
             .commands
             .iter()
             .map(|c| c.generate(input, path_separator));
-        execute_commands(commands, out_perm, buffer_output)
+        execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
@@ -220,7 +217,7 @@ struct CommandTemplate {
 }
 
 impl CommandTemplate {
-    fn new<I, S>(input: I) -> Result<Self>
+    fn new<I, S>(input: I, mode: ExecutionMode) -> Result<Self>
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -243,6 +240,11 @@ impl CommandTemplate {
         // https://github.com/clap-rs/clap/issues/3542
         if args.is_empty() {
             bail!("No executable provided for --exec or --exec-batch");
+        }
+
+        // A placeholder as the executable is meaningful for `--exec` but never for `--exec-batch`.
+        if mode == ExecutionMode::Batch && args[0].has_tokens() {
+            bail!("First argument of --exec-batch must be a fixed executable, not a placeholder");
         }
 
         // If a placeholder token was not supplied, append one at the end of the command.
@@ -365,7 +367,8 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces() {
-        let template = CommandTemplate::new(vec!["{{}}", "{{", "{.}}"]).unwrap();
+        let template =
+            CommandTemplate::new(vec!["{{}}", "{{", "{.}}"], ExecutionMode::OneByOne).unwrap();
         assert_eq!(
             generate_str(&template, "foo"),
             vec!["{}", "{", "{.}", "foo"]
@@ -374,8 +377,9 @@ mod tests {
 
     #[test]
     fn tokens_with_literal_braces_and_placeholder() {
-        let template = CommandTemplate::new(vec!["{{{},end}"]).unwrap();
-        assert_eq!(generate_str(&template, "foo"), vec!["{foo,end}"]);
+        let template =
+            CommandTemplate::new(vec!["echo", "{{{},end}"], ExecutionMode::OneByOne).unwrap();
+        assert_eq!(generate_str(&template, "foo"), vec!["echo", "{foo,end}"]);
     }
 
     #[test]
@@ -421,12 +425,21 @@ mod tests {
 
     #[test]
     fn template_no_args() {
-        assert!(CommandTemplate::new::<Vec<_>, &'static str>(vec![]).is_err());
+        assert!(
+            CommandTemplate::new::<Vec<_>, &'static str>(vec![], ExecutionMode::OneByOne).is_err()
+        );
     }
 
     #[test]
     fn command_set_no_args() {
         assert!(CommandSet::new(vec![vec!["echo"], vec![]]).is_err());
+    }
+
+    #[test]
+    fn placeholder_as_executable_rejected() {
+        assert!(CommandSet::new(vec![vec!["{}"]]).is_ok());
+        assert!(CommandSet::new(vec![vec!["{/}", "arg"]]).is_ok());
+        assert!(CommandSet::new_batch(vec![vec!["{}"]]).is_err());
     }
 
     #[test]

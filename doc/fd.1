@@ -94,8 +94,8 @@ regardless of whether you’re searching in a git repository or not. The flag ca
 be overridden with '--require-git'.
 .TP
 .B \-\-no\-ignore\-parent
-Show search results from files and directories that would otherwise be ignored by gitignore files in
-parent directories.
+Show search results from files and directories that would otherwise be ignored by
+'.gitignore', '.ignore', or '.fdignore' files in parent directories.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -114,7 +114,14 @@ Perform a regular-expression based search (default). This can be used to overrid
 .TP
 .B \-F, \-\-fixed\-strings
 Treat the pattern as a literal string instead of a regular expression. Note that this also
-performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'.
+performs substring comparison. If you want to match on an exact filename, consider using '\-\-glob'
+or '\-\-exact'.
+.TP
+.B \-\-exact
+Perform an exact match. This is equivalent to '\-\-fixed\-strings' but requires the pattern to
+match the entire filename (or the full path if '\-\-full\-path' is used), rather than a substring.
+Special regex characters in the pattern are treated as literal characters.
+Cannot be used together with '\-\-glob' or '\-\-fixed\-strings'.
 .TP
 .BI "\-\-and " pattern
 Add additional required search patterns, all of which must be matched. Multiple additional
@@ -250,20 +257,26 @@ Examples:
 .RE
 .TP
 .BI "\-e, \-\-extension " ext
-Filter search results by file extension
+Filter search results by extension
 .IR ext .
-This option can be used repeatedly to allow for multiple possible file extensions.
+This option can be used repeatedly to allow for multiple possible extensions.
+By default, extension filters apply to both files and directories. Use
+\fB\-\-type\fR to restrict the search to specific types.
 
 If you want to search for files without extension, you can use the regex '^[^.]+$'
 as a normal search pattern.
 .TP
-.BI "\-E, \-\-exclude " pattern
+.BI "\-E, \-\-exclude " glob
 Exclude files/directories that match the given glob pattern.
 This overrides any other ignore logic.
 Multiple exclude patterns can be specified.
 Examples:
   \-\-exclude '*.pyc'
   \-\-exclude node_modules
+.TP
+.BI "\-\-ignore-contain " name
+Exclude directories that (directly) contain the given name.
+This option can be specified multiple times.
 .TP
 .BI "\-\-ignore-file " path
 Add a custom ignore-file in '.gitignore' format.
@@ -385,7 +398,7 @@ Examples:
   \-\-owner :students
   \-\-owner "!john:students"
 .TP
-.BI "\-\-base\-directory " path
+.BI "-C, \-\-base\-directory " path
 Change the current working directory of fd to the provided path. This means that search results will
 be shown with respect to the given base path. Note that relative paths which are passed to fd via the
 positional \fIpath\fR argument or the \fB\-\-search\-path\fR option will also be resolved relative to
@@ -435,19 +448,23 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
-This option can be specified multiple times, in which case all commands are run for each
-file found, in the order they are provided. In that case, you must supply a ';' argument for
-all but the last commands.
+Specify this option multiple times to run several commands for each file or directory found.
+For each file or directory, fd runs these commands one after another in the order they appear
+on the command line. In that case, you must supply a ';' argument for all but the last command.
+When running in parallel, fd buffers command output and prints it together for each search result,
+without interleaving it with command output for other results.
 
-If parallelism is enabled, the order commands will be executed in is non-deterministic. And even with
---threads=1, the order is determined by the operating system and may not be what you expect. Thus, it is
-recommended that you don't rely on any ordering of the results.
+The order in which different search results are processed and their output is printed is not
+guaranteed, even with --threads=1.
 
 Before executing the command, any placeholder patterns in the command are replaced with the
 corresponding values for the current file. The same placeholders are used as in the "\-\-format"
 option.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
+
+If --print0 is also given, then a null character (\\0) will be printed between the output for each found entry.
+This allows another program to easily distinguish the output for each file if the command(s) produce multiple lines.
 
 Examples:
 
@@ -462,6 +479,10 @@ Examples:
   - Convert all *.jpg files to *.png files:
 
         fd -e jpg -x convert {} {.}.png
+
+  - Run stat for each *.txt file, separated by null characters
+
+        fd -0 -e txt -x stat
 .RE
 .TP
 .BI "\-X, \-\-exec-batch " command

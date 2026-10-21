@@ -1,25 +1,23 @@
 use std::io;
 use std::io::Write;
-use std::sync::Mutex;
 
 use argmax::Command;
 
-use crate::error::print_error;
 use crate::exit_codes::ExitCode;
 
 struct Outputs {
     stdout: Vec<u8>,
     stderr: Vec<u8>,
 }
-struct OutputBuffer<'a> {
-    output_permission: &'a Mutex<()>,
+pub struct OutputBuffer {
+    null_separator: bool,
     outputs: Vec<Outputs>,
 }
 
-impl<'a> OutputBuffer<'a> {
-    fn new(output_permission: &'a Mutex<()>) -> Self {
+impl OutputBuffer {
+    pub fn new(null_separator: bool) -> Self {
         Self {
-            output_permission,
+            null_separator,
             outputs: Vec::new(),
         }
     }
@@ -29,17 +27,19 @@ impl<'a> OutputBuffer<'a> {
     }
 
     fn write(self) {
-        // avoid taking the lock if there is nothing to do
-        if self.outputs.is_empty() {
+        // Avoid taking the lock if there is nothing to do.
+        // If null_separator is true, then we still need to write the
+        // null separator, because the output may have been written directly
+        // to stdout
+        if self.outputs.is_empty() && !self.null_separator {
             return;
         }
-        // While this lock is active, this thread will be the only thread allowed
-        // to write its outputs.
-        let _lock = self.output_permission.lock().unwrap();
 
         let stdout = io::stdout();
         let stderr = io::stderr();
 
+        // While we hold these locks, only this thread will be able
+        // to write its outputs.
         let mut stdout = stdout.lock();
         let mut stderr = stderr.lock();
 
@@ -47,16 +47,20 @@ impl<'a> OutputBuffer<'a> {
             let _ = stdout.write_all(&output.stdout);
             let _ = stderr.write_all(&output.stderr);
         }
+        if self.null_separator {
+            // If null_separator is enabled, then we should write a \0 at the end
+            // of the output for this entry
+            let _ = stdout.write_all(b"\0");
+        }
     }
 }
 
 /// Executes a command.
 pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
     cmds: I,
-    out_perm: &Mutex<()>,
+    mut output_buffer: OutputBuffer,
     enable_output_buffering: bool,
 ) -> ExitCode {
-    let mut output_buffer = OutputBuffer::new(out_perm);
     for result in cmds {
         let mut cmd = match result {
             Ok(cmd) => cmd,
@@ -96,14 +100,14 @@ pub fn execute_commands<I: Iterator<Item = io::Result<Command>>>(
 pub fn handle_cmd_error(cmd: Option<&Command>, err: io::Error) -> ExitCode {
     match (cmd, err) {
         (Some(cmd), err) if err.kind() == io::ErrorKind::NotFound => {
-            print_error(format!(
-                "Command not found: {}",
-                cmd.get_program().to_string_lossy()
-            ));
+            print_error!(
+                "Command not found: {:?}",
+                cmd.get_program().to_string_lossy().as_ref()
+            );
             ExitCode::GeneralError
         }
         (_, err) => {
-            print_error(format!("Problem while executing command: {err}"));
+            print_error!("Problem while executing command: {}", err);
             ExitCode::GeneralError
         }
     }

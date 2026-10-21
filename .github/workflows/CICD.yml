@@ -13,12 +13,17 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: read
+
 jobs:
   crate_metadata:
     name: Extract crate metadata
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
     - name: Extract crate information
       id: crate_metadata
       run: |
@@ -41,7 +46,9 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: rustfmt
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
     - run: cargo fmt -- --check
 
   lint_check:
@@ -51,7 +58,9 @@ jobs:
     - uses: dtolnay/rust-toolchain@stable
       with:
         components: clippy
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
 
   min_version:
@@ -60,7 +69,9 @@ jobs:
     needs: crate_metadata
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Install rust toolchain (v${{ needs.crate_metadata.outputs.msrv }})
       uses: dtolnay/rust-toolchain@master
@@ -68,42 +79,50 @@ jobs:
         toolchain: ${{ needs.crate_metadata.outputs.msrv }}
         components: clippy
     - name: Run clippy (on minimum supported rust version to prevent warnings we can't fix)
-      run: cargo clippy --locked --all-targets ${{ env.MSRV_FEATURES }}
+      run: cargo clippy --locked --all-targets "${MSRV_FEATURES}"
     - name: Run tests
-      run: cargo test --locked ${{ env.MSRV_FEATURES }}
+      run: cargo test --locked "${MSRV_FEATURES}"
 
   build:
-    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    name: '${{ matrix.job.target }} (${{ matrix.job.os }})'
     runs-on: ${{ matrix.job.os }}
     needs: crate_metadata
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
         job:
-          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-22.04, use-cross: true }
-          - { target: aarch64-unknown-linux-musl  , os: ubuntu-22.04, use-cross: true }
-          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-22.04, use-cross: true }
-          - { target: arm-unknown-linux-musleabihf, os: ubuntu-22.04, use-cross: true }
-          - { target: i686-pc-windows-msvc        , os: windows-2022                  }
-          - { target: i686-unknown-linux-gnu      , os: ubuntu-22.04, use-cross: true }
-          - { target: i686-unknown-linux-musl     , os: ubuntu-22.04, use-cross: true }
-          - { target: x86_64-apple-darwin         , os: macos-13                      }
-          - { target: aarch64-apple-darwin        , os: macos-14                      }
-          - { target: x86_64-pc-windows-gnu       , os: windows-2022                  }
-          - { target: x86_64-pc-windows-msvc      , os: windows-2022                  }
+          - { target: aarch64-unknown-linux-gnu   , os: ubuntu-24.04, use-cross: true }
+          - { target: aarch64-unknown-linux-musl  , os: ubuntu-24.04, use-cross: true }
+          - { target: arm-unknown-linux-gnueabihf , os: ubuntu-24.04, use-cross: true }
+          - { target: arm-unknown-linux-musleabihf, os: ubuntu-24.04, use-cross: true }
+          - { target: i686-pc-windows-msvc        , os: windows-2025                  }
+          - { target: i686-unknown-linux-gnu      , os: ubuntu-24.04, use-cross: true }
+          - { target: i686-unknown-linux-musl     , os: ubuntu-24.04, use-cross: true }
+          - { target: x86_64-apple-darwin         , os: macos-26-intel                }
+          - { target: aarch64-apple-darwin        , os: macos-26                      }
+          - { target: x86_64-pc-windows-gnu       , os: windows-2025                  }
+          - { target: x86_64-pc-windows-msvc      , os: windows-2025                  }
           - { target: aarch64-pc-windows-msvc     , os: windows-11-arm                }
-          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-22.04, use-cross: true }
-          - { target: x86_64-unknown-linux-musl   , os: ubuntu-22.04, use-cross: true }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-24.04, use-cross: true }
+          - { target: x86_64-unknown-linux-musl   , os: ubuntu-24.04, use-cross: true }
     env:
-      BUILD_CMD: cargo
+      BUILD_CMD: "${{ matrix.job.use-cross && 'cross' || 'cargo' }}"
+      target: ${{ matrix.job.target }}
+      name: ${{ needs.crate_metadata.outputs.name }}
     steps:
     - name: Checkout source code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Install prerequisites
       shell: bash
       run: |
-        case ${{ matrix.job.target }} in
+        case ${target} in
           arm-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install gcc-arm-linux-gnueabihf ;;
           aarch64-unknown-linux-gnu) sudo apt-get -y update ; sudo apt-get -y install gcc-aarch64-linux-gnu ;;
         esac
@@ -112,21 +131,22 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.job.target }}
-        # On windows, for now build with 1.77.2, so that it works on windows 7.
-        # When we update the MSRV again, we'll need to revisit this, and probably drop support for Win7
-        toolchain: "${{ contains(matrix.job.target, 'windows-') && '1.77.2' || 'stable' }}"
+        toolchain: "stable"
 
     - name: Install cross
       if: matrix.job.use-cross
-      uses: taiki-e/install-action@v2
-      with:
-        tool: cross
-
-    - name: Overwrite build command env variable
-      if: matrix.job.use-cross
-      shell: bash
-      run: echo "BUILD_CMD=cross" >> $GITHUB_ENV
-
+      env:
+        cross_version: "v0.2.5"
+        package_name: "cross-x86_64-unknown-linux-gnu.tar.gz"
+        GH_TOKEN: "${{ github.token }}"
+      run: |
+        dir="$HOME/.local/bin/"
+        mkdir -p "$dir"
+        gh release download --repo cross-rs/cross  \
+          --pattern "${package_name}" -O - "${cross_version}" \
+          | tar -C "$dir" -xz
+        echo "$dir" >> $GITHUB_PATH
+        echo "Installed cross $cross_version" >> $GITHUB_STEP_SUMMARY
     - name: Show version information (Rust, cargo, GCC)
       shell: bash
       run: |
@@ -139,7 +159,7 @@ jobs:
 
     - name: Build
       shell: bash
-      run: $BUILD_CMD build --locked --release --target=${{ matrix.job.target }}
+      run: $BUILD_CMD build --locked --release --target="${target}"
 
     - name: Set binary name & path
       id: bin
@@ -147,13 +167,13 @@ jobs:
       run: |
         # Figure out suffix of binary
         EXE_suffix=""
-        case ${{ matrix.job.target }} in
+        case ${target} in
           *-pc-windows-*) EXE_suffix=".exe" ;;
         esac;
 
         # Setup paths
-        BIN_NAME="${{ needs.crate_metadata.outputs.name }}${EXE_suffix}"
-        BIN_PATH="target/${{ matrix.job.target }}/release/${BIN_NAME}"
+        BIN_NAME="${name}${EXE_suffix}"
+        BIN_PATH="target/${target}/release/${BIN_NAME}"
 
         # Let subsequent steps know where to find the binary
         echo "BIN_PATH=${BIN_PATH}" >> $GITHUB_OUTPUT
@@ -165,12 +185,17 @@ jobs:
       run: |
         # test only library unit tests and binary for arm-type targets
         unset CARGO_TEST_OPTIONS
-        unset CARGO_TEST_OPTIONS ; case ${{ matrix.job.target }} in arm-* | aarch64-*) CARGO_TEST_OPTIONS="--bin ${{ needs.crate_metadata.outputs.name }}" ;; esac;
+        case ${target} in
+        arm-* | aarch64-*)
+          CARGO_TEST_OPTIONS="--bin=${name}" ;;
+        esac
         echo "CARGO_TEST_OPTIONS=${CARGO_TEST_OPTIONS}" >> $GITHUB_OUTPUT
 
     - name: Run tests
       shell: bash
-      run: $BUILD_CMD test --locked --target=${{ matrix.job.target }} ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      env:
+        cargo_test_options: ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
+      run: $BUILD_CMD test --locked --target="${target}" "${cargo_test_options}"
 
     - name: Generate completions
       id: completions
@@ -180,38 +205,12 @@ jobs:
     - name: Create tarball
       id: package
       shell: bash
-      run: |
-        PKG_suffix=".tar.gz" ; case ${{ matrix.job.target }} in *-pc-windows-*) PKG_suffix=".zip" ;; esac;
-        PKG_BASENAME=${{ needs.crate_metadata.outputs.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ matrix.job.target }}
-        PKG_NAME=${PKG_BASENAME}${PKG_suffix}
-        echo "PKG_NAME=${PKG_NAME}" >> $GITHUB_OUTPUT
-
-        PKG_STAGING="${{ env.CICD_INTERMEDIATES_DIR }}/package"
-        ARCHIVE_DIR="${PKG_STAGING}/${PKG_BASENAME}/"
-        mkdir -p "${ARCHIVE_DIR}"
-
-        # Binary
-        cp "${{ steps.bin.outputs.BIN_PATH }}" "$ARCHIVE_DIR"
-
-        # README, LICENSE and CHANGELOG files
-        cp "README.md" "LICENSE-MIT" "LICENSE-APACHE" "CHANGELOG.md" "$ARCHIVE_DIR"
-
-        # Man page
-        cp 'doc/${{ needs.crate_metadata.outputs.name }}.1' "$ARCHIVE_DIR"
-
-        # Autocompletion files
-        cp -r autocomplete "${ARCHIVE_DIR}"
-
-        # base compressed package
-        pushd "${PKG_STAGING}/" >/dev/null
-        case ${{ matrix.job.target }} in
-          *-pc-windows-*) 7z -y a "${PKG_NAME}" "${PKG_BASENAME}"/* | tail -2 ;;
-          *) tar czf "${PKG_NAME}" "${PKG_BASENAME}"/* ;;
-        esac;
-        popd >/dev/null
-
-        # Let subsequent steps know where to find the compressed package
-        echo "PKG_PATH=${PKG_STAGING}/${PKG_NAME}" >> $GITHUB_OUTPUT
+      run: bash scripts/create-archive.sh
+      env:
+        BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
+        TARGET: ${{ env.target }}
+        ARCHIVE_NAME: ${{ env.name }}-v${{ needs.crate_metadata.outputs.version }}-${{ env.target }}
+        PKG_STAGING: "${{ env.CICD_INTERMEDIATES_DIR }}/package"
 
     - name: Create Debian package
       id: debian-package
@@ -224,17 +223,21 @@ jobs:
         BIN_PATH: ${{ steps.bin.outputs.BIN_PATH }}
 
     - name: "Artifact upload: tarball"
-      uses: actions/upload-artifact@master
+      id: upload-tarball
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: ${{ steps.package.outputs.PKG_NAME }}
         path: ${{ steps.package.outputs.PKG_PATH }}
+        compression-level: 0 # tarball is already compressed
 
     - name: "Artifact upload: Debian package"
-      uses: actions/upload-artifact@master
+      id: upload-deb
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       if: steps.debian-package.outputs.DPKG_NAME
       with:
         name: ${{ steps.debian-package.outputs.DPKG_NAME }}
         path: ${{ steps.debian-package.outputs.DPKG_PATH }}
+        compression-level: 0 # deb files are already compressed
 
     - name: Check for release
       id: is-release
@@ -243,8 +246,16 @@ jobs:
         unset IS_RELEASE ; if [[ $GITHUB_REF =~ ^refs/tags/v[0-9].* ]]; then IS_RELEASE='true' ; fi
         echo "IS_RELEASE=${IS_RELEASE}" >> $GITHUB_OUTPUT
 
+    - name: "Attest artifacts"
+      uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4
+      if: steps.is-release.outputs.IS_RELEASE
+      with:
+        subject-path: |
+          ${{ steps.package.outputs.PKG_PATH }}
+          ${{ steps.debian-package.outputs.DPKG_PATH }}
+
     - name: Publish archives and packages
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
       if: steps.is-release.outputs.IS_RELEASE
       with:
         files: |
@@ -259,7 +270,7 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: vedantmgoyal2009/winget-releaser@v2
+      - uses: vedantmgoyal9/winget-releaser@b7370d4d152efdce803a26cc6ca9eee58cb2ad54 # v2
         with:
           identifier: sharkdp.fd
           installers-regex: '-pc-windows-msvc\.zip$'

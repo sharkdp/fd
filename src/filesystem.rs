@@ -100,13 +100,13 @@ pub fn is_pipe(_: fs::FileType) -> bool {
 }
 
 #[cfg(any(unix, target_os = "redox"))]
-pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<'_, [u8]> {
     use std::os::unix::ffi::OsStrExt;
     Cow::Borrowed(input.as_bytes())
 }
 
 #[cfg(windows)]
-pub fn osstr_to_bytes(input: &OsStr) -> Cow<[u8]> {
+pub fn osstr_to_bytes(input: &OsStr) -> Cow<'_, [u8]> {
     let string = input.to_string_lossy();
 
     match string {

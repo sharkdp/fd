@@ -1,4 +1,4 @@
-use jiff::{civil::DateTime, tz::TimeZone, Span, Timestamp, Zoned};
+use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -42,7 +42,7 @@ impl TimeFilter {
             )
         } else {
             let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            Some(UNIX_EPOCH + Duration::from_secs(timestamp_secs))
+            UNIX_EPOCH.checked_add(Duration::from_secs(timestamp_secs))
         }
     }
 
@@ -114,16 +114,22 @@ mod tests {
         assert!(!TimeFilter::before("2min").unwrap().applies_to(&t1m_ago));
 
         let t10s_before = "2010-10-10 10:10:00";
-        assert!(!TimeFilter::before(t10s_before)
-            .unwrap()
-            .applies_to(&ref_time));
-        assert!(TimeFilter::before(t10s_before)
-            .unwrap()
-            .applies_to(&t1m_ago));
+        assert!(
+            !TimeFilter::before(t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
+        assert!(
+            TimeFilter::before(t10s_before)
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
 
-        assert!(TimeFilter::after(t10s_before)
-            .unwrap()
-            .applies_to(&ref_time));
+        assert!(
+            TimeFilter::after(t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
         assert!(!TimeFilter::after(t10s_before).unwrap().applies_to(&t1m_ago));
 
         let same_day = "2010-10-10";
@@ -142,16 +148,22 @@ mod tests {
         ref_time = test_time.timestamp();
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t10s_before = "2010-10-10T10:10:00+00:00";
-        assert!(!TimeFilter::before(t10s_before)
-            .unwrap()
-            .applies_to(&ref_time));
-        assert!(TimeFilter::before(t10s_before)
-            .unwrap()
-            .applies_to(&t1m_ago));
+        assert!(
+            !TimeFilter::before(t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
+        assert!(
+            TimeFilter::before(t10s_before)
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
 
-        assert!(TimeFilter::after(t10s_before)
-            .unwrap()
-            .applies_to(&ref_time));
+        assert!(
+            TimeFilter::after(t10s_before)
+                .unwrap()
+                .applies_to(&ref_time)
+        );
         assert!(!TimeFilter::after(t10s_before).unwrap().applies_to(&t1m_ago));
 
         let ref_timestamp = 1707723412u64; // Mon Feb 12 07:36:52 UTC 2024
@@ -166,17 +178,33 @@ mod tests {
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
         assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
-        assert!(TimeFilter::before(&format!("@{ref_timestamp}"))
-            .unwrap()
-            .applies_to(&t1m_ago));
-        assert!(!TimeFilter::before(&format!("@{ref_timestamp}"))
-            .unwrap()
-            .applies_to(&t1s_later));
-        assert!(!TimeFilter::after(&format!("@{ref_timestamp}"))
-            .unwrap()
-            .applies_to(&t1m_ago));
-        assert!(TimeFilter::after(&format!("@{ref_timestamp}"))
-            .unwrap()
-            .applies_to(&t1s_later));
+        assert!(
+            TimeFilter::before(&format!("@{ref_timestamp}"))
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+        assert!(
+            !TimeFilter::before(&format!("@{ref_timestamp}"))
+                .unwrap()
+                .applies_to(&t1s_later)
+        );
+        assert!(
+            !TimeFilter::after(&format!("@{ref_timestamp}"))
+                .unwrap()
+                .applies_to(&t1m_ago)
+        );
+        assert!(
+            TimeFilter::after(&format!("@{ref_timestamp}"))
+                .unwrap()
+                .applies_to(&t1s_later)
+        );
+    }
+
+    #[test]
+    fn out_of_range_unix_timestamp_is_rejected() {
+        // A '@' timestamp large enough to overflow SystemTime must return
+        // None rather than panicking.
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_none());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_none());
     }
 }

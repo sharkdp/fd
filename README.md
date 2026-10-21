@@ -147,7 +147,7 @@ By default, *fd* only matches the filename of each file. However, using the `--f
 you can match against the full path.
 
 ```bash
-> fd -p -g '**/.git/config'
+> fd -u -p -g '**/.git/config'
 > fd -p '.*/lesson-\d+/[a-z]+.(jpg|png)'
 ```
 
@@ -175,6 +175,12 @@ fd -e h -e cpp -x clang-format -i
 ```
 Note how the `-i` option to `clang-format` can be passed as a separate argument. This is why
 we put the `-x` option last.
+
+Any positional arguments after `-x` belong to the command template, not to `fd` itself. If you
+also want to pass a pattern or search path, put `-x` last:
+``` bash
+fd pattern path -x echo
+```
 
 Find all `test_*.py` files and open them in your favorite editor:
 ``` bash
@@ -206,7 +212,7 @@ See below for more details on the placeholder syntax.
 The terminal output of commands run from parallel threads using `-x` will not be interlaced or garbled,
 so `fd -x` can be used to rudimentarily parallelize a task run over many files.
 An example of this is calculating the checksum of each individual file within a directory.
-```
+``` bash
 fd -tf -x md5sum > file_checksums.txt
 ```
 
@@ -214,6 +220,9 @@ fd -tf -x md5sum > file_checksums.txt
 
 The `-x` and `-X` options take a *command template* as a series of arguments (instead of a single string).
 If you want to add additional options to `fd` after the command template, you can terminate it with a `\;`.
+
+For example, `fd -x echo \; pattern path` treats `pattern path` as `fd` arguments instead of
+passing them to `echo`. In practice, it is often clearer to write `fd pattern path -x echo`.
 
 The syntax for generating commands is similar to that of [GNU Parallel](https://www.gnu.org/software/parallel/):
 
@@ -298,7 +307,7 @@ This is the output of `fd -h`. To see the full set of command-line options, use 
 also includes a much more detailed help text.
 
 ```
-Usage: fd [OPTIONS] [pattern [path...]]
+Usage: fd [OPTIONS] [pattern [path]...]
 
 Arguments:
   [pattern]  the search pattern (a regular expression, unless '--glob' is used; optional)
@@ -315,11 +324,11 @@ Options:
   -L, --follow                     Follow symbolic links
   -p, --full-path                  Search full abs. path (default: filename only)
   -d, --max-depth <depth>          Set maximum search depth (default: none)
-  -E, --exclude <pattern>          Exclude entries that match the given glob pattern
+  -E, --exclude <glob>             Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
                                    executable (x), empty (e), socket (s), pipe (p), char-device
                                    (c), block-device (b)
-  -e, --extension <ext>            Filter by file extension
+  -e, --extension <ext>            Filter by extension
   -S, --size <size>                Limit results based on the size of files
       --changed-within <date|dur>  Filter by file modification time (newer than)
       --changed-before <date|dur>  Filter by file modification time (older than)
@@ -331,6 +340,7 @@ Options:
                                    always, never]
       --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible
                                    values: auto, always, never]
+      --ignore-contain <name>      Ignore directories containing the named entry
   -h, --help                       Print help (see more with '--help')
   -V, --version                    Print version
 ```
@@ -339,7 +349,7 @@ Note that options can be given after the pattern and/or path as well.
 
 ## Benchmark
 
-Let's search my home folder for files that end in `[0-9].jpg`. It contains ~750.000
+Let's search my home folder for files that end in `[0-9].jpg`. It contains ~750,000
 subdirectories and about a 4 million files. For averaging and statistical analysis, I'm using
 [hyperfine](https://github.com/sharkdp/hyperfine). The following benchmarks are performed
 with a "warm"/pre-filled disk-cache (results for a "cold" disk-cache show the same trends).
@@ -433,6 +443,11 @@ Shell `alias`es and shell functions can not be used for command execution via `f
 you can use `export -f my_function` to make available to child processes. You would still
 need to call `fd -x bash -c 'my_function "$1"' bash`. For other use cases or shells, use
 a (temporary) shell script.
+
+### Placeholders in `-x`/`-X`
+
+Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{//}`,
+`{.}`, `{/.}`) to prevent the shell from interpreting them before `fd` sees them.
 
 ## Integration with other programs
 
@@ -666,6 +681,13 @@ You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) fro
 guix install fd
 ```
 
+### On Mise
+
+You can use [mise](https://github.com/jdx/mise) to install `fd` with a command like this:
+```
+mise use -g fd@latest
+```
+
 ### On NixOS / via Nix
 
 You can use the [Nix package manager](https://nixos.org/nix/) to install `fd`:
@@ -701,7 +723,7 @@ With Rust's package manager [cargo](https://github.com/rust-lang/cargo), you can
 ```
 cargo install fd-find
 ```
-Note that rust version *1.77.2* or later is required.
+Note that rust version *1.90.0* or later is required.
 
 `make` is also needed for the build.
 
@@ -722,6 +744,37 @@ cargo test
 
 # Install
 cargo install --path .
+```
+
+### Completions
+
+#### From Release Archives
+
+Pre-built completion files are included in the release archives (`.tar.gz`/`.zip`) on the
+[Releases page](https://github.com/sharkdp/fd/releases), in the `autocomplete` directory.
+To use these completions:
+
+- **bash**: Source the `fd.bash` file in your `~/.bashrc`, or place it in a directory that gets sourced automatically.
+- **zsh**: Move `_fd` to a directory in your `fpath` (e.g., `~/.zfunc`).
+- **fish**: Copy `fd.fish` to `~/.config/fish/completions/`.
+- **powershell**: Source `_fd.ps1` from one of your [profile scripts](https://learn.microsoft.com/en-us/powershell/scripting/learn/shell/creating-profiles?view=powershell-7.5).
+
+#### Generate from fd
+
+You can also generate completions directly using `fd --gen-completions <shell>`:
+
+```bash
+# Bash
+fd --gen-completions bash > ~/.local/share/bash-completion/completions/fd
+
+# Zsh (ensure ~/.zfunc is in your fpath)
+fd --gen-completions zsh > ~/.zfunc/_fd
+
+# Fish
+fd --gen-completions fish > ~/.config/fish/completions/fd.fish
+
+# PowerShell
+fd --gen-completions powershell >> $PROFILE
 ```
 
 ## Maintainers

@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, Result};
-use crossbeam_channel::{bounded, Receiver, RecvTimeoutError, SendError, Sender};
+use anyhow::{Result, anyhow};
+use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
@@ -17,9 +17,8 @@ use regex::bytes::Regex;
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::error::print_error;
 use crate::exec;
-use crate::exit_codes::{merge_exitcodes, ExitCode};
+use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::filesystem;
 use crate::output;
 
@@ -218,15 +217,15 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                             }
 
                             self.num_results += 1;
-                            if let Some(max_results) = self.config.max_results {
-                                if self.num_results >= max_results {
-                                    return self.stop();
-                                }
+                            if let Some(max_results) = self.config.max_results
+                                && self.num_results >= max_results
+                            {
+                                return self.stop();
                             }
                         }
                         WorkerResult::Error(err) => {
                             if self.config.show_filesystem_errors {
-                                print_error(err.to_string());
+                                print_error!("{}", err);
                             }
                         }
                     }
@@ -250,11 +249,11 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 
     /// Output a path.
     fn print(&mut self, entry: &DirEntry) -> Result<(), ExitCode> {
-        if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config) {
-            if e.kind() != ::std::io::ErrorKind::BrokenPipe {
-                print_error(format!("Could not write to output: {e}"));
-                return Err(ExitCode::GeneralError);
-            }
+        if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
+            && e.kind() != ::std::io::ErrorKind::BrokenPipe
+        {
+            print_error!("Could not write to output: {}", e);
+            return Err(ExitCode::GeneralError);
         }
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
@@ -368,18 +367,18 @@ impl WorkerState {
             builder.add_custom_ignore_filename(".fdignore");
         }
 
-        if config.read_global_ignore {
-            if let Ok(basedirs) = etcetera::choose_base_strategy() {
-                let global_ignore_file = basedirs.config_dir().join("fd").join("ignore");
-                if global_ignore_file.is_file() {
-                    let result = builder.add_ignore(global_ignore_file);
-                    match result {
-                        Some(ignore::Error::Partial(_)) => (),
-                        Some(err) => {
-                            print_error(format!("Malformed pattern in global ignore file. {err}."));
-                        }
-                        None => (),
+        if config.read_global_ignore
+            && let Ok(basedirs) = etcetera::choose_base_strategy()
+        {
+            let global_ignore_file = basedirs.config_dir().join("fd").join("ignore");
+            if global_ignore_file.is_file() {
+                let result = builder.add_ignore(global_ignore_file);
+                match result {
+                    Some(ignore::Error::Partial(_)) => (),
+                    Some(err) => {
+                        print_error!("Malformed pattern in global ignore file. {}.", err);
                     }
+                    None => (),
                 }
             }
         }
@@ -389,7 +388,7 @@ impl WorkerState {
             match result {
                 Some(ignore::Error::Partial(_)) => (),
                 Some(err) => {
-                    print_error(format!("Malformed pattern in custom ignore file. {err}."));
+                    print_error!("Malformed pattern in custom ignore file. {}.", err);
                 }
                 None => (),
             }
@@ -413,8 +412,6 @@ impl WorkerState {
             if cmd.in_batch_mode() {
                 exec::batch(rx.into_iter().flatten(), cmd, config)
             } else {
-                let out_perm = Mutex::new(());
-
                 thread::scope(|scope| {
                     // Each spawned job will store its thread handle in here.
                     let threads = config.threads;
@@ -423,8 +420,8 @@ impl WorkerState {
                         let rx = rx.clone();
 
                         // Spawn a job thread that will listen for and execute inputs.
-                        let handle = scope
-                            .spawn(|| exec::job(rx.into_iter().flatten(), cmd, &out_perm, config));
+                        let handle =
+                            scope.spawn(|| exec::job(rx.into_iter().flatten(), cmd, config));
 
                         // Push the handle of the spawned thread into the vector for later joining.
                         handles.push(handle);
@@ -449,11 +446,12 @@ impl WorkerState {
             let quit_flag = self.quit_flag.as_ref();
 
             let mut limit = 0x100;
-            if let Some(cmd) = &config.command {
-                if !cmd.in_batch_mode() && config.threads > 1 {
-                    // Evenly distribute work between multiple receivers
-                    limit = 1;
-                }
+            if let Some(cmd) = &config.command
+                && !cmd.in_batch_mode()
+                && config.threads > 1
+            {
+                // Evenly distribute work between multiple receivers
+                limit = 1;
             }
             let mut tx = BatchSender::new(tx.clone(), limit);
 
@@ -462,66 +460,50 @@ impl WorkerState {
                     return WalkState::Quit;
                 }
 
-                let entry = match entry {
-                    Ok(ref e) if e.depth() == 0 => {
+                if let Ok(e) = &entry {
+                    // If the entry is a directory that contains a
+                    // "ignore contain" file", we want to skip this
+                    // directory.
+                    // Check the filetype first to avoid unnecessary
+                    // syscalls.
+                    if e.file_type().is_some_and(|t| t.is_dir()) {
+                        let entry_path = e.path();
+                        if config
+                            .ignore_contain
+                            .iter()
+                            .any(|ic| entry_path.join(ic).exists())
+                        {
+                            return WalkState::Skip;
+                        }
+                    }
+                    if e.depth() == 0 {
                         // Skip the root directory entry.
                         return WalkState::Continue;
                     }
+                }
+                let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
-                    Err(ignore::Error::WithPath {
-                        path,
-                        err: inner_err,
-                    }) => match inner_err.as_ref() {
-                        ignore::Error::Io(io_error)
-                            if io_error.kind() == io::ErrorKind::NotFound
-                                && path
-                                    .symlink_metadata()
-                                    .ok()
-                                    .is_some_and(|m| m.file_type().is_symlink()) =>
-                        {
-                            DirEntry::broken_symlink(path)
-                        }
-                        _ => {
-                            return match tx.send(WorkerResult::Error(ignore::Error::WithPath {
-                                path,
-                                err: inner_err,
-                            })) {
+                    Err(err) => match broken_symlink_from_err(err) {
+                        Ok(entry) => entry,
+                        Err(err) => {
+                            return match tx.send(WorkerResult::Error(err)) {
                                 Ok(_) => WalkState::Continue,
                                 Err(_) => WalkState::Quit,
-                            }
+                            };
                         }
                     },
-                    Err(err) => {
-                        return match tx.send(WorkerResult::Error(err)) {
-                            Ok(_) => WalkState::Continue,
-                            Err(_) => WalkState::Quit,
-                        }
-                    }
                 };
 
-                if let Some(min_depth) = config.min_depth {
-                    if entry.depth().map_or(true, |d| d < min_depth) {
-                        return WalkState::Continue;
-                    }
+                if let Some(min_depth) = config.min_depth
+                    && entry.depth().is_none_or(|d| d < min_depth)
+                {
+                    return WalkState::Continue;
                 }
 
                 // Check the name first, since it doesn't require metadata
                 let entry_path = entry.path();
 
-                let search_str: Cow<OsStr> = if config.search_full_path {
-                    let path_abs_buf = filesystem::path_absolute_form(entry_path)
-                        .expect("Retrieving absolute path succeeds");
-                    Cow::Owned(path_abs_buf.as_os_str().to_os_string())
-                } else {
-                    match entry_path.file_name() {
-                        Some(filename) => Cow::Borrowed(filename),
-                        None => unreachable!(
-                            "Encountered file system entry without a file name. This should only \
-                             happen for paths like 'foo/bar/..' or '/' which are not supposed to \
-                             appear in a file system traversal."
-                        ),
-                    }
-                };
+                let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
                 if !patterns
                     .iter()
@@ -542,10 +524,10 @@ impl WorkerState {
                 }
 
                 // Filter out unwanted file types.
-                if let Some(ref file_types) = config.file_types {
-                    if file_types.should_ignore(&entry) {
-                        return WalkState::Continue;
-                    }
+                if let Some(ref file_types) = config.file_types
+                    && file_types.should_ignore(&entry)
+                {
+                    return WalkState::Continue;
                 }
 
                 #[cfg(unix)]
@@ -584,24 +566,24 @@ impl WorkerState {
                 // Filter out unwanted modification times
                 if !config.time_constraints.is_empty() {
                     let mut matched = false;
-                    if let Some(metadata) = entry.metadata() {
-                        if let Ok(modified) = metadata.modified() {
-                            matched = config
-                                .time_constraints
-                                .iter()
-                                .all(|tf| tf.applies_to(&modified));
-                        }
+                    if let Some(metadata) = entry.metadata()
+                        && let Ok(modified) = metadata.modified()
+                    {
+                        matched = config
+                            .time_constraints
+                            .iter()
+                            .all(|tf| tf.applies_to(&modified));
                     }
                     if !matched {
                         return WalkState::Continue;
                     }
                 }
 
-                if config.is_printing() {
-                    if let Some(ls_colors) = &config.ls_colors {
-                        // Compute colors in parallel
-                        entry.style(ls_colors);
-                    }
+                if config.is_printing()
+                    && let Some(ls_colors) = &config.ls_colors
+                {
+                    // Compute colors in parallel
+                    entry.style(ls_colors);
                 }
 
                 let send_result = tx.send(WorkerResult::Entry(entry));
@@ -660,6 +642,73 @@ impl WorkerState {
     }
 }
 
+/// If `err` is for a broken symlink, create a broken symlink DirEntry,
+/// otherwise, return the original error.
+fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::Error> {
+    use ignore::Error::*;
+    let mut depth = None;
+    let mut path = None;
+    let mut current = &mut err;
+    // Loop through the items in the chain, and extract the path and depth as we find them.
+    // Then once we get to the (terminal) io error, check that it is for a broken symlink.
+    loop {
+        match current {
+            WithPath { err, path: p } => {
+                path = Some(p);
+                current = err;
+            }
+            WithDepth { err, depth: d } => {
+                depth = Some(*d);
+                current = err;
+            }
+            Io(e) if e.kind() == io::ErrorKind::NotFound => {
+                if let Some(path) = path
+                    && path
+                        .symlink_metadata()
+                        .ok()
+                        .is_some_and(|m| m.file_type().is_symlink())
+                {
+                    // Since we no longer need the original error, we can take the PathBuf of the
+                    // path out of it.
+                    return Ok(DirEntry::broken_symlink(mem::take(path), depth));
+                } else {
+                    // This is pretty unlikely.
+                    return Err(err);
+                }
+            }
+            // We don't care about Loop because that won't happen
+            // for broken symlinks, and there are two paths involved
+            // and we don't care about WithLineNumber because that only applies
+            // to errors while parsing ignore files.
+            _ => return Err(err),
+        }
+    }
+}
+
+fn search_str_for_entry<'a>(
+    entry_path: &'a std::path::Path,
+    full_path_base: Option<&std::path::Path>,
+) -> Cow<'a, OsStr> {
+    if let Some(cwd) = full_path_base {
+        // If full_path_base is some, that means that we need to return
+        // the absolute path
+        if entry_path.is_absolute() {
+            return Cow::Borrowed(entry_path.as_os_str());
+        }
+        let path = entry_path.strip_prefix(".").unwrap_or(entry_path);
+        Cow::Owned(cwd.join(path).into())
+    } else {
+        match entry_path.file_name() {
+            Some(filename) => Cow::Borrowed(filename),
+            None => unreachable!(
+                "Encountered file system entry without a file name. This should only \
+                 happen for paths like 'foo/bar/..' or '/' which are not supposed to \
+                 appear in a file system traversal."
+            ),
+        }
+    }
+}
+
 /// Recursively scan the given search path for files / pathnames matching the patterns.
 ///
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
@@ -667,4 +716,61 @@ impl WorkerState {
 /// path will simply be written to standard output.
 pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
     WorkerState::new(patterns, config).scan(paths)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::search_str_for_entry;
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn search_str_for_entry_with_relative_path() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("foo/bar"), full_path_base),
+            PathBuf::from("/home/user/foo/bar")
+        );
+    }
+
+    #[test]
+    fn search_str_for_entry_strips_dot_prefix() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("./foo/bar"), full_path_base),
+            PathBuf::from("/home/user/foo/bar")
+        );
+    }
+
+    #[test]
+    fn search_str_for_entry_with_absolute_path() {
+        let full_path_base = Some(Path::new("/home/user"));
+        assert_eq!(
+            search_str_for_entry(Path::new("/absolute/path"), full_path_base),
+            PathBuf::from("/absolute/path")
+        );
+    }
+
+    #[test]
+    fn search_str_no_base_dir() {
+        assert_eq!(
+            search_str_for_entry(Path::new("./foo/bar"), None),
+            PathBuf::from("bar")
+        );
+    }
+
+    #[test]
+    fn search_str_no_base_dir_with_plain_relative_path() {
+        assert_eq!(
+            search_str_for_entry(Path::new("foo/bar"), None),
+            PathBuf::from("bar")
+        );
+    }
+
+    #[test]
+    fn search_str_no_base_dir_with_file_in_current_dir() {
+        assert_eq!(
+            search_str_for_entry(Path::new("foo"), None),
+            PathBuf::from("foo")
+        );
+    }
 }

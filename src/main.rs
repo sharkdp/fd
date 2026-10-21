@@ -1,7 +1,10 @@
+// needs to be first because it defines a macro
+#[macro_use]
+mod error;
+
 mod cli;
 mod config;
 mod dir_entry;
-mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;
@@ -11,6 +14,7 @@ mod fmt;
 mod hyperlink;
 mod output;
 mod regex_helper;
+mod sanitize;
 mod walk;
 
 use std::env;
@@ -18,7 +22,7 @@ use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use clap::{CommandFactory, Parser};
 use globset::GlobBuilder;
 use lscolors::LsColors;
@@ -36,12 +40,15 @@ use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_wi
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
+// This has to be kept in sync with the Cargo.toml file section that declares a
+// dependency on tikv-jemallocator.
 #[cfg(all(
     not(windows),
     not(target_os = "android"),
     not(target_os = "macos"),
     not(target_os = "freebsd"),
     not(target_os = "openbsd"),
+    not(target_os = "illumos"),
     not(all(target_env = "musl", target_pointer_width = "32")),
     not(target_arch = "riscv64"),
     feature = "use-jemalloc"
@@ -62,7 +69,9 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            eprintln!("[fd error]: {err:#}");
+            // NB: we use eprintln directly instead of print_error!() because
+            // we sanitize anyhow errors at the generation site
+            eprintln!("[fd error]: {:#}", err);
             ExitCode::GeneralError.exit();
         }
     }
@@ -128,35 +137,83 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     if let Some(ref base_directory) = opts.base_directory {
         if !filesystem::is_existing_directory(base_directory) {
             return Err(anyhow!(
-                "The '--base-directory' path '{}' is not a directory.",
-                base_directory.to_string_lossy()
+                "The '--base-directory' path {:?} is not a directory.",
+                base_directory.to_string_lossy().as_ref()
             ));
         }
         env::set_current_dir(base_directory).with_context(|| {
             format!(
-                "Could not set '{}' as the current working directory",
-                base_directory.to_string_lossy()
+                "Could not set {:?} as the current working directory",
+                base_directory.to_string_lossy().as_ref()
             )
         })?;
     }
     Ok(())
 }
 
-/// Detect if the user accidentally supplied a path instead of a search pattern
+/// Detect if the user accidentally supplied a path instead of a search pattern.
+///
+/// Without `--full-path`, fd matches patterns against file names, so any pattern
+/// containing a path separator can never match. This applies to the primary
+/// positional pattern *and* to every `--and` pattern, since all of them are
+/// chained together and matched against the file name (see `run`). Two cases per
+/// pattern are worth a friendly error rather than silent "no results":
+///
+/// 1. The pattern contains '/'. '/' is always a path separator (including on
+///    Windows) and has no regex meaning, so flagging it is safe and catches the
+///    common Linux/macOS mistake of pasting a full path as the pattern.
+/// 2. On Windows only, the pattern contains the native `\` separator *and*
+///    names an existing directory on disk. We can't treat `\` as a pure
+///    path-separator signal there because it is also the regex escape char,
+///    so valid regex patterns like `\Ac` or `\d+` must still run. Requiring
+///    that the pattern resolves to a real directory avoids those false
+///    positives while preserving the legacy diagnostic for operators who
+///    literally typed a directory path.
+///
+/// See https://github.com/sharkdp/fd/issues/1873.
 fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
-    if !opts.full_path
-        && opts.pattern.contains(std::path::MAIN_SEPARATOR)
-        && Path::new(&opts.pattern).is_dir()
+    if opts.full_path {
+        return Ok(());
+    }
+
+    // Check the primary pattern and every `--and` pattern. They are all matched
+    // against the file name (see `run`), so a path separator in any of them is
+    // the same silent "no results" footgun.
+    for pattern in std::iter::once(&opts.pattern).chain(opts.exprs.iter().flatten()) {
+        ensure_single_search_pattern_is_not_a_path(pattern)?;
+    }
+    Ok(())
+}
+
+/// Apply the path-separator diagnostic to a single pattern. See
+/// [`ensure_search_pattern_is_not_a_path`] for the rationale of each case.
+fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
+    // Start with the cheap check: '/' is always a path separator, including on
+    // Windows, and has no regex meaning, so flagging it is safe and catches the
+    // Linux/macOS mistake of pasting a full path as the pattern.
+    #[cfg_attr(not(windows), allow(unused_mut))]
+    let mut should_warn = pattern.contains('/');
+
+    // On Windows we additionally accept the native `\` separator, but only when
+    // the pattern actually resolves to an existing directory - `\` is also the
+    // regex escape char there, so valid patterns like `\Ac` or `\d+` must still
+    // run. The is_dir syscall is only needed when `should_warn` is still false,
+    // so short-circuit via `||` to avoid the stat call on the happy path.
+    #[cfg(windows)]
     {
+        should_warn = should_warn
+            || (pattern.contains(std::path::MAIN_SEPARATOR) && Path::new(pattern).is_dir());
+    }
+
+    if should_warn {
         Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character ('{sep}') \
+            "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
              fd . '{pattern}'\n\n\
              Instead, if you want your pattern to match the full file path, use:\n\n  \
              fd --full-path '{pattern}'",
-            pattern = &opts.pattern,
-            sep = std::path::MAIN_SEPARATOR,
+            pattern = pattern,
         ))
     } else {
         Ok(())
@@ -167,6 +224,10 @@ fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
     Ok(if opts.glob && !pattern.is_empty() {
         let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
         glob.regex().to_owned()
+    } else if opts.exact {
+        // Anchor the escaped pattern so the full filename (or path) must match exactly.
+        // Literal. No substring matching.
+        format!("^{}$", regex::escape(pattern))
     } else if opts.fixed_strings {
         // Treat pattern as literal string if '--fixed-strings' is used
         regex::escape(pattern)
@@ -242,9 +303,18 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
 
+    let full_path_base = if opts.full_path {
+        Some(env::current_dir().context(
+            "Could not determine current directory. \
+             This is required for --full-path.",
+        )?)
+    } else {
+        None
+    };
+
     Ok(Config {
         case_sensitive,
-        search_full_path: opts.full_path,
+        full_path_base,
         ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
         read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
         read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
@@ -265,34 +335,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         ls_colors,
         hyperlink,
         interactive_terminal,
-        file_types: opts.filetype.as_ref().map(|values| {
-            use crate::cli::FileType::*;
-            let mut file_types = FileTypes::default();
-            for value in values {
-                match value {
-                    File => file_types.files = true,
-                    Directory => file_types.directories = true,
-                    Symlink => file_types.symlinks = true,
-                    Executable => {
-                        file_types.executables_only = true;
-                        file_types.files = true;
-                    }
-                    Empty => file_types.empty_only = true,
-                    BlockDevice => file_types.block_devices = true,
-                    CharDevice => file_types.char_devices = true,
-                    Socket => file_types.sockets = true,
-                    Pipe => file_types.pipes = true,
-                }
-            }
-
-            // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
-                file_types.files = true;
-                file_types.directories = true;
-            }
-
-            file_types
-        }),
+        file_types: opts
+            .filetype
+            .as_ref()
+            .map(|values| FileTypes::from_types(values)),
         extensions: opts
             .extensions
             .as_ref()
@@ -323,6 +369,7 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         actual_path_separator,
         max_results: opts.max_results(),
         strip_cwd_prefix: opts.strip_cwd_prefix(|| !(opts.null_separator || has_command)),
+        ignore_contain: opts.ignore_contain,
     })
 }
 
@@ -372,7 +419,7 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
             // Assume ls is GNU ls
             gnu_ls("ls")
         } else {
-            // MacOS, DragonFlyBSD, FreeBSD
+            // macOS, DragonFlyBSD, FreeBSD
             use std::process::{Command, Stdio};
 
             // Use GNU ls, if available (support for --color=auto, better LS_COLORS support)
@@ -479,10 +526,11 @@ fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::R
         .build()
         .map_err(|e| {
             anyhow!(
-                "{}\n\nNote: You can use the '--fixed-strings' option to search for a \
-                 literal string instead of a regular expression. Alternatively, you can \
+                "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
+                 or literal strings with '--exact' options (instead of a regular expression). \
+                 Alternatively, you can \
                  also use the '--glob' option to match on a glob pattern.",
-                e.to_string()
+                e
             )
         })
 }
