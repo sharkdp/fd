@@ -552,7 +552,7 @@ pub struct Opts {
     pub ignore_contain: Vec<String>,
 
     /// Set number of threads to use for searching & executing (default: number
-    /// of available CPU cores)
+    /// of available CPU cores, up to a maximum of 64)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
     pub threads: Option<NonZeroUsize>,
 
