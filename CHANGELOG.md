@@ -8,6 +8,7 @@
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
 - Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
+- Reject excessive `--threads` values with an error instead of panicking, see #2134 (@koopatroopa787)
 
 # 10.5.0
 
