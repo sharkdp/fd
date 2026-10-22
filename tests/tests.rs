@@ -538,16 +538,19 @@ fn test_smart_case() {
 
 #[test]
 fn test_smart_case_inline_flags_and_patterns() {
-    let te = TestEnv::new(&[], &["foo-bar", "foo-BAR", "FOO-BAR"]);
-    let all = "FOO-BAR\nfoo-BAR\nfoo-bar";
+    let te = TestEnv::new(&[], &["foo-bar-1", "foo-BAR-2", "FOO-BAR-3"]);
+    let all = "FOO-BAR-3\nfoo-BAR-2\nfoo-bar-1";
 
     te.assert_output(&["foo", "--and", "bar"], all);
     te.assert_output(&["(?i)foo", "--and", "bar"], all);
     te.assert_output(&["foo", "--and", "(?i)bar"], all);
     te.assert_output(&["(?i:foo)", "--and", "bar"], all);
     te.assert_output(&["--ignore-case", "(?i)foo", "--and", "bar"], all);
-    te.assert_output(&["--case-sensitive", "(?i)foo", "--and", "bar"], "foo-bar");
-    te.assert_output(&["(?i)Foo", "--and", "bar"], "foo-bar");
+    te.assert_output(
+        &["--case-sensitive", "(?i)foo", "--and", "bar"],
+        "foo-bar-1",
+    );
+    te.assert_output(&["(?i)Foo", "--and", "bar"], "foo-bar-1");
 }
 
 /// Case sensitivity (--case-sensitive)
