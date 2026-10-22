@@ -46,18 +46,18 @@ impl TimeFilter {
         }
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(s).map(TimeFilter::Before)
+    pub fn before(s: &str) -> Option<Self> {
+        Self::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(s).map(TimeFilter::After)
+    pub fn after(s: &str) -> Option<Self> {
+        Self::from_str(s).map(TimeFilter::After)
     }
 
     pub fn applies_to(&self, t: &SystemTime) -> bool {
         match self {
-            TimeFilter::Before(limit) => t < limit,
-            TimeFilter::After(limit) => t > limit,
+            Self::Before(limit) => t < limit,
+            Self::After(limit) => t > limit,
         }
     }
 }
