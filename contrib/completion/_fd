@@ -22,7 +22,7 @@ _fd() {
 
   fd_types=(
     {f,file}'\:"regular files"'
-    {d,directory}'\:"directories"'
+    {d,dir,directory}'\:"directories"'
     {l,symlink}'\:"symbolic links"'
     {e,empty}'\:"empty files or directories"'
     {x,executable}'\:"executable (files)"'
