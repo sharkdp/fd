@@ -325,6 +325,9 @@ impl TestEnv {
         // Make sure LS_COLORS is unset to ensure consistent
         // color output
         cmd.env("LS_COLORS", "");
+        // GitHub's Windows jobs use `shell: bash`, which sets MSYSTEM and would
+        // otherwise make fd print `/` instead of the native `\` separator.
+        cmd.env_remove("MSYSTEM");
         cmd.args(args);
 
         // Run *fd*.

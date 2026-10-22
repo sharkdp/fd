@@ -2722,6 +2722,31 @@ fn test_custom_path_separator() {
     );
 }
 
+/// Explicit search paths should print with one native separator style.
+/// Compare raw stdout so the usual `/` -> OS-separator rewrite cannot hide a mixed `./foo\\bar`.
+/// TestEnv clears MSYSTEM so Git Bash CI does not force `/` via default_path_separator.
+#[test]
+fn test_explicit_search_path_uses_native_separators() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    let sep = std::path::MAIN_SEPARATOR;
+
+    let output = te.assert_success_and_get_output(".", &["a.foo", "."]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(
+        stdout.as_ref(),
+        format!(".{sep}a.foo\n"),
+        "explicit '.' mixed separators: {stdout:?}"
+    );
+
+    let output = te.assert_success_and_get_output(".", &["d.foo", "./one/two"]);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(
+        stdout.as_ref(),
+        format!(".{sep}one{sep}two{sep}three{sep}d.foo\n"),
+        "explicit './one/two' mixed separators: {stdout:?}"
+    );
+}
+
 #[test]
 fn test_base_directory() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
