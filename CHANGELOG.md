@@ -8,7 +8,6 @@
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
 - Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
-- Suggest the accepted `--type` alias `dir` in the zsh completion, see #2171 (@ump45nose)
 
 # 10.5.0
 
