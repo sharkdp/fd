@@ -1,7 +1,7 @@
 # Upcoming Release
 
 ## Features
--
+- Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
 - Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
