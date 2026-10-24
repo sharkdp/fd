@@ -80,6 +80,7 @@ _fd() {
 
     + '(follow)' # follow symlinks
     {-L,--follow}'[follow symbolic links to directories]'
+    '!--dereference'
 
     + '(abs-path)' # show absolute paths
     '(long-listing)'{-a,--absolute-path}'[show absolute paths instead of relative paths]'
@@ -106,6 +107,7 @@ _fd() {
     '(--exact-depth -d --max-depth)'{-d+,--max-depth=}'[set max directory depth to descend when searching]:depth'
     '!(--exact-depth -d --max-depth)--maxdepth:depth'
     '(--exact-depth --min-depth)--min-depth=[set directory depth to descend before start searching]:depth'
+    '!(--exact-depth --min-depth)--mindepth=:depth'
     '(--exact-depth -d --max-depth --maxdepth --min-depth)--exact-depth=[only search at the exact given directory depth]:depth'
 
     + prune # pruning
@@ -140,6 +142,7 @@ _fd() {
     ))'
 
     '--hyperlink=-[add hyperlinks to output paths]::when:(auto never always)'
+    '!--hyper=-::when:(auto never always)'
 
     + '(threads)'
     {-j+,--threads=}'[set the number of threads for searching and executing]:number of threads'
