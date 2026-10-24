@@ -17,11 +17,19 @@ use crate::filesystem;
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
+/// A program to find entries in your filesystem with regex and glob based matching.
+///
+/// By default, fd respects gitignore rules, ignores hidden directories, and uses smart case (only
+/// case sensitive if the pattern contains an uppercase character).
+///
+/// You can use '' or . as the search pattern to match all files.
+///
+/// Options may be given anywhere on the command line.
 #[derive(Parser)]
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and is case insensitive.",
+    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and uses smart case.",
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     max_term_width = 98,
     args_override_self = true,
