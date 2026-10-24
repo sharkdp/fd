@@ -630,13 +630,11 @@ pub struct Opts {
     /// is considered a match. If your pattern starts with a dash (-), make sure to
     /// pass '--' first, or it will be considered as a flag (fd -- '-foo').
     #[arg(
-        default_value = "",
-        hide_default_value = true,
         value_name = "pattern",
         help = "the search pattern (a regular expression, unless '--glob' is used; optional)",
         long_help
     )]
-    pub pattern: String,
+    pub pattern: Option<String>,
 
     /// Set the path separator to use when printing file paths. The default is
     /// the OS-specific separator ('/' on Unix, '\' on Windows).
