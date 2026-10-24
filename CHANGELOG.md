@@ -9,6 +9,7 @@
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
 - Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
+- Don't abort the search if ther is a path separator in a pattern without `--full-path`. But still print a warning. See #2163.
 
 # 10.5.0
 

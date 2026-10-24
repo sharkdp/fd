@@ -91,7 +91,12 @@ fn run() -> Result<ExitCode> {
         bail!("No valid search paths given.");
     }
 
-    ensure_search_pattern_is_not_a_path(&opts)?;
+    // If the pattern looks like a path, or a pattern that is
+    // intended to matcha path, then print a warning.
+    // In some cases it may still match, so continue processing.
+    if let Err(err) = ensure_search_pattern_is_not_a_path(&opts) {
+        eprintln!("[warning]: {err}");
+    }
     let pattern = &opts.pattern;
     let exprs = &opts.exprs;
     let empty = Vec::new();
@@ -207,12 +212,12 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
 
     if should_warn {
         Err(anyhow!(
-            "The search pattern '{pattern}' contains a path-separation character \
-             and will not lead to any search results.\n\n\
-             If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
-             fd . '{pattern}'\n\n\
-             Instead, if you want your pattern to match the full file path, use:\n\n  \
-             fd --full-path '{pattern}'",
+            "The search pattern {pattern:?} contains a path-separation character \
+             and probably won't match against just the filename.\n\n\
+             If you want your pattern to match the full file path, use:\n\n  \
+             fd --full-path '{pattern}'\n\n\
+             If you want to search for all files inside a directory, use a match-all pattern:\n\n  \
+             fd . '{pattern}'",
             pattern = pattern,
         ))
     } else {
