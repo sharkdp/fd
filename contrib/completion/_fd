@@ -54,7 +54,7 @@ _fd() {
 
     + '(no-ignore-full)' # all ignore files
     '(no-ignore-partial)'{-I,--no-ignore}"[don't respect .(git|fd)ignore and global ignore files]"
-    $no'(no-ignore-partial)*'{-u,--unrestricted}'[alias for --no-ignore, when repeated also alias for --hidden]'
+    $no'(no-ignore-partial)*'{-u,--unrestricted}'[alias for --no-ignore --hidden]'
 
     + no-ignore-partial # some ignore files
     "(no-ignore-full --no-ignore-vcs)--no-ignore-vcs[don't respect .gitignore files]"
