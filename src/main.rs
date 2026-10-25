@@ -23,7 +23,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, anyhow, bail};
-use clap::{CommandFactory, Parser};
+use clap::CommandFactory;
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
@@ -78,7 +78,7 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let opts = Opts::parse();
+    let opts = Opts::from_matches(Opts::command().get_matches());
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {
@@ -315,14 +315,12 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     Ok(Config {
         case_sensitive,
         full_path_base,
-        ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
-        read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
-        read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
+        ignore_hidden: !opts.hidden,
+        read_fdignore: !opts.no_ignore,
+        read_vcsignore: !(opts.no_ignore || opts.no_ignore_vcs),
         require_git_to_read_vcsignore: !opts.no_require_git,
         read_parent_ignore: !opts.no_ignore_parent,
-        read_global_ignore: !(opts.no_ignore
-            || opts.rg_alias_ignore()
-            || opts.no_global_ignore_file),
+        read_global_ignore: !(opts.no_ignore || opts.no_global_ignore_file),
         follow_links: opts.follow,
         one_file_system: opts.one_file_system,
         null_separator: opts.null_separator,

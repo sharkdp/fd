@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, CommandFactory, FromArgMatches, Parser,
+    ValueEnum, error::ErrorKind, parser::ValueSource, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -120,10 +120,14 @@ pub struct Opts {
 
     /// Perform an unrestricted search, including ignored and hidden files. This is
     /// an alias for '--no-ignore --hidden'.
-    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
-    help = "Unrestricted search, alias for '--no-ignore --hidden'",
-        long_help,
-        )]
+    #[arg(
+        long = "unrestricted",
+        short = 'u',
+        action(ArgAction::Count),
+        hide_short_help = true,
+        help = "Unrestricted search, alias for '--no-ignore --hidden'",
+        long_help
+    )]
     rg_alias_hidden_ignore: u8,
 
     /// Case-sensitive search (default: smart case)
@@ -694,6 +698,22 @@ pub struct Opts {
 }
 
 impl Opts {
+    /// Expands -u into --hidden --no-ignore, so a later --no-hidden or --ignore
+    /// only overrides its own half.
+    pub fn from_matches(matches: ArgMatches) -> Self {
+        let mut opts = Self::from_arg_matches(&matches)
+            .unwrap_or_else(|e| e.format(&mut Self::command()).exit());
+        // Defaults have indices too, so only count flags given on the command line.
+        let last = |id| match matches.value_source(id) {
+            Some(ValueSource::CommandLine) => matches.indices_of(id).and_then(Iterator::max),
+            _ => None,
+        };
+        let unrestricted = last("rg_alias_hidden_ignore");
+        opts.hidden |= unrestricted > last("no_hidden");
+        opts.no_ignore |= unrestricted > last("ignore");
+        opts
+    }
+
     pub fn search_paths(&self) -> anyhow::Result<Vec<PathBuf>> {
         // would it make sense to concatenate these?
         let paths = if !self.path.is_empty() {
@@ -740,11 +760,6 @@ impl Opts {
 
     pub fn no_search_paths(&self) -> bool {
         self.path.is_empty() && self.search_path.is_empty()
-    }
-
-    #[inline]
-    pub fn rg_alias_ignore(&self) -> bool {
-        self.rg_alias_hidden_ignore > 0
     }
 
     pub fn max_depth(&self) -> Option<usize> {
