@@ -56,7 +56,8 @@ impl SizeFilter {
             _ => return None,
         };
 
-        let size = quantity * multiplier;
+        let size = quantity.checked_mul(multiplier)?;
+
         match limit_kind {
             "+" => Some(Self::Min(size)),
             "-" => Some(Self::Max(size)),
@@ -215,5 +216,43 @@ mod tests {
     fn is_within_greater_than_equal() {
         let f = SizeFilter::from_string("+1K").unwrap();
         assert!(f.is_within(1000));
+    }
+
+    #[test]
+    fn ensure_size_multiplication_overflow_returns_error() {
+        let invalid = [
+            "+18446744073709551615k",
+            "-18446744073709551615m",
+            "18446744073709551615g",
+            "+18446744073709551615ti",
+            "-18446744073709551615tib",
+        ];
+
+        for input in invalid {
+            assert!(
+                SizeFilter::from_string(input).is_err(),
+                "Expected {input:?} to fail due to overflow"
+            );
+        }
+    }
+
+    #[test]
+    fn ensure_size_multiplication_boundary() {
+        let max_valid = u64::MAX / KILO;
+
+        assert_eq!(
+            SizeFilter::from_string(&format!("{max_valid}k")).unwrap(),
+            SizeFilter::Equals(max_valid * KILO)
+        );
+
+        assert!(SizeFilter::from_string(&format!("{}k", max_valid + 1)).is_err());
+    }
+
+    #[test]
+    fn ensure_max_u64_does_not_overflow() {
+        assert_eq!(
+            SizeFilter::from_string("18446744073709551615b").unwrap(),
+            SizeFilter::Equals(u64::MAX)
+        );
     }
 }
