@@ -23,7 +23,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use anyhow::{Context, Result, anyhow, bail};
-use clap::CommandFactory;
+use clap::{CommandFactory, Parser};
 use globset::GlobBuilder;
 use lscolors::LsColors;
 use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
@@ -78,7 +78,7 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let opts = Opts::from_matches(Opts::command().get_matches());
+    let opts = Opts::parse();
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {

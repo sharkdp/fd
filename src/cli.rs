@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, CommandFactory, FromArgMatches, Parser,
-    ValueEnum, error::ErrorKind, parser::ValueSource, value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, builder::ArgPredicate,
+    error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -39,7 +39,11 @@ pub struct Opts {
         long,
         short = 'H',
         help = "Search hidden files and directories",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("no_hidden", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub hidden: bool,
 
@@ -54,7 +58,11 @@ pub struct Opts {
         long,
         short = 'I',
         help = "Do not respect .(git|fd)ignore files",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("ignore", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub no_ignore: bool,
 
@@ -123,12 +131,11 @@ pub struct Opts {
     #[arg(
         long = "unrestricted",
         short = 'u',
-        action(ArgAction::Count),
         hide_short_help = true,
         help = "Unrestricted search, alias for '--no-ignore --hidden'",
         long_help
     )]
-    rg_alias_hidden_ignore: u8,
+    rg_alias_hidden_ignore: bool,
 
     /// Case-sensitive search (default: smart case)
     #[arg(
@@ -698,22 +705,6 @@ pub struct Opts {
 }
 
 impl Opts {
-    /// Expands -u into --hidden --no-ignore, so a later --no-hidden or --ignore
-    /// only overrides its own half.
-    pub fn from_matches(matches: ArgMatches) -> Self {
-        let mut opts = Self::from_arg_matches(&matches)
-            .unwrap_or_else(|e| e.format(&mut Self::command()).exit());
-        // Defaults have indices too, so only count flags given on the command line.
-        let last = |id| match matches.value_source(id) {
-            Some(ValueSource::CommandLine) => matches.indices_of(id).and_then(Iterator::max),
-            _ => None,
-        };
-        let unrestricted = last("rg_alias_hidden_ignore");
-        opts.hidden |= unrestricted > last("no_hidden");
-        opts.no_ignore |= unrestricted > last("ignore");
-        opts
-    }
-
     pub fn search_paths(&self) -> anyhow::Result<Vec<PathBuf>> {
         // would it make sense to concatenate these?
         let paths = if !self.path.is_empty() {
