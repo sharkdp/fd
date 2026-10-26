@@ -73,7 +73,7 @@ pub fn build_patterns(
     pattern_type: PatternType,
     ignore_case: bool,
 ) -> Result<Patterns> {
-    if patterns.is_empty() {
+    if patterns.is_empty() || is_empty_pattern(&patterns, pattern_type) {
         return Ok(Box::new(MatchAll));
     }
     match pattern_type {
@@ -133,7 +133,21 @@ fn build_regex_matcher(patterns: Vec<String>, ignore_case: bool) -> Result<Regex
         })
 }
 
+fn is_empty_pattern(patterns: &[String], pattern_type: PatternType) -> bool {
+    pattern_type != PatternType::Exact && patterns.len() == 1 && patterns[0].is_empty()
+}
+
 /// Test if the needle is a substring of the haystack
 fn bytes_contains(haystack: &[u8], needle: &[u8]) -> bool {
     memmem::find(haystack, needle).is_some()
+}
+
+#[test]
+fn empty_matches_all() {
+    let patterns_none = build_patterns(Vec::new(), PatternType::Glob, false).unwrap();
+    let patterns_empty_str =
+        build_patterns(vec!["".to_string()], PatternType::Glob, false).unwrap();
+
+    assert!(patterns_none.matches_path("abcd".as_ref()));
+    assert!(patterns_empty_str.matches_path("abcd".as_ref()));
 }
