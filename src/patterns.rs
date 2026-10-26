@@ -105,7 +105,6 @@ fn build_glob_matcher(patterns: Vec<String>, ignore_case: bool) -> Result<Patter
     } else {
         let mut builder = GlobSetBuilder::new();
         for pat in patterns {
-            eprintln!("adding glob for {}", pat);
             builder.add(build_glob(&pat, ignore_case)?);
         }
         Box::new(builder.build()?)
