@@ -1040,7 +1040,7 @@ fn test_global_ignore() {
 }
 
 #[cfg(not(windows))]
-#[test_case("--unrestricted", ".hidden.foo
+#[test_case("--unrestricted foo", ".hidden.foo
 a.foo
 fdignored.foo
 gitignored.foo
@@ -1071,14 +1071,14 @@ fn test_no_global_ignore(flag: &str, expected_output: &str) {
 /// `--unrestricted` is an alias for `--hidden --no-ignore` and acts as a default,
 /// so `--ignore`/`--no-hidden` can still turn off one aspect of it (#2192)
 #[cfg(not(windows))]
-#[test_case("--unrestricted --ignore", ".hidden.foo
+#[test_case("--unrestricted --ignore foo", ".hidden.foo
 a.foo
 one/b.foo
 one/two/c.foo
 one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo/"; "unrestricted-ignore-restores-ignore-rules")]
-#[test_case("--unrestricted --no-hidden", "a.foo
+#[test_case("--unrestricted --no-hidden foo", "a.foo
 fdignored.foo
 gitignored.foo
 one/b.foo
@@ -1086,7 +1086,7 @@ one/two/c.foo
 one/two/C.Foo2
 one/two/three/d.foo
 one/two/three/directory_foo/"; "unrestricted-no-hidden-restores-hidden-filter")]
-#[test_case("--unrestricted", ".hidden.foo
+#[test_case("--unrestricted foo", ".hidden.foo
 a.foo
 fdignored.foo
 gitignored.foo
