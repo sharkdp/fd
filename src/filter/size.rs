@@ -3,6 +3,12 @@ use std::sync::OnceLock;
 use anyhow::anyhow;
 use regex::Regex;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SizeFilterError {
+    InvalidFormat,
+    Overflow,
+}
+
 static SIZE_CAPTURES: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,22 +32,32 @@ const TEBI: u64 = GIBI * 1024;
 
 impl SizeFilter {
     pub fn from_string(s: &str) -> anyhow::Result<Self> {
-        Self::parse_opt(s)
-            .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s))
+        Self::parse_opt(s).map_err(|err| match err {
+            SizeFilterError::InvalidFormat => {
+                anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s)
+            }
+            SizeFilterError::Overflow => {
+                anyhow!("Size constraint '{}' is too large to represent.", s)
+            }
+        })
     }
 
-    fn parse_opt(s: &str) -> Option<Self> {
+    fn parse_opt(s: &str) -> Result<Self, SizeFilterError> {
         let pattern =
             SIZE_CAPTURES.get_or_init(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
         if !pattern.is_match(s) {
-            return None;
+            return Err(SizeFilterError::InvalidFormat);
         }
 
-        let captures = pattern.captures(s)?;
+        let captures = pattern
+            .captures(s)
+            .ok_or_else(|| SizeFilterError::InvalidFormat)?;
+
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
-        let quantity = captures
-            .get(2)
-            .and_then(|v| v.as_str().parse::<u64>().ok())?;
+
+        let quantity = captures[2]
+            .parse::<u64>()
+            .map_err(|_| SizeFilterError::InvalidFormat)?;
 
         let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
             v if v.starts_with("ki") => KIBI,
@@ -53,16 +69,18 @@ impl SizeFilter {
             v if v.starts_with("ti") => TEBI,
             v if v.starts_with('t') => TERA,
             "b" => 1,
-            _ => return None,
+            _ => return Err(SizeFilterError::InvalidFormat),
         };
 
-        let size = quantity.checked_mul(multiplier)?;
+        let size = quantity
+            .checked_mul(multiplier)
+            .ok_or_else(|| SizeFilterError::Overflow)?;
 
         match limit_kind {
-            "+" => Some(Self::Min(size)),
-            "-" => Some(Self::Max(size)),
-            "" => Some(Self::Equals(size)),
-            _ => None,
+            "+" => Ok(Self::Min(size)),
+            "-" => Ok(Self::Max(size)),
+            "" => Ok(Self::Equals(size)),
+            _ => Err(SizeFilterError::InvalidFormat),
         }
     }
 
