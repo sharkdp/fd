@@ -37,8 +37,9 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::TimeFilter;
-use crate::patterns::build_patterns;
-use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
+use crate::patterns::{
+    build_patterns, pattern_has_uppercase_char, patterns_match_strings_with_leading_dots,
+};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
@@ -103,7 +104,10 @@ fn run() -> Result<ExitCode> {
     // The search will be case-sensitive if the command line flag is set or
     // if any of the patterns has an uppercase character (smart case).
     let ignore_case = opts.ignore_case
-        || !(opts.case_sensitive || patterns.iter().any(|pat| pattern_has_uppercase_char(pat)));
+        || !(opts.case_sensitive
+            || patterns
+                .iter()
+                .any(|pat| pattern_has_uppercase_char(pattern_type, pat)));
 
     let config = construct_config(opts)?;
 
@@ -499,19 +503,5 @@ fn ensure_use_hidden_option_for_leading_dot_pattern(
         ))
     } else {
         Ok(())
-    }
-}
-
-fn patterns_match_strings_with_leading_dots(
-    patterns: &[String],
-    pattern_type: PatternType,
-) -> bool {
-    let mut iter = patterns.iter();
-    match pattern_type {
-        PatternType::Regex => iter.any(|pat| pattern_matches_strings_with_leading_dot(pat)),
-        // fixed strings aren't anchored so always false
-        PatternType::Fixed => false,
-        // globs and exact just check if it starts with a .
-        PatternType::Glob | PatternType::Exact => patterns.iter().any(|pat| pat.starts_with(".")),
     }
 }

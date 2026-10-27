@@ -649,6 +649,7 @@ fn test_smart_case_glob_searches() {
     );
 
     te.assert_output(&["--glob", "C.Foo*"], "one/two/C.Foo2");
+    te.assert_output(&["--glob", "*.Foo*"], "one/two/C.Foo2");
 }
 
 /// Glob-based searches (--glob) in combination with --case-sensitive

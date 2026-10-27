@@ -5,6 +5,8 @@ use globset::{Glob, GlobBuilder, GlobMatcher, GlobSet, GlobSetBuilder};
 use memchr::memmem;
 use regex::bytes::{RegexSet, RegexSetBuilder};
 
+use crate::regex_helper::{self, pattern_matches_strings_with_leading_dot};
+
 pub trait Matcher {
     fn matches_path(&self, path: &OsStr) -> bool;
 }
@@ -96,6 +98,28 @@ pub fn build_patterns(
             }
             Ok(Box::new(build_regex_matcher(patterns, ignore_case)?))
         }
+    }
+}
+
+pub fn patterns_match_strings_with_leading_dots(
+    patterns: &[String],
+    pattern_type: PatternType,
+) -> bool {
+    let mut iter = patterns.iter();
+    match pattern_type {
+        PatternType::Regex => iter.any(|pat| pattern_matches_strings_with_leading_dot(pat)),
+        // fixed strings aren't anchored so always false
+        PatternType::Fixed => false,
+        // globs and exact just check if it starts with a .
+        PatternType::Glob | PatternType::Exact => patterns.iter().any(|pat| pat.starts_with(".")),
+    }
+}
+
+pub fn pattern_has_uppercase_char(pattern_type: PatternType, pattern: &str) -> bool {
+    match pattern_type {
+        PatternType::Regex => regex_helper::pattern_has_uppercase_char(pattern),
+        // For everything else it's sufficient to just check if there are any uppercase letters
+        _ => pattern.chars().any(char::is_uppercase),
     }
 }
 
