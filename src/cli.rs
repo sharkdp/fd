@@ -45,7 +45,7 @@ pub struct Opts {
 
     /// Overrides --hidden
     #[arg(long, overrides_with = "hidden", hide = true, action = ArgAction::SetTrue)]
-    no_hidden: (),
+    pub no_hidden: bool,
 
     /// Show search results from files and directories that would otherwise be
     /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file,
@@ -60,7 +60,7 @@ pub struct Opts {
 
     /// Overrides --no-ignore
     #[arg(long, overrides_with = "no_ignore", hide = true, action = ArgAction::SetTrue)]
-    ignore: (),
+    pub ignore: bool,
 
     ///Show search results from files and directories that
     ///would otherwise be ignored by '.gitignore' files.
@@ -120,10 +120,14 @@ pub struct Opts {
 
     /// Perform an unrestricted search, including ignored and hidden files. This is
     /// an alias for '--no-ignore --hidden'.
-    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
-    help = "Unrestricted search, alias for '--no-ignore --hidden'",
-        long_help,
-        )]
+    #[arg(
+        long = "unrestricted",
+        short = 'u',
+        action(ArgAction::Count),
+        hide_short_help = true,
+        help = "Unrestricted search, alias for '--no-ignore --hidden'",
+        long_help
+    )]
     rg_alias_hidden_ignore: u8,
 
     /// Case-sensitive search (default: smart case)
