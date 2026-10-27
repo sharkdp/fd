@@ -2869,6 +2869,54 @@ fn test_exec_invalid_utf8() {
     );
 }
 
+/// --format with non-utf8 paths writes the raw bytes when the output is piped
+///
+/// Note:
+/// - the test is disabled on Darwin/OSX, since it coerces file names to UTF-8,
+///   even when the requested file name is not valid UTF-8.
+/// - the test is currently disabled on Windows because I'm not sure how to create
+///   invalid UTF-8 files on Windows
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
+fn test_format_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    )
+    .unwrap();
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}"],
+        b"test1/test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{/}"],
+        b"test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--format", "{//}"], b"test1\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{.}"],
+        b"test1/test_\xFEinvalid\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--format", "{/.}"], b"test_\xFEinvalid\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}", "--print0"],
+        b"test1/test_\xFEinvalid.txt\0",
+    );
+}
+
 #[test]
 fn test_list_details() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);

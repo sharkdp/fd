@@ -22,6 +22,7 @@
   Also reject a placeholder as the executable for `--exec-batch`, while still
   allowing it for `--exec`.
 - Fix broken symlinks being incorrectly filtered out by `--min-depth` when following links (`--follow`), because their depth was not computed; see #1017 (@hexbinoct).
+- Write raw bytes instead of replacing them with U+FFFD when `--format` output goes to a pipe, so filenames that are not valid UTF-8 reach downstream tools unchanged; see #2189.
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
