@@ -4,6 +4,7 @@
 -
 
 ## Bugfixes
+- Compose `--unrestricted` with `--ignore` and `--no-hidden`: the flags now turn off only their own aspect of the alias instead of discarding it entirely, see #2192 (@mavrodikomsd-eng)
 - Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104

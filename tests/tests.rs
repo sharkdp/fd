@@ -1068,6 +1068,41 @@ fn test_no_global_ignore(flag: &str, expected_output: &str) {
     te.assert_output(&[flag, "foo"], expected_output);
 }
 
+/// `--unrestricted` is an alias for `--hidden --no-ignore` and acts as a default,
+/// so `--ignore`/`--no-hidden` can still turn off one aspect of it (#2192)
+#[cfg(not(windows))]
+#[test_case("--unrestricted --ignore foo", ".hidden.foo
+a.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "unrestricted-ignore-restores-ignore-rules")]
+#[test_case("--unrestricted --no-hidden foo", "a.foo
+fdignored.foo
+gitignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "unrestricted-no-hidden-restores-hidden-filter")]
+#[test_case("--unrestricted foo", ".hidden.foo
+a.foo
+fdignored.foo
+gitignored.foo
+one/b.foo
+one/two/c.foo
+one/two/C.Foo2
+one/two/three/d.foo
+one/two/three/directory_foo/"; "unrestricted-alone-shows-everything")]
+fn test_unrestricted_composition(args: &str, expected_output: &str) {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.assert_output(
+        &args.split_whitespace().collect::<Vec<_>>(),
+        expected_output,
+    );
+}
+
 /// Symlinks (--follow)
 #[test]
 fn test_follow() {
