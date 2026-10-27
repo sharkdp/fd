@@ -1040,7 +1040,7 @@ fn test_global_ignore() {
 }
 
 #[cfg(not(windows))]
-#[test_case("--unrestricted foo", ".hidden.foo
+#[test_case("--unrestricted", ".hidden.foo
 a.foo
 fdignored.foo
 gitignored.foo
