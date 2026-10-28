@@ -147,7 +147,7 @@ _fd() {
     ))'
 
     '--hyperlink=-[add hyperlinks to output paths]::when:(auto never always)'
-    '!--hyper=-'
+    '!--hyper=-::when:(auto never always)'
 
     + '(threads)'
     {-j+,--threads=}'[set the number of threads for searching and executing]:number of threads'
