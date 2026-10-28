@@ -11,6 +11,7 @@
 - Restore jemalloc as default allocator on supported systems
 - Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
 - Fix integer overflow when parsing size constraints, rejecting values that exceed `u64::MAX` instead of panicking, see #2196 (@parneetsingh022).
+- Various fixes and updates to zsh completion
 
 # 10.5.0
 
@@ -29,7 +30,6 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
-- Various fixes and updates to zsh completion
 
 # 10.4.2
 
