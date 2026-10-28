@@ -2944,6 +2944,18 @@ fn test_opposing(flag: &str, opposing_flags: &[&str]) {
     );
 }
 
+#[test_case(&["-u", "--ignore"], &["--hidden"] ; "u ignore")]
+#[test_case(&["-u", "--no-hidden"], &["--no-ignore"] ; "u no-hidden")]
+#[test_case(&["--no-hidden", "-u"], &["--no-ignore"] ; "no-hidden u")]
+fn test_unrestricted_partial_override(flags: &[&str], expected_flags: &[&str]) {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    assert_eq!(
+        te.assert_success_and_get_normalized_output(".", flags),
+        te.assert_success_and_get_normalized_output(".", expected_flags),
+    );
+}
+
 /// Print error if search pattern starts with a dot and --hidden is not set
 /// (Unix only, hidden files on Windows work differently)
 #[test]

@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, builder::ArgPredicate,
+    error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -39,7 +39,11 @@ pub struct Opts {
         long,
         short = 'H',
         help = "Search hidden files and directories",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("no_hidden", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub hidden: bool,
 
@@ -54,7 +58,11 @@ pub struct Opts {
         long,
         short = 'I',
         help = "Do not respect .(git|fd)ignore files",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("ignore", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub no_ignore: bool,
 
@@ -120,11 +128,14 @@ pub struct Opts {
 
     /// Perform an unrestricted search, including ignored and hidden files. This is
     /// an alias for '--no-ignore --hidden'.
-    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
-    help = "Unrestricted search, alias for '--no-ignore --hidden'",
-        long_help,
-        )]
-    rg_alias_hidden_ignore: u8,
+    #[arg(
+        long = "unrestricted",
+        short = 'u',
+        hide_short_help = true,
+        help = "Unrestricted search, alias for '--no-ignore --hidden'",
+        long_help
+    )]
+    rg_alias_hidden_ignore: bool,
 
     /// Case-sensitive search (default: smart case)
     #[arg(
@@ -740,11 +751,6 @@ impl Opts {
 
     pub fn no_search_paths(&self) -> bool {
         self.path.is_empty() && self.search_path.is_empty()
-    }
-
-    #[inline]
-    pub fn rg_alias_ignore(&self) -> bool {
-        self.rg_alias_hidden_ignore > 0
     }
 
     pub fn max_depth(&self) -> Option<usize> {
