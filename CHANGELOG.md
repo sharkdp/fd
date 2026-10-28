@@ -4,6 +4,7 @@
 -
 
 ## Bugfixes
+- Make `--ignore` and `--no-hidden` after `-u` override only their half of `-u`, see #2192 (@NavpreetSSidhu)
 - Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104
@@ -11,6 +12,7 @@
 - Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
 - Fix integer overflow when parsing size constraints, rejecting values that exceed `u64::MAX` instead of panicking, see #2196 (@parneetsingh022).
 - Report a specific error when a --size constraint exceeds the maximum supported value, instead of showing a generic invalid size error, see #2204 (@parneetsingh022)
+- Various fixes and updates to zsh completion
 
 # 10.5.0
 
@@ -29,7 +31,6 @@
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.
 - Fix bug where passing "-" as a directory argument didn't actually search that directory, see #849 (@Sean-Kenneth-Doherty).
 - Fix panic when `--changed-before`/`--changed-within` is given an out-of-range `@` Unix timestamp; the value is now rejected gracefully, see #2081 (@nikolauspschuetz).
-- Various fixes and updates to zsh completion
 
 # 10.4.2
 
