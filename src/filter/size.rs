@@ -37,7 +37,7 @@ impl SizeFilter {
                 anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s)
             }
             SizeFilterError::Overflow => {
-                anyhow!("Size constraint '{}' is too large to represent.", s)
+                anyhow!("Size constraint '{}' is too large.", s)
             }
         })
     }
