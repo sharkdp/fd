@@ -51,7 +51,7 @@ impl SizeFilter {
 
         let captures = pattern
             .captures(s)
-            .ok_or_else(|| SizeFilterError::InvalidFormat)?;
+            .ok_or(SizeFilterError::InvalidFormat)?;
 
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
 
@@ -76,7 +76,7 @@ impl SizeFilter {
 
         let size = quantity
             .checked_mul(multiplier)
-            .ok_or_else(|| SizeFilterError::Overflow)?;
+            .ok_or(SizeFilterError::Overflow)?;
 
         match limit_kind {
             "+" => Ok(Self::Min(size)),
