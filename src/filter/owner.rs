@@ -16,7 +16,7 @@ enum Check<T> {
 }
 
 impl OwnerFilter {
-    const IGNORE: Self = OwnerFilter {
+    const IGNORE: Self = Self {
         uid: Check::Ignore,
         gid: Check::Ignore,
     };
@@ -54,7 +54,7 @@ impl OwnerFilter {
             }
         })?;
 
-        Ok(OwnerFilter { uid, gid })
+        Ok(Self { uid, gid })
     }
 
     /// If self is a no-op (ignore both uid and gid) then return `None`, otherwise wrap in a `Some`
@@ -76,9 +76,9 @@ impl OwnerFilter {
 impl<T: PartialEq> Check<T> {
     fn check(&self, v: T) -> bool {
         match self {
-            Check::Equal(x) => v == *x,
-            Check::NotEq(x) => v != *x,
-            Check::Ignore => true,
+            Self::Equal(x) => v == *x,
+            Self::NotEq(x) => v != *x,
+            Self::Ignore => true,
         }
     }
 
@@ -87,16 +87,16 @@ impl<T: PartialEq> Check<T> {
         F: Fn(&str) -> Result<T>,
     {
         let (s, equality) = match s {
-            Some("") | None => return Ok(Check::Ignore),
+            Some("") | None => return Ok(Self::Ignore),
             Some(s) if s.starts_with('!') => (&s[1..], false),
             Some(s) => (s, true),
         };
 
         f(s).map(|x| {
             if equality {
-                Check::Equal(x)
+                Self::Equal(x)
             } else {
-                Check::NotEq(x)
+                Self::NotEq(x)
             }
         })
     }

@@ -94,8 +94,8 @@ regardless of whether you’re searching in a git repository or not. The flag ca
 be overridden with '--require-git'.
 .TP
 .B \-\-no\-ignore\-parent
-Show search results from files and directories that would otherwise be ignored by gitignore files in
-parent directories.
+Show search results from files and directories that would otherwise be ignored by
+'.gitignore', '.ignore', or '.fdignore' files in parent directories.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -210,7 +210,7 @@ Do not traverse into matching directories.
 .BI "\-t, \-\-type " filetype
 Filter search by type:
 .RS
-.IP "f, file"
+.IP "f, file" 20
 regular files
 .IP "d, dir, directory"
 directories

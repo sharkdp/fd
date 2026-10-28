@@ -315,14 +315,12 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     Ok(Config {
         case_sensitive,
         full_path_base,
-        ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
-        read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
-        read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
+        ignore_hidden: !opts.hidden,
+        read_fdignore: !opts.no_ignore,
+        read_vcsignore: !(opts.no_ignore || opts.no_ignore_vcs),
         require_git_to_read_vcsignore: !opts.no_require_git,
         read_parent_ignore: !opts.no_ignore_parent,
-        read_global_ignore: !(opts.no_ignore
-            || opts.rg_alias_ignore()
-            || opts.no_global_ignore_file),
+        read_global_ignore: !(opts.no_ignore || opts.no_global_ignore_file),
         follow_links: opts.follow,
         one_file_system: opts.one_file_system,
         null_separator: opts.null_separator,
@@ -335,34 +333,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         ls_colors,
         hyperlink,
         interactive_terminal,
-        file_types: opts.filetype.as_ref().map(|values| {
-            use crate::cli::FileType::*;
-            let mut file_types = FileTypes::default();
-            for value in values {
-                match value {
-                    File => file_types.files = true,
-                    Directory => file_types.directories = true,
-                    Symlink => file_types.symlinks = true,
-                    Executable => {
-                        file_types.executables_only = true;
-                        file_types.files = true;
-                    }
-                    Empty => file_types.empty_only = true,
-                    BlockDevice => file_types.block_devices = true,
-                    CharDevice => file_types.char_devices = true,
-                    Socket => file_types.sockets = true,
-                    Pipe => file_types.pipes = true,
-                }
-            }
-
-            // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
-                file_types.files = true;
-                file_types.directories = true;
-            }
-
-            file_types
-        }),
+        file_types: opts
+            .filetype
+            .as_ref()
+            .map(|values| FileTypes::from_types(values)),
         extensions: opts
             .extensions
             .as_ref()

@@ -4,8 +4,8 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, builder::ArgPredicate,
+    error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
@@ -39,7 +39,11 @@ pub struct Opts {
         long,
         short = 'H',
         help = "Search hidden files and directories",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("no_hidden", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub hidden: bool,
 
@@ -48,13 +52,17 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file,
+    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
         short = 'I',
         help = "Do not respect .(git|fd)ignore files",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("ignore", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub no_ignore: bool,
 
@@ -120,11 +128,14 @@ pub struct Opts {
 
     /// Perform an unrestricted search, including ignored and hidden files. This is
     /// an alias for '--no-ignore --hidden'.
-    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
-    help = "Unrestricted search, alias for '--no-ignore --hidden'",
-        long_help,
-        )]
-    rg_alias_hidden_ignore: u8,
+    #[arg(
+        long = "unrestricted",
+        short = 'u',
+        hide_short_help = true,
+        help = "Unrestricted search, alias for '--no-ignore --hidden'",
+        long_help
+    )]
+    rg_alias_hidden_ignore: bool,
 
     /// Case-sensitive search (default: smart case)
     #[arg(
@@ -552,7 +563,7 @@ pub struct Opts {
     pub ignore_contain: Vec<String>,
 
     /// Set number of threads to use for searching & executing (default: number
-    /// of available CPU cores)
+    /// of available CPU cores, up to a maximum of 64)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
     pub threads: Option<NonZeroUsize>,
 
@@ -742,11 +753,6 @@ impl Opts {
         self.path.is_empty() && self.search_path.is_empty()
     }
 
-    #[inline]
-    pub fn rg_alias_ignore(&self) -> bool {
-        self.rg_alias_hidden_ignore > 0
-    }
-
     pub fn max_depth(&self) -> Option<usize> {
         self.max_depth.or(self.exact_depth)
     }
@@ -873,7 +879,7 @@ impl clap::FromArgMatches for Exec {
             })
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
-        Ok(Exec { command })
+        Ok(Self { command })
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {

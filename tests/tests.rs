@@ -536,6 +536,23 @@ fn test_smart_case() {
     te.assert_output(&["\\AC"], "one/two/C.Foo2");
 }
 
+#[test]
+fn test_smart_case_inline_flags_and_patterns() {
+    let te = TestEnv::new(&[], &["foo-bar-1", "foo-BAR-2", "FOO-BAR-3"]);
+    let all = "FOO-BAR-3\nfoo-BAR-2\nfoo-bar-1";
+
+    te.assert_output(&["foo", "--and", "bar"], all);
+    te.assert_output(&["(?i)foo", "--and", "bar"], all);
+    te.assert_output(&["foo", "--and", "(?i)bar"], all);
+    te.assert_output(&["(?i:foo)", "--and", "bar"], all);
+    te.assert_output(&["--ignore-case", "(?i)foo", "--and", "bar"], all);
+    te.assert_output(
+        &["--case-sensitive", "(?i)foo", "--and", "bar"],
+        "foo-bar-1",
+    );
+    te.assert_output(&["(?i)Foo", "--and", "bar"], "foo-bar-1");
+}
+
 /// Case sensitivity (--case-sensitive)
 #[test]
 fn test_case_sensitive() {
@@ -2924,6 +2941,18 @@ fn test_opposing(flag: &str, opposing_flags: &[&str]) {
         "{} should override {}",
         opposing_flags.join(" "),
         flag
+    );
+}
+
+#[test_case(&["-u", "--ignore"], &["--hidden"] ; "u ignore")]
+#[test_case(&["-u", "--no-hidden"], &["--no-ignore"] ; "u no-hidden")]
+#[test_case(&["--no-hidden", "-u"], &["--no-ignore"] ; "no-hidden u")]
+fn test_unrestricted_partial_override(flags: &[&str], expected_flags: &[&str]) {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    assert_eq!(
+        te.assert_success_and_get_normalized_output(".", flags),
+        te.assert_success_and_get_normalized_output(".", expected_flags),
     );
 }
 
