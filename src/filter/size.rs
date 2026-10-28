@@ -49,9 +49,7 @@ impl SizeFilter {
             return Err(SizeFilterError::InvalidFormat);
         }
 
-        let captures = pattern
-            .captures(s)
-            .ok_or(SizeFilterError::InvalidFormat)?;
+        let captures = pattern.captures(s).ok_or(SizeFilterError::InvalidFormat)?;
 
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
 
