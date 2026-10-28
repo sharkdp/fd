@@ -55,9 +55,11 @@ impl SizeFilter {
 
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
 
+        // The regex already ensures the input contains only digits,
+        // so parsing can only fail if the number exceeds u64::MAX.
         let quantity = captures[2]
             .parse::<u64>()
-            .map_err(|_| SizeFilterError::InvalidFormat)?;
+            .map_err(|_| SizeFilterError::Overflow)?;
 
         let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
             v if v.starts_with("ki") => KIBI,
@@ -272,5 +274,49 @@ mod tests {
             SizeFilter::from_string("18446744073709551615b").unwrap(),
             SizeFilter::Equals(u64::MAX)
         );
+    }
+
+    #[test]
+    fn ensure_size_overflow_returns_correct_error() {
+        let invalid = [
+            "+18446744073709551616b", // Numeric overflow
+            "+16777216ti",            // Multiplication overflow
+        ];
+
+        for input in invalid {
+            assert_eq!(
+                SizeFilter::parse_opt(input),
+                Err(SizeFilterError::Overflow),
+                "Expected {input:?} to return an overflow error"
+            );
+        }
+    }
+
+    #[test]
+    fn multiplication_boundaries() {
+        let cases = [
+            ("b", 1),
+            ("k", KILO),
+            ("ki", KIBI),
+            ("m", MEGA),
+            ("mi", MEBI),
+            ("g", GIGA),
+            ("gi", GIBI),
+            ("t", TERA),
+            ("ti", TEBI),
+        ];
+
+        for (suffix, multiplier) in cases {
+            let max = u64::MAX / multiplier;
+
+            assert!(SizeFilter::from_string(&format!("{max}{suffix}")).is_ok());
+
+            let just_over_max = (max as u128) + 1;
+            assert_eq!(
+                SizeFilter::parse_opt(&format!("{just_over_max}{suffix}")),
+                Err(SizeFilterError::Overflow),
+                "suffix: {suffix}"
+            );
+        }
     }
 }
