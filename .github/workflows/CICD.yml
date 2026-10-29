@@ -123,7 +123,7 @@ jobs:
     - name: Install Windows ARM64 GNU-family linker
       if: matrix.job.target == 'aarch64-pc-windows-gnullvm'
       id: msys2
-      uses: msys2/setup-msys2@v2.33.0
+      uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
       with:
         msystem: CLANGARM64
         update: true
@@ -131,14 +131,15 @@ jobs:
 
     - name: Expose Windows ARM64 GNU-family linker
       if: matrix.job.target == 'aarch64-pc-windows-gnullvm'
-      shell: pwsh
+      shell: bash
       env:
         MSYS2_LOCATION: ${{ steps.msys2.outputs.msys2-location }}
       run: |
-        echo "$env:MSYS2_LOCATION\clangarm64\bin" >> $env:GITHUB_PATH
-        echo "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER=$env:MSYS2_LOCATION\clangarm64\bin\clang.exe" >> $env:GITHUB_ENV
+        bin_dir=$(cygpath -w "${MSYS2_LOCATION}/clangarm64/bin")
+        echo "${bin_dir}" >> $GITHUB_PATH
+        echo "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_LINKER=${bin_dir}\\clang.exe" >> $GITHUB_ENV
         # Link libunwind statically so the release does not need MSYS2's libunwind.dll.
-        echo "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_RUSTFLAGS=-C target-feature=+crt-static" >> $env:GITHUB_ENV
+        echo "CARGO_TARGET_AARCH64_PC_WINDOWS_GNULLVM_RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
 
     - name: Install prerequisites
       shell: bash
