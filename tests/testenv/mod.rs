@@ -313,6 +313,11 @@ impl TestEnv {
         self.assert_error_subdirectory(".", args, Some(expected))
     }
 
+    pub fn assert_success_with_error(&self, args: &[&str], expected_err: &str) {
+        let status = self.assert_error_subdirectory(".", args, Some(expected_err));
+        assert!(status.success(), "fd failed with exit code {status}");
+    }
+
     fn run_command(&self, path: &Path, args: &[&str]) -> process::Output {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);

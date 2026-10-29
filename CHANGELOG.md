@@ -13,6 +13,7 @@
 - Fix integer overflow when parsing size constraints, rejecting values that exceed `u64::MAX` instead of panicking, see #2196 (@parneetsingh022).
 - Various fixes and updates to zsh completion
 - Fix --glob patterns when using --full-path on windows. See #2067.
+- Don't abort the search if ther is a path separator in a pattern without `--full-path`. But still print a warning. See #2163.
 
 # 10.5.0
 
