@@ -2878,6 +2878,27 @@ fn test_exec_invalid_utf8() {
 ///   invalid UTF-8 files on Windows
 #[cfg(all(unix, not(target_os = "macos")))]
 #[test]
+fn test_format_invalid_utf8_with_custom_path_separator() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    )
+    .unwrap();
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}", "--path-separator", "="],
+        b"test1=test_\xFEinvalid.txt\n",
+    );
+}
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
 fn test_format_invalid_utf8() {
     use std::ffi::OsStr;
     use std::os::unix::ffi::OsStrExt;

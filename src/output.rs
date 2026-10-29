@@ -84,17 +84,10 @@ fn print_entry_format<W: Write>(
     {
         use std::os::unix::ffi::OsStrExt;
 
-        // Only emit raw bytes when the formatted output genuinely contains non-UTF-8
-        // bytes (i.e. a filename that is not valid UTF-8). For valid UTF-8 output we
-        // keep the normal path, so piped consumers that expect valid UTF-8 are not
-        // handed invalid bytes unless a filename is actually non-UTF-8.
-        if config.interactive_terminal
-            || config.path_separator.is_some()
-            || output.to_str().is_some()
-        {
+        if config.interactive_terminal {
             print_entry_format_base(stdout, &output, config)
         } else {
-            // Piped output: raw bytes so invalid UTF-8 filenames reach downstream tools intact.
+            // Preserve the original path bytes when stdout is not an interactive terminal.
             stdout.write_all(output.as_os_str().as_bytes())
         }
     }
