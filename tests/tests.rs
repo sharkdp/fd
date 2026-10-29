@@ -616,7 +616,6 @@ fn test_glob_searches() {
 }
 
 /// Glob-based searches (--glob) in combination with full path searches (--full-path)
-#[cfg(not(windows))] // TODO: make this work on Windows
 #[test]
 fn test_full_path_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
@@ -650,6 +649,7 @@ fn test_smart_case_glob_searches() {
     );
 
     te.assert_output(&["--glob", "C.Foo*"], "one/two/C.Foo2");
+    te.assert_output(&["--glob", "*.Foo*"], "one/two/C.Foo2");
 }
 
 /// Glob-based searches (--glob) in combination with --case-sensitive
