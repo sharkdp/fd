@@ -76,7 +76,28 @@ fn print_entry_format<W: Write>(
         entry.stripped_path(config),
         config.path_separator.as_deref(),
     );
-    // TODO: support writing raw bytes on unix?
+
+    #[cfg(not(unix))]
+    return print_entry_format_base(stdout, &output, config);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt;
+
+        if config.interactive_terminal {
+            print_entry_format_base(stdout, &output, config)
+        } else {
+            // Preserve the original path bytes when stdout is not an interactive terminal.
+            stdout.write_all(output.as_os_str().as_bytes())
+        }
+    }
+}
+
+fn print_entry_format_base<W: Write>(
+    stdout: &mut W,
+    output: &std::ffi::OsStr,
+    config: &Config,
+) -> io::Result<()> {
     let s = output.to_string_lossy();
     write!(
         stdout,
