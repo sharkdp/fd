@@ -451,9 +451,8 @@ Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{
 
 ### `fd` crashes when another memory allocator is preloaded
 
-The released Linux binaries use jemalloc, through the `use-jemalloc` feature. It is on by default, but
-it is only compiled in on some targets: not on Windows, macOS, FreeBSD, OpenBSD, illumos, Android,
-32-bit musl or riscv64. There, preloading a different allocator is not supported, for example
+The released Linux binaries use jemalloc, through the `use-jemalloc` feature, which is enabled by default for
+some targets. Preloading a different allocator while jemalloc is compiled in is not supported, for example
 
 ``` bash
 > LD_PRELOAD=/usr/bin/mimalloc fd
