@@ -3,6 +3,12 @@ use std::sync::OnceLock;
 use anyhow::anyhow;
 use regex::Regex;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum SizeFilterParseError {
+    InvalidFormat,
+    Overflow,
+}
+
 static SIZE_CAPTURES: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -26,22 +32,34 @@ const TEBI: u64 = GIBI * 1024;
 
 impl SizeFilter {
     pub fn from_string(s: &str) -> anyhow::Result<Self> {
-        Self::parse_opt(s)
-            .ok_or_else(|| anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s))
+        Self::parse_opt(s).map_err(|err| match err {
+            SizeFilterParseError::InvalidFormat => {
+                anyhow!("'{}' is not a valid size constraint. See 'fd --help'.", s)
+            }
+            SizeFilterParseError::Overflow => {
+                anyhow!("Size constraint '{}' is too large.", s)
+            }
+        })
     }
 
-    fn parse_opt(s: &str) -> Option<Self> {
+    fn parse_opt(s: &str) -> Result<Self, SizeFilterParseError> {
         let pattern =
             SIZE_CAPTURES.get_or_init(|| Regex::new(r"(?i)^([+-]?)(\d+)(b|[kmgt]i?b?)$").unwrap());
         if !pattern.is_match(s) {
-            return None;
+            return Err(SizeFilterParseError::InvalidFormat);
         }
 
-        let captures = pattern.captures(s)?;
+        let captures = pattern
+            .captures(s)
+            .ok_or(SizeFilterParseError::InvalidFormat)?;
+
         let limit_kind = captures.get(1).map_or("+", |m| m.as_str());
-        let quantity = captures
-            .get(2)
-            .and_then(|v| v.as_str().parse::<u64>().ok())?;
+
+        // The regex already ensures the input contains only digits,
+        // so parsing can only fail if the number exceeds u64::MAX.
+        let quantity = captures[2]
+            .parse::<u64>()
+            .map_err(|_| SizeFilterParseError::Overflow)?;
 
         let multiplier = match &captures.get(3).map_or("b", |m| m.as_str()).to_lowercase()[..] {
             v if v.starts_with("ki") => KIBI,
@@ -53,16 +71,18 @@ impl SizeFilter {
             v if v.starts_with("ti") => TEBI,
             v if v.starts_with('t') => TERA,
             "b" => 1,
-            _ => return None,
+            _ => return Err(SizeFilterParseError::InvalidFormat),
         };
 
-        let size = quantity.checked_mul(multiplier)?;
+        let size = quantity
+            .checked_mul(multiplier)
+            .ok_or(SizeFilterParseError::Overflow)?;
 
         match limit_kind {
-            "+" => Some(Self::Min(size)),
-            "-" => Some(Self::Max(size)),
-            "" => Some(Self::Equals(size)),
-            _ => None,
+            "+" => Ok(Self::Min(size)),
+            "-" => Ok(Self::Max(size)),
+            "" => Ok(Self::Equals(size)),
+            _ => Err(SizeFilterParseError::InvalidFormat),
         }
     }
 
@@ -254,5 +274,49 @@ mod tests {
             SizeFilter::from_string("18446744073709551615b").unwrap(),
             SizeFilter::Equals(u64::MAX)
         );
+    }
+
+    #[test]
+    fn ensure_size_overflow_returns_correct_error() {
+        let invalid = [
+            "+18446744073709551616b", // Numeric overflow
+            "+16777216ti",            // Multiplication overflow
+        ];
+
+        for input in invalid {
+            assert_eq!(
+                SizeFilter::parse_opt(input),
+                Err(SizeFilterParseError::Overflow),
+                "Expected {input:?} to return an overflow error"
+            );
+        }
+    }
+
+    #[test]
+    fn multiplication_boundaries() {
+        let cases = [
+            ("b", 1),
+            ("k", KILO),
+            ("ki", KIBI),
+            ("m", MEGA),
+            ("mi", MEBI),
+            ("g", GIGA),
+            ("gi", GIBI),
+            ("t", TERA),
+            ("ti", TEBI),
+        ];
+
+        for (suffix, multiplier) in cases {
+            let max = u64::MAX / multiplier;
+
+            assert!(SizeFilter::from_string(&format!("{max}{suffix}")).is_ok());
+
+            let just_over_max = (max as u128) + 1;
+            assert_eq!(
+                SizeFilter::parse_opt(&format!("{just_over_max}{suffix}")),
+                Err(SizeFilterParseError::Overflow),
+                "suffix: {suffix}"
+            );
+        }
     }
 }
