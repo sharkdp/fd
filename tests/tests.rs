@@ -374,6 +374,27 @@ fn test_multi_file_with_missing() {
     );
 }
 
+/// --allow-search-files lets a search path point directly at a file. The
+/// file itself is then matched against the pattern (like any other search
+/// root), instead of causing a "Search path ... is not a directory." error.
+#[test]
+fn test_allow_search_files() {
+    let dirs = &["real"];
+    let files = &["real/a.foo", "standalone.foo"];
+    let te = TestEnv::new(dirs, files);
+
+    te.assert_error(
+        &["", "real", "standalone.foo"],
+        "[fd error]: Search path \"standalone.foo\" is not a directory.",
+    );
+
+    te.assert_output(
+        &["", "real", "standalone.foo", "--allow-search-files"],
+        "real/a.foo
+        standalone.foo",
+    );
+}
+
 /// Without --full-path, a pattern containing '/' should always produce the
 /// path-separator diagnostic, even if the pattern does not name an existing
 /// directory. Before the fix for sharkdp/fd#1873 this only fired when the
