@@ -1,7 +1,7 @@
 # Upcoming Release
 
 ## Features
--
+- Add `--allow-search-files` to allow passing a file (not just a directory) as a search path, matching the pattern against that file itself in addition to walking any directory search paths given alongside it, see #2155
 
 ## Bugfixes
 - Fix `--absolute-path` turning verbatim (`\\?\`) search paths into relative paths on Windows: `\\?\UNC\server\share` is now reported as `\\server\share`, and `\\?\Volume{...}` paths are kept intact, see #2207 (@Duo-ee)

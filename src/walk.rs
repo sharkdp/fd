@@ -475,8 +475,11 @@ impl WorkerState {
                             return WalkState::Skip;
                         }
                     }
-                    if e.depth() == 0 {
-                        // Skip the root directory entry.
+                    if e.depth() == 0 && e.file_type().is_some_and(|t| t.is_dir()) {
+                        // Skip the root directory entry itself, but not a
+                        // root that is a file (--allow-search-files): that
+                        // has no children, so depth 0 is its only entry and
+                        // it must still be matched against the pattern.
                         return WalkState::Continue;
                     }
                 }

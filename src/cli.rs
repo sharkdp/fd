@@ -697,6 +697,13 @@ pub struct Opts {
     #[arg(long, aliases(&["mount", "xdev"]), hide_short_help = true, long_help)]
     pub one_file_system: bool,
 
+    /// By default, fd rejects search paths that are not directories. With
+    /// this flag, a search path that points directly at a file is treated
+    /// as a search root of its own and matched against the pattern, rather
+    /// than causing a "Search path ... is not a directory." error.
+    #[arg(long, hide_short_help = true, long_help)]
+    pub allow_search_files: bool,
+
     #[cfg(feature = "completions")]
     #[arg(long, hide = true, exclusive = true)]
     gen_completions: Option<Option<Shell>>,
@@ -717,7 +724,9 @@ impl Opts {
         Ok(paths
             .iter()
             .filter_map(|path| {
-                if filesystem::is_existing_directory(path) {
+                if filesystem::is_existing_directory(path)
+                    || (self.allow_search_files && path.is_file())
+                {
                     Some(self.normalize_path(path))
                 } else {
                     // We use debug for the path to make it more readable if it has special characters
