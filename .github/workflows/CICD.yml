@@ -61,6 +61,7 @@ jobs:
     - uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
+    - run: sh scripts/test-build-features.sh
     - run: cargo clippy --all-targets --all-features -- -Dwarnings
 
   min_version:
@@ -179,9 +180,15 @@ jobs:
         cargo -V
         rustc -V
 
+    - name: Select build features
+      shell: bash
+      run: |
+        features=$(sh scripts/build-features.sh "${target}")
+        echo "CARGO_FEATURES=${features}" >> "$GITHUB_ENV"
+
     - name: Build
       shell: bash
-      run: $BUILD_CMD build --locked --release --target="${target}"
+      run: $BUILD_CMD build --locked --release --target="${target}" --features="${CARGO_FEATURES}"
 
     - name: Set binary name & path
       id: bin
@@ -217,7 +224,7 @@ jobs:
       shell: bash
       env:
         cargo_test_options: ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
-      run: $BUILD_CMD test --locked --target="${target}" "${cargo_test_options}"
+      run: $BUILD_CMD test --locked --target="${target}" --features="${CARGO_FEATURES}" "${cargo_test_options}"
 
     - name: Generate completions
       id: completions

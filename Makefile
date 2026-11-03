@@ -1,4 +1,6 @@
 PROFILE?=release
+# Override FEATURES to select a different allocator, or set it empty to use the system allocator.
+FEATURES?=$(shell sh scripts/build-features.sh)
 EXE=target/$(PROFILE)/fd
 prefix=/usr/local
 bindir=$(prefix)/bin
@@ -12,8 +14,12 @@ endif
 export ARCHIVE_NAME
 archive_path=package/$(ARCHIVE_NAME).tar.gz
 
-$(EXE): Cargo.toml src/**/*.rs
-	cargo build --profile $(PROFILE) --locked
+# Let Cargo check feature changes even when the binary is already up to date.
+$(EXE): Cargo.toml src/**/*.rs scripts/build-features.sh FORCE
+	cargo build --profile $(PROFILE) --locked --features "$(FEATURES)"
+
+.PHONY: FORCE
+FORCE:
 
 .PHONY: completions
 completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/_fd.ps1 autocomplete/_fd autocomplete/_fdfind autocomplete/fdfind.bash autocomplete/fdfind.fish
