@@ -174,14 +174,16 @@ By default, relative paths are prefixed with './' when -x/--exec,
 -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
 path starting with '-' being treated as a command line option. Use
 this flag to change this behavior. If this flag is used without a value,
-it is equivalent to passing "always". Possible values are:
+it is equivalent to passing "always". This also works with explicit search
+paths. Possible values are:
 .RS
 .IP never
 Never strip the ./ at the beginning of paths
 .IP always
 Always strip the ./ at the beginning of paths
 .IP auto
-Only strip if used with --exec, --exec-batch, or --print0. That is, it resets to the default behavior.
+Only strip without explicit search paths and without --exec, --exec-batch,
+or --print0. That is, it resets to the default behavior.
 .RE
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
