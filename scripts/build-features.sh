@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Select release features without preventing explicit allocator opt-ins.
 # With no argument, use Cargo's environment target override or the rustc host.
 set -eu
@@ -17,8 +17,6 @@ case "$cfg" in
     *'target_os="macos"'* | *'target_os="freebsd"'* | \
     *'target_os="openbsd"'* | *'target_os="illumos"'* | \
     *'target_arch="riscv64"'*) exit 0 ;;
-esac
-case "$cfg" in
     *'target_env="musl"'*)
         case "$cfg" in
             *'target_pointer_width="32"'*) exit 0 ;;

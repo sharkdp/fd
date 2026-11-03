@@ -1,7 +1,14 @@
 PROFILE?=release
 # Override FEATURES to select a different allocator, or set it empty to use the system allocator.
-FEATURES?=$(shell sh scripts/build-features.sh)
-EXE=target/$(PROFILE)/fd
+FEATURES?=$(shell CARGO_BUILD_TARGET="$(CARGO_BUILD_TARGET)" . scripts/build-features.sh)
+CARGO_TARGET_DIR?=target
+export CARGO_TARGET_DIR
+ifdef CARGO_BUILD_TARGET
+export CARGO_BUILD_TARGET
+EXE=$(CARGO_TARGET_DIR)/$(CARGO_BUILD_TARGET)/$(PROFILE)/fd
+else
+EXE=$(CARGO_TARGET_DIR)/$(PROFILE)/fd
+endif
 prefix=/usr/local
 bindir=$(prefix)/bin
 datadir=$(prefix)/share
@@ -14,12 +21,18 @@ endif
 export ARCHIVE_NAME
 archive_path=package/$(ARCHIVE_NAME).tar.gz
 
-# Let Cargo check feature changes even when the binary is already up to date.
-$(EXE): Cargo.toml src/**/*.rs scripts/build-features.sh FORCE
+$(EXE): Cargo.toml src/**/*.rs scripts/build-features.sh $(EXE).features
 	cargo build --profile $(PROFILE) --locked --features "$(FEATURES)"
 
-.PHONY: FORCE
-FORCE:
+# Update the stamp only when the selected features change.
+$(EXE).features: check-build-features
+	@mkdir -p $(dir $@)
+	@if ! printf '%s\n' "$(FEATURES)" | cmp -s - "$@"; then \
+		printf '%s\n' "$(FEATURES)" > "$@"; \
+	fi
+
+.PHONY: check-build-features
+check-build-features:
 
 .PHONY: completions
 completions: autocomplete/fd.bash autocomplete/fd.fish autocomplete/_fd.ps1 autocomplete/_fd autocomplete/_fdfind autocomplete/fdfind.bash autocomplete/fdfind.fish
