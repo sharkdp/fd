@@ -1,7 +1,4 @@
-# Upcoming Release
-
-## Features
--
+# 10.5.1
 
 ## Bugfixes
 - Fix `--absolute-path` turning verbatim (`\\?\`) search paths into relative paths on Windows: `\\?\UNC\server\share` is now reported as `\\server\share`, and `\\?\Volume{...}` paths are kept intact, see #2207 (@Duo-ee)
