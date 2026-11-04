@@ -380,19 +380,19 @@ fn test_multi_file_with_missing() {
 /// pattern happened to resolve to a real directory, so the common typo of
 /// pasting a full path silently returned zero matches.
 #[test]
-fn test_pattern_with_forward_slash_is_rejected() {
+fn test_pattern_with_forward_slash_warns() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // Pattern that is NOT a real directory; old behaviour: no warning.
-    te.assert_failure_with_error(
+    te.assert_success_with_error(
         &["nonexistent/path"],
-        "[fd error]: The search pattern 'nonexistent/path' contains a path-separation character and will not lead to any search results.",
+        "[warning]: The search pattern \"nonexistent/path\" contains a path-separation character and probably won't match against just the filename.",
     );
 
     // Pattern that IS a real directory; old behaviour: warning. Must still fire.
-    te.assert_failure_with_error(
+    te.assert_success_with_error(
         &["one/two/three"],
-        "[fd error]: The search pattern 'one/two/three' contains a path-separation character and will not lead to any search results.",
+        "[warning]: The search pattern \"one/two/three\" contains a path-separation character and probably won't match against just the filename.",
     );
 }
 
@@ -422,13 +422,13 @@ fn test_pattern_with_forward_slash_allowed_with_full_path() {
 /// footgun and must trigger the same diagnostic. Regression for the sibling of
 /// #1873 left unchecked by #1975 (only the positional pattern was validated).
 #[test]
-fn test_and_pattern_with_forward_slash_is_rejected() {
+fn test_and_pattern_with_forward_slash_warns() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // Clean primary pattern, but a `--and` pattern carrying a path separator.
-    te.assert_failure_with_error(
+    te.assert_success_with_error(
         &["foo", "--and", "nonexistent/path"],
-        "[fd error]: The search pattern 'nonexistent/path' contains a path-separation character and will not lead to any search results.",
+        "[warning]: The search pattern \"nonexistent/path\" contains a path-separation character and probably won't match against just the filename.",
     );
 
     // `--full-path` is the explicit opt-in and must still suppress the
