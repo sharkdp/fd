@@ -406,7 +406,8 @@ this directory.
 .TP
 .BI "\-\-path\-separator " separator
 Set the path separator to use when printing file paths. The default is the OS-specific separator
-('/' on Unix, '\\' on Windows).
+('/' on Unix, '\\' on Windows), except that on Windows fd uses '/' when the MSYS environment
+variable is set (MSYS2, Git Bash, ...).
 .TP
 .BI "\-\-search\-path " search\-path
 Provide paths to search as an alternative to the positional \fIpath\fR argument. Changes the usage to
