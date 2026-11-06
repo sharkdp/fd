@@ -123,12 +123,12 @@ pub struct Opts {
     #[arg(
         long = "unrestricted",
         short = 'u',
-        action(ArgAction::Count),
+        action(ArgAction::SetTrue),
         hide_short_help = true,
         help = "Unrestricted search, alias for '--no-ignore --hidden'",
         long_help
     )]
-    rg_alias_hidden_ignore: u8,
+    pub rg_alias_hidden_ignore: bool,
 
     /// Case-sensitive search (default: smart case)
     #[arg(
@@ -747,9 +747,6 @@ impl Opts {
     }
 
     #[inline]
-    pub fn rg_alias_ignore(&self) -> bool {
-        self.rg_alias_hidden_ignore > 0
-    }
 
     pub fn max_depth(&self) -> Option<usize> {
         self.max_depth.or(self.exact_depth)
