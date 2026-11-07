@@ -35,6 +35,12 @@ By default
 will exclude hidden files and directories, as well as any files that match gitignore rules
 or ignore rules in .ignore or .fdignore files.
 .P
+By default
+.B fd
+will use "smart case" to match paterns. Meaning if the search will only be case sensitive if the supplied pattern contains at least one uppercase letter.
+This can be overridden with the '\-\-ignore\-case' or '\-\-case\-sensitive' options.
+
+.P
 If you wish to search all files in a specific directory, you can use '' or . as the search pattern,
 to match all files. Or you can use the '\-\-search\-path' option to specify the path(s) instead of
 the positional parameter.
