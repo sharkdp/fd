@@ -1,4 +1,4 @@
-# Upcoming Releas
+# 10.5.2
 
 ## Bugfixes
 - Fix invalid syntax in zsh completions. See #2216
