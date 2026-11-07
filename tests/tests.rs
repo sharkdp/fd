@@ -2737,6 +2737,27 @@ fn test_custom_path_separator() {
         one=two=three=d.foo
         one=two=three=directory_foo=",
     );
+
+    te.assert_output(
+        &["foo", "./one", "--path-separator", "="],
+        ".=one=b.foo
+        .=one=two=c.foo
+        .=one=two=C.Foo2
+        .=one=two=three=d.foo
+        .=one=two=three=directory_foo=",
+    );
+}
+
+#[cfg(windows)]
+#[test]
+fn test_windows_explicit_current_dir_separator_consistency() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    for search_path in [".", "./", r".\"] {
+        let output = te.assert_success_and_get_output(".", &["b.foo", search_path]);
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert_eq!(stdout.trim(), r".\one\b.foo");
+    }
 }
 
 #[test]
