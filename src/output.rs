@@ -10,7 +10,7 @@ use crate::hyperlink::PathUrl;
 use crate::sanitize::sanitize_for_term;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
-    path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
+    path.replace(['/', '\\'], new_path_separator)
 }
 
 // TODO: this function is performance critical and can probably be optimized
