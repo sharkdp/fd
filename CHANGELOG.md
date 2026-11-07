@@ -10,6 +10,7 @@
 - Fix `--absolute-path` turning verbatim (`\\?\`) search paths into relative paths on Windows: `\\?\UNC\server\share` is now reported as `\\server\share`, and `\\?\Volume{...}` paths are kept intact, see #2207 (@Duo-ee)
 - Make `--ignore` and `--no-hidden` after `-u` override only their half of `-u`, see #2192 (@NavpreetSSidhu)
 - Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
+- Suggest `--full-path` before the directory-search hint in the path-separator diagnostic, see #2154
 - Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
