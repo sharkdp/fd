@@ -1,7 +1,8 @@
 # Upcoming Releas
 
-## Bubfixes
+## Bugfixes
 - Fix invalid syntax in zsh completions. See #2216
+- Write raw bytes instead of replacing them with U+FFFD when `--format` output goes to a pipe, so filenames that are not valid UTF-8 reach downstream tools unchanged; see #2189.
 
 # 10.5.1
 
