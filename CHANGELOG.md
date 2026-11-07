@@ -1,3 +1,8 @@
+# Upcoming Releas
+
+## Bubfixes
+- Fix invalid syntax in zsh completions. See #2216
+
 # 10.5.1
 
 ## Bugfixes
