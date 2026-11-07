@@ -94,7 +94,7 @@ _fd() {
     '(abs-path null-sep max-results exec-cmds)'{-l,--list-details}'[use a long listing format with file metadata]'
 
     + '(output-format)' # template-based output
-    '(long-listing)'--format=[print results according to template]:format
+    '(long-listing)--format=[print results according to template]:format'
 
     + '(max-results)' # max number of results
     '(long-listing exec-cmds quiet)--max-results=[limit number of search results to given count and quit]:count'
