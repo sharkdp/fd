@@ -1,3 +1,16 @@
+# Upcoming release
+
+## Features
+
+
+## Bugfixes
+
+
+## Changes
+- Delay-load `shell32.dll`, `combase.dll` and `advapi32.dll` in Windows MSVC builds, so most runs no longer load them (and the DLLs they pull in) at startup, see #2217 (@azchohfi)
+
+## Other
+
 # 10.5.2
 
 ## Bugfixes
