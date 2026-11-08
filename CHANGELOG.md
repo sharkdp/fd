@@ -4,7 +4,7 @@
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
-
+- Fixed bug where on windows we sometimes used "./" instead of ".\\" in path output. See #2151.
 
 ## Changes
 - Delay-load `shell32.dll`, `combase.dll` and `advapi32.dll` in Windows MSVC builds, so most runs no longer load them (and the DLLs they pull in) at startup, see #2217 (@azchohfi)
