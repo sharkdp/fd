@@ -307,11 +307,11 @@ This is the output of `fd -h`. To see the full set of command-line options, use 
 also includes a much more detailed help text.
 
 ```
-Usage: fd [OPTIONS] [pattern [path]...]
+Usage: fd [OPTIONS] [pattern] [path]...
 
 Arguments:
   [pattern]  the search pattern (a regular expression, unless '--glob' is used; optional)
-  [path]...  the root directories for the filesystem search (optional)
+  [path]...  the root directories for the filesystem search (optional, requires pattern first)
 
 Options:
   -H, --hidden                     Search hidden files and directories
@@ -448,6 +448,23 @@ a (temporary) shell script.
 
 Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{//}`,
 `{.}`, `{/.}`) to prevent the shell from interpreting them before `fd` sees them.
+
+### `fd` crashes when another memory allocator is preloaded
+
+The released Linux binaries use jemalloc, through the `use-jemalloc` feature, which is enabled by default for
+some targets. Preloading a different allocator while jemalloc is compiled in is not supported, for example
+
+``` bash
+> LD_PRELOAD=/usr/bin/mimalloc fd
+```
+
+makes the two disagree about which of them owns an allocation, and `fd` crashes. `fd` cannot detect
+this and report it, because the preloaded library is already answering its first allocation. To run
+with a preloaded allocator, build without jemalloc:
+
+``` bash
+> cargo build --release --no-default-features
+```
 
 ## Integration with other programs
 
@@ -676,7 +693,7 @@ winget install sharkdp.fd
 
 ### On GuixOS
 
-You can install [the fd package](https://guix.gnu.org/en/packages/fd-8.1.1/) from the official repo:
+You can install [the fd package](https://packages.guix.gnu.org/packages/fd/) from the official repo:
 ```
 guix install fd
 ```

@@ -1,11 +1,35 @@
-# Upcoming Release
+# Upcoming release
 
 ## Features
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
+
+
+## Changes
+- Delay-load `shell32.dll`, `combase.dll` and `advapi32.dll` in Windows MSVC builds, so most runs no longer load them (and the DLLs they pull in) at startup, see #2217 (@azchohfi)
+
+## Other
+
+# 10.5.2
+
+## Bugfixes
+- Fix invalid syntax in zsh completions. See #2216
+- Write raw bytes instead of replacing them with U+FFFD when `--format` output goes to a pipe, so filenames that are not valid UTF-8 reach downstream tools unchanged; see #2189.
+
+# 10.5.1
+
+## Bugfixes
+- Fix `--absolute-path` turning verbatim (`\\?\`) search paths into relative paths on Windows: `\\?\UNC\server\share` is now reported as `\\server\share`, and `\\?\Volume{...}` paths are kept intact, see #2207 (@Duo-ee)
+- Make `--ignore` and `--no-hidden` after `-u` override only their half of `-u`, see #2192 (@NavpreetSSidhu)
+- Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
+- Accept `--format` templates that start with `-` when passed as a separate argument, see #2126 (@vulragrag-star)
 - Don't incorrectly escape newlines in error messages, see #2104
 - Restore jemalloc as default allocator on supported systems
+- Fix the `cargo binstall` release URL, which named the crate (`fd-find`) instead of the binary (`fd`) and fell back to a third-party mirror
+- Fix integer overflow when parsing size constraints, rejecting values that exceed `u64::MAX` instead of panicking, see #2196 (@parneetsingh022).
+- Various fixes and updates to zsh completion
+- Fix --glob patterns when using --full-path on windows. See #2067.
 
 # 10.5.0
 
@@ -18,6 +42,7 @@
   when output goes to a terminal, to prevent terminal escape-sequence injection.
   Also reject a placeholder as the executable for `--exec-batch`, while still
   allowing it for `--exec`.
+- Fix broken symlinks being incorrectly filtered out by `--min-depth` when following links (`--follow`), because their depth was not computed; see #1017 (@hexbinoct).
 - Handle invalid working directories gracefully when using `--full-path`, see #1900 (@Xavrir).
 - Fire the "search pattern contains a path separator" diagnostic for any pattern containing `/`, not just patterns that happen to name an existing directory. Preserves the legacy Windows behaviour that also flags native `\` separators when the pattern resolves to a real directory. See #1873.
 - Also fire the "search pattern contains a path separator" diagnostic for `--and` patterns, not only the primary positional pattern. `--and` patterns are matched against the file name just like the primary pattern, so a path separator in them silently returned zero results. See #1873.

@@ -13,15 +13,13 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, SendError, Sender, bounded};
 use etcetera::BaseStrategy;
 use ignore::overrides::{Override, OverrideBuilder};
 use ignore::{WalkBuilder, WalkParallel, WalkState};
-use regex::bytes::Regex;
 
 use crate::config::Config;
 use crate::dir_entry::DirEntry;
-use crate::error::print_error;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
-use crate::filesystem;
 use crate::output;
+use crate::patterns::Patterns;
 
 /// The receiver thread can either be buffering results or directly streaming to the console.
 #[derive(PartialEq)]
@@ -226,7 +224,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
                         }
                         WorkerResult::Error(err) => {
                             if self.config.show_filesystem_errors {
-                                print_error(err.to_string());
+                                print_error!("{}", err);
                             }
                         }
                     }
@@ -253,7 +251,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
         if let Err(e) = output::print_entry(&mut self.stdout, entry, self.config)
             && e.kind() != ::std::io::ErrorKind::BrokenPipe
         {
-            print_error(format!("Could not write to output: {e}"));
+            print_error!("Could not write to output: {}", e);
             return Err(ExitCode::GeneralError);
         }
 
@@ -305,7 +303,7 @@ impl<'a, W: Write> ReceiverBuffer<'a, W> {
 /// State shared by the sender and receiver threads.
 struct WorkerState {
     /// The search patterns.
-    patterns: Vec<Regex>,
+    patterns: Patterns,
     /// The command line configuration.
     config: Config,
     /// Flag for cleanly shutting down the parallel walk
@@ -315,7 +313,7 @@ struct WorkerState {
 }
 
 impl WorkerState {
-    fn new(patterns: Vec<Regex>, config: Config) -> Self {
+    fn new(patterns: Patterns, config: Config) -> Self {
         let quit_flag = Arc::new(AtomicBool::new(false));
         let interrupt_flag = Arc::new(AtomicBool::new(false));
 
@@ -377,7 +375,7 @@ impl WorkerState {
                 match result {
                     Some(ignore::Error::Partial(_)) => (),
                     Some(err) => {
-                        print_error(format!("Malformed pattern in global ignore file. {err}."));
+                        print_error!("Malformed pattern in global ignore file. {}.", err);
                     }
                     None => (),
                 }
@@ -389,7 +387,7 @@ impl WorkerState {
             match result {
                 Some(ignore::Error::Partial(_)) => (),
                 Some(err) => {
-                    print_error(format!("Malformed pattern in custom ignore file. {err}."));
+                    print_error!("Malformed pattern in custom ignore file. {}.", err);
                 }
                 None => (),
             }
@@ -484,25 +482,15 @@ impl WorkerState {
                 }
                 let entry = match entry {
                     Ok(e) => DirEntry::normal(e),
-                    Err(ignore::Error::WithPath {
-                        path,
-                        err: inner_err,
-                    }) if inner_err
-                        .io_error()
-                        .is_some_and(|io_error| io_error.kind() == io::ErrorKind::NotFound)
-                        && path
-                            .symlink_metadata()
-                            .ok()
-                            .is_some_and(|m| m.file_type().is_symlink()) =>
-                    {
-                        DirEntry::broken_symlink(path)
-                    }
-                    Err(err) => {
-                        return match tx.send(WorkerResult::Error(err)) {
-                            Ok(_) => WalkState::Continue,
-                            Err(_) => WalkState::Quit,
-                        };
-                    }
+                    Err(err) => match broken_symlink_from_err(err) {
+                        Ok(entry) => entry,
+                        Err(err) => {
+                            return match tx.send(WorkerResult::Error(err)) {
+                                Ok(_) => WalkState::Continue,
+                                Err(_) => WalkState::Quit,
+                            };
+                        }
+                    },
                 };
 
                 if let Some(min_depth) = config.min_depth
@@ -516,17 +504,14 @@ impl WorkerState {
 
                 let search_str = search_str_for_entry(entry_path, config.full_path_base.as_deref());
 
-                if !patterns
-                    .iter()
-                    .all(|pat| pat.is_match(&filesystem::osstr_to_bytes(search_str.as_ref())))
-                {
+                if !patterns.matches_path(&search_str) {
                     return WalkState::Continue;
                 }
 
                 // Filter out unwanted extensions.
                 if let Some(ref exts_regex) = config.extensions {
                     if let Some(path_str) = entry_path.file_name() {
-                        if !exts_regex.is_match(&filesystem::osstr_to_bytes(path_str)) {
+                        if !exts_regex.is_match(path_str.as_encoded_bytes()) {
                             return WalkState::Continue;
                         }
                     } else {
@@ -653,6 +638,49 @@ impl WorkerState {
     }
 }
 
+/// If `err` is for a broken symlink, create a broken symlink DirEntry,
+/// otherwise, return the original error.
+fn broken_symlink_from_err(mut err: ignore::Error) -> Result<DirEntry, ignore::Error> {
+    use ignore::Error::*;
+    let mut depth = None;
+    let mut path = None;
+    let mut current = &mut err;
+    // Loop through the items in the chain, and extract the path and depth as we find them.
+    // Then once we get to the (terminal) io error, check that it is for a broken symlink.
+    loop {
+        match current {
+            WithPath { err, path: p } => {
+                path = Some(p);
+                current = err;
+            }
+            WithDepth { err, depth: d } => {
+                depth = Some(*d);
+                current = err;
+            }
+            Io(e) if e.kind() == io::ErrorKind::NotFound => {
+                if let Some(path) = path
+                    && path
+                        .symlink_metadata()
+                        .ok()
+                        .is_some_and(|m| m.file_type().is_symlink())
+                {
+                    // Since we no longer need the original error, we can take the PathBuf of the
+                    // path out of it.
+                    return Ok(DirEntry::broken_symlink(mem::take(path), depth));
+                } else {
+                    // This is pretty unlikely.
+                    return Err(err);
+                }
+            }
+            // We don't care about Loop because that won't happen
+            // for broken symlinks, and there are two paths involved
+            // and we don't care about WithLineNumber because that only applies
+            // to errors while parsing ignore files.
+            _ => return Err(err),
+        }
+    }
+}
+
 fn search_str_for_entry<'a>(
     entry_path: &'a std::path::Path,
     full_path_base: Option<&std::path::Path>,
@@ -682,7 +710,7 @@ fn search_str_for_entry<'a>(
 /// If the `--exec` argument was supplied, this will create a thread pool for executing
 /// jobs in parallel from a given command line and the discovered paths. Otherwise, each
 /// path will simply be written to standard output.
-pub fn scan(paths: &[PathBuf], patterns: Vec<Regex>, config: Config) -> Result<ExitCode> {
+pub fn scan(paths: &[PathBuf], patterns: Patterns, config: Config) -> Result<ExitCode> {
     WorkerState::new(patterns, config).scan(paths)
 }
 

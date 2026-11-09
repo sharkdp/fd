@@ -196,6 +196,22 @@ impl TestEnv {
         Ok(broken_symlink_link)
     }
 
+    pub fn create_symlink<P: AsRef<Path>>(
+        &mut self,
+        target: P,
+        link_path: P,
+    ) -> io::Result<PathBuf> {
+        let root = self.test_root();
+        let target_path = root.join(target);
+        let link_path = root.join(link_path);
+        #[cfg(unix)]
+        unix::fs::symlink(&target_path, &link_path)?;
+        #[cfg(windows)]
+        windows::fs::symlink_file(&target_path, &link_path)?;
+
+        Ok(link_path)
+    }
+
     /// Get the root directory for the tests.
     pub fn test_root(&self) -> PathBuf {
         self.temp_dir.path().to_path_buf()

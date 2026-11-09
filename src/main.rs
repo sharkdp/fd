@@ -1,7 +1,10 @@
+// needs to be first because it defines a macro
+#[macro_use]
+mod error;
+
 mod cli;
 mod config;
 mod dir_entry;
-mod error;
 mod exec;
 mod exit_codes;
 mod filesystem;
@@ -10,6 +13,7 @@ mod filter;
 mod fmt;
 mod hyperlink;
 mod output;
+mod patterns;
 mod regex_helper;
 mod sanitize;
 mod walk;
@@ -21,9 +25,9 @@ use std::sync::Arc;
 
 use anyhow::{Context, Result, anyhow, bail};
 use clap::{CommandFactory, Parser};
-use globset::GlobBuilder;
 use lscolors::LsColors;
-use regex::bytes::{Regex, RegexBuilder, RegexSetBuilder};
+use patterns::PatternType;
+use regex::bytes::RegexSetBuilder;
 
 use crate::cli::{ColorWhen, HyperlinkWhen, Opts};
 use crate::config::Config;
@@ -33,7 +37,9 @@ use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::TimeFilter;
-use crate::regex_helper::{pattern_has_uppercase_char, pattern_matches_strings_with_leading_dot};
+use crate::patterns::{
+    build_patterns, pattern_has_uppercase_char, patterns_match_strings_with_leading_dots,
+};
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
 // FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
@@ -66,14 +72,16 @@ fn main() {
             exit_code.exit();
         }
         Err(err) => {
-            crate::error::print_error(format!("{err:#}"));
+            // NB: we use eprintln directly instead of print_error!() because
+            // we sanitize anyhow errors at the generation site
+            eprintln!("[fd error]: {:#}", err);
             ExitCode::GeneralError.exit();
         }
     }
 }
 
 fn run() -> Result<ExitCode> {
-    let opts = Opts::parse();
+    let mut opts = Opts::parse();
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {
@@ -87,28 +95,27 @@ fn run() -> Result<ExitCode> {
     }
 
     ensure_search_pattern_is_not_a_path(&opts)?;
-    let pattern = &opts.pattern;
-    let exprs = &opts.exprs;
-    let empty = Vec::new();
+    let mut patterns = opts.exprs.take().unwrap_or(Vec::new());
+    if let Some(pattern) = opts.pattern.take() {
+        patterns.push(pattern);
+    }
 
-    let pattern_regexps = exprs
-        .as_ref()
-        .unwrap_or(&empty)
-        .iter()
-        .chain([pattern])
-        .map(|pat| build_pattern_regex(pat, &opts))
-        .collect::<Result<Vec<String>>>()?;
+    let pattern_type = determine_pattern_type(&opts);
+    // The search will be case-sensitive if the command line flag is set or
+    // if any of the patterns has an uppercase character (smart case).
+    let ignore_case = opts.ignore_case
+        || !(opts.case_sensitive
+            || patterns
+                .iter()
+                .any(|pat| pattern_has_uppercase_char(pattern_type, pat)));
 
-    let config = construct_config(opts, &pattern_regexps)?;
+    let config = construct_config(opts)?;
 
-    ensure_use_hidden_option_for_leading_dot_pattern(&config, &pattern_regexps)?;
+    ensure_use_hidden_option_for_leading_dot_pattern(&patterns, &config, pattern_type)?;
 
-    let regexps = pattern_regexps
-        .into_iter()
-        .map(|pat| build_regex(pat, &config))
-        .collect::<Result<Vec<Regex>>>()?;
+    let matcher = build_patterns(patterns, pattern_type, ignore_case)?;
 
-    walk::scan(&search_paths, regexps, config)
+    walk::scan(&search_paths, matcher, config)
 }
 
 #[cfg(feature = "completions")]
@@ -132,14 +139,14 @@ fn set_working_dir(opts: &Opts) -> Result<()> {
     if let Some(ref base_directory) = opts.base_directory {
         if !filesystem::is_existing_directory(base_directory) {
             return Err(anyhow!(
-                "The '--base-directory' path '{}' is not a directory.",
-                base_directory.to_string_lossy()
+                "The '--base-directory' path {:?} is not a directory.",
+                base_directory.to_string_lossy().as_ref()
             ));
         }
         env::set_current_dir(base_directory).with_context(|| {
             format!(
-                "Could not set '{}' as the current working directory",
-                base_directory.to_string_lossy()
+                "Could not set {:?} as the current working directory",
+                base_directory.to_string_lossy().as_ref()
             )
         })?;
     }
@@ -170,12 +177,13 @@ fn ensure_search_pattern_is_not_a_path(opts: &Opts) -> Result<()> {
     if opts.full_path {
         return Ok(());
     }
-
-    // Check the primary pattern and every `--and` pattern. They are all matched
-    // against the file name (see `run`), so a path separator in any of them is
-    // the same silent "no results" footgun.
-    for pattern in std::iter::once(&opts.pattern).chain(opts.exprs.iter().flatten()) {
-        ensure_single_search_pattern_is_not_a_path(pattern)?;
+    if let Some(ref pattern) = opts.pattern {
+        // Check the primary pattern and every `--and` pattern. They are all matched
+        // against the file name (see `run`), so a path separator in any of them is
+        // the same silent "no results" footgun.
+        for pattern in std::iter::once(pattern).chain(opts.exprs.iter().flatten()) {
+            ensure_single_search_pattern_is_not_a_path(pattern)?;
+        }
     }
     Ok(())
 }
@@ -215,20 +223,16 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
     }
 }
 
-fn build_pattern_regex(pattern: &str, opts: &Opts) -> Result<String> {
-    Ok(if opts.glob && !pattern.is_empty() {
-        let glob = GlobBuilder::new(pattern).literal_separator(true).build()?;
-        glob.regex().to_owned()
+fn determine_pattern_type(opts: &Opts) -> PatternType {
+    if opts.glob {
+        PatternType::Glob
     } else if opts.exact {
-        // Anchor the escaped pattern so the full filename (or path) must match exactly.
-        // Literal. No substring matching.
-        format!("^{}$", regex::escape(pattern))
+        PatternType::Exact
     } else if opts.fixed_strings {
-        // Treat pattern as literal string if '--fixed-strings' is used
-        regex::escape(pattern)
+        PatternType::Fixed
     } else {
-        String::from(pattern)
-    })
+        PatternType::Regex
+    }
 }
 
 fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
@@ -245,15 +249,7 @@ fn check_path_separator_length(path_separator: Option<&str>) -> Result<()> {
     }
 }
 
-fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config> {
-    // The search will be case-sensitive if the command line flag is set or
-    // if any of the patterns has an uppercase character (smart case).
-    let case_sensitive = !opts.ignore_case
-        && (opts.case_sensitive
-            || pattern_regexps
-                .iter()
-                .any(|pat| pattern_has_uppercase_char(pat)));
-
+fn construct_config(mut opts: Opts) -> Result<Config> {
     let path_separator = opts
         .path_separator
         .take()
@@ -308,16 +304,13 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
     };
 
     Ok(Config {
-        case_sensitive,
         full_path_base,
-        ignore_hidden: !(opts.hidden || opts.rg_alias_ignore()),
-        read_fdignore: !(opts.no_ignore || opts.rg_alias_ignore()),
-        read_vcsignore: !(opts.no_ignore || opts.rg_alias_ignore() || opts.no_ignore_vcs),
+        ignore_hidden: !opts.hidden,
+        read_fdignore: !opts.no_ignore,
+        read_vcsignore: !(opts.no_ignore || opts.no_ignore_vcs),
         require_git_to_read_vcsignore: !opts.no_require_git,
         read_parent_ignore: !opts.no_ignore_parent,
-        read_global_ignore: !(opts.no_ignore
-            || opts.rg_alias_ignore()
-            || opts.no_global_ignore_file),
+        read_global_ignore: !(opts.no_ignore || opts.no_global_ignore_file),
         follow_links: opts.follow,
         one_file_system: opts.one_file_system,
         null_separator: opts.null_separator,
@@ -330,34 +323,10 @@ fn construct_config(mut opts: Opts, pattern_regexps: &[String]) -> Result<Config
         ls_colors,
         hyperlink,
         interactive_terminal,
-        file_types: opts.filetype.as_ref().map(|values| {
-            use crate::cli::FileType::*;
-            let mut file_types = FileTypes::default();
-            for value in values {
-                match value {
-                    File => file_types.files = true,
-                    Directory => file_types.directories = true,
-                    Symlink => file_types.symlinks = true,
-                    Executable => {
-                        file_types.executables_only = true;
-                        file_types.files = true;
-                    }
-                    Empty => file_types.empty_only = true,
-                    BlockDevice => file_types.block_devices = true,
-                    CharDevice => file_types.char_devices = true,
-                    Socket => file_types.sockets = true,
-                    Pipe => file_types.pipes = true,
-                }
-            }
-
-            // If only 'empty' was specified, search for both files and directories:
-            if file_types.empty_only && !(file_types.files || file_types.directories) {
-                file_types.files = true;
-                file_types.directories = true;
-            }
-
-            file_types
-        }),
+        file_types: opts
+            .filetype
+            .as_ref()
+            .map(|values| FileTypes::from_types(values)),
         extensions: opts
             .extensions
             .as_ref()
@@ -519,14 +488,13 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
 }
 
 fn ensure_use_hidden_option_for_leading_dot_pattern(
+    patterns: &[String],
     config: &Config,
-    pattern_regexps: &[String],
+    pattern_type: PatternType,
 ) -> Result<()> {
     if cfg!(unix)
         && config.ignore_hidden
-        && pattern_regexps
-            .iter()
-            .any(|pat| pattern_matches_strings_with_leading_dot(pat))
+        && patterns_match_strings_with_leading_dots(patterns, pattern_type)
     {
         Err(anyhow!(
             "The pattern(s) seems to only match files with a leading dot, but hidden files are \
@@ -536,20 +504,4 @@ fn ensure_use_hidden_option_for_leading_dot_pattern(
     } else {
         Ok(())
     }
-}
-
-fn build_regex(pattern_regex: String, config: &Config) -> Result<regex::bytes::Regex> {
-    RegexBuilder::new(&pattern_regex)
-        .case_insensitive(!config.case_sensitive)
-        .dot_matches_new_line(true)
-        .build()
-        .map_err(|e| {
-            anyhow!(
-                "{}\n\nNote: You can search for literal substrings with '--fixed-strings' \
-                 or literal strings with '--exact' options (instead of a regular expression). \
-                 Alternatively, you can \
-                 also use the '--glob' option to match on a glob pattern.",
-                e
-            )
-        })
 }

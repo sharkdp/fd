@@ -16,7 +16,7 @@ license = "MIT OR Apache-2.0"
 name = "fd-find"
 readme = "README.md"
 repository = "https://github.com/sharkdp/fd"
-version = "10.5.0"
+version = "10.5.2"
 edition= "2024"
 rust-version = "1.90.0"
 
@@ -34,11 +34,11 @@ path = "src/main.rs"
 aho-corasick = "1.1"
 nu-ansi-term = "0.50"
 argmax = "0.4.0"
-ignore = "0.4.25"
+ignore = "0.4.28"
 regex = "1.12.2"
 regex-syntax = "0.8"
 ctrlc = "3.5"
-globset = "0.4"
+globset = "0.4.19"
 anyhow = "1.0"
 etcetera = "0.11"
 normpath = "1.5.1"
@@ -46,6 +46,7 @@ crossbeam-channel = "0.5.15"
 clap_complete = {version = "4.6.5", optional = true}
 faccess = "0.2.4"
 jiff = "0.2.27"
+memchr = "2.8.0"
 
 [dependencies.clap]
 version = "4.6.1"
@@ -98,7 +99,7 @@ base = ["use-jemalloc"]
 default = ["use-jemalloc", "completions"]
 
 [package.metadata.binstall]
-pkg-url = "{ repo }/releases/download/v{ version }/{ name }-v{ version }-{ target }.{ archive-format }"
+pkg-url = "{ repo }/releases/download/v{ version }/fd-v{ version }-{ target }.{ archive-format }"
 bin-dir = "{ bin }-v{ version }-{ target }/{ bin }{ binary-ext }"
 pkg-fmt = "tgz"
 

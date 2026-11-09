@@ -15,7 +15,7 @@ impl From<ExitCode> for i32 {
     fn from(code: ExitCode) -> Self {
         match code {
             ExitCode::Success => 0,
-            ExitCode::HasResults(has_results) => !has_results as i32,
+            ExitCode::HasResults(has_results) => !has_results as Self,
             ExitCode::GeneralError => 1,
             ExitCode::KilledBySigint => 130,
         }
@@ -30,7 +30,7 @@ impl ExitCode {
     /// Exit the process with the appropriate code.
     pub fn exit(self) -> ! {
         #[cfg(unix)]
-        if self == ExitCode::KilledBySigint {
+        if self == Self::KilledBySigint {
             // Get rid of the SIGINT handler, if present, and raise SIGINT
             unsafe {
                 if signal(Signal::SIGINT, SigHandler::SigDfl).is_ok() {

@@ -4,25 +4,32 @@ use std::time::Duration;
 
 use anyhow::anyhow;
 use clap::{
-    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, error::ErrorKind,
-    value_parser,
+    Arg, ArgAction, ArgGroup, ArgMatches, Command, Parser, ValueEnum, builder::ArgPredicate,
+    error::ErrorKind, value_parser,
 };
 #[cfg(feature = "completions")]
 use clap_complete::Shell;
 use normpath::PathExt;
 
-use crate::error::print_error;
 use crate::exec::CommandSet;
 use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
 use crate::filter::SizeFilter;
 
+/// A program to find entries in your filesystem with regex and glob based matching.
+///
+/// By default, fd respects gitignore rules, ignores hidden directories, and uses smart case (only
+/// case sensitive if the pattern contains an uppercase character).
+///
+/// You can use '' or . as the search pattern to match all files.
+///
+/// Options may be given anywhere on the command line.
 #[derive(Parser)]
 #[command(
     name = "fd",
     version,
-    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and is case insensitive.",
+    about = "A program to find entries in your filesystem with regex and glob based matching. By default, fd respects gitignore rules, ignores hidden directories, and uses smart case.",
     after_long_help = "Bugs can be reported on GitHub: https://github.com/sharkdp/fd/issues",
     max_term_width = 98,
     args_override_self = true,
@@ -40,7 +47,11 @@ pub struct Opts {
         long,
         short = 'H',
         help = "Search hidden files and directories",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("no_hidden", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub hidden: bool,
 
@@ -49,13 +60,17 @@ pub struct Opts {
     no_hidden: (),
 
     /// Show search results from files and directories that would otherwise be
-    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file,
+    /// ignored by '.gitignore', '.ignore', '.fdignore', or the global ignore file.
     /// The flag can be overridden with --ignore.
     #[arg(
         long,
         short = 'I',
         help = "Do not respect .(git|fd)ignore files",
-        long_help
+        long_help,
+        default_value_ifs([
+            ("ignore", ArgPredicate::IsPresent, Some("false")),
+            ("rg_alias_hidden_ignore", ArgPredicate::IsPresent, Some("true")),
+        ])
     )]
     pub no_ignore: bool,
 
@@ -121,11 +136,14 @@ pub struct Opts {
 
     /// Perform an unrestricted search, including ignored and hidden files. This is
     /// an alias for '--no-ignore --hidden'.
-    #[arg(long = "unrestricted", short = 'u', overrides_with_all(&["ignore", "no_hidden"]), action(ArgAction::Count), hide_short_help = true,
-    help = "Unrestricted search, alias for '--no-ignore --hidden'",
-        long_help,
-        )]
-    rg_alias_hidden_ignore: u8,
+    #[arg(
+        long = "unrestricted",
+        short = 'u',
+        hide_short_help = true,
+        help = "Unrestricted search, alias for '--no-ignore --hidden'",
+        long_help
+    )]
+    rg_alias_hidden_ignore: bool,
 
     /// Case-sensitive search (default: smart case)
     #[arg(
@@ -482,7 +500,8 @@ pub struct Opts {
         long,
         value_name = "fmt",
         help = "Print results according to template",
-        conflicts_with = "list_details"
+        conflicts_with = "list_details",
+        allow_hyphen_values = true
     )]
     pub format: Option<String>,
 
@@ -552,7 +571,7 @@ pub struct Opts {
     pub ignore_contain: Vec<String>,
 
     /// Set number of threads to use for searching & executing (default: number
-    /// of available CPU cores)
+    /// of available CPU cores, up to a maximum of 64)
     #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
     pub threads: Option<NonZeroUsize>,
 
@@ -630,13 +649,11 @@ pub struct Opts {
     /// is considered a match. If your pattern starts with a dash (-), make sure to
     /// pass '--' first, or it will be considered as a flag (fd -- '-foo').
     #[arg(
-        default_value = "",
-        hide_default_value = true,
         value_name = "pattern",
         help = "the search pattern (a regular expression, unless '--glob' is used; optional)",
         long_help
     )]
-    pub pattern: String,
+    pub pattern: Option<String>,
 
     /// Set the path separator to use when printing file paths. The default is
     /// the OS-specific separator ('/' on Unix, '\' on Windows).
@@ -651,9 +668,10 @@ pub struct Opts {
 
     /// The directory where the filesystem search is rooted (optional). If
     /// omitted, search the current working directory.
+    /// If supplied, the pattern must come first.
     #[arg(action = ArgAction::Append,
         value_name = "path",
-        help = "the root directories for the filesystem search (optional)",
+        help = "the root directories for the filesystem search (optional, requires pattern first)",
         long_help,
         )]
     path: Vec<PathBuf>,
@@ -675,8 +693,8 @@ pub struct Opts {
     /// -X/--exec-batch, or -0/--print0 are given, to reduce the risk of a
     /// path starting with '-' being treated as a command line option. Use
     /// this flag to change this behavior. If this flag is used without a value,
-    /// it is equivalent to passing "always". This also works with explicit search
-    /// paths. In "auto" mode, prefixes are only stripped without explicit search paths.
+    /// it is equivalent to passing "always". In "auto" mode, prefixes are only
+    /// stripped without explicit search paths.
     #[arg(
         long,
         value_name = "when",
@@ -717,10 +735,12 @@ impl Opts {
                 if filesystem::is_existing_directory(path) {
                     Some(self.normalize_path(path))
                 } else {
-                    print_error(format!(
-                        "Search path '{}' is not a directory.",
-                        path.to_string_lossy()
-                    ));
+                    // We use debug for the path to make it more readable if it has special characters
+                    // Should we use a more reliable escape?
+                    print_error!(
+                        "Search path {:?} is not a directory.",
+                        path.to_string_lossy().as_ref()
+                    );
                     None
                 }
             })
@@ -744,11 +764,6 @@ impl Opts {
 
     pub fn no_search_paths(&self) -> bool {
         self.path.is_empty() && self.search_path.is_empty()
-    }
-
-    #[inline]
-    pub fn rg_alias_ignore(&self) -> bool {
-        self.rg_alias_hidden_ignore > 0
     }
 
     pub fn max_depth(&self) -> Option<usize> {
@@ -876,7 +891,7 @@ impl clap::FromArgMatches for Exec {
             })
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
-        Ok(Exec { command })
+        Ok(Self { command })
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {
@@ -899,10 +914,15 @@ impl clap::Args for Exec {
                 .help("Execute a command for each search result")
                 .long_help(
                     "Execute a command for each search result in parallel (use --threads=1 for sequential command execution). \
-                     There is no guarantee of the order commands are executed in, and the order should not be depended upon. \
+                     The order in which different search results are processed and their output is printed is not guaranteed, even with --threads=1. \
                      All positional arguments following --exec are considered to be arguments to the command - not to fd. \
                      It is therefore recommended to place the '-x'/'--exec' option last. \
-                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\
+                     Use '\\;' to terminate the command template if you need to continue passing fd arguments afterwards.\n\n\
+                     Specify this option multiple times to run several commands for each file or directory found. \
+                     For each file or directory, fd runs these commands one after another in the order they appear on the command line. \
+                     Terminate each command except the last with '\\;'. \
+                     When running in parallel, fd buffers command output and prints it together for each search result, \
+                     without interleaving it with command output for other results.\n\n\
                      The following placeholders are substituted before the command is executed:\n  \
                        '{}':   path (of the current search result)\n  \
                        '{/}':  basename\n  \
