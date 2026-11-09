@@ -396,6 +396,27 @@ fn test_pattern_with_forward_slash_is_rejected() {
     );
 }
 
+/// The path-separator diagnostic should lead with `--full-path` (the common fix
+/// for path-like patterns, including globs like `**/*x*`). The directory hint
+/// comes afterwards. Regression for the suggestion order discussed in #2154.
+#[test]
+fn test_path_separator_error_suggests_full_path_first() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_failure_with_error(
+        &["nonexistent/path"],
+        "[fd error]: The search pattern 'nonexistent/path' contains a path-separation character and will not lead to any search results.
+
+If you want your pattern to match the full file path, use:
+
+  fd --full-path 'nonexistent/path'
+
+If you want to search for all files inside the 'nonexistent/path' directory, use a match-all pattern:
+
+  fd . 'nonexistent/path'",
+    );
+}
+
 /// --full-path is the user's explicit opt-in to regex-over-full-path matching,
 /// so a path-separation character in the pattern is expected and must not
 /// trigger the diagnostic.

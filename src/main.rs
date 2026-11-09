@@ -212,10 +212,10 @@ fn ensure_single_search_pattern_is_not_a_path(pattern: &str) -> Result<()> {
         Err(anyhow!(
             "The search pattern '{pattern}' contains a path-separation character \
              and will not lead to any search results.\n\n\
+             If you want your pattern to match the full file path, use:\n\n  \
+             fd --full-path '{pattern}'\n\n\
              If you want to search for all files inside the '{pattern}' directory, use a match-all pattern:\n\n  \
-             fd . '{pattern}'\n\n\
-             Instead, if you want your pattern to match the full file path, use:\n\n  \
-             fd --full-path '{pattern}'",
+             fd . '{pattern}'",
             pattern = pattern,
         ))
     } else {
