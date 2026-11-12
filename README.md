@@ -377,6 +377,9 @@ Benchmark 3: fd -u '[0-9]\.jpg$' ~
   Time (mean ± σ):     854.8 ms ±  10.0 ms
   Range (min … max):   839.2 ms … 868.9 ms
 ```
+This uses `fd`'s default thread count, which is the number of available CPU
+cores. Use `--threads=1` to compare single-threaded traversal.
+
 For this particular example, `fd` is approximately **23 times faster** than `find -iregex`
 and about **13 times faster** than `find -iname`. By the way, both tools found the exact
 same 546 files :smile:.
