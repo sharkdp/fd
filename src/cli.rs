@@ -571,8 +571,9 @@ pub struct Opts {
     pub ignore_contain: Vec<String>,
 
     /// Set number of threads to use for searching & executing (default: number
-    /// of available CPU cores, up to a maximum of 64)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    /// of available CPU cores, up to a maximum of 64). Values above 1024 are
+    /// rejected.
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_threads)]
     pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
@@ -984,6 +985,27 @@ impl clap::Args for Exec {
 
 fn parse_millis(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     Ok(Duration::from_millis(arg.parse()?))
+}
+
+/// Parse and validate the `--threads` value.
+///
+/// The value is used directly as the number of worker threads and, doubled, as
+/// the capacity of the internal results channel, so an unbounded value makes
+/// `fd` panic (`capacity overflow`, or a failed thread spawn) instead of
+/// reporting a normal error, see #2078.
+///
+/// The maximum is deliberately loose: no current system has more than a couple
+/// of hundred hardware threads, and 1024 worker threads already reserve about
+/// 2 GiB of stack, so a larger value cannot be scheduled usefully anyway.
+fn parse_threads(arg: &str) -> Result<NonZeroUsize, String> {
+    let n: NonZeroUsize = arg
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    const MAX_THREADS: usize = 1024;
+    if n.get() > MAX_THREADS {
+        return Err(format!("must not be greater than {MAX_THREADS}"));
+    }
+    Ok(n)
 }
 
 fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<()> {
