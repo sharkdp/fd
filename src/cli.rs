@@ -572,7 +572,7 @@ pub struct Opts {
 
     /// Set number of threads to use for searching & executing (default: number
     /// of available CPU cores, up to a maximum of 64)
-    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = str::parse::<NonZeroUsize>)]
+    #[arg(long, short = 'j', value_name = "num", hide_short_help = true, value_parser = parse_threads)]
     pub threads: Option<NonZeroUsize>,
 
     /// Milliseconds to buffer before streaming search results to console
@@ -978,6 +978,26 @@ impl clap::Args for Exec {
 
 fn parse_millis(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     Ok(Duration::from_millis(arg.parse()?))
+}
+
+/// Parse and validate the `--threads` value.
+///
+/// Excessively large values would otherwise overflow the internal channel
+/// capacity (`2 * threads`) or exhaust thread-spawn limits, surfacing as
+/// panics/aborts instead of a normal user-facing error (see #2078).
+fn parse_threads(arg: &str) -> Result<NonZeroUsize, String> {
+    let n: NonZeroUsize = arg
+        .parse()
+        .map_err(|e| format!("invalid value '{arg}' for --threads: {e}"))?;
+    // Keep the value small enough that `2 * threads` cannot overflow and that
+    // spawning worker threads cannot exhaust system resources.
+    const MAX_THREADS: usize = 1024;
+    if n.get() > MAX_THREADS {
+        return Err(format!(
+            "invalid value '{arg}' for --threads: must be between 1 and {MAX_THREADS}"
+        ));
+    }
+    Ok(n)
 }
 
 fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<()> {
