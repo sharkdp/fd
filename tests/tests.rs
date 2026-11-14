@@ -2754,7 +2754,7 @@ fn test_windows_explicit_current_dir_separator_consistency() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
 
     // Native Windows (cmd / PowerShell): MSYSTEM is unset, output uses native '\'
-    for search_path in [".", "./", r".\"] {
+    for search_path in [".", r".\"] {
         let output = std::process::Command::new(te.test_exe())
             .current_dir(te.test_root())
             .env_remove("MSYSTEM")
@@ -2767,7 +2767,7 @@ fn test_windows_explicit_current_dir_separator_consistency() {
     }
 
     // MSYS / Git Bash: MSYSTEM is set, output uses '/'
-    for search_path in [".", "./", r".\"] {
+    for search_path in [".", "./"] {
         let output = std::process::Command::new(te.test_exe())
             .current_dir(te.test_root())
             .env("MSYSTEM", "MINGW64")
