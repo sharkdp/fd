@@ -485,10 +485,24 @@ fn test_explicit_root_path() {
 }
 
 #[test]
-fn test_single_dash_root_path() {
-    let te = TestEnv::new(&["-"], &["-/foo"]);
-
-    te.assert_output(&[".", "-"], "./-/foo");
+fn test_dash_search_paths() {
+    let te = TestEnv::new(
+        &["-", "--", "-a", "--a"],
+        &["-/foo", "--/foo", "-a/foo1", "--a/foo2", "fooA"],
+    );
+    te.assert_output(
+        &[
+            "--search-path=-",
+            "--search-path=--",
+            "--search-path=-a",
+            "--search-path=--a",
+            "foo",
+        ],
+        "./-/foo
+        ./--/foo
+        ./-a/foo1
+        ./--a/foo2",
+    )
 }
 
 /// Regex searches

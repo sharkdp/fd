@@ -11,6 +11,10 @@
 
 ## Other
 
+## Changes
+- A search path that starts with "-" will now prefix results with "./" (or ".\\" on windows)
+  similar to how results found from the working directory are prefixed.
+
 # 10.5.2
 
 ## Bugfixes
