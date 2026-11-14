@@ -179,9 +179,15 @@ jobs:
         cargo -V
         rustc -V
 
+    - name: Select build features
+      shell: bash
+      run: |
+        features=$(bash scripts/build-features.sh "${target}")
+        echo "FD_BUILD_FEATURES=${features}" >> "$GITHUB_ENV"
+
     - name: Build
       shell: bash
-      run: $BUILD_CMD build --locked --release --target="${target}"
+      run: $BUILD_CMD build --locked --release --target="${target}" --features="${FD_BUILD_FEATURES}"
 
     - name: Set binary name & path
       id: bin
@@ -217,7 +223,7 @@ jobs:
       shell: bash
       env:
         cargo_test_options: ${{ steps.test-options.outputs.CARGO_TEST_OPTIONS}}
-      run: $BUILD_CMD test --locked --target="${target}" "${cargo_test_options}"
+      run: $BUILD_CMD test --locked --target="${target}" --features="${FD_BUILD_FEATURES}" "${cargo_test_options}"
 
     - name: Generate completions
       id: completions

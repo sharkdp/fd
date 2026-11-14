@@ -20,6 +20,7 @@
 # 10.5.1
 
 ## Bugfixes
+- Honor explicit `use-jemalloc` requests on previously excluded targets; source builds now use the system allocator by default while release builds retain their allocator choices, see #1822 (@voidsipp).
 - Fix `--absolute-path` turning verbatim (`\\?\`) search paths into relative paths on Windows: `\\?\UNC\server\share` is now reported as `\\server\share`, and `\\?\Volume{...}` paths are kept intact, see #2207 (@Duo-ee)
 - Make `--ignore` and `--no-hidden` after `-u` override only their half of `-u`, see #2192 (@NavpreetSSidhu)
 - Fix inline case-insensitive regex flags incorrectly making other `--and` patterns case-sensitive, see #2184 (@mabunemeh)
