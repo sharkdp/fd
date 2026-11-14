@@ -1,7 +1,7 @@
 # Upcoming release
 
 ## Features
-
+- Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
 
