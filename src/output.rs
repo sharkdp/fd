@@ -9,8 +9,16 @@ use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
 use crate::sanitize::sanitize_for_term;
 
+// TODO: when std::path::SEPARATORS is stabilized, use that.
+// See https://github.com/rust-lang/rust/issues/153106
+#[cfg(not(windows))]
+const PATH_SEPARATORS: char = std::path::MAIN_SEPARATOR;
+
+#[cfg(windows)]
+const PATH_SEPARATORS: &[char] = &['\\', '/'];
+
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
-    path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
+    path.replace(PATH_SEPARATORS, new_path_separator)
 }
 
 // TODO: this function is performance critical and can probably be optimized
