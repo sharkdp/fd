@@ -753,8 +753,10 @@ impl Opts {
         } else if path == Path::new(".") {
             // Change "." to "./" as a workaround for https://github.com/BurntSushi/ripgrep/pull/2711
             PathBuf::from("./")
-        } else if path == Path::new("-") {
-            // Prefix "-" so the underlying walker treats it as a path.
+        } else if path.as_os_str().as_encoded_bytes().starts_with(b"-") {
+            // If the search path starts with a "-" add a "." prefix so it is
+            // safe to use as an argument to other commands.
+            // This also ensures the underlying walker treats "-" as a path.
             // See sharkdp/fd#849.
             Path::new(".").join(path)
         } else {
