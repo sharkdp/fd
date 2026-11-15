@@ -2,6 +2,7 @@
 
 ## Features
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
+- Add `--type leafdir` to find directories without subdirectories, see #1844 (@IshanKale)
 
 ## Bugfixes
 

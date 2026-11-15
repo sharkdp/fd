@@ -9,6 +9,7 @@ use faccess::PathExt;
 pub struct FileTypes {
     pub files: bool,
     pub directories: bool,
+    pub leaf_directories_only: bool,
     pub symlinks: bool,
     pub block_devices: bool,
     pub char_devices: bool,
@@ -25,6 +26,10 @@ impl FileTypes {
             match value {
                 FileType::File => file_types.files = true,
                 FileType::Directory => file_types.directories = true,
+                FileType::Leafdir => {
+                    file_types.leaf_directories_only = true;
+                    file_types.directories = true;
+                }
                 FileType::Symlink => file_types.symlinks = true,
                 FileType::Executable => {
                     file_types.executables_only = true;
@@ -51,6 +56,9 @@ impl FileTypes {
         if let Some(ref entry_type) = entry.file_type() {
             (!self.files && entry_type.is_file())
                 || (!self.directories && entry_type.is_dir())
+                || (self.leaf_directories_only
+                    && entry_type.is_dir()
+                    && !filesystem::is_leaf_directory(entry))
                 || (!self.symlinks && entry_type.is_symlink())
                 || (!self.block_devices && filesystem::is_block_device(*entry_type))
                 || (!self.char_devices && filesystem::is_char_device(*entry_type))
@@ -97,6 +105,14 @@ mod tests {
         assert!(ft.executables_only);
         assert!(ft.files);
         assert!(!ft.directories);
+    }
+
+    #[test]
+    fn leafdir_implies_directories() {
+        let ft = FileTypes::from_types(&[FileType::Leafdir]);
+        assert!(ft.leaf_directories_only);
+        assert!(ft.directories);
+        assert!(!ft.files);
     }
 
     #[test]

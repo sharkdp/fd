@@ -326,8 +326,8 @@ Options:
   -d, --max-depth <depth>          Set maximum search depth (default: none)
   -E, --exclude <glob>             Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
-                                   executable (x), empty (e), socket (s), pipe (p), char-device
-                                   (c), block-device (b)
+                                   leafdir, executable (x), empty (e), socket (s), pipe (p),
+                                   char-device (c), block-device (b)
   -e, --extension <ext>            Filter by extension
   -S, --size <size>                Limit results based on the size of files
       --changed-within <date|dur>  Filter by file modification time (newer than)
