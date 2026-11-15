@@ -72,6 +72,16 @@ fn create_config_directory_with_global_ignore(ignore_file_content: &str) -> io::
     Ok(config_dir)
 }
 
+fn create_config_directory_with_global_config(config_file_content: &str) -> io::Result<TempDir> {
+    let config_dir = tempfile::Builder::new().prefix("fd-config").tempdir()?;
+    let fd_dir = config_dir.path().join("fd");
+    fs::create_dir(&fd_dir)?;
+    let mut config_file = fs::File::create(fd_dir.join("config"))?;
+    config_file.write_all(config_file_content.as_bytes())?;
+
+    Ok(config_dir)
+}
+
 /// Find the *fd* executable.
 fn find_fd_exe() -> PathBuf {
     // Read the location of the fd executable from the environment
@@ -169,6 +179,16 @@ impl TestEnv {
     pub fn global_ignore_file(self, content: &str) -> TestEnv {
         let config_dir =
             create_config_directory_with_global_ignore(content).expect("config directory");
+        TestEnv {
+            config_dir: Some(config_dir),
+            ..self
+        }
+    }
+
+    /// Create a configuration file at env::temp_dir/fd-config/config.
+    pub fn global_config_file(self, content: &str) -> TestEnv {
+        let config_dir =
+            create_config_directory_with_global_config(content).expect("config directory");
         TestEnv {
             config_dir: Some(config_dir),
             ..self
@@ -317,8 +337,13 @@ impl TestEnv {
         // Setup *fd* command.
         let mut cmd = process::Command::new(&self.fd_exe);
         cmd.current_dir(self.temp_dir.path().join(path));
+        cmd.env_remove("FD_CONFIG_PATH"); // just in case the user has this set
         if let Some(config_dir) = &self.config_dir {
             cmd.env("XDG_CONFIG_HOME", config_dir.path());
+            let fd_config_path = config_dir.path().join("fd").join("config");
+            if fd_config_path.exists() {
+                cmd.env("FD_CONFIG_PATH", fd_config_path);
+            }
         } else {
             cmd.arg("--no-global-ignore-file");
         }

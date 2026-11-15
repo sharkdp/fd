@@ -3271,3 +3271,26 @@ fn test_sanitize_recursive_link_msg() {
         "[fd error]: File system loop found: ./loop/foo\\x1Bb points to an ancestor ./loop",
     );
 }
+
+// Check that a generic config file works
+#[test]
+fn test_config_file() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES)
+        .global_config_file("# comment\n--no-ignore\n  #comment comment  \n\n  --hidden  \n\n\n");
+    te.assert_output(&["hidden"], ".hidden.foo");
+}
+
+// Check that flags in the config file are overridden by flags on the CLI
+#[test]
+fn test_config_overridden() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES).global_config_file("--hidden");
+    te.assert_output(&[".hidden.foo"], ".hidden.foo");
+    te.assert_output(&["--no-hidden", ".hidden.foo"], "");
+}
+
+// The --no-config flag should suppress the config file
+#[test]
+fn test_no_config() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES).global_config_file("--no-ignore-vcs");
+    te.assert_output(&["--no-config", "gitignored.foo"], "");
+}
