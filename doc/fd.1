@@ -470,8 +470,8 @@ option.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
 
-On Windows, placeholders may need to be quoted (for example, "{}") so that the shell does not
-interpret the braces before fd sees them.
+Placeholders are passed through the shell, so shell quoting rules apply. Quote the placeholder if
+your shell would otherwise expand or transform it (for example, "{}").
 
 If --print0 is also given, then a null character (\\0) will be printed between the output for each found entry.
 This allows another program to easily distinguish the output for each file if the command(s) produce multiple lines.
@@ -509,8 +509,8 @@ file in a batch and passed as separate arguments.
 
 If no placeholder is present, an implicit "{}" at the end is assumed.
 
-On Windows, placeholders may need to be quoted (for example, "{}") so that the shell does not
-interpret the braces before fd sees them.
+Placeholders are passed through the shell, so shell quoting rules apply. Quote the placeholder if
+your shell would otherwise expand or transform it (for example, "{}").
 
 Like \-\-exec, subsequent arguments are assumed to be part of
 .I command
