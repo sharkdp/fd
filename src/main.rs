@@ -42,20 +42,7 @@ use crate::patterns::{
 };
 
 // We use jemalloc for performance reasons, see https://github.com/sharkdp/fd/pull/481
-// FIXME: re-enable jemalloc on macOS, see comment in Cargo.toml file for more infos
-// This has to be kept in sync with the Cargo.toml file section that declares a
-// dependency on tikv-jemallocator.
-#[cfg(all(
-    not(windows),
-    not(target_os = "android"),
-    not(target_os = "macos"),
-    not(target_os = "freebsd"),
-    not(target_os = "openbsd"),
-    not(target_os = "illumos"),
-    not(all(target_env = "musl", target_pointer_width = "32")),
-    not(target_arch = "riscv64"),
-    feature = "use-jemalloc"
-))]
+#[cfg(feature = "use-jemalloc")]
 #[global_allocator]
 static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
 
