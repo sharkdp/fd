@@ -2697,6 +2697,15 @@ fn remove_symlink<P: AsRef<Path>>(path: P) {
 }
 
 #[test]
+fn test_invalid_date_reports_parse_error() {
+    let te = TestEnv::new(&[], &[]);
+    te.assert_error(
+        &["", "--changed-before", "2025-11-31"],
+        "[fd error]: '2025-11-31' is not a valid date or duration: parsed date is not valid: parameter 'day' for `2025-11` is invalid, must be in range `1..=30`. See 'fd --help'.",
+    );
+}
+
+#[test]
 fn test_modified_relative() {
     let te = TestEnv::new(&[], &[]);
     remove_symlink(te.test_root().join("symlink"));
