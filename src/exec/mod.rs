@@ -87,6 +87,36 @@ impl CommandSet {
         execute_commands(commands, OutputBuffer::new(null_separator), buffer_output)
     }
 
+    /// Run all commands for the given input, with stdin/stdout/stderr detached and
+    /// any output discarded, and report whether all of them exited successfully.
+    ///
+    /// Returns `Ok(true)` if every command exited with status code 0, `Ok(false)` if
+    /// any of them exited with a non-zero status, and `Err` if a command could not
+    /// be executed at all (e.g. because it was not found).
+    pub fn test(&self, input: &Path, path_separator: Option<&str>) -> io::Result<bool> {
+        for template in &self.commands {
+            let mut cmd = template.generate(input, path_separator)?;
+            cmd.stdin(Stdio::null());
+            cmd.stdout(Stdio::null());
+            cmd.stderr(Stdio::null());
+            let status = match cmd.status() {
+                Ok(status) => status,
+                Err(err) if err.kind() == io::ErrorKind::NotFound => {
+                    let program = cmd.get_program().to_string_lossy().into_owned();
+                    return Err(io::Error::new(
+                        err.kind(),
+                        format!("command not found: '{program}'"),
+                    ));
+                }
+                Err(err) => return Err(err),
+            };
+            if !status.success() {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
     pub fn execute_batch<I>(&self, paths: I, limit: usize, path_separator: Option<&str>) -> ExitCode
     where
         I: Iterator<Item = PathBuf>,
@@ -117,6 +147,38 @@ impl CommandSet {
             }
             Err(e) => handle_cmd_error(None, e),
         }
+    }
+}
+
+/// A command-based filter for search results (`--filter` / `--reject`).
+///
+/// The given commands are executed for every search result (like `--exec`), but instead
+/// of showing their output, the exit status decides whether the result is kept:
+/// with `--filter`, a result is kept only if all commands exit with status 0, while
+/// `--reject` keeps a result only if all commands exit with a non-zero status.
+#[derive(Debug, Clone, PartialEq)]
+pub struct FilterCommand {
+    commands: CommandSet,
+    reject: bool,
+}
+
+impl FilterCommand {
+    pub fn new<I, T, S>(input: I, reject: bool) -> Result<Self>
+    where
+        I: IntoIterator<Item = T>,
+        T: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        Ok(Self {
+            commands: CommandSet::new(input)?,
+            reject,
+        })
+    }
+
+    /// Check whether the given path should be kept in the search results.
+    pub fn matches(&self, path: &Path, path_separator: Option<&str>) -> io::Result<bool> {
+        let success = self.commands.test(path, path_separator)?;
+        Ok(success != self.reject)
     }
 }
 
@@ -433,6 +495,43 @@ mod tests {
     #[test]
     fn command_set_no_args() {
         assert!(CommandSet::new(vec![vec!["echo"], vec![]]).is_err());
+    }
+
+    #[test]
+    fn filter_command_no_args() {
+        assert!(FilterCommand::new(vec![vec![] as Vec<&str>], false).is_err());
+        assert!(FilterCommand::new(vec![vec!["echo"], vec![]], true).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn filter_command_matches() {
+        use std::path::Path;
+
+        let keep = FilterCommand::new(vec![vec!["true"]], false).unwrap();
+        assert!(keep.matches(Path::new("nonexistent"), None).unwrap());
+
+        let drop = FilterCommand::new(vec![vec!["false"]], false).unwrap();
+        assert!(!drop.matches(Path::new("nonexistent"), None).unwrap());
+
+        // --reject inverts the exit status
+        let reject = FilterCommand::new(vec![vec!["false"]], true).unwrap();
+        assert!(reject.matches(Path::new("nonexistent"), None).unwrap());
+        let reject = FilterCommand::new(vec![vec!["true"]], true).unwrap();
+        assert!(!reject.matches(Path::new("nonexistent"), None).unwrap());
+
+        // all commands must succeed
+        let both = FilterCommand::new(vec![vec!["true"], vec!["false"]], false).unwrap();
+        assert!(!both.matches(Path::new("nonexistent"), None).unwrap());
+
+        // a command that cannot be executed is an error, not a non-match
+        let missing = FilterCommand::new(vec![vec!["fd-test-nonexistent-command"]], false).unwrap();
+        assert!(missing.matches(Path::new("nonexistent"), None).is_err());
+
+        // placeholders are substituted
+        let is_file = FilterCommand::new(vec![vec!["test", "-f", "{}"]], false).unwrap();
+        assert!(is_file.matches(Path::new("Cargo.toml"), None).unwrap());
+        assert!(!is_file.matches(Path::new("src"), None).unwrap());
     }
 
     #[test]

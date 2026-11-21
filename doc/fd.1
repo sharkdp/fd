@@ -531,6 +531,61 @@ Maximum number of arguments to pass to the command given with -X. If the number 
 greater than the given size, the command given with -X is run again with remaining arguments. A
 batch size of zero means there is no limit (default), but note that batching might still happen
 due to OS restrictions on the maximum length of command lines.
+.TP
+.BI "\-f, \-\-filter " command
+.RS
+Execute
+.I command
+for each search result and only keep the search result if the command exits with status code 0
+(like a filter function in programming languages). The output of the command is discarded; only
+its exit status is used to filter the search results, which are then printed as usual.
+
+Like \-\-exec, all subsequent arguments are considered to be arguments to
+.I command
+- not to fd, until either the end of the command line or a ';' argument. See the \-\-exec
+documentation above.
+
+Specify this option multiple times to run several commands for each file or directory found; the
+result is only kept if all of them exit with status code 0.
+
+The same placeholders as in the "\-\-format" option are supported, and if no placeholder is
+present, an implicit "{}" at the end is assumed.
+
+This option cannot be used together with \-x/\-\-exec, \-X/\-\-exec-batch or \-l/\-\-list-details.
+
+Examples:
+
+  - Show all *.cpp and *.h files that contain the word TODO:
+
+        fd -e cpp -e h -f grep -q TODO
+
+  - Only show files that are newer than 'reference.txt':
+
+        fd -f test {} -nt reference.txt
+
+  - Only show files which have a diff with respect to the Git index:
+
+        fd -f git diff --exit-code -- {}
+.RE
+.TP
+.BI "\-r, \-\-reject " command
+.RS
+Execute
+.I command
+for each search result and only keep the search result if the command exits with a non-zero
+status code. This is the inverse of \-f/\-\-filter. Placeholders, multiple uses and the ';'
+terminator work exactly like for \-\-filter; see above.
+
+Examples:
+
+  - Show all entries that are NOT directories:
+
+        fd -r test -d {}
+
+  - Show all *.jpg files whose mime type is NOT image/jpeg:
+
+        fd -e jpg -r sh -c '[ "$(file -b --mime-type "$1")" = "image/jpeg" ]' sh {}
+.RE
 .SH PATTERN SYNTAX
 The regular expression syntax used by fd is documented here:
 

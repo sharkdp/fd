@@ -2,6 +2,7 @@
 
 ## Features
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
+- Add `--filter <cmd>`/`-f <cmd>` and `--reject <cmd>`/`-r <cmd>` options that run a command for each search result (like `--exec`, with the same placeholder support) and keep only the results for which the command exits with status 0 (`--filter`) or a non-zero status (`--reject`), see #400 (@DeviousCardi)
 
 ## Bugfixes
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
