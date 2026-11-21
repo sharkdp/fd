@@ -221,6 +221,8 @@ Filter search by type:
 regular files
 .IP "d, dir, directory"
 directories
+.IP "leafdir"
+directories without subdirectories
 .IP "l, symlink"
 symbolic links
 .IP "b, block-device"
@@ -240,10 +242,11 @@ empty files or directories
 .RS
 This option can be specified more than once to include multiple file types.
 Searching for '--type file --type symlink' will show both regular files as well as
-symlinks. Note that the 'executable' and 'empty' filters work differently: '--type
+symlinks. Note that the 'executable', 'empty', and 'leafdir' filters work differently: '--type
 executable' implies '--type file' by default. And '--type empty' searches for
 empty files and directories, unless either '--type file' or '--type directory' is
-specified in addition.
+specified in addition. '--type leafdir' implies '--type directory' and only shows
+directories that have no subdirectories.
 
 Examples:
   - Only search for files:
@@ -261,6 +264,8 @@ Examples:
   - Find empty directories:
       fd --type empty --type directory
       fd -te -td
+  - Find directories without subdirectories:
+      fd --type leafdir
 .RE
 .TP
 .BI "\-e, \-\-extension " ext

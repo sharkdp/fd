@@ -351,6 +351,7 @@ pub struct Opts {
     /// Filter the search by type:
     /// {n}  'f' or 'file':         regular files
     /// {n}  'd' or 'dir' or 'directory':    directories
+    /// {n}  'leafdir':             directories without subdirectories
     /// {n}  'l' or 'symlink':      symbolic links
     /// {n}  's' or 'socket':       socket
     /// {n}  'p' or 'pipe':         named pipe (FIFO)
@@ -361,10 +362,11 @@ pub struct Opts {
     ///
     /// This option can be specified more than once to include multiple file types.
     /// Searching for '--type file --type symlink' will show both regular files as
-    /// well as symlinks. Note that the 'executable' and 'empty' filters work differently:
+    /// well as symlinks. Note that the 'executable', 'empty', and 'leafdir' filters work differently:
     /// '--type executable' implies '--type file' by default. And '--type empty' searches
     /// for empty files and directories, unless either '--type file' or '--type directory'
-    /// is specified in addition.
+    /// is specified in addition. '--type leafdir' implies '--type directory' and only shows
+    /// directories that have no subdirectories.
     ///
     /// Examples:
     /// {n}  - Only search for files:
@@ -382,6 +384,8 @@ pub struct Opts {
     /// {n}  - Find empty directories:
     /// {n}      fd --type empty --type directory
     /// {n}      fd -te -td
+    /// {n}  - Find directories without subdirectories:
+    /// {n}      fd --type leafdir
     #[arg(
         long = "type",
         short = 't',
@@ -389,7 +393,7 @@ pub struct Opts {
         hide_possible_values = true,
         value_enum,
         help = "Filter by type: file (f), directory (d/dir), symlink (l), \
-                executable (x), empty (e), socket (s), pipe (p), \
+                leafdir, executable (x), empty (e), socket (s), pipe (p), \
                 char-device (c), block-device (b)",
         long_help
     )]
@@ -826,6 +830,8 @@ pub enum FileType {
     File,
     #[value(alias = "d", alias = "dir")]
     Directory,
+    /// A directory that has no subdirectories
+    Leafdir,
     #[value(alias = "l")]
     Symlink,
     #[value(alias = "b")]

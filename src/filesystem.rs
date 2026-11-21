@@ -118,6 +118,33 @@ pub fn is_empty(entry: &dir_entry::DirEntry) -> bool {
     }
 }
 
+pub fn is_leaf_directory(entry: &dir_entry::DirEntry) -> bool {
+    if !entry
+        .file_type()
+        .is_some_and(|file_type| file_type.is_dir())
+    {
+        return false;
+    }
+
+    let Ok(entries) = fs::read_dir(entry.path()) else {
+        return false;
+    };
+
+    for child in entries {
+        let Ok(child) = child else {
+            return false;
+        };
+        let Ok(file_type) = child.file_type() else {
+            return false;
+        };
+        if file_type.is_dir() {
+            return false;
+        }
+    }
+
+    true
+}
+
 #[cfg(any(unix, target_os = "redox"))]
 pub fn is_block_device(ft: fs::FileType) -> bool {
     ft.is_block_device()
