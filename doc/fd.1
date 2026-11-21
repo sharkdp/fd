@@ -321,7 +321,7 @@ Always output hyperlink escapes, regardless of color settings.
 .RE
 .TP
 .BI "\-j, \-\-threads " num
-Set number of threads to use for searching & executing (default: number of available CPU cores).
+Set number of threads to use for searching & executing (default: number of available CPU cores, up to a maximum of 64). Values above 1024 are rejected.
 .TP
 .BI "\-S, \-\-size " size
 Limit results based on the size of files using the format

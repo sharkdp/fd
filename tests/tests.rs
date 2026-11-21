@@ -3036,6 +3036,17 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=a"]);
     te.assert_failure(&["-j", ""]);
     te.assert_failure(&["--threads=0"]);
+    te.assert_failure_with_error(
+        &["--threads=1025"],
+        "error: invalid value '1025' for '--threads <num>': must not be greater than 1024",
+    );
+    // Large but syntactically valid values used to overflow the results-channel
+    // capacity (or exhaust the thread-spawn limit) and abort instead of
+    // returning a normal usage error, see #2078.
+    te.assert_failure_with_error(
+        &["--threads=99999999"],
+        "error: invalid value '99999999' for '--threads <num>': must not be greater than 1024",
+    );
 
     te.assert_failure(&["--min-depth=a"]);
     te.assert_failure(&["--mindepth=a"]);
