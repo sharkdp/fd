@@ -293,6 +293,7 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
     };
     let command = extract_command(&mut opts, colored_output)?;
     let has_command = command.is_some();
+    let filter = opts.exec.filter.take().map(Arc::new);
 
     let full_path_base = if opts.full_path {
         Some(env::current_dir().context(
@@ -345,6 +346,7 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
             .as_deref()
             .map(crate::fmt::FormatTemplate::parse),
         command: command.map(Arc::new),
+        filter,
         batch_size: opts.batch_size,
         exclude_patterns: opts.exclude.iter().map(|p| String::from("!") + p).collect(),
         ignore_files: std::mem::take(&mut opts.ignore_file),

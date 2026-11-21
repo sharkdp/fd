@@ -310,18 +310,22 @@ struct WorkerState {
     quit_flag: Arc<AtomicBool>,
     /// Flag specifically for quitting due to ^C
     interrupt_flag: Arc<AtomicBool>,
+    /// Flag that is set when a --filter/--reject command could not be executed at all
+    filter_error: Arc<AtomicBool>,
 }
 
 impl WorkerState {
     fn new(patterns: Patterns, config: Config) -> Self {
         let quit_flag = Arc::new(AtomicBool::new(false));
         let interrupt_flag = Arc::new(AtomicBool::new(false));
+        let filter_error = Arc::new(AtomicBool::new(false));
 
         Self {
             patterns,
             config,
             quit_flag,
             interrupt_flag,
+            filter_error,
         }
     }
 
@@ -443,6 +447,7 @@ impl WorkerState {
             let patterns = &self.patterns;
             let config = &self.config;
             let quit_flag = self.quit_flag.as_ref();
+            let filter_error = self.filter_error.as_ref();
 
             let mut limit = 0x100;
             if let Some(cmd) = &config.command
@@ -575,6 +580,28 @@ impl WorkerState {
                     }
                 }
 
+                // Filter the results by the exit status of an external command
+                // (--filter keeps results with exit status 0, --reject the others).
+                if let Some(ref filter) = config.filter {
+                    match filter.matches(
+                        entry.stripped_path(config),
+                        config.path_separator.as_deref(),
+                    ) {
+                        Ok(true) => {}
+                        Ok(false) => return WalkState::Continue,
+                        Err(err) => {
+                            // Only report the first error and stop the traversal: if the
+                            // command cannot be executed at all, it would fail for every
+                            // remaining entry as well.
+                            if !filter_error.swap(true, Ordering::Relaxed) {
+                                print_error!("Problem while executing filter command: {}", err);
+                            }
+                            quit_flag.store(true, Ordering::Relaxed);
+                            return WalkState::Quit;
+                        }
+                    }
+                }
+
                 if config.is_printing()
                     && let Some(ls_colors) = &config.ls_colors
                 {
@@ -632,6 +659,8 @@ impl WorkerState {
 
         if self.interrupt_flag.load(Ordering::Relaxed) {
             Ok(ExitCode::KilledBySigint)
+        } else if self.filter_error.load(Ordering::Relaxed) {
+            Ok(ExitCode::GeneralError)
         } else {
             Ok(exit_code)
         }

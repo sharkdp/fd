@@ -240,6 +240,21 @@ If you do not include a placeholder, *fd* automatically adds a `{}` at the end.
 For `-x`/`--exec`, you can control the number of parallel jobs by using the `-j`/`--threads` option.
 Use `--threads=1` for serial execution.
 
+#### Filtering results by exit status
+
+The `-f`/`--filter` option also runs an external command for each search result (with the same
+placeholder support as `-x`/`--exec`), but instead of showing the command's output, it uses the
+command's exit status to filter the results: only results for which the command exits with status
+0 are shown. The inverse is available via `-r`/`--reject`, which keeps only the results for which
+the command exits with a non-zero status:
+``` bash
+# Show all *.cpp and *.h files that contain the word TODO
+fd -e cpp -e h -f grep -q TODO
+
+# Show all entries that are NOT directories
+fd -r test -d {}
+```
+
 ### Excluding specific files or directories
 
 Sometimes we want to ignore search results from a specific subdirectory. For example, we might
@@ -336,6 +351,9 @@ Options:
       --format <fmt>               Print results according to template
   -x, --exec <cmd>...              Execute a command for each search result
   -X, --exec-batch <cmd>...        Execute a command with all search results at once
+  -f, --filter <cmd>...            Keep only results for which the command exits with status 0
+  -r, --reject <cmd>...            Keep only results for which the command exits with a non-zero
+                                   status
   -c, --color <when>               When to use colors [default: auto] [possible values: auto,
                                    always, never]
       --hyperlink[=<when>]         Add hyperlinks to output paths [default: never] [possible

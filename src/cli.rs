@@ -11,7 +11,7 @@ use clap::{
 use clap_complete::Shell;
 use normpath::PathExt;
 
-use crate::exec::CommandSet;
+use crate::exec::{CommandSet, FilterCommand};
 use crate::filesystem;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
@@ -877,6 +877,7 @@ pub enum HyperlinkWhen {
 // so we have to use hand-rolled parsing for exec and exec-batch
 pub struct Exec {
     pub command: Option<CommandSet>,
+    pub filter: Option<FilterCommand>,
 }
 
 impl clap::FromArgMatches for Exec {
@@ -891,7 +892,17 @@ impl clap::FromArgMatches for Exec {
             })
             .transpose()
             .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
-        Ok(Self { command })
+        let filter = matches
+            .get_occurrences::<String>("filter")
+            .map(|cmds| FilterCommand::new(cmds, false))
+            .or_else(|| {
+                matches
+                    .get_occurrences::<String>("reject")
+                    .map(|cmds| FilterCommand::new(cmds, true))
+            })
+            .transpose()
+            .map_err(|e| clap::Error::raw(ErrorKind::InvalidValue, e))?;
+        Ok(Self { command, filter })
     }
 
     fn update_from_arg_matches(&mut self, matches: &ArgMatches) -> clap::error::Result<()> {
@@ -973,6 +984,71 @@ impl clap::Args for Exec {
                        - Find all *.rs files and count the lines with \"wc -l ...\":\n\n      \
                            fd -e rs -X wc -l\
                      "
+                ),
+        )
+        .arg(
+            Arg::new("filter")
+                .action(ArgAction::Append)
+                .long("filter")
+                .short('f')
+                .num_args(1..)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                .conflicts_with_all(["exec", "exec_batch", "reject", "list_details"])
+                .help("Keep only results for which the command exits with status 0")
+                .long_help(
+                    "Execute a command for each search result and only keep the result if the \
+                     command exits with status code 0 (like a filter function in programming \
+                     languages). The output of the command is discarded; only its exit status \
+                     is used to filter the search results. The results are then printed as usual.\n\n\
+                     All positional arguments following --filter are considered to be arguments \
+                     to the command - not to fd. It is therefore recommended to place the \
+                     '-f'/'--filter' option last. Use '\\\\;' to terminate the command template \
+                     if you need to continue passing fd arguments afterwards.\n\n\
+                     Specify this option multiple times to run several commands for each file or \
+                     directory found; the result is only kept if all of them exit with status 0.\n\n\
+                     The following placeholders are substituted before the command is executed:\n  \
+                       '{}':   path (of the current search result)\n  \
+                       '{/}':  basename\n  \
+                       '{//}': parent directory\n  \
+                       '{.}':  path without file extension\n  \
+                       '{/.}': basename without file extension\n  \
+                       '{{':   literal '{' (for escaping)\n  \
+                       '}}':   literal '}' (for escaping)\n\n\
+                     If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                     Examples:\n\n  \
+                       - Show all *.cpp and *.h files that contain the word TODO:\n\n      \
+                           fd -e cpp -e h --filter grep -q TODO\n\n  \
+                       - Only show files that are newer than 'reference.txt':\n\n      \
+                           fd --filter test {} -nt reference.txt\n\n  \
+                       - Only show files which have a diff with respect to the Git index:\n\n      \
+                           fd --filter git diff --exit-code -- {}",
+                ),
+        )
+        .arg(
+            Arg::new("reject")
+                .action(ArgAction::Append)
+                .long("reject")
+                .short('r')
+                .num_args(1..)
+                .allow_hyphen_values(true)
+                .value_terminator(";")
+                .value_name("cmd")
+                .conflicts_with_all(["exec", "exec_batch", "filter", "list_details"])
+                .help("Keep only results for which the command exits with a non-zero status")
+                .long_help(
+                    "Execute a command for each search result and only keep the result if the \
+                     command exits with a non-zero status code. This is the inverse of \
+                     '--filter'/'-f'. The output of the command is discarded; only its exit \
+                     status is used to filter the search results.\n\n\
+                     Placeholders, multiple uses and the '\\\\;' terminator work exactly like \
+                     for '--filter'; see the '--filter' documentation for details.\n\n\
+                     Examples:\n\n  \
+                       - Show all entries that are NOT directories:\n\n      \
+                           fd --reject test -d {}\n\n  \
+                       - Show all *.jpg files whose mime type is NOT image/jpeg:\n\n      \
+                           fd -e jpg --reject sh -c '[ \"$(file -b --mime-type \"$1\")\" = \"image/jpeg\" ]' sh {}",
                 ),
         )
     }

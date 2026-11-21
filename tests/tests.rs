@@ -2486,6 +2486,156 @@ fn test_exec_with_separator() {
     );
 }
 
+/// Filter search results by the exit status of an external command (--filter / --reject)
+#[cfg(not(windows))]
+#[test]
+fn test_filter() {
+    let te = TestEnv::new(
+        &["one/two"],
+        &["a.foo", "one/b.foo", "one/two/c.txt", "d.md"],
+    );
+    fs::write(te.test_root().join("a.foo"), "TODO: fix this\n").unwrap();
+    fs::write(te.test_root().join("one/b.foo"), "nothing to see\n").unwrap();
+    fs::write(te.test_root().join("one/two/c.txt"), "TODO: and this\n").unwrap();
+
+    // --filter keeps only the results for which the command exits with status 0
+    // (an implicit "{}" is appended to the command if no placeholder is present)
+    te.assert_output(
+        &["--filter", "grep", "-q", "TODO"],
+        "a.foo
+        one/two/c.txt",
+    );
+
+    // explicit "{}" placeholder
+    te.assert_output(
+        &["--filter", "grep", "-q", "TODO", "{}"],
+        "a.foo
+        one/two/c.txt",
+    );
+
+    // short option, combined with a search pattern
+    te.assert_output(&["foo", "-f", "grep", "-q", "TODO"], "a.foo");
+
+    // only regular files pass "test -f {}"
+    te.assert_output(
+        &["--filter", "test", "-f", "{}"],
+        "a.foo
+        d.md
+        one/b.foo
+        one/two/c.txt",
+    );
+
+    // basename placeholder "{/}" is resolved against the current directory
+    te.assert_output(&["foo", "--filter", "test", "-f", "./{/}"], "a.foo");
+
+    // only directories pass "test -d"
+    te.assert_output(
+        &["--type", "d", "--filter", "test", "-d"],
+        "one/
+        one/two/",
+    );
+
+    // shell command with positional parameter, as suggested in the issue
+    te.assert_output(
+        &["--filter", "sh", "-c", "grep -q TODO \"$1\"", "sh", "{}"],
+        "a.foo
+        one/two/c.txt",
+    );
+
+    // multiple --filter options: all commands must exit with status 0
+    te.assert_output(
+        &[
+            "--filter", "grep", "-q", "TODO", ";", "--filter", "grep", "-q", "fix",
+        ],
+        "a.foo",
+    );
+
+    // --reject keeps the inverse of --filter
+    te.assert_output(&["foo", "--reject", "grep", "-q", "TODO"], "one/b.foo");
+    te.assert_output(
+        &["--reject", "grep", "-q", "TODO"],
+        "d.md
+        one/
+        one/b.foo
+        one/two/
+        symlink",
+    );
+
+    // exit-code semantics: no results, but exit code 0
+    te.assert_output(&["--filter", "false"], "");
+    te.assert_output(&["--reject", "true"], "");
+    te.assert_output(
+        &["foo", "--filter", "true"],
+        "a.foo
+        one/b.foo",
+    );
+
+    // combines with other filters and with --format
+    te.assert_output(
+        &["--type", "f", "--filter", "grep", "-q", "TODO"],
+        "a.foo
+        one/two/c.txt",
+    );
+    te.assert_output(
+        &["foo", "--format", "X{}X", "--filter", "grep", "-q", "TODO"],
+        "Xa.fooX",
+    );
+
+    // combines with --max-results and --quiet
+    te.assert_output(
+        &["--max-results", "2", "--filter", "grep", "-q", "TODO"],
+        "a.foo
+        one/two/c.txt",
+    );
+    let output = te.assert_success_and_get_output(".", &["-q", "--filter", "grep", "-q", "TODO"]);
+    assert!(output.stdout.is_empty());
+    te.assert_failure_with_error(
+        &["-q", "--filter", "grep", "-q", "no_such_string_anywhere"],
+        "",
+    );
+
+    // a command that cannot be executed at all is an error (exit code 1), not a non-match
+    te.assert_failure_with_error(
+        &["--filter", "fd-test-nonexistent-command"],
+        "[fd error]: Problem while executing filter command: command not found: 'fd-test-nonexistent-command'",
+    );
+}
+
+/// --filter/--reject cannot be combined with --exec/--exec-batch/--list-details/each other
+#[test]
+fn test_filter_conflicts() {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    te.assert_failure_with_error(
+        &["foo", "--filter", "echo", ";", "--exec", "echo"],
+        "error: the argument '--filter <cmd>...' cannot be used with '--exec <cmd>...'",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--exec", "echo", ";", "--filter", "echo"],
+        "error: the argument '--exec <cmd>...' cannot be used with '--filter <cmd>...'",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--reject", "echo", ";", "--exec-batch", "echo"],
+        "error: the argument '--reject <cmd>...' cannot be used with '--exec-batch <cmd>...'",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--filter", "echo", ";", "--list-details"],
+        "error: the argument '--filter <cmd>...' cannot be used with '--list-details'",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--filter", "echo", ";", "--reject", "echo"],
+        "error: the argument '--filter <cmd>...' cannot be used with '--reject <cmd>...'",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--filter"],
+        "error: a value is required for '--filter <cmd>...' but none was supplied",
+    );
+    te.assert_failure_with_error(
+        &["foo", "--reject"],
+        "error: a value is required for '--reject <cmd>...' but none was supplied",
+    );
+}
+
 /// Non-zero exit code (--quiet)
 #[test]
 fn test_quiet() {

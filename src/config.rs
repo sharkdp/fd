@@ -3,7 +3,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 use lscolors::LsColors;
 use regex::bytes::RegexSet;
 
-use crate::exec::CommandSet;
+use crate::exec::{CommandSet, FilterCommand};
 use crate::filetypes::FileTypes;
 #[cfg(unix)]
 use crate::filter::OwnerFilter;
@@ -89,6 +89,10 @@ pub struct Config {
 
     /// If a value is supplied, each item found will be used to generate and execute commands.
     pub command: Option<Arc<CommandSet>>,
+
+    /// If a value is supplied, each search result is checked by running the given
+    /// command(s); only results for which the filter succeeds are shown.
+    pub filter: Option<Arc<FilterCommand>>,
 
     /// Maximum number of search results to pass to each `command`. If zero, the number is
     /// unlimited.
