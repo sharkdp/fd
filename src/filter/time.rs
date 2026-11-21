@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -26,31 +27,51 @@ fn now() -> Zoned {
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
-        if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
+    fn from_str(s: &str) -> Result<SystemTime> {
+        let span_error = match s.parse::<Span>() {
+            Ok(span) => {
+                let datetime = now()
+                    .checked_sub(span)
+                    .context("duration is out of range")?;
+                return Ok(datetime.into());
+            }
+            Err(error) => error,
+        };
+        let timestamp_error = match s.parse::<Timestamp>() {
+            Ok(timestamp) => return Ok(timestamp.into()),
+            Err(error) => error,
+        };
+        let datetime_error = match s.parse::<DateTime>() {
+            Ok(datetime) => {
+                return TimeZone::system()
                     .to_ambiguous_zoned(datetime)
                     .later()
-                    .ok()?
-                    .into(),
-            )
+                    .map(Into::into)
+                    .context("local date/time is out of range");
+            }
+            Err(error) => error,
+        };
+
+        if let Some(timestamp) = s.strip_prefix('@') {
+            let timestamp_secs: u64 = timestamp.parse().context("invalid Unix timestamp")?;
+            return UNIX_EPOCH
+                .checked_add(Duration::from_secs(timestamp_secs))
+                .context("Unix timestamp is out of range");
+        }
+        if s.contains(['T', 'Z']) {
+            Err(timestamp_error.into())
+        } else if s.contains(['-', ':']) {
+            Err(datetime_error.into())
         } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            UNIX_EPOCH.checked_add(Duration::from_secs(timestamp_secs))
+            Err(span_error.into())
         }
     }
 
-    pub fn before(s: &str) -> Option<Self> {
+    pub fn before(s: &str) -> Result<Self> {
         Self::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<Self> {
+    pub fn after(s: &str) -> Result<Self> {
         Self::from_str(s).map(TimeFilter::After)
     }
 
@@ -177,7 +198,7 @@ mod tests {
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
@@ -203,8 +224,15 @@ mod tests {
     #[test]
     fn out_of_range_unix_timestamp_is_rejected() {
         // A '@' timestamp large enough to overflow SystemTime must return
-        // None rather than panicking.
-        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_none());
-        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_none());
+        // an error rather than panicking.
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_err());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_err());
+    }
+
+    #[test]
+    fn invalid_date_reports_reason() {
+        let error = TimeFilter::before("2025-11-31").unwrap_err().to_string();
+        assert!(error.contains("day"), "{error}");
+        assert!(error.contains("2025-11"), "{error}");
     }
 }
