@@ -4,6 +4,7 @@
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
+- Preserve the `./` prefix for paths starting with `-` in the `{.}` placeholder, see #2236 (@catsarethebest757-dev)
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
 
 ## Changes

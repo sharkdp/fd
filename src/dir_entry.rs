@@ -111,7 +111,7 @@ impl DirEntry {
     }
 }
 
-fn starts_with_dash(path: &Path) -> bool {
+pub(crate) fn starts_with_dash(path: &Path) -> bool {
     path.as_os_str().as_encoded_bytes().first() == Some(&b'-')
 }
 

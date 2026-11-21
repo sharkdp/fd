@@ -1,6 +1,7 @@
 use std::ffi::{OsStr, OsString};
 use std::path::{Path, PathBuf};
 
+use crate::dir_entry::starts_with_dash;
 use crate::filesystem::strip_current_dir;
 
 /// Removes the parent component of the path
@@ -13,9 +14,13 @@ pub fn remove_extension(path: &Path) -> OsString {
     let dirname = dirname(path);
     let stem = path.file_stem().unwrap_or(path.as_os_str());
 
-    let path = PathBuf::from(dirname).join(stem);
-
-    strip_current_dir(&path).to_owned().into_os_string()
+    let result = PathBuf::from(dirname).join(stem);
+    let stripped = strip_current_dir(&result);
+    if path.starts_with(".") && starts_with_dash(stripped) {
+        result.into_os_string()
+    } else {
+        stripped.to_owned().into_os_string()
+    }
 }
 
 /// Removes the basename from the path.
@@ -59,6 +64,12 @@ mod path_tests {
         hidden:             remove_extension  for  ".foo"         =>  ".foo"
         remove_ext_utf8:    remove_extension  for  "💖.txt"       =>  "💖"
         remove_ext_empty:   remove_extension  for  ""             =>  ""
+        remove_ext_cwd:     remove_extension  for  "./foo.txt"    =>  "foo"
+        remove_ext_dash:    remove_extension  for  "./-rf.jpg"    =>  "./-rf"
+        remove_ext_dash_raw: remove_extension for "-rf.jpg"      =>  "-rf"
+        remove_ext_dash_dir: remove_extension for "./-dir/a.jpg" =>  "./-dir/a"
+        remove_ext_dash_nested: remove_extension for "dir/-rf.jpg" => "dir/-rf"
+        remove_ext_dash_no_ext: remove_extension for "./-rf"     =>  "./-rf"
 
         basename_simple:  basename  for  "foo.txt"      =>  "foo.txt"
         basename_dir:     basename  for  "dir/foo.txt"  =>  "foo.txt"
