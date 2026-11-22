@@ -398,6 +398,30 @@ Examples:
   \-\-older @1704067200
   \-\-change-older-than P5D
 .TP
+.BI "\-\-ctime-within " date|duration
+Filter results based on the file status change time (ctime), which is updated whenever the
+content or the metadata of a file changes (e.g. when it is moved, renamed or its permissions
+change), and cannot be set back like the modification time.
+Files with status change timestamps greater than the argument will be returned.
+The argument is given in the same formats as for
+.BR \-\-changed-within .
+This option is only available on Unix systems.
+
+Examples:
+  \-\-ctime-within 2weeks
+  \-\-ctime-within "2018-10-27 10:00:00"
+.TP
+.BI "\-\-ctime-before " date|duration
+Filter results based on the file status change time (ctime).
+Files with status change timestamps less than the argument will be returned.
+The argument is given in the same formats as for
+.BR \-\-changed-before .
+This option is only available on Unix systems.
+
+Examples:
+  \-\-ctime-before "2018-10-27 10:00:00"
+  \-\-ctime-before 2weeks
+.TP
 .BI "-o, \-\-owner " [user][:group]
 Filter files by their user and/or group. Format: [(user|uid)][:(group|gid)]. Either side
 is optional. Precede either side with a '!' to exclude files instead.

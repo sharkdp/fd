@@ -143,6 +143,12 @@ _fd() {
     '!--change-older-than=:date/duration'
     '!--older=:date/duration'
 
+    + '(filter-ctime-newer)' # filter by files whose status changed after
+    '--ctime-within=[limit search to files/directories whose status changed within the given date/duration]:date or duration'
+
+    + '(filter-ctime-older)' # filter by files whose status changed before
+    '--ctime-before=[limit search to files/directories whose status changed before the given date/duration]:date or duration'
+
     + '(color)' # colorize output
     {-c+,--color=}'[declare when to colorize search results]:when to colorize:((
       auto\:"show colors if the output goes to an interactive console (default)"

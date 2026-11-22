@@ -2,6 +2,7 @@
 
 ## Features
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
+- Add `--ctime-within` and `--ctime-before` options to filter by file status change time (ctime) on Unix, see #1437 (@TheNetherWatcher)
 
 ## Bugfixes
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
