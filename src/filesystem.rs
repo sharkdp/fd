@@ -3,7 +3,11 @@ use std::fs;
 use std::io;
 #[cfg(any(unix, target_os = "redox"))]
 use std::os::unix::fs::FileTypeExt;
+#[cfg(unix)]
+use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use normpath::PathExt;
 
@@ -156,6 +160,20 @@ pub fn is_pipe(ft: fs::FileType) -> bool {
 #[cfg(windows)]
 pub fn is_pipe(_: fs::FileType) -> bool {
     false
+}
+
+/// The status change time (ctime) of a file. `std::fs::Metadata` has no stable accessor for
+/// it, so it is built from the raw `stat` fields.
+#[cfg(unix)]
+pub fn changed_time(metadata: &fs::Metadata) -> Option<SystemTime> {
+    let secs = metadata.ctime();
+    let nanos = Duration::from_nanos(u64::try_from(metadata.ctime_nsec()).ok()?);
+    let base = if secs >= 0 {
+        UNIX_EPOCH.checked_add(Duration::from_secs(secs.unsigned_abs()))
+    } else {
+        UNIX_EPOCH.checked_sub(Duration::from_secs(secs.unsigned_abs()))
+    };
+    base?.checked_add(nanos)
 }
 
 /// Remove the `./` prefix from a path.

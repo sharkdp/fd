@@ -18,6 +18,8 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::exec;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
+#[cfg(unix)]
+use crate::filesystem;
 use crate::output;
 use crate::patterns::Patterns;
 
@@ -572,6 +574,25 @@ impl WorkerState {
                     }
                     if !matched {
                         return WalkState::Continue;
+                    }
+                }
+
+                // Filter out unwanted status change times
+                #[cfg(unix)]
+                {
+                    if !config.ctime_constraints.is_empty() {
+                        let matched = entry
+                            .metadata()
+                            .and_then(filesystem::changed_time)
+                            .is_some_and(|ctime| {
+                                config
+                                    .ctime_constraints
+                                    .iter()
+                                    .all(|tf| tf.applies_to(&ctime))
+                            });
+                        if !matched {
+                            return WalkState::Continue;
+                        }
                     }
                 }
 

@@ -477,6 +477,43 @@ pub struct Opts {
     )]
     pub changed_before: Option<String>,
 
+    /// Filter results based on the file status change time (ctime), which is updated whenever
+    /// the content or the metadata of a file changes (e.g. when it is moved, renamed or its
+    /// permissions change), and cannot be set back like the modification time.
+    /// Files with status change times greater than the argument are returned.
+    /// The argument can be provided as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp)
+    /// or as a duration (10h, 1d, 35min).
+    ///
+    /// Examples:
+    /// {n}    --ctime-within 2weeks
+    /// {n}    --ctime-within '2018-10-27 10:00:00'
+    #[cfg(unix)]
+    #[arg(
+        long,
+        value_name = "date|dur",
+        help = "Filter by file status change time (newer than)",
+        long_help,
+        hide_short_help = true
+    )]
+    pub ctime_within: Option<String>,
+
+    /// Filter results based on the file status change time (ctime). Files with status change
+    /// times less than the argument are returned. The argument can be provided
+    /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min).
+    ///
+    /// Examples:
+    /// {n}    --ctime-before '2018-10-27 10:00:00'
+    /// {n}    --ctime-before 2weeks
+    #[cfg(unix)]
+    #[arg(
+        long,
+        value_name = "date|dur",
+        help = "Filter by file status change time (older than)",
+        long_help,
+        hide_short_help = true
+    )]
+    pub ctime_before: Option<String>,
+
     /// Filter files by their user and/or group.
     /// Format: [(user|uid)][:(group|gid)]. Either side is optional.
     /// Precede either side with a '!' to exclude files instead.

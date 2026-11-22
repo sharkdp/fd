@@ -262,6 +262,8 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
     let size_limits = std::mem::take(&mut opts.size);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
+    let ctime_constraints = extract_ctime_constraints(&opts)?;
+    #[cfg(unix)]
     let owner_constraint: Option<OwnerFilter> = opts.owner.and_then(OwnerFilter::filter_ignore);
 
     #[cfg(windows)]
@@ -350,6 +352,8 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
+        #[cfg(unix)]
+        ctime_constraints,
         #[cfg(unix)]
         owner_constraint,
         show_filesystem_errors: opts.show_errors,
@@ -467,6 +471,11 @@ fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
         opts.changed_within.as_deref(),
         opts.changed_before.as_deref(),
     )
+}
+
+#[cfg(unix)]
+fn extract_ctime_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
+    parse_time_constraints(opts.ctime_within.as_deref(), opts.ctime_before.as_deref())
 }
 
 fn parse_time_constraints(within: Option<&str>, before: Option<&str>) -> Result<Vec<TimeFilter>> {
