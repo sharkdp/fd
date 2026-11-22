@@ -463,14 +463,19 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 }
 
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
+    parse_time_constraints(
+        opts.changed_within.as_deref(),
+        opts.changed_before.as_deref(),
+    )
+}
+
+fn parse_time_constraints(within: Option<&str>, before: Option<&str>) -> Result<Vec<TimeFilter>> {
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
-    if let Some(ref t) = opts.changed_within {
-        let f = TimeFilter::after(t)?;
-        time_constraints.push(f);
+    if let Some(t) = within {
+        time_constraints.push(TimeFilter::after(t)?);
     }
-    if let Some(ref t) = opts.changed_before {
-        let f = TimeFilter::before(t)?;
-        time_constraints.push(f);
+    if let Some(t) = before {
+        time_constraints.push(TimeFilter::before(t)?);
     }
     Ok(time_constraints)
 }
