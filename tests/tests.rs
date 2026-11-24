@@ -2733,7 +2733,7 @@ fn test_modified_relative() {
 fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
     let st = iso_date
         .parse::<Timestamp>()
-        .map(SystemTime::from)
+        .and_then(SystemTime::try_from)
         .expect("invalid date");
     let ft = filetime::FileTime::from_system_time(st);
     filetime::set_file_times(path, ft, ft).expect("time modification failde");
