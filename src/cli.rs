@@ -987,6 +987,8 @@ fn parse_millis(arg: &str) -> Result<Duration, std::num::ParseIntError> {
     Ok(Duration::from_millis(arg.parse()?))
 }
 
+const MAX_THREADS: usize = 1024;
+
 /// Parse and validate the `--threads` value.
 ///
 /// The value is used directly as the number of worker threads and, doubled, as
@@ -1001,7 +1003,6 @@ fn parse_threads(arg: &str) -> Result<NonZeroUsize, String> {
     let n: NonZeroUsize = arg
         .parse()
         .map_err(|e: std::num::ParseIntError| e.to_string())?;
-    const MAX_THREADS: usize = 1024;
     if n.get() > MAX_THREADS {
         return Err(format!("must not be greater than {MAX_THREADS}"));
     }
@@ -1016,4 +1017,24 @@ fn ensure_current_directory_exists(current_directory: &Path) -> anyhow::Result<(
             "Could not retrieve current directory (has it been deleted?)."
         ))
     }
+}
+
+#[test]
+fn test_parse_threads() {
+    assert_eq!(
+        parse_threads(&MAX_THREADS.to_string()),
+        NonZeroUsize::new(1024).ok_or("".to_string())
+    );
+    assert!(
+        parse_threads(&format!("{}", MAX_THREADS + 1)).is_err(),
+        "parse_threads didn't limit threads to MAX_THREADS"
+    );
+    assert!(
+        parse_threads("0").is_err(),
+        "0 threads should not be allowed"
+    );
+    assert!(
+        parse_threads("-1").is_err(),
+        "negative threads should not be allowed"
+    );
 }
