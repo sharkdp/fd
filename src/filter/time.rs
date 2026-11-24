@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::{Context, Result, anyhow};
 use jiff::{Span, Timestamp, ZonedDateTime, civil::DateTime, tz::TimeZone};
 
 use std::time::SystemTime;
@@ -26,28 +26,61 @@ fn now() -> ZonedDateTime {
     TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(ZonedDateTime::now))
 }
 
-fn parse_timestamp(s: &str) -> Result<Timestamp, jiff::Error> {
-    if let Ok(span) = s.parse::<Span>() {
-        let datetime = now().checked_sub(span)?;
-        Ok(datetime.into())
-    } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-        Ok(timestamp)
-    } else if let Ok(datetime) = s.parse::<DateTime>() {
-        // Would it be better to use "compatible" instead of later?
-        // later is what we used before
-        TimeZone::system().to_ambiguous_timestamp(datetime).later()
-    } else {
-        // Is it worth parsing the int ourselves?
-        Timestamp::strptime("@%s", s)
+fn parse_timestamp(s: &str) -> Result<Timestamp> {
+    match s.parse::<Span>() {
+        Ok(span) => {
+            let datetime = now().checked_sub(span).context("Invalid duration.")?;
+            return Ok(datetime.into());
+        }
+        Err(e) => {
+            if e.is_range() || s.starts_with('P') {
+                return Err(anyhow!("'{s}' is not a valid duration\n{e}"));
+            }
+        }
+    };
+    match s.parse::<Timestamp>() {
+        Ok(timestamp) => return Ok(timestamp),
+        Err(e) => {
+            if e.is_range() {
+                return Err(anyhow!("'{s}' is not a valid date\n{e}"));
+            }
+        }
+    };
+    match s.parse::<DateTime>() {
+        Ok(datetime) => {
+            // Would it be better to use "compatible" instead of later?
+            // later is what we used before
+            return TimeZone::system()
+                .to_ambiguous_timestamp(datetime)
+                .later()
+                .context("Invalid local datetime.");
+        }
+        Err(e) => {
+            if e.is_range() {
+                return Err(anyhow!("'{s}' is not a valid date\n{e}"));
+            }
+        }
+    };
+    // Is it worth parsing the int ourselves?
+    match Timestamp::strptime("@%s", s) {
+        Ok(datetime) => Ok(datetime),
+        Err(e) => {
+            if e.is_range() {
+                Err(anyhow!("'{s}' is out of range."))
+            } else {
+                Err(anyhow!(
+                    "'{s}' is not a valid date or duration. See Fd --help."
+                ))
+            }
+        }
     }
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> anyhow::Result<SystemTime> {
-        // TODO better error messages
-        parse_timestamp(s)
-            .and_then(|t| t.try_into())
-            .map_err(|_| anyhow!("'{s} is not a valid date or duration. See 'fd --help'."))
+    fn from_str(s: &str) -> Result<SystemTime> {
+        parse_timestamp(s).and_then(|t| {
+            SystemTime::try_from(t).map_err(|_| anyhow!("'{s}' is out of range for date"))
+        })
     }
 
     pub fn before(s: &str) -> anyhow::Result<Self> {
@@ -210,5 +243,30 @@ mod tests {
         // None rather than panicking.
         assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_err());
         assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_err());
+    }
+
+    fn parse_error_starts_with(actual: &str, expected: &str) {
+        match parse_timestamp(actual) {
+            Ok(_) => panic!("Did not get an error when parsing '{actual}'"),
+            Err(e) => {
+                let msg = e.to_string();
+                assert!(
+                    msg.starts_with(expected),
+                    "Parsing '{actual}' created error '{msg}' which doesn't start with '{expected}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn use_applicable_error_messages() {
+        parse_error_starts_with("P6", "'P6' is not a valid duration");
+        parse_error_starts_with("9999999years", "'9999999years' is not a valid duration");
+        parse_error_starts_with("2026-13-01", "'2026-13-01' is not a valid date");
+        parse_error_starts_with(
+            "2026-12-01T06:65:21Z",
+            "'2026-12-01T06:65:21Z' is not a valid date\n",
+        );
+        parse_error_starts_with("@253402301799", "'@253402301799' is out of range.");
     }
 }

@@ -436,7 +436,7 @@ pub struct Opts {
 
     /// Filter results based on the file modification time. Files with modification times
     /// greater than the argument are returned. The argument can be provided
-    /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min).
+    /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min, PT10H).
     /// If the time is not specified, it defaults to 00:00:00.
     /// '--change-newer-than', '--newer', or '--changed-after' can be used as aliases.
     ///
@@ -445,6 +445,7 @@ pub struct Opts {
     /// {n}    --change-newer-than '2018-10-27 10:00:00'
     /// {n}    --newer 2018-10-27
     /// {n}    --changed-after 1day
+    /// {n}    --changed-within P5D
     #[arg(
         long,
         alias("change-newer-than"),
@@ -458,13 +459,14 @@ pub struct Opts {
 
     /// Filter results based on the file modification time. Files with modification times
     /// less than the argument are returned. The argument can be provided
-    /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min).
+    /// as a specific point in time (YYYY-MM-DD HH:MM:SS or @timestamp) or as a duration (10h, 1d, 35min, PT10H).
     /// '--change-older-than' or '--older' can be used as aliases.
     ///
     /// Examples:
     /// {n}    --changed-before '2018-10-27 10:00:00'
     /// {n}    --change-older-than 2weeks
     /// {n}    --older 2018-10-27
+    /// {n}    --change-older-than P5D
     #[arg(
         long,
         alias("change-older-than"),
