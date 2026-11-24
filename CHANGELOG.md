@@ -5,6 +5,7 @@
 
 ## Bugfixes
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
+- Reject `--threads` values above 1024 instead of aborting with a capacity overflow or a failure to spawn threads, see #2078 (@DawnofGenX)
 
 ## Changes
 - Delay-load `shell32.dll`, `combase.dll` and `advapi32.dll` in Windows MSVC builds, so most runs no longer load them (and the DLLs they pull in) at startup, see #2217 (@azchohfi)
