@@ -37,6 +37,19 @@ use crate::filter::SizeFilter;
             "max_results", "quiet", "max_one_result"])),
 )]
 pub struct Opts {
+    /// Ignore any configuration files. When not present, fd will read a
+    /// configuration file from the FD_CONFIG_PATH environment variable.
+    /// The configuration file format takes the form of a list of
+    /// newline-separated flags. These options have a low precedence.
+    /// This option does nothing when present in a configuration file.
+    #[arg(
+        long,
+        hide_short_help = true,
+        help = "Ignore the global configuration files",
+        long_help
+    )]
+    pub no_config: bool, // never read, only here for docs. we manually parse this in main.rs::run()
+
     /// Include hidden directories and files in the search results (default:
     /// hidden files and directories are skipped). Files and directories are
     /// considered to be hidden if their name starts with a `.` sign (dot).

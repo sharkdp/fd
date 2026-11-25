@@ -19,6 +19,7 @@ mod sanitize;
 mod walk;
 
 use std::env;
+use std::ffi::OsString;
 use std::io::IsTerminal;
 use std::path::Path;
 use std::sync::Arc;
@@ -81,7 +82,23 @@ fn main() {
 }
 
 fn run() -> Result<ExitCode> {
-    let mut opts = Opts::parse();
+    // Before parsing arguments with Clap, manually check if the --no-config flag has been passed.
+    // If not, and if $FD_CONFIG_PATH has been set, splice arguments in from the configuration file.
+    let mut args: Vec<_> = env::args_os().collect();
+    if !args.iter().skip(1).any(|arg| arg == "--no-config")
+        && let Some(path) = env::var_os("FD_CONFIG_PATH")
+        && !path.is_empty()
+    {
+        let config_file = std::fs::read_to_string(&path)
+            .with_context(|| format!("Failed to read config file: {}", path.to_string_lossy()))?;
+        let config_args = config_file
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty() && !line.starts_with('#'))
+            .map(OsString::from);
+        args.splice(1..1, config_args);
+    }
+    let mut opts = Opts::parse_from(args);
 
     #[cfg(feature = "completions")]
     if let Some(shell) = opts.gen_completions()? {

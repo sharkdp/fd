@@ -24,6 +24,7 @@ While it does not aim to support all of `find`'s powerful functionality, it prov
   character[\*](http://vimdoc.sourceforge.net/htmldoc/options.html#'smartcase').
 * Ignores hidden directories and files, by default.
 * Ignores patterns from your `.gitignore`, by default.
+* Supports a [global configuration file](#global-configuration).
 * The command name is *50%* shorter[\*](https://github.com/ggreer/the_silver_searcher) than
   `find` :-).
 
@@ -149,6 +150,25 @@ you can match against the full path.
 ```bash
 > fd -u -p -g '**/.git/config'
 > fd -p '.*/lesson-\d+/[a-z]+.(jpg|png)'
+```
+
+### Global configuration
+*fd* aims to have sensible defaults. Nevertheless, *fd*'s defaults are opinionated, and changing them
+without having to pass flags can be desirable. For this reason, *fd* supports configuration files in a
+manner [similar to ripgrep](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md#configuration-file).
+When the `FD_CONFIG_PATH` environment variable is set, *fd* will read the file located at its path as a
+list of newline-separated argument flags. Every line is a shell argument (after trimming whitespace), and
+lines starting with `#` (after trimming whitespace) are ignored.
+
+``` bash
+> echo $FD_CONFIG_PATH
+~/.config/fd/config
+> cat ~/.config/fd/config
+# Search directories ignored by Git regardless.
+--no-ignore-vcs
+> fd --ignore-vcs num_cpu
+> fd num_cpu
+target/debug/deps/libnum_cpus-f5ce7ef99006aa05.rlib
 ```
 
 ### Command execution
