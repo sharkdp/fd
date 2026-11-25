@@ -53,6 +53,9 @@ jobs:
 
   lint_check:
     name: Ensure 'cargo clippy' has no warnings
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-lint_check
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
     - uses: dtolnay/rust-toolchain@stable
@@ -85,6 +88,9 @@ jobs:
 
   build:
     name: '${{ matrix.job.target }} (${{ matrix.job.os }})'
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-build
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     runs-on: ${{ matrix.job.os }}
     needs: crate_metadata
     permissions:
