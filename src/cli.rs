@@ -935,6 +935,7 @@ impl clap::Args for Exec {
                        '{{':   literal '{' (for escaping)\n  \
                        '}}':   literal '}' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                     Placeholders are passed through the shell, so shell quoting rules apply. Quote the placeholder if your shell would otherwise expand or transform it (for example, \"{}\").\n\n\
                      Examples:\n\n  \
                        - find all *.zip files and unzip them:\n\n      \
                            fd -e zip -x unzip\n\n  \
@@ -970,6 +971,7 @@ impl clap::Args for Exec {
                        '{{':   literal '{' (for escaping)\n  \
                        '}}':   literal '}' (for escaping)\n\n\
                      If no placeholder is present, an implicit \"{}\" at the end is assumed.\n\n\
+                     Placeholders are passed through the shell, so shell quoting rules apply. Quote the placeholder if your shell would otherwise expand or transform it (for example, \"{}\").\n\n\
                      Examples:\n\n  \
                        - Find all test_*.py files and open them in your favorite editor:\n\n      \
                            fd -g 'test_*.py' -X vim\n\n  \
