@@ -4,6 +4,7 @@
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
+- Keep the `./` prefix for the `{.}` placeholder when the path without an extension starts with `-`, so `--exec` does not pass it as an option, see #2236 (@dendyramdhan)
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
 - Reject `--threads` values above 1024 instead of aborting with a capacity overflow or a failure to spawn threads, see #2078 (@DawnofGenX)
 

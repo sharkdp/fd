@@ -15,7 +15,18 @@ pub fn remove_extension(path: &Path) -> OsString {
 
     let path = PathBuf::from(dirname).join(stem);
 
-    strip_current_dir(&path).to_owned().into_os_string()
+    // Match DirEntry::stripped_path: stripping `./` from a name that starts
+    // with `-` would make `{.}` look like a command-line option.
+    let stripped = strip_current_dir(&path);
+    if starts_with_dash(stripped) {
+        path.into_os_string()
+    } else {
+        stripped.to_owned().into_os_string()
+    }
+}
+
+fn starts_with_dash(path: &Path) -> bool {
+    path.as_os_str().as_encoded_bytes().first() == Some(&b'-')
 }
 
 /// Removes the basename from the path.
@@ -56,6 +67,8 @@ mod path_tests {
     func_tests! {
         remove_ext_simple:  remove_extension  for  "foo.txt"      =>  "foo"
         remove_ext_dir:     remove_extension  for  "dir/foo.txt"  =>  "dir/foo"
+        remove_ext_dash:    remove_extension  for  "./-rf.jpg"    =>  "./-rf"
+        remove_ext_dash_nested: remove_extension for "dir/-rf.txt" => "dir/-rf"
         hidden:             remove_extension  for  ".foo"         =>  ".foo"
         remove_ext_utf8:    remove_extension  for  "💖.txt"       =>  "💖"
         remove_ext_empty:   remove_extension  for  ""             =>  ""

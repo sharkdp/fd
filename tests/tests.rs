@@ -144,6 +144,19 @@ fn test_and_bad_pattern() {
 }
 
 #[test]
+fn test_exec_no_ext_keeps_prefix_for_dash_filename() {
+    let te = TestEnv::new(&[], &["-rf.jpg", "ok.jpg"]);
+
+    te.assert_output(
+        &["-e", "jpg", "-x", "printf", "[%s]\n", "{}", "{.}"],
+        "[./-rf.jpg]
+        [./-rf]
+        [./ok.jpg]
+        [ok]",
+    );
+}
+
+#[test]
 fn test_and_pattern_starts_with_dash() {
     let te = TestEnv::new(DEFAULT_DIRS, AND_EXTRA_FILES);
 
