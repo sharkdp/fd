@@ -322,7 +322,7 @@ Options:
   -a, --absolute-path              Show absolute instead of relative paths
   -l, --list-details               Use a long listing format with file metadata
   -L, --follow                     Follow symbolic links
-  -p, --full-path                  Search full abs. path (default: filename only)
+  -p, --full-path                  Search full path (default: final path component only)
   -d, --max-depth <depth>          Set maximum search depth (default: none)
   -E, --exclude <glob>             Exclude entries that match the given glob pattern
   -t, --type <filetype>            Filter by type: file (f), directory (d/dir), symlink (l),
