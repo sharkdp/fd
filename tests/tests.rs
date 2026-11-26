@@ -1586,6 +1586,40 @@ fn test_type() {
     te.assert_output(&["--type", "l"], "symlink");
 }
 
+/// Test `--type leafdir`
+#[test]
+fn test_type_leafdir() {
+    let te = TestEnv::new(
+        &[
+            "parent/child/grandchild",
+            "parent/child/sibling",
+            "parent/solo",
+            "hidden_parent/.hidden/child",
+        ],
+        &[
+            "parent/child/file.txt",
+            "parent/solo/file.txt",
+            "hidden_parent/.hidden/child/file.txt",
+        ],
+    );
+
+    te.assert_output(
+        &["--type", "leafdir"],
+        "parent/child/grandchild/
+        parent/child/sibling/
+        parent/solo/",
+    );
+
+    te.assert_output(
+        &["--type", "leafdir", "--type", "file"],
+        "parent/child/file.txt
+        parent/child/grandchild/
+        parent/child/sibling/
+        parent/solo/
+        parent/solo/file.txt",
+    );
+}
+
 /// Test `--type executable`
 #[cfg(unix)]
 #[test]
