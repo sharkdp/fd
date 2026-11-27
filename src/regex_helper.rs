@@ -3,36 +3,45 @@ use regex_syntax::hir::Hir;
 
 /// Determine if a regex pattern contains a literal uppercase character.
 pub fn pattern_has_uppercase_char(pattern: &str) -> bool {
-    let mut parser = ParserBuilder::new().utf8(false).build();
-
-    parser
+    // The HIR includes case-folded alternatives introduced by inline flags.
+    // Smart case must consider the original literals, before case folding.
+    regex_syntax::ast::parse::Parser::new()
         .parse(pattern)
-        .map(|hir| hir_has_uppercase_char(&hir))
+        .map(|ast| regex_syntax::ast::visit(&ast, UppercaseVisitor(false)).unwrap_or(false))
         .unwrap_or(false)
 }
 
-/// Determine if a regex expression contains a literal uppercase character.
-fn hir_has_uppercase_char(hir: &Hir) -> bool {
-    use regex_syntax::hir::*;
+struct UppercaseVisitor(bool);
 
-    match hir.kind() {
-        HirKind::Literal(Literal(bytes)) => match std::str::from_utf8(bytes) {
-            Ok(s) => s.chars().any(|c| c.is_uppercase()),
-            Err(_) => bytes.iter().any(|b| char::from(*b).is_uppercase()),
-        },
-        HirKind::Class(Class::Unicode(ranges)) => ranges
-            .iter()
-            .any(|r| r.start().is_uppercase() || r.end().is_uppercase()),
-        HirKind::Class(Class::Bytes(ranges)) => ranges
-            .iter()
-            .any(|r| char::from(r.start()).is_uppercase() || char::from(r.end()).is_uppercase()),
-        HirKind::Capture(Capture { sub, .. }) | HirKind::Repetition(Repetition { sub, .. }) => {
-            hir_has_uppercase_char(sub)
+impl regex_syntax::ast::Visitor for UppercaseVisitor {
+    type Output = bool;
+    type Err = std::convert::Infallible;
+
+    fn finish(self) -> Result<bool, Self::Err> {
+        Ok(self.0)
+    }
+
+    fn visit_pre(&mut self, ast: &regex_syntax::ast::Ast) -> Result<(), Self::Err> {
+        if let regex_syntax::ast::Ast::Literal(literal) = ast {
+            self.0 |= literal.c.is_uppercase();
         }
-        HirKind::Concat(hirs) | HirKind::Alternation(hirs) => {
-            hirs.iter().any(hir_has_uppercase_char)
-        }
-        _ => false,
+        Ok(())
+    }
+
+    fn visit_class_set_item_pre(
+        &mut self,
+        item: &regex_syntax::ast::ClassSetItem,
+    ) -> Result<(), Self::Err> {
+        use regex_syntax::ast::ClassSetItem;
+
+        self.0 |= match item {
+            ClassSetItem::Literal(literal) => literal.c.is_uppercase(),
+            ClassSetItem::Range(range) => {
+                range.start.c.is_uppercase() || range.end.c.is_uppercase()
+            }
+            _ => false,
+        };
+        Ok(())
     }
 }
 
@@ -102,4 +111,20 @@ fn matches_strings_with_leading_dot_simple() {
     assert!(!pattern_matches_strings_with_leading_dot("^.gitignore"));
     assert!(!pattern_matches_strings_with_leading_dot("\\.gitignore"));
     assert!(!pattern_matches_strings_with_leading_dot("^gitignore"));
+}
+
+#[test]
+fn pattern_has_uppercase_char_inline_flags() {
+    for pattern in [
+        "(?i)foo",
+        "(?i:foo)",
+        "(?i)[a-z]",
+        "(?i)[a-z&&[^q]]",
+        "(?i)é",
+    ] {
+        assert!(!pattern_has_uppercase_char(pattern), "{pattern}");
+    }
+    for pattern in ["(?i)Foo", "(?i)[A-Z]", r"(?i)\x46oo", "(?i)É"] {
+        assert!(pattern_has_uppercase_char(pattern), "{pattern}");
+    }
 }

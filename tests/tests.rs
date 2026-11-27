@@ -345,7 +345,7 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["a.foo", "real", "fake"],
-        "[fd error]: Search path 'fake' is not a directory.",
+        "[fd error]: Search path \"fake\" is not a directory.",
     );
 
     te.assert_output(
@@ -362,14 +362,14 @@ fn test_multi_file_with_missing() {
 
     te.assert_error(
         &["", "real", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.",
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.",
     );
 
     te.assert_failure_with_error(
         &["", "fake1", "fake2"],
-        "[fd error]: Search path 'fake1' is not a directory.
-        [fd error]: Search path 'fake2' is not a directory.
+        "[fd error]: Search path \"fake1\" is not a directory.
+        [fd error]: Search path \"fake2\" is not a directory.
         [fd error]: No valid search paths given.",
     );
 }
@@ -536,6 +536,23 @@ fn test_smart_case() {
     te.assert_output(&["\\AC"], "one/two/C.Foo2");
 }
 
+#[test]
+fn test_smart_case_inline_flags_and_patterns() {
+    let te = TestEnv::new(&[], &["foo-bar-1", "foo-BAR-2", "FOO-BAR-3"]);
+    let all = "FOO-BAR-3\nfoo-BAR-2\nfoo-bar-1";
+
+    te.assert_output(&["foo", "--and", "bar"], all);
+    te.assert_output(&["(?i)foo", "--and", "bar"], all);
+    te.assert_output(&["foo", "--and", "(?i)bar"], all);
+    te.assert_output(&["(?i:foo)", "--and", "bar"], all);
+    te.assert_output(&["--ignore-case", "(?i)foo", "--and", "bar"], all);
+    te.assert_output(
+        &["--case-sensitive", "(?i)foo", "--and", "bar"],
+        "foo-bar-1",
+    );
+    te.assert_output(&["(?i)Foo", "--and", "bar"], "foo-bar-1");
+}
+
 /// Case sensitivity (--case-sensitive)
 #[test]
 fn test_case_sensitive() {
@@ -599,7 +616,6 @@ fn test_glob_searches() {
 }
 
 /// Glob-based searches (--glob) in combination with full path searches (--full-path)
-#[cfg(not(windows))] // TODO: make this work on Windows
 #[test]
 fn test_full_path_glob_searches() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
@@ -633,6 +649,7 @@ fn test_smart_case_glob_searches() {
     );
 
     te.assert_output(&["--glob", "C.Foo*"], "one/two/C.Foo2");
+    te.assert_output(&["--glob", "*.Foo*"], "one/two/C.Foo2");
 }
 
 /// Glob-based searches (--glob) in combination with --case-sensitive
@@ -1208,6 +1225,207 @@ fn test_min_depth() {
     );
 }
 
+/// Minimum depth with a broken symlink (regression test for #1017)
+///
+/// A broken symlink, surfaced while following links, has no depth reported by
+/// the walker, so --min-depth used to drop it unconditionally.
+#[test]
+fn test_min_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink sits at depth 3, so it is kept up to that depth.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // A --min-depth beyond its actual depth must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "4",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Minimum depth with a broken symlink combined with --absolute-path (#1017)
+///
+/// With --absolute-path the search root is made absolute before walking, so the
+/// broken symlink's depth must still be computed relative to that root rather
+/// than from the absolute path's full component count.
+#[test]
+fn test_min_depth_broken_symlink_absolute_path() {
+    let (mut te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // The broken symlink sits at depth 3 relative to the (absolute) root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "3",
+            "broken_symlink",
+        ],
+        &format!("{abs_path}/one/two/broken_symlink"),
+    );
+
+    // A --min-depth beyond its actual depth must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--absolute-path",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "4",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Minimum depth with a broken symlink under overlapping search roots (#1017)
+///
+/// When two search roots overlap, the walker visits the same broken symlink once
+/// per root, at a different depth each time. Here `one/two/broken_symlink` is at
+/// depth 2 under root `one` and at depth 1 under root `one/two`, so --min-depth 2
+/// must keep the entry the walker reached via `one` and drop the one it reached
+/// via `one/two`. A depth derived from the entry's path cannot distinguish the
+/// two visits, since both carry the same path.
+#[test]
+fn test_min_depth_broken_symlink_overlapping_roots() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // Only the route through `one` reaches depth 2.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "2",
+            "broken_symlink",
+            "one",
+            "one/two",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // Both routes clear --min-depth 1, so it is reported once per root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--min-depth",
+            "1",
+            "broken_symlink",
+            "one",
+            "one/two",
+        ],
+        "one/two/broken_symlink
+        one/two/broken_symlink",
+    );
+}
+
+/// Maximum depth with a broken symlink (#1017)
+///
+/// A broken symlink must be filtered by --max-depth like any other entry. The
+/// default environment also exposes it through the followed `symlink` directory
+/// (`symlink -> one/two`), so it is reachable at depth 2 as well as depth 3.
+#[test]
+fn test_max_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // --max-depth 3 keeps both routes to the broken symlink.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--max-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink
+        symlink/broken_symlink",
+    );
+
+    // A --max-depth below either route must exclude it.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--max-depth",
+            "1",
+            "broken_symlink",
+        ],
+        "",
+    );
+}
+
+/// Exact depth with a broken symlink (#1017)
+///
+/// A broken symlink must be kept only at its exact depth. It is reachable at
+/// depth 3 (`one/two/broken_symlink`) and, through the followed `symlink`
+/// directory, at depth 2 (`symlink/broken_symlink`).
+#[test]
+fn test_exact_depth_broken_symlink() {
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+    te.create_broken_symlink("one/two/broken_symlink")
+        .expect("Failed to create broken symlink.");
+
+    // Only the depth-3 route matches --exact-depth 3.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--exact-depth",
+            "3",
+            "broken_symlink",
+        ],
+        "one/two/broken_symlink",
+    );
+
+    // Only the depth-2 route (via the followed symlink) matches --exact-depth 2,
+    // which confirms the depth is computed relative to the search root.
+    te.assert_output(
+        &[
+            "--follow",
+            "--type",
+            "symlink",
+            "--exact-depth",
+            "2",
+            "broken_symlink",
+        ],
+        "symlink/broken_symlink",
+    );
+}
+
 /// Exact depth (--exact-depth)
 #[test]
 fn test_exact_depth() {
@@ -1436,6 +1654,81 @@ fn test_type_empty() {
     te.assert_output(&["--type", "empty", "--type", "file"], "0_bytes.foo");
 
     te.assert_output(&["--type", "empty", "--type", "directory"], "dir_empty/");
+}
+
+/// The `executable` type modifier must only constrain the file results it
+/// applies to. When another type such as `symlink` is requested in addition,
+/// those entries must still be included even if they are not executable.
+#[cfg(unix)]
+#[test]
+fn test_type_executable_combined_with_symlink() {
+    use std::os::unix::fs::OpenOptionsExt;
+
+    // This test assumes the current user isn't root
+    // (otherwise if the executable bit is set for any level, it is executable for the current
+    // user)
+    if Uid::current().is_root() {
+        return;
+    }
+
+    let mut te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    fs::OpenOptions::new()
+        .create_new(true)
+        .truncate(true)
+        .write(true)
+        .mode(0o777)
+        .open(te.test_root().join("executable-file.sh"))
+        .unwrap();
+
+    // A broken symlink is a symlink that is not executable.
+    te.create_broken_symlink("broken_symlink").unwrap();
+
+    // `--type executable` on its own only lists executable regular files.
+    te.assert_output(&["--type", "executable"], "executable-file.sh");
+
+    // Adding `--type symlink` must additionally list *all* symlinks, including
+    // the non-executable broken symlink. `symlink` is the pre-existing symlink
+    // in the test fixture (pointing at a directory).
+    te.assert_output(
+        &["--type", "executable", "--type", "symlink"],
+        "executable-file.sh
+        symlink
+        broken_symlink",
+    );
+}
+
+/// The `empty` type modifier must only constrain the file/directory results it
+/// applies to. When another type such as `symlink` is requested in addition,
+/// those entries must still be included even if they are not empty.
+#[cfg(unix)]
+#[test]
+fn test_type_empty_combined_with_symlink() {
+    let mut te = TestEnv::new(&["dir_empty"], &[]);
+
+    create_file_with_size(te.test_root().join("0_bytes.foo"), 0);
+    create_file_with_size(te.test_root().join("5_bytes.foo"), 5);
+
+    // A broken symlink is a symlink that is not considered empty.
+    te.create_broken_symlink("broken_symlink").unwrap();
+
+    // `--type empty` on its own only lists empty files and directories.
+    te.assert_output(
+        &["--type", "empty"],
+        "0_bytes.foo
+        dir_empty/",
+    );
+
+    // Adding `--type symlink` must additionally list *all* symlinks, including
+    // the non-empty broken symlink. `symlink` is the symlink from the test
+    // fixture (dangling here, as its target does not exist in this environment).
+    te.assert_output(
+        &["--type", "empty", "--type", "symlink"],
+        "0_bytes.foo
+        dir_empty/
+        broken_symlink
+        symlink",
+    );
 }
 
 /// File extension (--extension)
@@ -1754,6 +2047,17 @@ fn format() {
         parent=one/two
         parent=one/two/three
         parent=one/two/three",
+    );
+
+    // Templates may start with '-' (e.g. markdown list items); see #2126.
+    te.assert_output(
+        &["foo", "--format", "- {/.}", "--path-separator=/"],
+        "- a
+        - b
+        - C
+        - c
+        - d
+        - directory_foo",
     );
 }
 
@@ -2101,6 +2405,11 @@ fn test_exec_batch_with_limit() {
 /// Shell script execution (--exec) with a custom --path-separator
 #[test]
 fn test_exec_with_separator() {
+    // On Windows, `echo` is only a shell builtin unless an `echo` executable is installed.
+    if cfg!(windows) && std::process::Command::new("echo").output().is_err() {
+        return;
+    }
+
     let (te, abs_path) = get_test_env_with_abs_path(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(
         &[
@@ -2424,7 +2733,7 @@ fn test_modified_relative() {
 fn change_file_modified<P: AsRef<Path>>(path: P, iso_date: &str) {
     let st = iso_date
         .parse::<Timestamp>()
-        .map(SystemTime::from)
+        .and_then(SystemTime::try_from)
         .expect("invalid date");
     let ft = filetime::FileTime::from_system_time(st);
     filetime::set_file_times(path, ft, ft).expect("time modification failde");
@@ -2635,9 +2944,77 @@ fn test_exec_invalid_utf8() {
     );
 }
 
+/// --format with non-utf8 paths writes the raw bytes when the output is piped
+///
+/// Note:
+/// - the test is disabled on Darwin/OSX, since it coerces file names to UTF-8,
+///   even when the requested file name is not valid UTF-8.
+/// - the test is currently disabled on Windows because I'm not sure how to create
+///   invalid UTF-8 files on Windows
+#[cfg(all(unix, not(target_os = "macos")))]
+#[test]
+fn test_format_invalid_utf8() {
+    use std::ffi::OsStr;
+    use std::os::unix::ffi::OsStrExt;
+
+    let dirs = &["test1"];
+    let files = &[];
+    let te = TestEnv::new(dirs, files);
+
+    fs::File::create(
+        te.test_root()
+            .join(OsStr::from_bytes(b"test1/test_\xFEinvalid.txt")),
+    )
+    .unwrap();
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}"],
+        b"test1/test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{/}"],
+        b"test_\xFEinvalid.txt\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--format", "{//}"], b"test1\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{.}"],
+        b"test1/test_\xFEinvalid\n",
+    );
+
+    te.assert_output_raw(&["", "test1/", "--format", "{/.}"], b"test_\xFEinvalid\n");
+
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}", "--print0"],
+        b"test1/test_\xFEinvalid.txt\0",
+    );
+
+    // Test with custom path separator
+    te.assert_output_raw(
+        &["", "test1/", "--format", "{}", "--path-separator", "="],
+        b"test1=test_\xFEinvalid.txt\n",
+    );
+}
+
 #[test]
 fn test_list_details() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    // On Windows, 'fd --list-details' needs GNU 'ls'.
+    if cfg!(windows)
+        && std::process::Command::new("ls")
+            .arg("--version")
+            .output()
+            .is_err()
+    {
+        te.assert_failure_with_error(
+            &["--list-details"],
+            "[fd error]: 'fd --list-details' is not supported on Windows unless GNU 'ls' is installed.",
+        );
+        return;
+    }
 
     // Make sure we can execute 'fd --list-details' without any errors.
     te.assert_success_and_get_output(".", &["--list-details"]);
@@ -2659,6 +3036,17 @@ fn test_number_parsing_errors() {
     te.assert_failure(&["--threads=a"]);
     te.assert_failure(&["-j", ""]);
     te.assert_failure(&["--threads=0"]);
+    te.assert_failure_with_error(
+        &["--threads=1025"],
+        "error: invalid value '1025' for '--threads <num>': must not be greater than 1024",
+    );
+    // Large but syntactically valid values used to overflow the results-channel
+    // capacity (or exhaust the thread-spawn limit) and abort instead of
+    // returning a normal usage error, see #2078.
+    te.assert_failure_with_error(
+        &["--threads=99999999"],
+        "error: invalid value '99999999' for '--threads <num>': must not be greater than 1024",
+    );
 
     te.assert_failure(&["--min-depth=a"]);
     te.assert_failure(&["--mindepth=a"]);
@@ -2696,6 +3084,18 @@ fn test_opposing(flag: &str, opposing_flags: &[&str]) {
     );
 }
 
+#[test_case(&["-u", "--ignore"], &["--hidden"] ; "u ignore")]
+#[test_case(&["-u", "--no-hidden"], &["--no-ignore"] ; "u no-hidden")]
+#[test_case(&["--no-hidden", "-u"], &["--no-ignore"] ; "no-hidden u")]
+fn test_unrestricted_partial_override(flags: &[&str], expected_flags: &[&str]) {
+    let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
+
+    assert_eq!(
+        te.assert_success_and_get_normalized_output(".", flags),
+        te.assert_success_and_get_normalized_output(".", expected_flags),
+    );
+}
+
 /// Print error if search pattern starts with a dot and --hidden is not set
 /// (Unix only, hidden files on Windows work differently)
 #[test]
@@ -2709,6 +3109,57 @@ fn test_error_if_hidden_not_set_and_pattern_starts_with_dot() {
     te.assert_output(&["--hidden", "^\\.gitignore"], ".gitignore");
     te.assert_output(&["--hidden", "--glob", ".gitignore"], ".gitignore");
     te.assert_output(&[".gitignore"], "");
+}
+
+#[test]
+fn test_strip_cwd_prefix_search_paths() {
+    let te = TestEnv::new(
+        &["a/b/c"],
+        &["a/fileA", "a/b/fileB", "a/b/c/fileC", "a/-file"],
+    );
+
+    for paths in [
+        vec!["--search-path=.", "--search-path=b/c"],
+        vec!["", ".", "b/c"],
+    ] {
+        let mut args = vec!["-C", "a", "--type", "f", "--exclude", "b"];
+        args.extend_from_slice(&paths);
+        te.assert_output(
+            &args,
+            "./-file
+            ./fileA
+            b/c/fileC",
+        );
+
+        for mode in ["--strip-cwd-prefix=auto", "--strip-cwd-prefix=never"] {
+            let mut args = args.clone();
+            args.push(mode);
+            te.assert_output(
+                &args,
+                "./-file
+                ./fileA
+                b/c/fileC",
+            );
+        }
+
+        for mode in ["--strip-cwd-prefix", "--strip-cwd-prefix=always"] {
+            let mut args = args.clone();
+            args.push(mode);
+            te.assert_output(
+                &args,
+                "./-file
+                fileA
+                b/c/fileC",
+            );
+            args.push("--print0");
+            te.assert_output(
+                &args,
+                "./-fileNULL
+                fileANULL
+                b/c/fileCNULL",
+            );
+        }
+    }
 }
 
 #[test]
@@ -2875,4 +3326,34 @@ fn test_ignore_contain_precedence_over_root_check() {
     let te = TestEnv::new(&["include"], &["CACHEDIR.TAG", "top", "include/foo"]);
     let expected = "";
     te.assert_output(&["--ignore-contain=CACHEDIR.TAG", "."], expected);
+}
+
+// The error message is probably OS-specific.
+// This is also somewhat fragile as it depends on the error message
+// from creating an executable, and the debug formatting of strings
+// could possibly change in the future.
+#[cfg(unix)]
+#[test]
+fn test_sanitize_exec_error_msg() {
+    let mut te = TestEnv::new(&[], &[]);
+    te.create_broken_symlink("Hello\x1b\r World!\x7fwith\u{9b}\u{1F600}\u{200B}a\u{FEFF}b")
+        .expect("failed to create symlink");
+
+    te.assert_error(&["Hello", "--exec", "{}"], 
+        "[fd error]: Command not found: \"./Hello\\u{1b}\\r World!\\u{7f}with\\u{9b}\u{1F600}\\u{200b}a\\u{feff}b\""
+        );
+}
+
+// Windows doesn't let us make files containing \x1b so only test on unix
+#[cfg(unix)]
+#[test]
+fn test_sanitize_recursive_link_msg() {
+    let mut te = TestEnv::new(&["loop"], &[]);
+    te.create_symlink("loop", "loop/foo\x1bb")
+        .expect("failed to create symlink");
+
+    te.assert_error(
+        &["--follow", "--show-errors", "foo"],
+        "[fd error]: File system loop found: ./loop/foo\\x1Bb points to an ancestor ./loop",
+    );
 }

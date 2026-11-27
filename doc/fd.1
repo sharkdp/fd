@@ -35,6 +35,12 @@ By default
 will exclude hidden files and directories, as well as any files that match gitignore rules
 or ignore rules in .ignore or .fdignore files.
 .P
+By default
+.B fd
+will use "smart case" to match patterns Meaning if the search will only be case sensitive if the supplied pattern contains at least one uppercase letter.
+This can be overridden with the '\-\-ignore\-case' or '\-\-case\-sensitive' options.
+
+.P
 If you wish to search all files in a specific directory, you can use '' or . as the search pattern,
 to match all files. Or you can use the '\-\-search\-path' option to specify the path(s) instead of
 the positional parameter.
@@ -94,8 +100,8 @@ regardless of whether you’re searching in a git repository or not. The flag ca
 be overridden with '--require-git'.
 .TP
 .B \-\-no\-ignore\-parent
-Show search results from files and directories that would otherwise be ignored by gitignore files in
-parent directories.
+Show search results from files and directories that would otherwise be ignored by
+'.gitignore', '.ignore', or '.fdignore' files in parent directories.
 .TP
 .B \-s, \-\-case\-sensitive
 Perform a case-sensitive search. By default, fd uses case-insensitive searches, unless the
@@ -181,7 +187,8 @@ Never strip the ./ at the beginning of paths
 .IP always
 Always strip the ./ at the beginning of paths
 .IP auto
-Only strip if used with --exec, --exec-batch, or --print0. That is, it resets to the default behavior.
+Only strip without explicit search paths and without --exec, --exec-batch,
+or --print0. That is, it resets to the default behavior.
 .RE
 .TP
 .B \-\-one\-file\-system, \-\-mount, \-\-xdev
@@ -210,7 +217,7 @@ Do not traverse into matching directories.
 .BI "\-t, \-\-type " filetype
 Filter search by type:
 .RS
-.IP "f, file"
+.IP "f, file" 20
 regular files
 .IP "d, dir, directory"
 directories
@@ -314,7 +321,7 @@ Always output hyperlink escapes, regardless of color settings.
 .RE
 .TP
 .BI "\-j, \-\-threads " num
-Set number of threads to use for searching & executing (default: number of available CPU cores).
+Set number of threads to use for searching & executing (default: number of available CPU cores, up to a maximum of 64). Values above 1024 are rejected.
 .TP
 .BI "\-S, \-\-size " size
 Limit results based on the size of files using the format
@@ -356,7 +363,7 @@ tebibytes
 .BI "\-\-changed-within " date|duration
 Filter results based on the file modification time.
 Files with modification timestamps greater than the argument will be returned.
-The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
+The argument can be provided as a duration (\fI10h, 1d, 35min, PT10H\fR) or as a specific point
 in time as full RFC3339 format with time zone, as a date or datetime in the
 local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR), or as the prefix '@'
 followed by the number of seconds since the Unix epoch (@[0-9]+).
@@ -371,11 +378,12 @@ Examples:
   \-\-change-newer-than "2018-10-27 10:00:00"
   \-\-newer 2018-10-27
   \-\-changed-after @1704067200
+  \-\-changed-within P5D
 .TP
 .BI "\-\-changed-before " date|duration
 Filter results based on the file modification time.
 Files with modification timestamps less than the argument will be returned.
-The argument can be provided as a duration (\fI10h, 1d, 35min\fR) or as a specific point
+The argument can be provided as a duration (\fI10h, 1d, 35min, PT10H\fR) or as a specific point
 in time as full RFC3339 format with time zone, as a date or datetime in the
 local time zone (\fIYYYY-MM-DD\fR or \fIYYYY-MM-DD HH:MM:SS\fR), or as the prefix '@'
 followed by the number of seconds since the Unix epoch (@[0-9]+).
@@ -388,6 +396,7 @@ Examples:
   \-\-changed-before "2018-10-27 10:00:00"
   \-\-change-older-than 2weeks
   \-\-older @1704067200
+  \-\-change-older-than P5D
 .TP
 .BI "-o, \-\-owner " [user][:group]
 Filter files by their user and/or group. Format: [(user|uid)][:(group|gid)]. Either side
@@ -448,13 +457,14 @@ Note that all subsequent positional arguments are considered to be arguments to 
 It is therefore recommended to place the \-x/\-\-exec option last. Alternatively, you can supply
 a ';' argument to end the argument list and continue with more fd options.
 Most shells require ';' to be escaped: '\\;'.
-This option can be specified multiple times, in which case all commands are run for each
-file found, in the order they are provided. In that case, you must supply a ';' argument for
-all but the last commands.
+Specify this option multiple times to run several commands for each file or directory found.
+For each file or directory, fd runs these commands one after another in the order they appear
+on the command line. In that case, you must supply a ';' argument for all but the last command.
+When running in parallel, fd buffers command output and prints it together for each search result,
+without interleaving it with command output for other results.
 
-If parallelism is enabled, the order commands will be executed in is non-deterministic. And even with
---threads=1, the order is determined by the operating system and may not be what you expect. Thus, it is
-recommended that you don't rely on any ordering of the results.
+The order in which different search results are processed and their output is printed is not
+guaranteed, even with --threads=1.
 
 Before executing the command, any placeholder patterns in the command are replaced with the
 corresponding values for the current file. The same placeholders are used as in the "\-\-format"

@@ -7,3 +7,20 @@
 rustflags = ["-C", "target-feature=+crt-static"]
 [target.i686-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static"]
+
+# On Windows MSVC, delay-load DLLs that most runs never call, so they (and the
+# DLLs they pull in) are not loaded at startup. shell32 and combase are only
+# used to find the AppData folder when APPDATA is not set, advapi32 only by
+# `--type executable`. LNK4199 ("no imports found") is ignored because binaries
+# that don't use one of these DLLs, like the test binaries, would warn.
+#
+# See: https://github.com/sharkdp/fd/issues/2217
+
+[target.'cfg(all(target_os = "windows", target_env = "msvc"))']
+rustflags = [
+    "-C", "link-arg=/DELAYLOAD:shell32.dll",
+    "-C", "link-arg=/DELAYLOAD:combase.dll",
+    "-C", "link-arg=/DELAYLOAD:advapi32.dll",
+    "-C", "link-arg=delayimp.lib",
+    "-C", "link-arg=/IGNORE:4199",
+]

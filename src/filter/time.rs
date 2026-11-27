@@ -1,6 +1,7 @@
-use jiff::{Span, Timestamp, Zoned, civil::DateTime, tz::TimeZone};
+use anyhow::{Context, Result, anyhow};
+use jiff::{Span, Timestamp, ZonedDateTime, civil::DateTime, tz::TimeZone};
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
 
 /// Filter based on time ranges.
 #[derive(Debug, PartialEq, Eq)]
@@ -10,54 +11,90 @@ pub enum TimeFilter {
 }
 
 #[cfg(not(test))]
-fn now() -> Zoned {
-    Zoned::now()
+fn now() -> ZonedDateTime {
+    ZonedDateTime::now()
 }
 
 #[cfg(test)]
 thread_local! {
-    static TESTTIME: std::cell::RefCell<Option<Zoned>> = None.into();
+    static TESTTIME: std::cell::RefCell<Option<ZonedDateTime>> = None.into();
 }
 
 /// This allows us to set a specific time when running tests
 #[cfg(test)]
-fn now() -> Zoned {
-    TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(Zoned::now))
+fn now() -> ZonedDateTime {
+    TESTTIME.with_borrow(|reftime| reftime.as_ref().cloned().unwrap_or_else(ZonedDateTime::now))
+}
+
+fn parse_timestamp(s: &str) -> Result<Timestamp> {
+    match s.parse::<Span>() {
+        Ok(span) => {
+            let datetime = now().checked_sub(span).context("Invalid duration.")?;
+            return Ok(datetime.into());
+        }
+        Err(e) => {
+            if e.is_range() || s.starts_with('P') {
+                return Err(anyhow!("'{s}' is not a valid duration\n{e}"));
+            }
+        }
+    };
+    match s.parse::<Timestamp>() {
+        Ok(timestamp) => return Ok(timestamp),
+        Err(e) => {
+            if e.is_range() {
+                return Err(anyhow!("'{s}' is not a valid date\n{e}"));
+            }
+        }
+    };
+    match s.parse::<DateTime>() {
+        Ok(datetime) => {
+            // Would it be better to use "compatible" instead of later?
+            // later is what we used before
+            return TimeZone::system()
+                .to_ambiguous_timestamp(datetime)
+                .later()
+                .context("Invalid local datetime.");
+        }
+        Err(e) => {
+            if e.is_range() {
+                return Err(anyhow!("'{s}' is not a valid date\n{e}"));
+            }
+        }
+    };
+    // Is it worth parsing the int ourselves?
+    match Timestamp::strptime("@%s", s) {
+        Ok(datetime) => Ok(datetime),
+        Err(e) => {
+            if e.is_range() {
+                Err(anyhow!("'{s}' is out of range."))
+            } else {
+                Err(anyhow!(
+                    "'{s}' is not a valid date or duration. See Fd --help."
+                ))
+            }
+        }
+    }
 }
 
 impl TimeFilter {
-    fn from_str(s: &str) -> Option<SystemTime> {
-        if let Ok(span) = s.parse::<Span>() {
-            let datetime = now().checked_sub(span).ok()?;
-            Some(datetime.into())
-        } else if let Ok(timestamp) = s.parse::<Timestamp>() {
-            Some(timestamp.into())
-        } else if let Ok(datetime) = s.parse::<DateTime>() {
-            Some(
-                TimeZone::system()
-                    .to_ambiguous_zoned(datetime)
-                    .later()
-                    .ok()?
-                    .into(),
-            )
-        } else {
-            let timestamp_secs: u64 = s.strip_prefix('@')?.parse().ok()?;
-            UNIX_EPOCH.checked_add(Duration::from_secs(timestamp_secs))
-        }
+    fn from_str(s: &str) -> Result<SystemTime> {
+        parse_timestamp(s).and_then(|t| {
+            SystemTime::try_from(t).map_err(|_| anyhow!("'{s}' is out of range for date"))
+        })
     }
 
-    pub fn before(s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(s).map(TimeFilter::Before)
+    pub fn before(s: &str) -> anyhow::Result<Self> {
+        Self::from_str(s).map(TimeFilter::Before)
     }
 
-    pub fn after(s: &str) -> Option<TimeFilter> {
-        TimeFilter::from_str(s).map(TimeFilter::After)
+    pub fn after(s: &str) -> anyhow::Result<Self> {
+        Self::from_str(s).map(TimeFilter::After)
     }
 
     pub fn applies_to(&self, t: &SystemTime) -> bool {
         match self {
-            TimeFilter::Before(limit) => t < limit,
-            TimeFilter::After(limit) => t > limit,
+            Self::Before(limit) => t < limit,
+            Self::After(limit) => t > limit,
         }
     }
 }
@@ -70,14 +107,14 @@ mod tests {
     struct TestTime(SystemTime);
 
     impl TestTime {
-        fn new(time: Zoned) -> Self {
+        fn new(time: ZonedDateTime) -> Self {
             TESTTIME.with_borrow_mut(|t| *t = Some(time.clone()));
-            TestTime(time.into())
+            TestTime(time.try_into().unwrap())
         }
 
-        fn set(&mut self, time: Zoned) {
+        fn set(&mut self, time: ZonedDateTime) {
             TESTTIME.with_borrow_mut(|t| *t = Some(time.clone()));
-            self.0 = time.into();
+            self.0 = time.try_into().unwrap();
         }
 
         fn timestamp(&self) -> SystemTime {
@@ -97,7 +134,7 @@ mod tests {
         let local_tz = TimeZone::system();
         let mut test_time = TestTime::new(
             local_tz
-                .to_ambiguous_zoned("2010-10-10 10:10:10".parse::<DateTime>().unwrap())
+                .to_ambiguous_zoned_datetime("2010-10-10 10:10:10".parse::<DateTime>().unwrap())
                 .later()
                 .unwrap(),
         );
@@ -143,7 +180,7 @@ mod tests {
             "2010-10-10T10:10:10+00:00"
                 .parse::<Timestamp>()
                 .unwrap()
-                .to_zoned(local_tz.clone()),
+                .to_zoned_datetime(local_tz.clone()),
         );
         ref_time = test_time.timestamp();
         let t1m_ago = ref_time - Duration::from_secs(60);
@@ -171,13 +208,13 @@ mod tests {
             "2024-02-12T07:36:52+00:00"
                 .parse::<Timestamp>()
                 .unwrap()
-                .to_zoned(local_tz),
+                .to_zoned_datetime(local_tz),
         );
         ref_time = test_time.timestamp();
         let t1m_ago = ref_time - Duration::from_secs(60);
         let t1s_later = ref_time + Duration::from_secs(1);
         // Timestamp only supported via '@' prefix
-        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_none());
+        assert!(TimeFilter::before(&ref_timestamp.to_string()).is_err());
         assert!(
             TimeFilter::before(&format!("@{ref_timestamp}"))
                 .unwrap()
@@ -204,7 +241,32 @@ mod tests {
     fn out_of_range_unix_timestamp_is_rejected() {
         // A '@' timestamp large enough to overflow SystemTime must return
         // None rather than panicking.
-        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_none());
-        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_none());
+        assert!(TimeFilter::before(&format!("@{}", u64::MAX)).is_err());
+        assert!(TimeFilter::after(&format!("@{}", u64::MAX)).is_err());
+    }
+
+    fn parse_error_starts_with(actual: &str, expected: &str) {
+        match parse_timestamp(actual) {
+            Ok(_) => panic!("Did not get an error when parsing '{actual}'"),
+            Err(e) => {
+                let msg = e.to_string();
+                assert!(
+                    msg.starts_with(expected),
+                    "Parsing '{actual}' created error '{msg}' which doesn't start with '{expected}'"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn use_applicable_error_messages() {
+        parse_error_starts_with("P6", "'P6' is not a valid duration");
+        parse_error_starts_with("9999999years", "'9999999years' is not a valid duration");
+        parse_error_starts_with("2026-13-01", "'2026-13-01' is not a valid date");
+        parse_error_starts_with(
+            "2026-12-01T06:65:21Z",
+            "'2026-12-01T06:65:21Z' is not a valid date\n",
+        );
+        parse_error_starts_with("@253402301799", "'@253402301799' is out of range.");
     }
 }

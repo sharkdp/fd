@@ -1,5 +1,4 @@
 use crate::config::Config;
-use crate::error::print_error;
 use crate::exit_codes::{ExitCode, merge_exitcodes};
 use crate::walk::WorkerResult;
 
@@ -24,7 +23,7 @@ pub fn job(
             WorkerResult::Entry(dir_entry) => dir_entry,
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
-                    print_error(err.to_string());
+                    print_error!("{}", err);
                 }
                 continue;
             }
@@ -54,7 +53,7 @@ pub fn batch(
             WorkerResult::Entry(dir_entry) => Some(dir_entry.into_stripped_path(config)),
             WorkerResult::Error(err) => {
                 if config.show_filesystem_errors {
-                    print_error(err.to_string());
+                    print_error!("{}", err);
                 }
                 None
             }

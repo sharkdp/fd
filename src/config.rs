@@ -12,9 +12,6 @@ use crate::fmt::FormatTemplate;
 
 /// Configuration options for *fd*.
 pub struct Config {
-    /// Whether the search is case-sensitive or case-insensitive.
-    pub case_sensitive: bool,
-
     /// Cached current working directory for absolute path construction.
     /// Populated when `--full-path` is set; `None` means search by filename only.
     pub full_path_base: Option<PathBuf>,

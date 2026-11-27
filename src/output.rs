@@ -7,7 +7,7 @@ use crate::config::Config;
 use crate::dir_entry::DirEntry;
 use crate::fmt::FormatTemplate;
 use crate::hyperlink::PathUrl;
-use crate::sanitize::maybe_sanitize;
+use crate::sanitize::sanitize_for_term;
 
 fn replace_path_separator(path: &str, new_path_separator: &str) -> String {
     path.replace(std::path::MAIN_SEPARATOR, new_path_separator)
@@ -76,12 +76,33 @@ fn print_entry_format<W: Write>(
         entry.stripped_path(config),
         config.path_separator.as_deref(),
     );
-    // TODO: support writing raw bytes on unix?
+
+    #[cfg(not(unix))]
+    return print_entry_format_base(stdout, &output, config);
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt;
+
+        if config.interactive_terminal {
+            print_entry_format_base(stdout, &output, config)
+        } else {
+            // Preserve the original path bytes when stdout is not an interactive terminal.
+            stdout.write_all(output.as_os_str().as_bytes())
+        }
+    }
+}
+
+fn print_entry_format_base<W: Write>(
+    stdout: &mut W,
+    output: &std::ffi::OsStr,
+    config: &Config,
+) -> io::Result<()> {
     let s = output.to_string_lossy();
     write!(
         stdout,
         "{}",
-        maybe_sanitize(&s, config.interactive_terminal)
+        sanitize_for_term(&s, config.interactive_terminal)
     )
 }
 
@@ -117,16 +138,30 @@ fn print_entry_colorized<W: Write>(
             .style_for_indicator(Indicator::Directory)
             .map(Style::to_nu_ansi_term_style)
             .unwrap_or_default();
-        let safe_parent = maybe_sanitize(&parent_str, config.interactive_terminal);
-        write!(stdout, "{}", style.paint(safe_parent.as_ref()))?;
+        let safe_parent = sanitize_for_term(&parent_str, config.interactive_terminal);
+        // We explicitly use prefix/suffix instead of paint so that we can use Sanitized
+        write!(
+            stdout,
+            "{}{}{}",
+            style.prefix(),
+            safe_parent,
+            style.suffix()
+        )?;
     }
 
     let style = entry
         .style(ls_colors)
         .map(Style::to_nu_ansi_term_style)
         .unwrap_or_default();
-    let safe_basename = maybe_sanitize(&path_str[offset..], config.interactive_terminal);
-    write!(stdout, "{}", style.paint(safe_basename.as_ref()))?;
+    let safe_basename = sanitize_for_term(&path_str[offset..], config.interactive_terminal);
+    // We explicitly use prefix/suffix instead of paint so that we can use Sanitized
+    write!(
+        stdout,
+        "{}{}{}",
+        style.prefix(),
+        safe_basename,
+        style.suffix()
+    )?;
 
     print_trailing_slash(
         stdout,
@@ -150,7 +185,7 @@ fn print_entry_uncolorized_base<W: Write>(
     if let Some(ref separator) = config.path_separator {
         *path_string.to_mut() = replace_path_separator(&path_string, separator);
     }
-    let safe = maybe_sanitize(&path_string, config.interactive_terminal);
+    let safe = sanitize_for_term(&path_string, config.interactive_terminal);
     write!(stdout, "{safe}")?;
     print_trailing_slash(stdout, entry, config, None)
 }
