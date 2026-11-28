@@ -262,6 +262,8 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
     let size_limits = std::mem::take(&mut opts.size);
     let time_constraints = extract_time_constraints(&opts)?;
     #[cfg(unix)]
+    let ctime_constraints = extract_ctime_constraints(&opts)?;
+    #[cfg(unix)]
     let owner_constraint: Option<OwnerFilter> = opts.owner.and_then(OwnerFilter::filter_ignore);
 
     #[cfg(windows)]
@@ -350,6 +352,8 @@ fn construct_config(mut opts: Opts) -> Result<Config> {
         ignore_files: std::mem::take(&mut opts.ignore_file),
         size_constraints: size_limits,
         time_constraints,
+        #[cfg(unix)]
+        ctime_constraints,
         #[cfg(unix)]
         owner_constraint,
         show_filesystem_errors: opts.show_errors,
@@ -463,14 +467,24 @@ fn determine_ls_command(colored_output: bool) -> Result<Vec<&'static str>> {
 }
 
 fn extract_time_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
+    parse_time_constraints(
+        opts.changed_within.as_deref(),
+        opts.changed_before.as_deref(),
+    )
+}
+
+#[cfg(unix)]
+fn extract_ctime_constraints(opts: &Opts) -> Result<Vec<TimeFilter>> {
+    parse_time_constraints(opts.ctime_within.as_deref(), opts.ctime_before.as_deref())
+}
+
+fn parse_time_constraints(within: Option<&str>, before: Option<&str>) -> Result<Vec<TimeFilter>> {
     let mut time_constraints: Vec<TimeFilter> = Vec::new();
-    if let Some(ref t) = opts.changed_within {
-        let f = TimeFilter::after(t)?;
-        time_constraints.push(f);
+    if let Some(t) = within {
+        time_constraints.push(TimeFilter::after(t)?);
     }
-    if let Some(ref t) = opts.changed_before {
-        let f = TimeFilter::before(t)?;
-        time_constraints.push(f);
+    if let Some(t) = before {
+        time_constraints.push(TimeFilter::before(t)?);
     }
     Ok(time_constraints)
 }

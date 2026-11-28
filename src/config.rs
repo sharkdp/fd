@@ -107,6 +107,10 @@ pub struct Config {
     pub time_constraints: Vec<TimeFilter>,
 
     #[cfg(unix)]
+    /// Constraints on status change time (ctime) of files
+    pub ctime_constraints: Vec<TimeFilter>,
+
+    #[cfg(unix)]
     /// User/group ownership constraint
     pub owner_constraint: Option<OwnerFilter>,
 

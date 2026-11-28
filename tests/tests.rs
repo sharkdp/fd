@@ -2758,6 +2758,42 @@ fn test_modified_absolute() {
 
 #[cfg(unix)]
 #[test]
+fn test_ctime() {
+    let te = TestEnv::new(&[], &["30dec2017", "fresh"]);
+    remove_symlink(te.test_root().join("symlink"));
+    // Setting the mtime back bumps the ctime, so both files were changed just now.
+    change_file_modified(te.test_root().join("30dec2017"), "2017-12-30T23:59:00Z");
+
+    te.assert_output(
+        &["", "--changed-before", "2018-01-01 00:00:00"],
+        "30dec2017",
+    );
+    te.assert_output(
+        &["", "--ctime-within", "1h"],
+        "30dec2017
+        fresh",
+    );
+    te.assert_output(&["", "--ctime-before", "2018-01-01 00:00:00"], "");
+    te.assert_output(
+        &["", "--ctime-before", "2100-01-01 00:00:00"],
+        "30dec2017
+        fresh",
+    );
+    te.assert_output(
+        &[
+            "",
+            "--ctime-within",
+            "1h",
+            "--changed-within",
+            "2018-01-01 00:00:00",
+        ],
+        "fresh",
+    );
+    te.assert_failure(&["--ctime-within", "foo"]);
+}
+
+#[cfg(unix)]
+#[test]
 fn test_owner_ignore_all() {
     let te = TestEnv::new(DEFAULT_DIRS, DEFAULT_FILES);
     te.assert_output(&["--owner", ":", "a.foo"], "a.foo");

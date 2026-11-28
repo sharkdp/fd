@@ -2,6 +2,7 @@
 
 ## Features
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
+- Add `--ctime-within` and `--ctime-before` options to filter by file status change time (ctime) on Unix, see #1437 (@TheNetherWatcher)
 
 ## Bugfixes
 - Keep the `./` prefix on `{.}` and the other placeholders that remove a part of the path when the file name starts with `-`, so a command run with `--exec` does not read the placeholder as an option, see #2236
