@@ -2061,6 +2061,51 @@ fn format() {
     );
 }
 
+#[test]
+fn format_dash_prefix() {
+    let te = TestEnv::new(&["-dir"], &["-rf.jpg", "-dir/a.jpg"]);
+
+    te.assert_output(
+        &[
+            "-e",
+            "jpg",
+            "--format",
+            "{}|{.}|{/}|{//}|{/.}",
+            "--path-separator=/",
+        ],
+        "./-rf.jpg|./-rf|-rf.jpg|.|-rf
+        ./-dir/a.jpg|./-dir/a|a.jpg|./-dir|a",
+    );
+}
+
+#[test]
+#[cfg(not(windows))]
+fn exec_dash_prefix() {
+    let te = TestEnv::new(&["-dir"], &["-rf.jpg", "-dir/a.jpg"]);
+
+    for strip_prefix in [false, true] {
+        let mut args = vec!["-e", "jpg"];
+        if strip_prefix {
+            args.push("--strip-cwd-prefix");
+        }
+        args.extend([
+            "-x",
+            "printf",
+            "%s|%s|%s|%s|%s\n",
+            "{}",
+            "{.}",
+            "{/}",
+            "{//}",
+            "{/.}",
+        ]);
+        te.assert_output(
+            &args,
+            "./-rf.jpg|./-rf|-rf.jpg|.|-rf
+            ./-dir/a.jpg|./-dir/a|a.jpg|./-dir|a",
+        );
+    }
+}
+
 /// Shell script execution (--exec)
 #[test]
 fn test_exec() {
