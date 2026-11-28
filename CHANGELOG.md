@@ -4,6 +4,7 @@
 - Allow `--strip-cwd-prefix` with explicit search paths, see #2113 (@pederbe)
 
 ## Bugfixes
+- Keep the `./` prefix on `{.}` and the other placeholders that remove a part of the path when the file name starts with `-`, so a command run with `--exec` does not read the placeholder as an option, see #2236
 - Fix `--type executable`/`--type empty` incorrectly filtering out other explicitly-requested types. When combined with e.g. `--type symlink`, the `executable`/`empty` modifier was applied to *all* results, so non-executable / non-empty symlinks (and other types) were dropped even though `--type` values are meant to be combined as a union.
 - Reject `--threads` values above 1024 instead of aborting with a capacity overflow or a failure to spawn threads, see #2078 (@DawnofGenX)
 - Escape U+2028 (line separator) and U+2029 (paragraph separator) when sanitizing paths for terminal output, so a filename can't forge terminal lines, see #2105 (@nikolauspschuetz)
