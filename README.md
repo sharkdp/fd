@@ -451,8 +451,8 @@ Depending on your shell, you may need to quote the placeholders (`{}`, `{/}`, `{
 
 ### `fd` crashes when another memory allocator is preloaded
 
-The released Linux binaries use jemalloc, through the `use-jemalloc` feature, which is enabled by default for
-some targets. Preloading a different allocator while jemalloc is compiled in is not supported, for example
+The released Linux binaries use jemalloc on supported targets, through the opt-in `use-jemalloc`
+feature. Preloading a different allocator while jemalloc is compiled in is not supported, for example
 
 ``` bash
 > LD_PRELOAD=/usr/bin/mimalloc fd
@@ -463,7 +463,7 @@ this and report it, because the preloaded library is already answering its first
 with a preloaded allocator, build without jemalloc:
 
 ``` bash
-> cargo build --release --no-default-features
+> cargo build --release
 ```
 
 ## Integration with other programs
@@ -742,7 +742,16 @@ cargo install fd-find
 ```
 Note that rust version *1.90.0* or later is required.
 
-`make` is also needed for the build.
+Source builds use the system allocator by default. On supported platforms, we recommend enabling
+jemalloc for better performance with `cargo install fd-find --features use-jemalloc`.
+Enabling this feature explicitly always selects jemalloc; you are responsible for providing a
+working jemalloc build for your target. Building jemalloc from source also requires `make` and a C compiler.
+`--all-features` also enables jemalloc, so it should only be used on targets where jemalloc is supported.
+
+When building from a checkout, `make` selects jemalloc for the same targets as the release workflow.
+Use `make FEATURES=` to build with the system allocator, or `make FEATURES=use-jemalloc` to opt in
+explicitly. Set `CARGO_BUILD_TARGET` when cross-compiling with `make` so feature selection uses
+the target rather than the host.
 
 ### From binaries
 
